@@ -79,7 +79,9 @@ const SEED_EXERCISES = [
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+  
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
   :root {
     --blue-dark: #17527c; --blue-mid: #86bcde; --blue-light: #b3d7ed;
     --yellow: #ffbd59; --orange: #f6943b;
@@ -88,10 +90,19 @@ const css = `
     --cream: #f4f8fc; --warm: #deeaf5; --text: #1a2e3b; --text-muted: #6a8099;
     --white: #ffffff; --card: rgba(255,255,255,0.95); --danger: #c0544a;
   }
-  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; }
+  
+  body { 
+    font-family: 'DM Sans', sans-serif; 
+    background: var(--cream); 
+    color: var(--text); 
+    min-height: 100vh; 
+  }
+  
   h1,h2,h3 { font-family: 'Playfair Display', serif; }
 
-  /* Login */
+  /* =========================================
+     1. TELA DE LOGIN / REGISTRO
+  ========================================= */
   .login-bg { min-height:100vh; background:linear-gradient(135deg,#17527c 0%,#86bcde 55%,#ffbd59 100%); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
   .login-bg::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse 80% 60% at 70% 30%,rgba(255,255,255,0.12) 0%,transparent 60%); }
   .login-card { background:var(--white); border-radius:24px; padding:48px 40px; width:100%; max-width:420px; box-shadow:0 32px 80px rgba(0,0,0,0.18); position:relative; z-index:1; animation:fadeUp .5s ease both; }
@@ -109,7 +120,9 @@ const css = `
   .btn-primary { width:100%; padding:13px; border:none; border-radius:12px; background:var(--sage-dark); color:white; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:500; cursor:pointer; transition:all .2s; margin-top:6px; }
   .btn-primary:hover { background:var(--blue-mid); transform:translateY(-1px); box-shadow:0 6px 20px rgba(23,82,124,0.3); }
 
-  /* Layout */
+  /* =========================================
+     2. LAYOUT PRINCIPAL (SIDEBAR + MAIN)
+  ========================================= */
   .layout { display:flex; min-height:100vh; }
   .sidebar { width:250px; background:var(--sage-dark); color:white; display:flex; flex-direction:column; position:fixed; top:0; left:0; height:100vh; z-index:10; }
   .sidebar-header { padding:26px 22px 18px; border-bottom:1px solid rgba(255,255,255,0.1); }
@@ -127,13 +140,15 @@ const css = `
   .user-info .email { font-size:10px; opacity:.5; }
   .logout-btn { background:none; border:none; color:rgba(255,255,255,0.45); cursor:pointer; font-size:17px; margin-left:auto; }
   .logout-btn:hover { color:white; }
-  .main { margin-left:250px; padding:38px; min-height:100vh; background:var(--cream); width:100%; }
+  .main { margin-left:250px; padding:38px; min-height:100vh; background:var(--cream); width:100%; box-sizing: border-box; }
   .patient-sidebar { background:#0e3d5e; }
   .page-header { margin-bottom:28px; }
   .page-header h2 { font-size:26px; color:var(--text); }
   .page-header p { color:var(--text-muted); margin-top:3px; font-size:14px; }
 
-  /* Cards */
+  /* =========================================
+     3. CARDS & GRIDS
+  ========================================= */
   .card { background:var(--card); border-radius:16px; padding:22px; box-shadow:0 2px 16px rgba(0,0,0,0.06); border:1px solid rgba(255,255,255,0.6); }
   .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
   .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
@@ -143,7 +158,6 @@ const css = `
   .stat-card .stat-val { font-family:'Playfair Display',serif; font-size:34px; color:var(--blue-dark); }
   .stat-card .stat-label { font-size:12px; color:var(--text-muted); margin-top:3px; }
 
-  /* Exercise card */
   .ex-card { background:var(--card); border-radius:16px; padding:18px; border:1px solid rgba(255,255,255,0.6); box-shadow:0 2px 12px rgba(0,0,0,0.05); cursor:pointer; transition:all .2s; }
   .ex-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.1); }
   .ex-cat { display:inline-block; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; padding:3px 10px; border-radius:20px; background:var(--accent-soft); color:var(--accent); margin-bottom:9px; }
@@ -152,17 +166,19 @@ const css = `
   .ex-title { font-family:'Playfair Display',serif; font-size:16px; margin-bottom:5px; }
   .ex-desc { font-size:13px; color:var(--text-muted); line-height:1.5; }
 
-  /* Patients */
   .patient-row { display:flex; align-items:center; gap:12px; padding:12px; border-radius:10px; cursor:pointer; transition:background .15s; margin-bottom:2px; }
   .patient-row:hover { background:var(--accent-soft); }
   .p-avatar { width:40px; height:40px; border-radius:50%; background:var(--sage-light); display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:15px; color:var(--sage-dark); flex-shrink:0; }
   .p-name { font-weight:500; font-size:14px; }
   .p-email { font-size:11px; color:var(--text-muted); }
 
-  /* Modal */
+  /* =========================================
+     4. MODAL & UTILITIES
+  ========================================= */
   .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px); animation:fadeIn .2s; overflow-y:auto; }
   .modal { background:var(--white); border-radius:20px; padding:30px; width:100%; max-width:500px; animation:fadeUp .25s ease; }
   .modal h3 { font-family:'Playfair Display',serif; font-size:20px; margin-bottom:18px; }
+  
   .btn { padding:9px 18px; border-radius:10px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; border:none; }
   .btn-outline { background:transparent; border:1.5px solid var(--warm); color:var(--text-muted); }
   .btn-outline:hover { border-color:var(--sage); color:var(--sage-dark); }
@@ -171,13 +187,16 @@ const css = `
   .btn-sm { padding:6px 12px; font-size:12px; border-radius:8px; }
   .btn-accent { background:var(--accent); color:white; }
   .btn-accent:hover { opacity:.9; }
+  
   .ex-pick { display:flex; align-items:center; gap:11px; padding:11px; border-radius:12px; border:1.5px solid var(--warm); margin-bottom:7px; cursor:pointer; transition:all .15s; }
   .ex-pick:hover { border-color:var(--sage); }
   .ex-pick.selected { border-color:var(--blue-dark); background:rgba(23,82,124,0.06); }
   .ex-pick .check { width:20px; height:20px; border-radius:50%; border:2px solid var(--warm); display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; transition:all .15s; }
   .ex-pick.selected .check { background:var(--blue-dark); border-color:var(--blue-dark); color:white; }
 
-  /* Exercise page */
+  /* =========================================
+     5. PÁGINA DO EXERCÍCIO (RESPONDER)
+  ========================================= */
   .exercise-page { max-width:660px; margin:0 auto; }
   .progress-bar { height:5px; background:var(--warm); border-radius:3px; margin-bottom:30px; overflow:hidden; }
   .progress-fill { height:100%; background:var(--blue-dark); border-radius:3px; transition:width .4s ease; }
@@ -194,7 +213,9 @@ const css = `
   .q-reflect { background:var(--accent-soft); border-radius:12px; padding:14px 18px; font-size:14px; color:var(--accent); font-style:italic; line-height:1.6; margin-bottom:14px; }
   .q-nav { display:flex; justify-content:space-between; align-items:center; margin-top:22px; }
 
-  /* Responses */
+  /* =========================================
+     6. RESPOSTAS, EMPTY STATES & COMPONENTES
+  ========================================= */
   .response-item { padding:12px; background:var(--cream); border-radius:10px; margin-bottom:7px; }
   .response-item .q-label { font-size:11px; color:var(--text-muted); margin-bottom:3px; }
   .response-item .q-answer { font-size:14px; color:var(--text); }
@@ -202,24 +223,26 @@ const css = `
   .badge-done { background:#d4edd9; color:#2d7a3a; }
   .badge-pending { background:var(--warm); color:var(--text-muted); }
 
-  /* Utilities */
   .empty-state { text-align:center; padding:50px 20px; color:var(--text-muted); }
   .empty-state .empty-icon { font-size:44px; margin-bottom:14px; }
   .empty-state p { font-size:14px; }
+  
   .success-banner { background:#d4edd9; color:#2d7a3a; border-radius:10px; padding:11px 14px; font-size:13px; margin-bottom:12px; text-align:center; }
   .error-msg { color:#c0544a; font-size:13px; margin-bottom:8px; }
 
-  /* Spinner */
   .spinner { display:flex; align-items:center; justify-content:center; height:100vh; font-family:'DM Sans',sans-serif; color:var(--text-muted); font-size:15px; gap:10px; }
   .spin { width:22px; height:22px; border:2.5px solid var(--warm); border-top-color:var(--blue-dark); border-radius:50%; animation:spin .7s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }
   @keyframes fadeUp { from{opacity:0;transform:translateY(14px);} to{opacity:1;transform:translateY(0);} }
   @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
 
-  /* Notification & Modals */
+  /* =========================================
+     7. COMPONENTES EXTRAS (Delete, Notif, Charts)
+  ========================================= */
   .notif-bell { position:relative; background:none; border:none; cursor:pointer; font-size:20px; color:rgba(255,255,255,0.7); padding:4px; }
   .notif-bell:hover { color:white; }
   .notif-dot { position:absolute; top:0; right:0; width:16px; height:16px; border-radius:50%; background:var(--accent); color:white; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  
   .delete-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center; z-index:1000; animation:fadeIn .2s ease; }
   .delete-modal { background:white; border-radius:18px; padding:32px 28px; max-width:380px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.25); text-align:center; }
   .delete-icon { font-size:48px; margin-bottom:12px; }
@@ -231,17 +254,20 @@ const css = `
   .btn-danger:disabled { opacity:.45; cursor:not-allowed; }
   .btn-danger:hover:not(:disabled) { opacity:.88; }
 
-  /* Charts & Trackers */
   .chart-wrap { padding:12px 0 4px; }
   .chart-label-row { display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:4px; }
+  
   .mood-btn { width:44px; height:44px; border-radius:50%; border:2px solid var(--warm); background:transparent; font-size:22px; cursor:pointer; transition:all .15s; }
   .mood-btn.sel { border-color:var(--blue-dark); background:rgba(23,82,124,0.08); transform:scale(1.15); }
+  
   .goal-bar-bg { height:10px; background:var(--warm); border-radius:6px; overflow:hidden; margin:8px 0 4px; }
   .goal-bar-fill { height:100%; border-radius:6px; background:linear-gradient(90deg,var(--blue-dark),var(--blue-mid)); transition:width .6s ease; }
+  
   .due-chip { display:inline-flex; align-items:center; gap:4px; font-size:10px; padding:2px 8px; border-radius:20px; font-weight:600; }
   .due-ok { background:#ddeaff; color:#17527c; }
   .due-warn { background:#fff3dd; color:#c07010; }
   .due-late { background:#fde8e8; color:#c0444a; }
+  
   .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--cream); border-radius:10px; }
   .toggle { width:40px; height:22px; border-radius:11px; cursor:pointer; border:none; position:relative; transition:background .2s; }
   .toggle::after { content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:white; transition:transform .2s; }
@@ -249,23 +275,33 @@ const css = `
   .toggle.on::after { transform:translateX(18px); }
   .toggle.off { background:var(--warm); }
 
-  /* 📱 RESPONSIVO (Melhoria para Celulares) */
+  /* =========================================
+     8. 📱 RESPONSIVIDADE (Telas Pequenas / Celular)
+  ========================================= */
   @media(max-width:768px){
     .layout { flex-direction: column; }
     .sidebar { width: 100%; height: auto; position: relative; z-index: 10; }
     .sidebar-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 20px; }
     .sidebar-header .role { margin-top: 0; }
+    
+    /* Scroll horizontal na barra de navegação pelo celular */
     .sidebar nav { display: flex; overflow-x: auto; padding: 10px 20px; white-space: nowrap; gap: 10px; }
     .nav-item { width: auto; flex-shrink: 0; padding: 10px 14px; margin-bottom: 0; }
+    
     .sidebar-footer { padding: 15px 20px; }
     .main { margin-left: 0; padding: 20px 15px; }
+    
     .grid-3 { grid-template-columns: 1fr; }
     .grid-2 { grid-template-columns: 1fr; }
     .stat-card { padding: 18px; }
-    .login-card { padding: 30px 24px; }
+    
+    .login-card { padding: 30px 24px; margin: 15px; width: calc(100% - 30px); box-sizing: border-box; }
+    
     .modal { padding: 24px 20px; width: 95%; max-height: 85vh; }
     .page-header h2 { font-size: 22px; }
-    .scale-btn { width: 40px; height: 40px; font-size: 13px; }
+    
+    /* Botões de nota redimensionados no celular para caber na tela */
+    .scale-btn { width: 38px; height: 38px; font-size: 13px; }
   }
 `;
 
