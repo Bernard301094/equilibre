@@ -221,6 +221,38 @@ const css = `
   @keyframes fadeUp { from{opacity:0;transform:translateY(14px);} to{opacity:1;transform:translateY(0);} }
   @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
 
+
+  /* Notification bell */
+  .notif-bell { position:relative; background:none; border:none; cursor:pointer; font-size:20px; color:rgba(255,255,255,0.7); padding:4px; }
+  .notif-bell:hover { color:white; }
+  .notif-dot { position:absolute; top:0; right:0; width:16px; height:16px; border-radius:50%; background:var(--accent); color:white; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+
+  /* Charts */
+  .chart-wrap { padding:12px 0 4px; }
+  .chart-label-row { display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:4px; }
+
+  /* Diary */
+  .mood-btn { width:44px; height:44px; border-radius:50%; border:2px solid var(--warm); background:transparent; font-size:22px; cursor:pointer; transition:all .15s; }
+  .mood-btn.sel { border-color:var(--blue-dark); background:rgba(23,82,124,0.08); transform:scale(1.15); }
+
+  /* Goal bar */
+  .goal-bar-bg { height:10px; background:var(--warm); border-radius:6px; overflow:hidden; margin:8px 0 4px; }
+  .goal-bar-fill { height:100%; border-radius:6px; background:linear-gradient(90deg,var(--blue-dark),var(--blue-mid)); transition:width .6s ease; }
+
+  /* Due-date chip */
+  .due-chip { display:inline-flex; align-items:center; gap:4px; font-size:10px; padding:2px 8px; border-radius:20px; font-weight:600; }
+  .due-ok { background:#ddeaff; color:#17527c; }
+  .due-warn { background:#fff3dd; color:#c07010; }
+  .due-late { background:#fde8e8; color:#c0444a; }
+
+  /* Reminder toggle */
+  .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--cream); border-radius:10px; }
+  .toggle { width:40px; height:22px; border-radius:11px; cursor:pointer; border:none; position:relative; transition:background .2s; }
+  .toggle::after { content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:white; transition:transform .2s; }
+  .toggle.on { background:var(--blue-dark); }
+  .toggle.on::after { transform:translateX(18px); }
+  .toggle.off { background:var(--warm); }
+
   @media(max-width:768px){
     .sidebar{width:100%;height:auto;position:relative;}
     .main{margin-left:0;padding:20px;}
@@ -231,6 +263,15 @@ const css = `
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
+  useEffect(() => {
+    const link = document.querySelector("link[rel~='icon']") || document.createElement("link");
+    link.type = "image/jpeg";
+    link.rel = "shortcut icon";
+    link.href = LOGO;
+    document.head.appendChild(link);
+    document.title = "Equilibre";
+  }, []);
+
   const [ready, setReady] = useState(false);
   const [dbError, setDbError] = useState(false);
   const [session, setSession] = useState(null);
@@ -503,18 +544,30 @@ function LoginPage({ tab, setTab, form, setForm, error, onLogin, onRegister, set
 
 // ─── Therapist Layout ─────────────────────────────────────────────────────────
 function TherapistLayout({ session, setSession, view, setView, modal, setModal }) {
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    db.query("notifications", { filter: { therapist_id: session.id, read: false } })
+      .then(r => setUnread(Array.isArray(r) ? r.length : 0));
+  }, [session.id, view]);
+
   const navItems = [
     { id: "dashboard", icon: "🏠", label: "Início" },
     { id: "patients", icon: "👥", label: "Pacientes" },
     { id: "exercises", icon: "📋", label: "Exercícios" },
     { id: "create", icon: "✏️", label: "Criar Exercício" },
+    { id: "progress", icon: "📈", label: "Progresso" },
     { id: "responses", icon: "📊", label: "Respostas" },
   ];
   return (
     <div className="layout">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <div className="brand" style={{display:"flex",alignItems:"center",gap:8}}><img src={LOGO} alt="" style={{width:32,height:32,objectFit:"contain"}} /> Equilibre</div>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            <div className="brand" style={{display:"flex",alignItems:"center",gap:8}}><img src={LOGO} alt="" style={{width:32,height:32,objectFit:"contain"}} /> Equilibre</div>
+            <button className="notif-bell" onClick={() => setView("notifications")} title="Notificações">
+              🔔{unread > 0 && <span className="notif-dot">{unread > 9 ? "9+" : unread}</span>}
+            </button>
+          </div>
           <div className="role">Área da Psicóloga</div>
         </div>
         <nav>
@@ -537,7 +590,9 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
         {view === "patients" && <PatientsView session={session} setModal={setModal} />}
         {view === "exercises" && <ExercisesView />}
         {view === "create" && <CreateExerciseView onSaved={() => setView("exercises")} />}
+        {view === "progress" && <TherapistProgress session={session} />}
         {view === "responses" && <ResponsesView session={session} />}
+        {view === "notifications" && <NotificationsView session={session} onRead={() => setUnread(0)} />}
       </main>
       {modal && <Modal modal={modal} setModal={setModal} session={session} />}
     </div>
@@ -784,6 +839,9 @@ function Modal({ modal, setModal, session }) {
   const [exercises, setExercises] = useState([]);
   const [existing, setExisting] = useState([]);
   const [selected, setSelected] = useState([]);
+  const [dueDates, setDueDates] = useState({});
+  const [weeklyGoal, setWeeklyGoal] = useState(3);
+  const [currentGoal, setCurrentGoal] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -791,8 +849,11 @@ function Modal({ modal, setModal, session }) {
     (async () => {
       const ex = await db.query("exercises");
       const assign = await db.query("assignments", { filter: { patient_id: modal.payload.patient.id } });
+      const goals = await db.query("goals", { filter: { patient_id: modal.payload.patient.id } });
       setExercises(Array.isArray(ex) ? ex : []);
       setExisting(Array.isArray(assign) ? assign : []);
+      const g = Array.isArray(goals) && goals.length > 0 ? goals[0] : null;
+      setCurrentGoal(g); if (g) setWeeklyGoal(g.weekly_target);
       setLoading(false);
     })();
   }, [modal]);
@@ -800,14 +861,28 @@ function Modal({ modal, setModal, session }) {
   if (modal.type !== "assign") return null;
   const { patient } = modal.payload;
   const existingIds = existing.map(a => a.exercise_id);
-
   const toggle = id => setSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+
+  const getDueChip = (dueDate) => {
+    if (!dueDate) return null;
+    const days = Math.ceil((new Date(dueDate) - new Date()) / 86400000);
+    if (days < 0) return <span className="due-chip due-late">Atrasado</span>;
+    if (days <= 2) return <span className="due-chip due-warn">Vence em {days}d</span>;
+    return <span className="due-chip due-ok">📅 {new Date(dueDate).toLocaleDateString("pt-BR", {day:"2-digit",month:"2-digit"})}</span>;
+  };
 
   const assign = async () => {
     for (const exId of selected) {
       if (!existingIds.includes(exId)) {
-        await db.insert("assignments", { id: "a" + Date.now() + Math.random().toString(36).slice(2,6), patient_id: patient.id, exercise_id: exId, assigned_at: new Date().toISOString(), status: "pending" });
+        const dd = dueDates[exId] || null;
+        await db.insert("assignments", { id: "a" + Date.now() + Math.random().toString(36).slice(2,6), patient_id: patient.id, exercise_id: exId, assigned_at: new Date().toISOString(), status: "pending", due_date: dd });
       }
+    }
+    // save/update weekly goal
+    if (currentGoal) {
+      await db.update("goals", { id: currentGoal.id }, { weekly_target: weeklyGoal });
+    } else {
+      await db.insert("goals", { id: "g"+Date.now(), patient_id: patient.id, therapist_id: session.id, weekly_target: weeklyGoal, created_at: new Date().toISOString() });
     }
     setModal(null);
   };
@@ -817,12 +892,24 @@ function Modal({ modal, setModal, session }) {
     if (a) { await db.remove("assignments", { id: a.id }); setExisting(ex => ex.filter(x => x.exercise_id !== exId)); }
   };
 
+  const inputSt = { padding:"6px 10px", border:"1.5px solid var(--warm)", borderRadius:8, fontFamily:"DM Sans,sans-serif", fontSize:12, background:"white", color:"var(--text)", outline:"none" };
+
   return (
     <div className="overlay" onClick={() => setModal(null)}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <h3>Exercícios — {patient.name}</h3>
         {loading ? <p style={{ color: "var(--text-muted)" }}>Carregando...</p> : (
           <>
+            {/* Weekly goal */}
+            <div style={{ background:"var(--cream)", borderRadius:12, padding:"12px 14px", marginBottom:18, border:"1.5px solid var(--warm)" }}>
+              <div style={{ fontSize:12, fontWeight:600, color:"var(--blue-dark)", marginBottom:8 }}>🎯 Meta semanal de exercícios</div>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <input type="range" min="1" max="10" value={weeklyGoal} onChange={e => setWeeklyGoal(Number(e.target.value))} style={{ flex:1, accentColor:"var(--blue-dark)" }} />
+                <span style={{ fontWeight:700, fontSize:18, color:"var(--blue-dark)", minWidth:22 }}>{weeklyGoal}</span>
+                <span style={{ fontSize:12, color:"var(--text-muted)" }}>por semana</span>
+              </div>
+            </div>
+
             {existingIds.length > 0 && (
               <div style={{ marginBottom: 18 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text-muted)", marginBottom: 8 }}>Atribuídos</div>
@@ -830,8 +917,9 @@ function Modal({ modal, setModal, session }) {
                   const ex = exercises.find(e => e.id === a.exercise_id);
                   if (!ex) return null;
                   return (
-                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "var(--cream)", borderRadius: 10, marginBottom: 5 }}>
+                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "var(--cream)", borderRadius: 10, marginBottom: 5, flexWrap:"wrap" }}>
                       <span style={{ flex: 1, fontSize: 13 }}>{ex.title}</span>
+                      {getDueChip(a.due_date)}
                       <span className={`response-badge ${a.status === "done" ? "badge-done" : "badge-pending"}`}>{a.status === "done" ? "✓ Feito" : "⏳ Pendente"}</span>
                       <button onClick={() => removeAssign(a.exercise_id)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer", fontSize: 15 }}>✕</button>
                     </div>
@@ -839,16 +927,26 @@ function Modal({ modal, setModal, session }) {
                 })}
               </div>
             )}
+
             <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text-muted)", marginBottom: 8 }}>Adicionar</div>
             {exercises.filter(ex => !existingIds.includes(ex.id)).map(ex => (
-              <div key={ex.id} className={`ex-pick ${selected.includes(ex.id) ? "selected" : ""}`} onClick={() => toggle(ex.id)}>
-                <div className="check">{selected.includes(ex.id) ? "✓" : ""}</div>
-                <div><div style={{ fontSize: 13, fontWeight: 500 }}>{ex.title}</div><div style={{ fontSize: 11, color: "var(--text-muted)" }}>{ex.category}</div></div>
+              <div key={ex.id}>
+                <div className={`ex-pick ${selected.includes(ex.id) ? "selected" : ""}`} onClick={() => toggle(ex.id)} style={{ marginBottom: selected.includes(ex.id) ? 4 : 7 }}>
+                  <div className="check">{selected.includes(ex.id) ? "✓" : ""}</div>
+                  <div style={{ flex:1 }}><div style={{ fontSize: 13, fontWeight: 500 }}>{ex.title}</div><div style={{ fontSize: 11, color: "var(--text-muted)" }}>{ex.category}</div></div>
+                </div>
+                {selected.includes(ex.id) && (
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:7, paddingLeft:8 }}>
+                    <span style={{ fontSize:11, color:"var(--text-muted)" }}>📅 Prazo:</span>
+                    <input type="date" style={inputSt} value={dueDates[ex.id] || ""} min={new Date().toISOString().split("T")[0]} onChange={e => setDueDates(d => ({...d, [ex.id]: e.target.value}))} />
+                    <span style={{ fontSize:11, color:"var(--text-muted)" }}>(opcional)</span>
+                  </div>
+                )}
               </div>
             ))}
             <div style={{ display: "flex", gap: 9, marginTop: 20, justifyContent: "flex-end" }}>
               <button className="btn btn-outline" onClick={() => setModal(null)}>Fechar</button>
-              {selected.length > 0 && <button className="btn btn-sage" onClick={assign}>Atribuir {selected.length}</button>}
+              <button className="btn btn-sage" onClick={assign}>{selected.length > 0 ? `Atribuir ${selected.length} + salvar meta` : "Salvar meta"}</button>
             </div>
           </>
         )}
@@ -979,6 +1077,197 @@ function CreateExerciseView({ onSaved }) {
   );
 }
 
+
+// ─── Mini SVG Line Chart ──────────────────────────────────────────────────────
+function MiniLineChart({ points, color = "var(--blue-dark)", height = 70, labels }) {
+  if (!points || points.length < 2) return (
+    <div style={{ textAlign:"center", padding:"18px 0", color:"var(--text-muted)", fontSize:12 }}>
+      Dados insuficientes para gráfico
+    </div>
+  );
+  const vals = points.map(Number);
+  const min = Math.min(...vals); const max = Math.max(...vals);
+  const range = max - min || 1;
+  const W = 280; const H = height;
+  const toX = i => (i / (vals.length - 1)) * (W - 24) + 12;
+  const toY = v => H - 10 - ((v - min) / range) * (H - 22);
+  const polyPts = vals.map((v, i) => `${toX(i)},${toY(v)}`).join(" ");
+  const fillPts = `${toX(0)},${H} ` + vals.map((v, i) => `${toX(i)},${toY(v)}`).join(" ") + ` ${toX(vals.length-1)},${H}`;
+  return (
+    <div className="chart-wrap">
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height }} preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.18" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon points={fillPts} fill="url(#cg)" />
+        <polyline points={polyPts} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+        {vals.map((v, i) => (
+          <g key={i}>
+            <circle cx={toX(i)} cy={toY(v)} r="4.5" fill="white" stroke={color} strokeWidth="2" />
+            <text x={toX(i)} y={toY(v) - 8} textAnchor="middle" fontSize="9" fill={color} fontWeight="700">{v}</text>
+          </g>
+        ))}
+      </svg>
+      {labels && (
+        <div className="chart-label-row">
+          {labels.map((l, i) => <span key={i}>{l}</span>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Weekly Goal Bar ──────────────────────────────────────────────────────────
+function WeekGoalBar({ done, target }) {
+  const pct = target > 0 ? Math.min(100, Math.round((done / target) * 100)) : 0;
+  const color = pct >= 100 ? "#2d7a3a" : pct >= 50 ? "var(--blue-dark)" : "var(--accent)";
+  return (
+    <div>
+      <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"var(--text-muted)", marginBottom:2 }}>
+        <span>Meta semanal</span>
+        <span style={{ fontWeight:600, color }}>{done}/{target} exercícios</span>
+      </div>
+      <div className="goal-bar-bg">
+        <div className="goal-bar-fill" style={{ width:`${pct}%`, background: pct >= 100 ? "#2d7a3a" : undefined }} />
+      </div>
+      <div style={{ fontSize:11, color, textAlign:"right" }}>{pct >= 100 ? "🎉 Meta atingida!" : `${pct}% concluído`}</div>
+    </div>
+  );
+}
+
+
+// ─── Therapist Progress View ──────────────────────────────────────────────────
+function TherapistProgress({ session }) {
+  const [patients, setPatients] = useState([]);
+  const [selPat, setSelPat] = useState(null);
+  const [chartData, setChartData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    db.query("users", { filter: { therapist_id: session.id, role: "patient" } })
+      .then(r => { const p = Array.isArray(r) ? r : []; setPatients(p); if (p.length) setSelPat(p[0]); setLoading(false); });
+  }, [session.id]);
+
+  useEffect(() => {
+    if (!selPat) return;
+    (async () => {
+      const responses = await db.query("responses", { filter: { patient_id: selPat.id }, order: "completed_at.asc" });
+      const exercises = await db.query("exercises");
+      const goals = await db.query("goals", { filter: { patient_id: selPat.id } });
+      const exList = Array.isArray(exercises) ? exercises : [];
+      const rList = Array.isArray(responses) ? responses : [];
+      const goal = Array.isArray(goals) && goals.length > 0 ? goals[0].weekly_target : null;
+
+      // Extract scale answers per response
+      const parsed = rList.map(r => {
+        const ex = exList.find(e => e.id === r.exercise_id);
+        const qs = ex ? (Array.isArray(ex.questions) ? ex.questions : JSON.parse(ex.questions || "[]")) : [];
+        const ans = Array.isArray(r.answers) ? r.answers : JSON.parse(r.answers || "[]");
+        const scaleAnswers = qs.reduce((acc, q, i) => {
+          if (q.type === "scale" && ans[i] !== "" && ans[i] !== undefined) acc.push({ label: q.text.slice(0, 25) + "…", val: Number(ans[i]) });
+          return acc;
+        }, []);
+        return { date: new Date(r.completed_at).toLocaleDateString("pt-BR", { day:"2-digit", month:"2-digit" }), ex: ex?.title || "", scaleAnswers, completedAt: r.completed_at };
+      });
+
+      // Weekly completion count
+      const now = new Date(); const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay());
+      const doneThisWeek = rList.filter(r => new Date(r.completed_at) >= startOfWeek).length;
+
+      setChartData({ responses: parsed, doneThisWeek, weeklyTarget: goal, totalDone: rList.length });
+    })();
+  }, [selPat]);
+
+  if (loading) return <div style={{ color:"var(--text-muted)", fontSize:14 }}>Carregando...</div>;
+
+  // build scale chart — avg scale value per response
+  const scalePoints = chartData.responses?.filter(r => r.scaleAnswers.length > 0).map(r => ({
+    date: r.date,
+    avg: Math.round(r.scaleAnswers.reduce((s, a) => s + a.val, 0) / r.scaleAnswers.length * 10) / 10,
+  }));
+
+  return (
+    <div style={{ animation:"fadeUp .4s ease" }}>
+      <div className="page-header"><h2>📈 Progresso dos Pacientes</h2><p>Acompanhe a evolução das respostas ao longo do tempo</p></div>
+
+      <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginBottom:24 }}>
+        {patients.map(p => (
+          <button key={p.id} onClick={() => setSelPat(p)} style={{ padding:"8px 16px", borderRadius:20, border:`2px solid ${selPat?.id===p.id?"var(--blue-dark)":"var(--warm)"}`, background: selPat?.id===p.id ? "rgba(23,82,124,0.07)" : "white", cursor:"pointer", fontFamily:"DM Sans,sans-serif", fontSize:13, fontWeight: selPat?.id===p.id ? 600 : 400, color: selPat?.id===p.id ? "var(--blue-dark)" : "var(--text-muted)" }}>
+            {p.name.split(" ")[0]}
+          </button>
+        ))}
+        {patients.length === 0 && <p style={{ color:"var(--text-muted)", fontSize:14 }}>Nenhum paciente ainda.</p>}
+      </div>
+
+      {selPat && chartData.responses && (
+        <div>
+          <div className="grid-3" style={{ marginBottom:20 }}>
+            <div className="stat-card"><div className="stat-icon">✅</div><div className="stat-val">{chartData.totalDone}</div><div className="stat-label">Exercícios concluídos</div></div>
+            <div className="stat-card"><div className="stat-icon">📅</div><div className="stat-val">{chartData.doneThisWeek}</div><div className="stat-label">Essa semana</div></div>
+            <div className="stat-card"><div className="stat-icon">🎯</div><div className="stat-val">{chartData.weeklyTarget ?? "—"}</div><div className="stat-label">Meta semanal</div></div>
+          </div>
+
+          {chartData.weeklyTarget && (
+            <div className="card" style={{ marginBottom:20 }}>
+              <h3 style={{ fontSize:15, marginBottom:12 }}>Meta semanal — {selPat.name.split(" ")[0]}</h3>
+              <WeekGoalBar done={chartData.doneThisWeek} target={chartData.weeklyTarget} />
+            </div>
+          )}
+
+          <div className="card">
+            <h3 style={{ fontSize:15, marginBottom:4 }}>Evolução das respostas de escala</h3>
+            <p style={{ fontSize:12, color:"var(--text-muted)", marginBottom:8 }}>Média das escalas (0–10) por exercício respondido</p>
+            {scalePoints && scalePoints.length >= 2 ? (
+              <MiniLineChart points={scalePoints.map(p => p.avg)} labels={scalePoints.map(p => p.date)} height={100} />
+            ) : (
+              <div className="empty-state" style={{ padding:"24px 0" }}><div className="empty-icon">📊</div><p style={{ fontSize:13 }}>Aguardando respostas com escala para gerar gráfico.</p></div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Notifications View ───────────────────────────────────────────────────────
+function NotificationsView({ session, onRead }) {
+  const [notifs, setNotifs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const n = await db.query("notifications", { filter: { therapist_id: session.id }, order: "created_at.desc" });
+      setNotifs(Array.isArray(n) ? n : []);
+      // mark all as read
+      const unread = (Array.isArray(n) ? n : []).filter(x => !x.read);
+      for (const notif of unread) await db.update("notifications", { id: notif.id }, { read: true });
+      onRead();
+      setLoading(false);
+    })();
+  }, [session.id]);
+
+  return (
+    <div style={{ animation:"fadeUp .4s ease", maxWidth:600 }}>
+      <div className="page-header"><h2>🔔 Notificações</h2><p>Atividades recentes dos seus pacientes</p></div>
+      {loading && <p style={{ color:"var(--text-muted)", fontSize:14 }}>Carregando...</p>}
+      {!loading && notifs.length === 0 && <div className="empty-state"><div className="empty-icon">🔕</div><p>Nenhuma notificação ainda.</p></div>}
+      {notifs.map(n => (
+        <div key={n.id} className="card" style={{ marginBottom:10, display:"flex", alignItems:"center", gap:14, opacity: n.read ? .65 : 1 }}>
+          <div style={{ fontSize:28 }}>✅</div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontWeight:500, fontSize:14 }}><strong>{n.patient_name}</strong> concluiu <em>{n.exercise_title}</em></div>
+            <div style={{ fontSize:11, color:"var(--text-muted)", marginTop:2 }}>{new Date(n.created_at).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" })}</div>
+          </div>
+          {!n.read && <span className="response-badge" style={{ background:"rgba(23,82,124,0.1)", color:"var(--blue-dark)" }}>Novo</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Patient Layout ───────────────────────────────────────────────────────────
 function PatientLayout({ session, setSession, view, setView }) {
   const [activeExercise, setActiveExercise] = useState(null);
@@ -987,7 +1276,7 @@ function PatientLayout({ session, setSession, view, setView }) {
   useEffect(() => {
     db.query("assignments", { filter: { patient_id: session.id, status: "pending" } })
       .then(r => setPendingCount(Array.isArray(r) ? r.length : 0));
-  }, [session.id]);
+  }, [session.id, view]);
 
   if (activeExercise) return (
     <div><style>{css}</style>
@@ -995,12 +1284,20 @@ function PatientLayout({ session, setSession, view, setView }) {
     </div>
   );
 
+  const patNav = [
+    { id: "home", icon: "🏠", label: "Início" },
+    { id: "exercises", icon: "📋", label: "Meus Exercícios" },
+    { id: "diary", icon: "📓", label: "Diário" },
+    { id: "progress", icon: "📊", label: "Meu Progresso" },
+    { id: "history", icon: "📖", label: "Histórico" },
+  ];
+
   return (
     <div className="layout">
       <aside className="sidebar patient-sidebar">
         <div className="sidebar-header"><div className="brand" style={{display:"flex",alignItems:"center",gap:8}}><img src={LOGO} alt="" style={{width:32,height:32,objectFit:"contain"}} /> Equilibre</div><div className="role">Área do Paciente</div></div>
         <nav>
-          {[{ id: "home", icon: "🏠", label: "Início" }, { id: "exercises", icon: "📋", label: "Meus Exercícios" }, { id: "history", icon: "📖", label: "Histórico" }].map(n => (
+          {patNav.map(n => (
             <button key={n.id} className={`nav-item ${view === n.id ? "active" : ""}`} onClick={() => setView(n.id)}>
               <span className="icon">{n.icon}</span>{n.label}
               {n.id === "exercises" && pendingCount > 0 && <span style={{ marginLeft: "auto", background: "var(--accent)", color: "white", borderRadius: 20, fontSize: 10, padding: "2px 7px" }}>{pendingCount}</span>}
@@ -1018,6 +1315,8 @@ function PatientLayout({ session, setSession, view, setView }) {
       <main className="main">
         {view === "home" && <PatientHome session={session} setView={setView} />}
         {view === "exercises" && <PatientExercises session={session} setActiveExercise={setActiveExercise} />}
+        {view === "diary" && <PatientDiary session={session} />}
+        {view === "progress" && <PatientProgress session={session} />}
         {view === "history" && <PatientHistory session={session} />}
       </main>
     </div>
@@ -1026,22 +1325,49 @@ function PatientLayout({ session, setSession, view, setView }) {
 
 function PatientHome({ session, setView }) {
   const [counts, setCounts] = useState({ pending: 0, done: 0 });
+  const [goal, setGoal] = useState(null);
+  const [doneThisWeek, setDoneThisWeek] = useState(0);
+  const [overdue, setOverdue] = useState(0);
+
   useEffect(() => {
     (async () => {
       const pending = await db.query("assignments", { filter: { patient_id: session.id, status: "pending" } });
       const done = await db.query("assignments", { filter: { patient_id: session.id, status: "done" } });
-      setCounts({ pending: Array.isArray(pending) ? pending.length : 0, done: Array.isArray(done) ? done.length : 0 });
+      const goals = await db.query("goals", { filter: { patient_id: session.id } });
+      const responses = await db.query("responses", { filter: { patient_id: session.id }, order: "completed_at.desc" });
+
+      const now = new Date(); const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay());
+      const doneList = Array.isArray(done) ? done : [];
+      const respList = Array.isArray(responses) ? responses : [];
+      const weekDone = respList.filter(r => new Date(r.completed_at) >= startOfWeek).length;
+      const pendList = Array.isArray(pending) ? pending : [];
+      const od = pendList.filter(a => a.due_date && new Date(a.due_date) < now).length;
+
+      setCounts({ pending: pendList.length, done: doneList.length });
+      const g = Array.isArray(goals) && goals.length > 0 ? goals[0] : null;
+      setGoal(g); setDoneThisWeek(weekDone); setOverdue(od);
     })();
   }, [session.id]);
+
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
       <div className="page-header"><h2>Olá, {session.name.split(" ")[0]} 🌱</h2><p>Como você está se sentindo hoje?</p></div>
-      <div className="grid-2" style={{ marginBottom: 24 }}>
+      <div className="grid-3" style={{ marginBottom: 20 }}>
         <div className="stat-card"><div className="stat-icon">⏳</div><div className="stat-val">{counts.pending}</div><div className="stat-label">Para fazer</div></div>
         <div className="stat-card"><div className="stat-icon">✅</div><div className="stat-val">{counts.done}</div><div className="stat-label">Concluídos</div></div>
+        {overdue > 0
+          ? <div className="stat-card" style={{ border:"1.5px solid #f6943b" }}><div className="stat-icon">⚠️</div><div className="stat-val" style={{ color:"var(--accent)" }}>{overdue}</div><div className="stat-label">Com prazo vencido</div></div>
+          : <div className="stat-card"><div className="stat-icon">📅</div><div className="stat-val" style={{ fontSize:22 }}>OK</div><div className="stat-label">Prazos em dia</div></div>}
       </div>
+
+      {goal && (
+        <div className="card" style={{ marginBottom:18 }}>
+          <WeekGoalBar done={doneThisWeek} target={goal.weekly_target} />
+        </div>
+      )}
+
       {counts.pending > 0
-        ? <div className="card" style={{ background: "linear-gradient(135deg,var(--sage-dark),var(--sage))", color: "white", cursor: "pointer" }} onClick={() => setView("exercises")}>
+        ? <div className="card" style={{ background: "linear-gradient(135deg,var(--blue-dark),var(--blue-mid))", color: "white", cursor: "pointer" }} onClick={() => setView("exercises")}>
             <div style={{ fontSize: 22, marginBottom: 7 }}>📋</div>
             <h3 style={{ fontSize: 17, marginBottom: 5 }}>Você tem {counts.pending} exercício{counts.pending > 1 ? "s" : ""} pendente{counts.pending > 1 ? "s" : ""}!</h3>
             <p style={{ opacity: .85, fontSize: 13 }}>Clique aqui para começar quando estiver pronto(a).</p>
@@ -1078,9 +1404,17 @@ function PatientExercises({ session, setActiveExercise }) {
         <span className="ex-cat">{ex.category}</span>
         <div className="ex-title">{ex.title}</div>
         <div className="ex-desc">{ex.description}</div>
-        <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap:"wrap", gap:6 }}>
           <span style={{ fontSize: 12, color: "var(--text-muted)" }}>📝 {qs.length} perguntas</span>
-          {isDone ? <span className="response-badge badge-done">✓ Concluído</span> : <button className="btn btn-sage btn-sm">Começar →</button>}
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            {!isDone && assign.due_date && (() => {
+              const days = Math.ceil((new Date(assign.due_date) - new Date()) / 86400000);
+              if (days < 0) return <span className="due-chip due-late">Prazo vencido</span>;
+              if (days <= 2) return <span className="due-chip due-warn">Vence em {days}d</span>;
+              return <span className="due-chip due-ok">📅 {new Date(assign.due_date).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})}</span>;
+            })()}
+            {isDone ? <span className="response-badge badge-done">✓ Concluído</span> : <button className="btn btn-sage btn-sm">Começar →</button>}
+          </div>
         </div>
       </div>
     );
@@ -1133,6 +1467,208 @@ function PatientHistory({ session }) {
   );
 }
 
+
+// ─── Patient Diary ────────────────────────────────────────────────────────────
+const MOODS = [
+  { val: 1, emoji: "😔", label: "Difícil" },
+  { val: 2, emoji: "😕", label: "Baixo" },
+  { val: 3, emoji: "😐", label: "Neutro" },
+  { val: 4, emoji: "🙂", label: "Bem" },
+  { val: 5, emoji: "😄", label: "Ótimo" },
+];
+
+function PatientDiary({ session }) {
+  const today = new Date().toISOString().split("T")[0];
+  const [entries, setEntries] = useState([]);
+  const [todayEntry, setTodayEntry] = useState(null);
+  const [mood, setMood] = useState(null);
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [reminder, setReminder] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const e = await db.query("diary_entries", { filter: { patient_id: session.id }, order: "date.desc" });
+      const list = Array.isArray(e) ? e : [];
+      setEntries(list);
+      const te = list.find(x => x.date === today);
+      if (te) { setTodayEntry(te); setMood(te.mood); setText(te.text || ""); }
+      // reminder pref
+      const u = await db.query("users", { filter: { id: session.id } });
+      if (Array.isArray(u) && u.length) setReminder(!!u[0].reminder_email);
+    })();
+  }, [session.id]);
+
+  const save = async () => {
+    setSaving(true);
+    if (todayEntry) {
+      await db.update("diary_entries", { id: todayEntry.id }, { mood, text, updated_at: new Date().toISOString() });
+    } else {
+      const entry = { id: "d"+Date.now(), patient_id: session.id, date: today, mood, text, created_at: new Date().toISOString() };
+      await db.insert("diary_entries", entry);
+      setTodayEntry(entry);
+      setEntries(prev => [entry, ...prev]);
+    }
+    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000);
+  };
+
+  const toggleReminder = async () => {
+    const newVal = !reminder; setReminder(newVal);
+    await db.update("users", { id: session.id }, { reminder_email: newVal });
+  };
+
+  return (
+    <div style={{ animation:"fadeUp .4s ease", maxWidth:640 }}>
+      <div className="page-header"><h2>📓 Diário Emocional</h2><p>Registre como você está se sentindo a cada dia</p></div>
+
+      {/* Reminder toggle */}
+      <div className="card" style={{ marginBottom:20 }}>
+        <div className="toggle-row">
+          <div>
+            <div style={{ fontWeight:500, fontSize:14 }}>⏰ Lembrete diário por e-mail</div>
+            <div style={{ fontSize:12, color:"var(--text-muted)", marginTop:2 }}>Receba um e-mail todo dia às 20h para registrar seu humor</div>
+          </div>
+          <button className={`toggle ${reminder ? "on" : "off"}`} onClick={toggleReminder} />
+        </div>
+      </div>
+
+      {/* Today's entry */}
+      <div className="card" style={{ marginBottom:20, border:"1.5px solid var(--blue-mid)" }}>
+        <h3 style={{ fontSize:15, marginBottom:14, color:"var(--blue-dark)" }}>
+          Como você está hoje? <span style={{ fontWeight:400, fontSize:13, color:"var(--text-muted)" }}>({new Date().toLocaleDateString("pt-BR", { weekday:"long", day:"numeric", month:"long" })})</span>
+        </h3>
+        <div style={{ display:"flex", gap:12, justifyContent:"center", marginBottom:18 }}>
+          {MOODS.map(m => (
+            <div key={m.val} style={{ textAlign:"center", cursor:"pointer" }} onClick={() => setMood(m.val)}>
+              <button className={`mood-btn ${mood === m.val ? "sel" : ""}`}>{m.emoji}</button>
+              <div style={{ fontSize:10, color:"var(--text-muted)", marginTop:4 }}>{m.label}</div>
+            </div>
+          ))}
+        </div>
+        <textarea
+          className="q-textarea"
+          placeholder="Como foi seu dia? O que você está sentindo? (opcional)"
+          value={text}
+          onChange={e => setText(e.target.value)}
+          style={{ minHeight:90 }}
+        />
+        {saved && <div className="success-banner" style={{ marginTop:10 }}>✅ Registro salvo!</div>}
+        <button className="btn btn-sage" style={{ marginTop:12, width:"100%" }} onClick={save} disabled={!mood || saving}>
+          {saving ? "Salvando..." : todayEntry ? "✏️ Atualizar registro" : "💾 Salvar registro de hoje"}
+        </button>
+      </div>
+
+      {/* Past entries */}
+      <h3 style={{ fontSize:15, marginBottom:12 }}>Registros anteriores</h3>
+      {entries.filter(e => e.date !== today).slice(0, 10).map(e => {
+        const m = MOODS.find(x => x.val === e.mood);
+        return (
+          <div key={e.id} className="card" style={{ marginBottom:10, display:"flex", gap:14, alignItems:"flex-start" }}>
+            <div style={{ fontSize:28 }}>{m?.emoji || "😐"}</div>
+            <div style={{ flex:1 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                <span style={{ fontWeight:500, fontSize:13 }}>{m?.label}</span>
+                <span style={{ fontSize:11, color:"var(--text-muted)" }}>{new Date(e.date).toLocaleDateString("pt-BR", { weekday:"short", day:"2-digit", month:"2-digit" })}</span>
+              </div>
+              {e.text && <p style={{ fontSize:13, color:"var(--text-muted)", lineHeight:1.5, margin:0 }}>{e.text}</p>}
+            </div>
+          </div>
+        );
+      })}
+      {entries.filter(e => e.date !== today).length === 0 && !todayEntry && (
+        <div className="empty-state"><div className="empty-icon">📖</div><p>Nenhum registro ainda. Comece hoje!</p></div>
+      )}
+    </div>
+  );
+}
+
+// ─── Patient Progress ─────────────────────────────────────────────────────────
+function PatientProgress({ session }) {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const responses = await db.query("responses", { filter: { patient_id: session.id }, order: "completed_at.asc" });
+      const exercises = await db.query("exercises");
+      const diary = await db.query("diary_entries", { filter: { patient_id: session.id }, order: "date.asc" });
+      const goals = await db.query("goals", { filter: { patient_id: session.id } });
+      const exList = Array.isArray(exercises) ? exercises : [];
+      const rList = Array.isArray(responses) ? responses : [];
+      const dList = Array.isArray(diary) ? diary : [];
+      const g = Array.isArray(goals) && goals.length > 0 ? goals[0] : null;
+
+      // scale chart
+      const scalePts = rList.map(r => {
+        const ex = exList.find(e => e.id === r.exercise_id);
+        const qs = ex ? (Array.isArray(ex.questions) ? ex.questions : JSON.parse(ex.questions || "[]")) : [];
+        const ans = Array.isArray(r.answers) ? r.answers : JSON.parse(r.answers || "[]");
+        const scVals = qs.reduce((acc, q, i) => q.type === "scale" && ans[i] !== "" ? [...acc, Number(ans[i])] : acc, []);
+        return scVals.length ? { date: new Date(r.completed_at).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}), avg: Math.round(scVals.reduce((a,b)=>a+b,0)/scVals.length*10)/10 } : null;
+      }).filter(Boolean);
+
+      // mood chart
+      const moodPts = dList.map(d => ({ date: new Date(d.date).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}), val: d.mood }));
+
+      // streak
+      const now = new Date(); let streak = 0;
+      for (let i = 0; i < 30; i++) {
+        const d = new Date(now); d.setDate(now.getDate() - i);
+        const ds = d.toISOString().split("T")[0];
+        if (dList.find(e => e.date === ds) || rList.find(r => r.completed_at?.startsWith(ds))) streak++;
+        else break;
+      }
+
+      // weekly done
+      const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay());
+      const weekDone = rList.filter(r => new Date(r.completed_at) >= startOfWeek).length;
+
+      setData({ scalePts, moodPts, streak, total: rList.length, diaryCount: dList.length, weekDone, goal: g });
+    })();
+  }, [session.id]);
+
+  if (!data) return <div style={{ color:"var(--text-muted)", fontSize:14 }}>Carregando...</div>;
+
+  return (
+    <div style={{ animation:"fadeUp .4s ease" }}>
+      <div className="page-header"><h2>📊 Meu Progresso</h2><p>Acompanhe sua evolução ao longo do tempo</p></div>
+
+      <div className="grid-3" style={{ marginBottom:20 }}>
+        <div className="stat-card"><div className="stat-icon">🔥</div><div className="stat-val">{data.streak}</div><div className="stat-label">Dias seguidos</div></div>
+        <div className="stat-card"><div className="stat-icon">✅</div><div className="stat-val">{data.total}</div><div className="stat-label">Exercícios feitos</div></div>
+        <div className="stat-card"><div className="stat-icon">📓</div><div className="stat-val">{data.diaryCount}</div><div className="stat-label">Registros no diário</div></div>
+      </div>
+
+      {data.goal && (
+        <div className="card" style={{ marginBottom:20 }}>
+          <h3 style={{ fontSize:15, marginBottom:12 }}>Meta desta semana</h3>
+          <WeekGoalBar done={data.weekDone} target={data.goal.weekly_target} />
+        </div>
+      )}
+
+      {data.scalePts.length >= 2 && (
+        <div className="card" style={{ marginBottom:20 }}>
+          <h3 style={{ fontSize:15, marginBottom:4 }}>Evolução das suas respostas de escala</h3>
+          <p style={{ fontSize:12, color:"var(--text-muted)", marginBottom:4 }}>Média das escalas (0–10) por exercício</p>
+          <MiniLineChart points={data.scalePts.map(p => p.avg)} labels={data.scalePts.map(p => p.date)} height={90} />
+        </div>
+      )}
+
+      {data.moodPts.length >= 2 && (
+        <div className="card">
+          <h3 style={{ fontSize:15, marginBottom:4 }}>Histórico do humor</h3>
+          <p style={{ fontSize:12, color:"var(--text-muted)", marginBottom:4 }}>Do diário emocional (1=difícil, 5=ótimo)</p>
+          <MiniLineChart points={data.moodPts.map(p => p.val)} labels={data.moodPts.map(p => p.date)} height={90} color="var(--orange)" />
+        </div>
+      )}
+
+      {data.scalePts.length < 2 && data.moodPts.length < 2 && (
+        <div className="card"><div className="empty-state"><div className="empty-icon">📈</div><p>Complete mais exercícios e registros no diário para ver seu progresso aqui.</p></div></div>
+      )}
+    </div>
+  );
+}
+
 // ─── Exercise Page ────────────────────────────────────────────────────────────
 function ExercisePage({ exercise, session, onBack }) {
   const questions = exercise.questions;
@@ -1150,6 +1686,10 @@ function ExercisePage({ exercise, session, onBack }) {
     setSaving(true);
     await db.insert("responses", { id: "r" + Date.now(), patient_id: session.id, exercise_id: exercise.id, completed_at: new Date().toISOString(), answers: JSON.stringify(answers) });
     await db.update("assignments", { patient_id: session.id, exercise_id: exercise.id }, { status: "done" });
+    // fire notification to therapist
+    if (session.therapist_id) {
+      await db.insert("notifications", { id: "n"+Date.now(), therapist_id: session.therapist_id, patient_id: session.id, patient_name: session.name, exercise_title: exercise.title, created_at: new Date().toISOString(), read: false });
+    }
     setSaving(false);
     setDone(true);
   };
