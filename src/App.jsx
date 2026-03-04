@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+
 const LOGO = 'data:image/jpeg;base64,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';
 
 // ─── Supabase client ──────────────────────────────────────────────────────────
@@ -39,11 +40,38 @@ const db = {
   },
 };
 
+// ─── Autenticação Segura ──────────────────────────────────────────────────────
+const auth = {
+  async signUp(email, password, metaData) {
+    const res = await fetch(`${SUPA_URL}/auth/v1/signup`, {
+      method: "POST",
+      headers: { apikey: SUPA_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, data: metaData }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.msg || err.message || "Erro ao criar conta");
+    }
+    return res.json();
+  },
+  async signIn(email, password) {
+    const res = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { apikey: SUPA_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+      throw new Error("E-mail ou senha incorretos");
+    }
+    return res.json();
+  }
+};
+
 
 // ─── Seed exercises ───────────────────────────────────────────────────────────
 const SEED_EXERCISES = [
   { id: "ex1", title: "Respiração 4-7-8", category: "Ansiedade", description: "Técnica de respiração para reduzir a ansiedade rapidamente.", questions: [{ id:"q1",type:"reflect",text:"Antes de começar: em uma palavra, como você está se sentindo agora?" },{ id:"q2",type:"instruction",text:"🌬️ Inspire pelo nariz contando até 4 — segure o ar contando até 7 — expire pela boca contando até 8. Repita 3 vezes." },{ id:"q3",type:"scale",text:"De 0 a 10, qual é o seu nível de ansiedade ANTES do exercício?" },{ id:"q4",type:"scale",text:"De 0 a 10, qual é o seu nível de ansiedade APÓS o exercício?" },{ id:"q5",type:"open",text:"O que você percebeu no seu corpo durante a respiração? Descreva livremente." }] },
-  { id: "ex2", title: "Registro de Pensamentos", category: "Ansiedade", description: "Identificar e questionar pensamentos automáticos negativos.", questions: [{ id:"q1",type:"open",text:"Descreva a situación que gerou ansiedade ou desconforto." },{ id:"q2",type:"open",text:"Que pensamento automático surgiu nesse momento?" },{ id:"q3",type:"scale",text:"Qual a intensidade desse sentimento de 0 a 10?" },{ id:"q4",type:"open",text:"Que evidências confirmam esse pensamento?" },{ id:"q5",type:"open",text:"Que evidências contradizem esse pensamento?" },{ id:"q6",type:"open",text:"Como você poderia pensar de forma mais equilibrada sobre essa situação?" }] },
+  { id: "ex2", title: "Registro de Pensamentos", category: "Ansiedade", description: "Identificar e questionar pensamentos automáticos negativos.", questions: [{ id:"q1",type:"open",text:"Descreva a situação que gerou ansiedade ou desconforto." },{ id:"q2",type:"open",text:"Que pensamento automático surgiu nesse momento?" },{ id:"q3",type:"scale",text:"Qual a intensidade desse sentimento de 0 a 10?" },{ id:"q4",type:"open",text:"Que evidências confirmam esse pensamento?" },{ id:"q5",type:"open",text:"Que evidências contradizem esse pensamento?" },{ id:"q6",type:"open",text:"Como você poderia pensar de forma mais equilibrada sobre essa situação?" }] },
   { id: "ex3", title: "Gratidão Diária", category: "Bem-estar", description: "Prática de foco no positivo para fortalecer o bem-estar emocional.", questions: [{ id:"q1",type:"open",text:"Liste 3 coisas pelas quais você é grato(a) hoje (podem ser pequenas)." },{ id:"q2",type:"open",text:"Qual dessas coisas te tocou mais profundamente? Por quê?" },{ id:"q3",type:"reflect",text:"Feche os olhos por 30 segundos e sinta essa gratidão no seu corpo. Onde você a percebe fisicamente?" },{ id:"q4",type:"open",text:"Como você poderia trazer mais momentos assim para a sua semana?" }] },
   { id: "ex4", title: "Escaneamento Corporal", category: "Mindfulness", description: "Atenção plena ao corpo para reduzir tensão e aumentar presença.", questions: [{ id:"q1",type:"instruction",text:"🧘 Deite-se ou sente-se confortavelmente. Feche os olhos. Comece percebendo seus pés — depois pernas, quadril, abdômen, peito, mãos, braços, ombros, pescoço e cabeça. Leve 3 minutos nesse percurso." },{ id:"q2",type:"open",text:"Em quais partes do corpo você sentiu mais tensão ou desconforto?" },{ id:"q3",type:"open",text:"Em quais partes você sentiu leveza ou relaxamento?" },{ id:"q4",type:"scale",text:"Como você avalia sua qualidade de presença durante o exercício? (0 = muito distraído, 10 = totalmente presente)" },{ id:"q5",type:"open",text:"O que esse exercício revelou sobre como você está carregando seu dia no corpo?" }] },
 ];
@@ -55,7 +83,6 @@ const css = `
   :root {
     --blue-dark: #17527c; --blue-mid: #86bcde; --blue-light: #b3d7ed;
     --yellow: #ffbd59; --orange: #f6943b;
-    /* semantic aliases */
     --sage-dark: #17527c; --sage: #86bcde; --sage-light: #b3d7ed;
     --accent: #f6943b; --accent-soft: #fff3dd;
     --cream: #f4f8fc; --warm: #deeaf5; --text: #1a2e3b; --text-muted: #6a8099;
@@ -81,8 +108,6 @@ const css = `
   .field input:focus { border-color:var(--sage); }
   .btn-primary { width:100%; padding:13px; border:none; border-radius:12px; background:var(--sage-dark); color:white; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:500; cursor:pointer; transition:all .2s; margin-top:6px; }
   .btn-primary:hover { background:var(--blue-mid); transform:translateY(-1px); box-shadow:0 6px 20px rgba(23,82,124,0.3); }
-  .hint { font-size:12px; color:var(--text-muted); text-align:center; margin-top:14px; }
-  .hint span { color:var(--sage-dark); font-weight:500; }
 
   /* Layout */
   .layout { display:flex; min-height:100vh; }
@@ -102,7 +127,7 @@ const css = `
   .user-info .email { font-size:10px; opacity:.5; }
   .logout-btn { background:none; border:none; color:rgba(255,255,255,0.45); cursor:pointer; font-size:17px; margin-left:auto; }
   .logout-btn:hover { color:white; }
-  .main { margin-left:250px; padding:38px; min-height:100vh; background:var(--cream); }
+  .main { margin-left:250px; padding:38px; min-height:100vh; background:var(--cream); width:100%; }
   .patient-sidebar { background:#0e3d5e; }
   .page-header { margin-bottom:28px; }
   .page-header h2 { font-size:26px; color:var(--text); }
@@ -135,8 +160,8 @@ const css = `
   .p-email { font-size:11px; color:var(--text-muted); }
 
   /* Modal */
-  .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px); animation:fadeIn .2s; }
-  .modal { background:var(--white); border-radius:20px; padding:30px; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; animation:fadeUp .25s ease; }
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px); animation:fadeIn .2s; overflow-y:auto; }
+  .modal { background:var(--white); border-radius:20px; padding:30px; width:100%; max-width:500px; animation:fadeUp .25s ease; }
   .modal h3 { font-family:'Playfair Display',serif; font-size:20px; margin-bottom:18px; }
   .btn { padding:9px 18px; border-radius:10px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; border:none; }
   .btn-outline { background:transparent; border:1.5px solid var(--warm); color:var(--text-muted); }
@@ -177,12 +202,10 @@ const css = `
   .badge-done { background:#d4edd9; color:#2d7a3a; }
   .badge-pending { background:var(--warm); color:var(--text-muted); }
 
-  /* Empty */
+  /* Utilities */
   .empty-state { text-align:center; padding:50px 20px; color:var(--text-muted); }
   .empty-state .empty-icon { font-size:44px; margin-bottom:14px; }
   .empty-state p { font-size:14px; }
-
-  /* Success banner */
   .success-banner { background:#d4edd9; color:#2d7a3a; border-radius:10px; padding:11px 14px; font-size:13px; margin-bottom:12px; text-align:center; }
   .error-msg { color:#c0544a; font-size:13px; margin-bottom:8px; }
 
@@ -193,7 +216,10 @@ const css = `
   @keyframes fadeUp { from{opacity:0;transform:translateY(14px);} to{opacity:1;transform:translateY(0);} }
   @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
 
-  /* Delete account modal */
+  /* Notification & Modals */
+  .notif-bell { position:relative; background:none; border:none; cursor:pointer; font-size:20px; color:rgba(255,255,255,0.7); padding:4px; }
+  .notif-bell:hover { color:white; }
+  .notif-dot { position:absolute; top:0; right:0; width:16px; height:16px; border-radius:50%; background:var(--accent); color:white; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; }
   .delete-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center; z-index:1000; animation:fadeIn .2s ease; }
   .delete-modal { background:white; border-radius:18px; padding:32px 28px; max-width:380px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.25); text-align:center; }
   .delete-icon { font-size:48px; margin-bottom:12px; }
@@ -205,30 +231,17 @@ const css = `
   .btn-danger:disabled { opacity:.45; cursor:not-allowed; }
   .btn-danger:hover:not(:disabled) { opacity:.88; }
 
-  /* Notification bell */
-  .notif-bell { position:relative; background:none; border:none; cursor:pointer; font-size:20px; color:rgba(255,255,255,0.7); padding:4px; }
-  .notif-bell:hover { color:white; }
-  .notif-dot { position:absolute; top:0; right:0; width:16px; height:16px; border-radius:50%; background:var(--accent); color:white; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; }
-
-  /* Charts */
+  /* Charts & Trackers */
   .chart-wrap { padding:12px 0 4px; }
   .chart-label-row { display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:4px; }
-
-  /* Diary */
   .mood-btn { width:44px; height:44px; border-radius:50%; border:2px solid var(--warm); background:transparent; font-size:22px; cursor:pointer; transition:all .15s; }
   .mood-btn.sel { border-color:var(--blue-dark); background:rgba(23,82,124,0.08); transform:scale(1.15); }
-
-  /* Goal bar */
   .goal-bar-bg { height:10px; background:var(--warm); border-radius:6px; overflow:hidden; margin:8px 0 4px; }
   .goal-bar-fill { height:100%; border-radius:6px; background:linear-gradient(90deg,var(--blue-dark),var(--blue-mid)); transition:width .6s ease; }
-
-  /* Due-date chip */
   .due-chip { display:inline-flex; align-items:center; gap:4px; font-size:10px; padding:2px 8px; border-radius:20px; font-weight:600; }
   .due-ok { background:#ddeaff; color:#17527c; }
   .due-warn { background:#fff3dd; color:#c07010; }
   .due-late { background:#fde8e8; color:#c0444a; }
-
-  /* Reminder toggle */
   .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--cream); border-radius:10px; }
   .toggle { width:40px; height:22px; border-radius:11px; cursor:pointer; border:none; position:relative; transition:background .2s; }
   .toggle::after { content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:white; transition:transform .2s; }
@@ -236,11 +249,23 @@ const css = `
   .toggle.on::after { transform:translateX(18px); }
   .toggle.off { background:var(--warm); }
 
+  /* 📱 RESPONSIVO (Melhoria para Celulares) */
   @media(max-width:768px){
-    .sidebar{width:100%;height:auto;position:relative;}
-    .main{margin-left:0;padding:20px;}
-    .grid-3{grid-template-columns:1fr;}
-    .grid-2{grid-template-columns:1fr;}
+    .layout { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; position: relative; z-index: 10; }
+    .sidebar-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 20px; }
+    .sidebar-header .role { margin-top: 0; }
+    .sidebar nav { display: flex; overflow-x: auto; padding: 10px 20px; white-space: nowrap; gap: 10px; }
+    .nav-item { width: auto; flex-shrink: 0; padding: 10px 14px; margin-bottom: 0; }
+    .sidebar-footer { padding: 15px 20px; }
+    .main { margin-left: 0; padding: 20px 15px; }
+    .grid-3 { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .stat-card { padding: 18px; }
+    .login-card { padding: 30px 24px; }
+    .modal { padding: 24px 20px; width: 95%; max-height: 85vh; }
+    .page-header h2 { font-size: 22px; }
+    .scale-btn { width: 40px; height: 40px; font-size: 13px; }
   }
 `;
 
@@ -257,14 +282,27 @@ export default function App() {
 
   const [ready, setReady] = useState(false);
   const [dbError, setDbError] = useState(false);
-  const [session, setSession] = useState(null);
   const [view, setView] = useState("dashboard");
   const [modal, setModal] = useState(null);
   const [loginTab, setLoginTab] = useState("therapist");
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [loginError, setLoginError] = useState("");
 
-  // Seed exercises if none exist
+  // Recuperar sessão do F5
+  const [session, setSession] = useState(() => {
+    try {
+      const saved = localStorage.getItem("equilibre_session");
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+
+  // Salvar sessão para não perder ao dar F5
+  useEffect(() => {
+    if (session) localStorage.setItem("equilibre_session", JSON.stringify(session));
+    else localStorage.removeItem("equilibre_session");
+  }, [session]);
+
+  // Seed exercises
   useEffect(() => {
     (async () => {
       try {
@@ -284,36 +322,56 @@ export default function App() {
 
   const handleLogin = async () => {
     setLoginError("");
-    const users = await db.query("users", { filter: { email: loginForm.email, role: loginTab } });
-    if (!Array.isArray(users) || users.length === 0 || users[0].password !== loginForm.password) {
-      setLoginError("E-mail ou senha incorretos."); return;
+    try {
+      const authData = await auth.signIn(loginForm.email, loginForm.password);
+      const users = await db.query("users", { filter: { id: authData.user.id } });
+      
+      if (!Array.isArray(users) || users.length === 0 || users[0].role !== loginTab) {
+        setLoginError("Conta não encontrada para este perfil.");
+        return;
+      }
+      
+      setSession({ ...users[0], access_token: authData.access_token });
+      setView(loginTab === "patient" ? "home" : "dashboard");
+    } catch (error) {
+      setLoginError(error.message);
     }
-    setSession(users[0]);
-    setView("dashboard");
   };
 
   const handleRegister = async (form) => {
     if (!form.name || !form.email || !form.password) return "Preencha todos os campos.";
     if (form.password !== form.confirm) return "As senhas não coincidem.";
     if (form.password.length < 6) return "A senha deve ter pelo menos 6 caracteres.";
-    const existing = await db.query("users", { filter: { email: form.email } });
-    if (Array.isArray(existing) && existing.length > 0) return "Este e-mail já está cadastrado.";
 
-    const newUser = { id: (form.role === "therapist" ? "t" : "p") + Date.now(), name: form.name, email: form.email, password: form.password, role: form.role };
+    let therapistId = null;
 
     if (form.role === "patient") {
       const code = form.inviteCode.trim().toUpperCase();
       const invites = await db.query("invites", { filter: { code } });
-      if (!Array.isArray(invites) || invites.length === 0) return "Código inválido. Verifique com sua psicóloga.";
+      if (!Array.isArray(invites) || invites.length === 0) return "Código inválido.";
       const invite = invites[0];
-      if (invite.status !== "pending") return "Este código já foi utilizado. Peça um novo à sua psicóloga.";
-      newUser.therapist_id = invite.therapist_id;
-      await db.update("invites", { code }, { status: "used", used_by: newUser.id, used_at: new Date().toISOString() });
+      if (invite.status !== "pending") return "Este código já foi utilizado.";
+      therapistId = invite.therapist_id;
     }
 
-    const result = await db.insert("users", newUser);
-    if (!Array.isArray(result) || result.length === 0) return "Erro ao criar conta. Tente novamente.";
-    return null;
+    try {
+      const authRes = await auth.signUp(form.email, form.password, { name: form.name, role: form.role });
+      const userId = authRes.user?.id || ("u" + Date.now());
+
+      const newUser = { id: userId, name: form.name, email: form.email, role: form.role, therapist_id: therapistId };
+      await db.insert("users", newUser);
+
+      if (form.role === "patient") {
+        await db.update(
+          "invites", 
+          { code: form.inviteCode.trim().toUpperCase() }, 
+          { status: "used", used_by: userId, used_at: new Date().toISOString() }
+        );
+      }
+      return null;
+    } catch (error) {
+      return error.message;
+    }
   };
 
   if (!ready) return <div className="spinner"><style>{css}</style><div className="spin" /><span>Conectando ao Equilibre...</span></div>;
@@ -344,7 +402,7 @@ function LoginPage({ tab, setTab, form, setForm, error, onLogin, onRegister, set
     if (!reg.email.trim()) { setRegError("Informe seu e-mail."); return; }
     if (reg.password.length < 6) { setRegError("A senha deve ter pelo menos 6 caracteres."); return; }
     if (reg.password !== reg.confirm) { setRegError("As senhas não coincidem."); return; }
-    if (reg.role === "patient" && !reg.inviteCode.trim()) { setRegError("Informe el código de convite."); return; }
+    if (reg.role === "patient" && !reg.inviteCode.trim()) { setRegError("Informe o código de convite."); return; }
     setLoading(true);
     const err = await onRegister(reg);
     setLoading(false);
@@ -356,7 +414,6 @@ function LoginPage({ tab, setTab, form, setForm, error, onLogin, onRegister, set
 
   return (
     <div className="login-bg">
-      <style>{css}</style>
       <div className="login-card">
         <div className="login-logo">
           <img src={LOGO} alt="Equilibre" style={{width:72,height:72,objectFit:"contain",marginBottom:2}} />
@@ -425,7 +482,6 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
   const handleDelete = async () => {
     setError(""); setLoading(true);
     try {
-      // Remove all user data
       const assignments = await db.query("assignments", { filter: { patient_id: session.id } });
       if (Array.isArray(assignments)) for (const a of assignments) await db.remove("assignments", { id: a.id });
       const responses = await db.query("responses", { filter: { patient_id: session.id } });
@@ -438,9 +494,8 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
       if (Array.isArray(notifs)) for (const n of notifs) await db.remove("notifications", { id: n.id });
       const goals = await db.query("goals", { filter: { patient_id: session.id } });
       if (Array.isArray(goals)) for (const g of goals) await db.remove("goals", { id: g.id });
-      // Delete user record
+      
       await db.remove("users", { id: session.id });
-      // Delete Supabase auth user
       await fetch(`${SUPA_URL}/auth/v1/user`, {
         method: "DELETE",
         headers: { apikey: SUPA_KEY, Authorization: `Bearer ${session.access_token}` },
@@ -458,7 +513,7 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
         <div className="delete-icon">⚠️</div>
         <div className="delete-title">Excluir conta</div>
         <div className="delete-desc">
-          Esta acción es <strong>permanente e irreversible</strong>. Todos os seus dados — exercícios, respostas, diário e histórico — serão apagados para sempre.<br /><br />
+          Esta ação é <strong>permanente e irreversível</strong>. Todos os seus dados serão apagados para sempre.<br /><br />
           Digite <strong>{KEYWORD}</strong> para confirmar:
         </div>
         <input
@@ -501,7 +556,7 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
     <div className="layout">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%" }}>
             <div className="brand" style={{display:"flex",alignItems:"center",gap:8}}><img src={LOGO} alt="" style={{width:32,height:32,objectFit:"contain"}} /> Equilibre</div>
             <button className="notif-bell" onClick={() => setView("notifications")} title="Notificações">
               🔔{unread > 0 && <span className="notif-dot">{unread > 9 ? "9+" : unread}</span>}
@@ -548,7 +603,7 @@ function TherapistDashboard({ session, setView }) {
 
   useEffect(() => {
     (async () => {
-      const patients = await db.query("users", { filter: { therapist_id: session.id, role: "patient" } });
+      const patients = await db.query("users", { select: "id, name, email", filter: { therapist_id: session.id, role: "patient" } });
       const pIds = (Array.isArray(patients) ? patients : []).map(p => p.id);
       let allAssign = [];
       for (const pid of pIds) {
@@ -598,7 +653,7 @@ function PatientsView({ session, setModal }) {
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
-    const p = await db.query("users", { filter: { therapist_id: session.id, role: "patient" } });
+    const p = await db.query("users", { select: "id, name, email", filter: { therapist_id: session.id, role: "patient" } });
     const inv = await db.query("invites", { filter: { therapist_id: session.id }, order: "created_at.desc" });
     setPatients(Array.isArray(p) ? p : []);
     setInvites(Array.isArray(inv) ? inv : []);
@@ -653,7 +708,7 @@ function PatientsView({ session, setModal }) {
 
 function InviteCodeCard({ invite, onRevoke }) {
   const [copied, setCopied] = useState(false);
-  const msg = `Olá! Sua psicóloga criou um acesso exclusivo para você no *Equilibre*.\n\n1. Abra o app\n2. Clique em "Criar conta" → "Sou Paciente"\n3. Use o código: *${invite.code}*\n\n⚠️ Código pessoal e de uso único. 🌿`;
+  const msg = `Olá! Sua psicóloga criou um acesso exclusivo para você no *Equilibre*.\n\n1. Acesse o site: https://equilibreapp.vercel.app/\n2. Clique em "Criar conta" → "Sou Paciente"\n3. Use o código: *${invite.code}*\n\n⚠️ Código pessoal e de uso único. 🌿`;
   const copy = () => { navigator.clipboard.writeText(invite.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); };
   const whatsapp = () => window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
 
@@ -693,7 +748,7 @@ function ExercisesView({ session }) {
   const catClass = c => c === "Mindfulness" ? "mindfulness" : c === "Bem-estar" ? "bem-estar" : "";
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
-      <div className="page-header"><h2>Biblioteca de Exercícios</h2><p>Exercícios disponibles para atribuir aos pacientes</p></div>
+      <div className="page-header"><h2>Biblioteca de Exercícios</h2><p>Exercícios disponíveis para atribuir aos pacientes</p></div>
       <div className="grid-auto">
         {exercises.map(ex => (
           <div key={ex.id} className="ex-card">
@@ -720,7 +775,7 @@ function ResponsesView({ session }) {
 
   useEffect(() => {
     (async () => {
-      const p = await db.query("users", { filter: { therapist_id: session.id, role: "patient" } });
+      const p = await db.query("users", { select: "id, name", filter: { therapist_id: session.id, role: "patient" } });
       const ex = await db.query("exercises");
       const pList = Array.isArray(p) ? p : [];
       let allResp = [];
@@ -750,7 +805,7 @@ function ResponsesView({ session }) {
         </div>
         <div>
           {loading && <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Carregando...</p>}
-          {!loading && filtered.length === 0 && <div className="empty-state"><div className="empty-icon">📭</div><p>Nenhuma respuesta ainda.</p></div>}
+          {!loading && filtered.length === 0 && <div className="empty-state"><div className="empty-icon">📭</div><p>Nenhuma resposta ainda.</p></div>}
           {filtered.map(r => {
             const patient = patients.find(p => p.id === r.patient_id);
             const exercise = exercises.find(e => e.id === r.exercise_id);
@@ -982,7 +1037,7 @@ function CreateExerciseView({ session, onSaved }) {
         </div>
         <div>
           <label style={labelStyle}>Descrição breve</label>
-          <textarea style={{...fieldStyle, minHeight:70, resize:"vertical"}} value={form.description} onChange={e => setForm(f => ({...f, description:e.target.value}))} placeholder="O que este exercício trabaja?" />
+          <textarea style={{...fieldStyle, minHeight:70, resize:"vertical"}} value={form.description} onChange={e => setForm(f => ({...f, description:e.target.value}))} placeholder="O que este exercício trabalha?" />
         </div>
       </div>
 
@@ -1018,7 +1073,7 @@ function CreateExerciseView({ session, onSaved }) {
           </div>
         ))}
 
-        <button className="btn btn-outline" style={{ width:"100%", marginTop:6, borderStyle:"dashed" }} onClick={addQ}>+ Adicionar otra pergunta</button>
+        <button className="btn btn-outline" style={{ width:"100%", marginTop:6, borderStyle:"dashed" }} onClick={addQ}>+ Adicionar outra pergunta</button>
       </div>
 
       <div style={{ display:"flex", gap:12, justifyContent:"flex-end" }}>
@@ -1099,7 +1154,7 @@ function TherapistProgress({ session }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    db.query("users", { filter: { therapist_id: session.id, role: "patient" } })
+    db.query("users", { select: "id, name", filter: { therapist_id: session.id, role: "patient" } })
       .then(r => { const p = Array.isArray(r) ? r : []; setPatients(p); if (p.length) setSelPat(p[0]); setLoading(false); });
   }, [session.id]);
 
@@ -1113,7 +1168,6 @@ function TherapistProgress({ session }) {
       const rList = Array.isArray(responses) ? responses : [];
       const goal = Array.isArray(goals) && goals.length > 0 ? goals[0].weekly_target : null;
 
-      // Extract scale answers per response
       const parsed = rList.map(r => {
         const ex = exList.find(e => e.id === r.exercise_id);
         const qs = ex ? (Array.isArray(ex.questions) ? ex.questions : JSON.parse(ex.questions || "[]")) : [];
@@ -1125,7 +1179,6 @@ function TherapistProgress({ session }) {
         return { date: new Date(r.completed_at).toLocaleDateString("pt-BR", { day:"2-digit", month:"2-digit" }), ex: ex?.title || "", scaleAnswers, completedAt: r.completed_at };
       });
 
-      // Weekly completion count
       const now = new Date(); const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay());
       const doneThisWeek = rList.filter(r => new Date(r.completed_at) >= startOfWeek).length;
 
@@ -1135,7 +1188,6 @@ function TherapistProgress({ session }) {
 
   if (loading) return <div style={{ color:"var(--text-muted)", fontSize:14 }}>Carregando...</div>;
 
-  // build scale chart — avg scale value per response
   const scalePoints = chartData.responses?.filter(r => r.scaleAnswers.length > 0).map(r => ({
     date: r.date,
     avg: Math.round(r.scaleAnswers.reduce((s, a) => s + a.val, 0) / r.scaleAnswers.length * 10) / 10,
@@ -1143,7 +1195,7 @@ function TherapistProgress({ session }) {
 
   return (
     <div style={{ animation:"fadeUp .4s ease" }}>
-      <div className="page-header"><h2>📈 Progresso dos Pacientes</h2><p>Acompanhe a evolución das respostas ao longo do tempo</p></div>
+      <div className="page-header"><h2>📈 Progresso dos Pacientes</h2><p>Acompanhe a evolução das respostas ao longo do tempo</p></div>
 
       <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginBottom:24 }}>
         {patients.map(p => (
@@ -1175,7 +1227,7 @@ function TherapistProgress({ session }) {
             {scalePoints && scalePoints.length >= 2 ? (
               <MiniLineChart points={scalePoints.map(p => p.avg)} labels={scalePoints.map(p => p.date)} height={100} />
             ) : (
-              <div className="empty-state" style={{ padding:"24px 0" }}><div className="empty-icon">📊</div><p style={{ fontSize:13 }}>Aguardando respostas con escala para generar gráfico.</p></div>
+              <div className="empty-state" style={{ padding:"24px 0" }}><div className="empty-icon">📊</div><p style={{ fontSize:13 }}>Aguardando respostas com escala para gerar gráfico.</p></div>
             )}
           </div>
         </div>
@@ -1203,7 +1255,7 @@ function NotificationsView({ session, onRead }) {
 
   return (
     <div style={{ animation:"fadeUp .4s ease", maxWidth:600 }}>
-      <div className="page-header"><h2>🔔 Notificações</h2><p>Atividades recientes dos seus pacientes</p></div>
+      <div className="page-header"><h2>🔔 Notificações</h2><p>Atividades recentes dos seus pacientes</p></div>
       {loading && <p style={{ color:"var(--text-muted)", fontSize:14 }}>Carregando...</p>}
       {!loading && notifs.length === 0 && <div className="empty-state"><div className="empty-icon">🔕</div><p>Nenhuma notificação ainda.</p></div>}
       {notifs.map(n => (
@@ -1226,15 +1278,16 @@ function PatientLayout({ session, setSession, view, setView }) {
   const [activeExercise, setActiveExercise] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
 
+  // Polling para o badge de pendências
   useEffect(() => {
     const fetchPending = async () => {
       const r = await db.query("assignments", { filter: { patient_id: session.id, status: "pending" } });
       setPendingCount(Array.isArray(r) ? r.length : 0);
     };
-    fetchPending();
-    const intId = setInterval(fetchPending, 5000);
+    fetchPending(); // Carga imediata
+    const intId = setInterval(fetchPending, 3000); // Polling a cada 3s para o emblema lateral atualizar
     return () => clearInterval(intId);
-  }, [session.id, view]);
+  }, [session.id]);
 
   if (activeExercise) return (
     <div><style>{css}</style>
@@ -1253,7 +1306,10 @@ function PatientLayout({ session, setSession, view, setView }) {
   return (
     <div className="layout">
       <aside className="sidebar patient-sidebar">
-        <div className="sidebar-header"><div className="brand" style={{display:"flex",alignItems:"center",gap:8}}><img src={LOGO} alt="" style={{width:32,height:32,objectFit:"contain"}} /> Equilibre</div><div className="role">Área do Paciente</div></div>
+        <div className="sidebar-header">
+          <div className="brand" style={{display:"flex",alignItems:"center",gap:8}}><img src={LOGO} alt="" style={{width:32,height:32,objectFit:"contain"}} /> Equilibre</div>
+          <div className="role">Área do Paciente</div>
+        </div>
         <nav>
           {patNav.map(n => (
             <button key={n.id} className={`nav-item ${view === n.id ? "active" : ""}`} onClick={() => setView(n.id)}>
@@ -1291,6 +1347,7 @@ function PatientHome({ session, setView }) {
   const [doneThisWeek, setDoneThisWeek] = useState(0);
   const [overdue, setOverdue] = useState(0);
 
+  // Polling para Dashboard atualizar automaticamente
   useEffect(() => {
     const fetchDashboardData = async () => {
       const pending = await db.query("assignments", { filter: { patient_id: session.id, status: "pending" } });
@@ -1309,8 +1366,9 @@ function PatientHome({ session, setView }) {
       const g = Array.isArray(goals) && goals.length > 0 ? goals[0] : null;
       setGoal(g); setDoneThisWeek(weekDone); setOverdue(od);
     };
+
     fetchDashboardData();
-    const intId = setInterval(fetchDashboardData, 5000);
+    const intId = setInterval(fetchDashboardData, 3000); // Atualiza a cada 3s
     return () => clearInterval(intId);
   }, [session.id]);
 
@@ -1347,6 +1405,7 @@ function PatientExercises({ session, setActiveExercise }) {
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Polling para a Lista de Exercícios atualizar automaticamente
   useEffect(() => {
     const fetchAssignments = async () => {
       const a = await db.query("assignments", { filter: { patient_id: session.id } });
@@ -1355,8 +1414,9 @@ function PatientExercises({ session, setActiveExercise }) {
       setExercises(Array.isArray(ex) ? ex : []);
       setLoading(false);
     };
+
     fetchAssignments();
-    const intId = setInterval(fetchAssignments, 5000);
+    const intId = setInterval(fetchAssignments, 3000); // Atualiza a cada 3s
     return () => clearInterval(intId);
   }, [session.id]);
 
@@ -1435,7 +1495,6 @@ function PatientHistory({ session }) {
   );
 }
 
-
 // ─── Patient Diary ────────────────────────────────────────────────────────────
 const MOODS = [
   { val: 1, emoji: "😔", label: "Difícil" },
@@ -1490,7 +1549,6 @@ function PatientDiary({ session }) {
     <div style={{ animation:"fadeUp .4s ease", maxWidth:640 }}>
       <div className="page-header"><h2>📓 Diário Emocional</h2><p>Registre como você está se sentindo a cada dia</p></div>
 
-      {/* Reminder toggle */}
       <div className="card" style={{ marginBottom:20 }}>
         <div className="toggle-row">
           <div>
@@ -1501,7 +1559,6 @@ function PatientDiary({ session }) {
         </div>
       </div>
 
-      {/* Today's entry */}
       <div className="card" style={{ marginBottom:20, border:"1.5px solid var(--blue-mid)" }}>
         <h3 style={{ fontSize:15, marginBottom:14, color:"var(--blue-dark)" }}>
           Como você está hoje? <span style={{ fontWeight:400, fontSize:13, color:"var(--text-muted)" }}>({new Date().toLocaleDateString("pt-BR", { weekday:"long", day:"numeric", month:"long" })})</span>
@@ -1527,7 +1584,6 @@ function PatientDiary({ session }) {
         </button>
       </div>
 
-      {/* Past entries */}
       <h3 style={{ fontSize:15, marginBottom:12 }}>Registros anteriores</h3>
       {entries.filter(e => e.date !== today).slice(0, 10).map(e => {
         const m = MOODS.find(x => x.val === e.mood);
@@ -1566,7 +1622,6 @@ function PatientProgress({ session }) {
       const dList = Array.isArray(diary) ? diary : [];
       const g = Array.isArray(goals) && goals.length > 0 ? goals[0] : null;
 
-      // scale chart
       const scalePts = rList.map(r => {
         const ex = exList.find(e => e.id === r.exercise_id);
         const qs = ex ? (Array.isArray(ex.questions) ? ex.questions : JSON.parse(ex.questions || "[]")) : [];
@@ -1575,10 +1630,8 @@ function PatientProgress({ session }) {
         return scVals.length ? { date: new Date(r.completed_at).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}), avg: Math.round(scVals.reduce((a,b)=>a+b,0)/scVals.length*10)/10 } : null;
       }).filter(Boolean);
 
-      // mood chart
       const moodPts = dList.map(d => ({ date: new Date(d.date).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}), val: d.mood }));
 
-      // streak
       const now = new Date(); let streak = 0;
       for (let i = 0; i < 30; i++) {
         const d = new Date(now); d.setDate(now.getDate() - i);
@@ -1587,7 +1640,6 @@ function PatientProgress({ session }) {
         else break;
       }
 
-      // weekly done
       const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay());
       const weekDone = rList.filter(r => new Date(r.completed_at) >= startOfWeek).length;
 
@@ -1654,7 +1706,6 @@ function ExercisePage({ exercise, session, onBack }) {
     setSaving(true);
     await db.insert("responses", { id: "r" + Date.now(), patient_id: session.id, exercise_id: exercise.id, completed_at: new Date().toISOString(), answers: JSON.stringify(answers) });
     await db.update("assignments", { patient_id: session.id, exercise_id: exercise.id }, { status: "done" });
-    // fire notification to therapist
     if (session.therapist_id) {
       await db.insert("notifications", { id: "n"+Date.now(), therapist_id: session.therapist_id, patient_id: session.id, patient_name: session.name, exercise_title: exercise.title, created_at: new Date().toISOString(), read: false });
     }
