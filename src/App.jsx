@@ -363,75 +363,26 @@ export default function App() {
 // ─── Login / Register ─────────────────────────────────────────────────────────
 function LoginPage({ tab, setTab, form, setForm, error, onLogin, onRegister, setLoginError }) {
   const [mode, setMode] = useState("login");
-  const [step, setStep] = useState("form"); // "form" | "otp"
   const [reg, setReg] = useState({ name: "", email: "", password: "", confirm: "", inviteCode: "", role: "therapist" });
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [otpError, setOtpError] = useState("");
   const [regError, setRegError] = useState("");
   const [regSuccess, setRegSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
 
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const t = setTimeout(() => setResendCooldown(c => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendCooldown]);
-
-  const handleSendOtp = async () => {
+  const handleReg = async () => {
     setRegError("");
     if (!reg.name.trim()) { setRegError("Informe seu nome."); return; }
     if (!reg.email.trim()) { setRegError("Informe seu e-mail."); return; }
     if (reg.password.length < 6) { setRegError("A senha deve ter pelo menos 6 caracteres."); return; }
     if (reg.password !== reg.confirm) { setRegError("As senhas não coincidem."); return; }
     if (reg.role === "patient" && !reg.inviteCode.trim()) { setRegError("Informe o código de convite."); return; }
-    const existing = await db.query("users", { filter: { email: reg.email } });
-    if (Array.isArray(existing) && existing.length > 0) { setRegError("Este e-mail já está cadastrado."); return; }
     setLoading(true);
-    try {
-      await emailOtp.send(reg.email);
-      setStep("otp");
-      setResendCooldown(60);
-      setOtp(["", "", "", "", "", ""]);
-    } catch (e) {
-      setRegError(e.message || "Não foi possível enviar o e-mail. Tente novamente.");
-    }
+    const err = await onRegister(reg);
     setLoading(false);
+    if (err) { setRegError(err); return; }
+    setRegSuccess("Conta criada com sucesso! Faça login.");
+    setMode("login"); setTab(reg.role);
+    setReg({ name: "", email: "", password: "", confirm: "", inviteCode: "", role: "therapist" });
   };
-
-  const handleVerifyOtp = async () => {
-    const code = otp.join("");
-    if (code.length < 6) { setOtpError("Digite todos os 6 dígitos."); return; }
-    setOtpError(""); setLoading(true);
-    try {
-      await emailOtp.verify(reg.email, code);
-      const err = await onRegister(reg);
-      if (err) { setOtpError(err); setLoading(false); return; }
-      setRegSuccess("Conta criada com sucesso! Faça login.");
-      setMode("login"); setTab(reg.role); setStep("form");
-      setReg({ name: "", email: "", password: "", confirm: "", inviteCode: "", role: "therapist" });
-    } catch (e) {
-      setOtpError(e.message || "Código inválido ou expirado.");
-    }
-    setLoading(false);
-  };
-
-  const handleOtpInput = (i, val) => {
-    if (!/^\d*$/.test(val)) return;
-    const next = [...otp]; next[i] = val.slice(-1); setOtp(next);
-    if (val && i < 5) document.getElementById(`otp-${i+1}`)?.focus();
-  };
-  const handleOtpKey = (i, e) => {
-    if (e.key === "Backspace" && !otp[i] && i > 0) document.getElementById(`otp-${i-1}`)?.focus();
-    if (e.key === "Enter") handleVerifyOtp();
-  };
-  const handleOtpPaste = (e) => {
-    const paste = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-    if (paste.length === 6) { setOtp(paste.split("")); document.getElementById("otp-5")?.focus(); }
-    e.preventDefault();
-  };
-
-  const resetToForm = () => { setStep("form"); setOtpError(""); setOtp(["","","","","",""]); setResendCooldown(0); };
 
   return (
     <div className="login-bg">
@@ -443,111 +394,49 @@ function LoginPage({ tab, setTab, form, setForm, error, onLogin, onRegister, set
           <p>Exercícios terapêuticos personalizados</p>
         </div>
 
-        {/* ── OTP STEP ── */}
-        {mode === "register" && step === "otp" && (
-          <div style={{ animation: "fadeUp .3s ease" }}>
-            <div style={{ textAlign: "center", marginBottom: 22 }}>
-              <div style={{ fontSize: 42, marginBottom: 8 }}>✉️</div>
-              <h3 style={{ fontFamily: "Playfair Display, serif", fontSize: 20, marginBottom: 8 }}>Verifique seu e-mail</h3>
-              <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.65 }}>
-                Enviamos um código de 6 dígitos para<br />
-                <strong style={{ color: "var(--blue-dark)" }}>{reg.email}</strong>
-              </p>
-              <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6 }}>Verifique também a pasta de spam.</p>
-            </div>
+        <div className="tab-switch">
+          <button className={mode === "login" ? "active" : ""} onClick={() => { setMode("login"); setRegError(""); setLoginError(""); }}>Entrar</button>
+          <button className={mode === "register" ? "active" : ""} onClick={() => { setMode("register"); setRegError(""); setLoginError(""); }}>Criar conta</button>
+        </div>
 
-            <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 20 }} onPaste={handleOtpPaste}>
-              {otp.map((digit, i) => (
-                <input
-                  key={i}
-                  id={`otp-${i}`}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  autoFocus={i === 0}
-                  onChange={e => handleOtpInput(i, e.target.value)}
-                  onKeyDown={e => handleOtpKey(i, e)}
-                  style={{
-                    width: 46, height: 56, textAlign: "center", fontSize: 24, fontWeight: 700,
-                    border: `2px solid ${digit ? "var(--blue-dark)" : "var(--warm)"}`,
-                    borderRadius: 12, background: digit ? "rgba(23,82,124,0.06)" : "var(--cream)",
-                    color: "var(--blue-dark)", outline: "none", fontFamily: "monospace",
-                    transition: "all .15s",
-                  }}
-                />
-              ))}
+        {mode === "login" && (
+          <>
+            <div className="tab-switch" style={{ marginBottom: 18 }}>
+              <button className={tab === "therapist" ? "active" : ""} onClick={() => setTab("therapist")}>Psicóloga</button>
+              <button className={tab === "patient" ? "active" : ""} onClick={() => setTab("patient")}>Paciente</button>
             </div>
-
-            {otpError && <p className="error-msg" style={{ textAlign: "center" }}>{otpError}</p>}
-
-            <button className="btn-primary" onClick={handleVerifyOtp} disabled={loading} style={{ marginBottom: 14 }}>
-              {loading ? "Verificando..." : "✓ Confirmar código"}
-            </button>
-
-            <div style={{ textAlign: "center", fontSize: 13, color: "var(--text-muted)", marginBottom: 10 }}>
-              {resendCooldown > 0
-                ? <span>Reenviar em <strong style={{ color: "var(--blue-dark)" }}>{resendCooldown}s</strong></span>
-                : <span>Não recebeu? <span
-                    style={{ color: "var(--blue-dark)", cursor: "pointer", fontWeight: 600, textDecoration: "underline" }}
-                    onClick={async () => { try { await emailOtp.send(reg.email); setResendCooldown(60); setOtpError(""); } catch(e){ setOtpError(e.message); } }}
-                  >Reenviar e-mail</span></span>
-              }
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <span style={{ fontSize: 12, color: "var(--text-muted)", cursor: "pointer" }} onClick={resetToForm}>← Voltar e editar dados</span>
-            </div>
-          </div>
+            {regSuccess && <div className="success-banner">✅ {regSuccess}</div>}
+            <div className="field"><label>E-mail</label><input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="seu@email.com" /></div>
+            <div className="field"><label>Senha</label><input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••" onKeyDown={e => e.key === "Enter" && onLogin()} /></div>
+            {error && <p className="error-msg">{error}</p>}
+            <button className="btn-primary" onClick={onLogin}>Entrar</button>
+          </>
         )}
 
-        {/* ── FORM STEP ── */}
-        {!(mode === "register" && step === "otp") && (
+        {mode === "register" && (
           <>
-            <div className="tab-switch">
-              <button className={mode === "login" ? "active" : ""} onClick={() => { setMode("login"); setRegError(""); setLoginError(""); setStep("form"); }}>Entrar</button>
-              <button className={mode === "register" ? "active" : ""} onClick={() => { setMode("register"); setRegError(""); setLoginError(""); setStep("form"); }}>Criar conta</button>
+            <div className="tab-switch" style={{ marginBottom: 18 }}>
+              <button className={reg.role === "therapist" ? "active" : ""} onClick={() => setReg(r => ({ ...r, role: "therapist" }))}>Sou Psicóloga</button>
+              <button className={reg.role === "patient" ? "active" : ""} onClick={() => setReg(r => ({ ...r, role: "patient" }))}>Sou Paciente</button>
             </div>
-
-            {mode === "login" && (
-              <>
-                <div className="tab-switch" style={{ marginBottom: 18 }}>
-                  <button className={tab === "therapist" ? "active" : ""} onClick={() => setTab("therapist")}>Psicóloga</button>
-                  <button className={tab === "patient" ? "active" : ""} onClick={() => setTab("patient")}>Paciente</button>
-                </div>
-                {regSuccess && <div className="success-banner">✅ {regSuccess}</div>}
-                <div className="field"><label>E-mail</label><input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="seu@email.com" /></div>
-                <div className="field"><label>Senha</label><input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••" onKeyDown={e => e.key === "Enter" && onLogin()} /></div>
-                {error && <p className="error-msg">{error}</p>}
-                <button className="btn-primary" onClick={onLogin}>Entrar</button>
-              </>
+            <div className="field"><label>Nome completo</label><input value={reg.name} onChange={e => setReg(r => ({ ...r, name: e.target.value }))} placeholder="Seu nome" /></div>
+            <div className="field"><label>E-mail</label><input type="email" value={reg.email} onChange={e => setReg(r => ({ ...r, email: e.target.value }))} placeholder="seu@email.com" /></div>
+            <div className="field"><label>Senha</label><input type="password" value={reg.password} onChange={e => setReg(r => ({ ...r, password: e.target.value }))} placeholder="Mínimo 6 caracteres" /></div>
+            <div className="field"><label>Confirmar senha</label><input type="password" value={reg.confirm} onChange={e => setReg(r => ({ ...r, confirm: e.target.value }))} placeholder="Repita a senha" onKeyDown={e => e.key === "Enter" && handleReg()} /></div>
+            {reg.role === "patient" && (
+              <div className="field">
+                <label>Código de convite</label>
+                <input value={reg.inviteCode} onChange={e => setReg(r => ({ ...r, inviteCode: e.target.value.toUpperCase() }))} placeholder="Ex: AB3X9K7" style={{ fontFamily: "monospace", fontSize: 18, letterSpacing: ".12em" }} maxLength={8} />
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Código único enviado pela sua psicóloga.</div>
+              </div>
             )}
-
-            {mode === "register" && step === "form" && (
-              <>
-                <div className="tab-switch" style={{ marginBottom: 18 }}>
-                  <button className={reg.role === "therapist" ? "active" : ""} onClick={() => setReg(r => ({ ...r, role: "therapist" }))}>Sou Psicóloga</button>
-                  <button className={reg.role === "patient" ? "active" : ""} onClick={() => setReg(r => ({ ...r, role: "patient" }))}>Sou Paciente</button>
-                </div>
-                <div className="field"><label>Nome completo</label><input value={reg.name} onChange={e => setReg(r => ({ ...r, name: e.target.value }))} placeholder="Seu nome" /></div>
-                <div className="field"><label>E-mail</label><input type="email" value={reg.email} onChange={e => setReg(r => ({ ...r, email: e.target.value }))} placeholder="seu@email.com" /></div>
-                <div className="field"><label>Senha</label><input type="password" value={reg.password} onChange={e => setReg(r => ({ ...r, password: e.target.value }))} placeholder="Mínimo 6 caracteres" /></div>
-                <div className="field"><label>Confirmar senha</label><input type="password" value={reg.confirm} onChange={e => setReg(r => ({ ...r, confirm: e.target.value }))} placeholder="Repita a senha" onKeyDown={e => e.key === "Enter" && handleSendOtp()} /></div>
-                {reg.role === "patient" && (
-                  <div className="field">
-                    <label>Código de convite</label>
-                    <input value={reg.inviteCode} onChange={e => setReg(r => ({ ...r, inviteCode: e.target.value.toUpperCase() }))} placeholder="Ex: AB3X9K7" style={{ fontFamily: "monospace", fontSize: 18, letterSpacing: ".12em" }} maxLength={8} />
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Código único enviado pela sua psicóloga.</div>
-                  </div>
-                )}
-                {regError && <p className="error-msg">{regError}</p>}
-                <button className="btn-primary" onClick={handleSendOtp} disabled={loading}>
-                  {loading ? "Enviando código..." : "✉️  Verificar e-mail"}
-                </button>
-                <p style={{ textAlign: "center", marginTop: 12, fontSize: 13, color: "var(--text-muted)" }}>
-                  Já tem conta? <span style={{ color: "var(--sage-dark)", cursor: "pointer", fontWeight: 500 }} onClick={() => setMode("login")}>Entrar</span>
-                </p>
-              </>
-            )}
+            {regError && <p className="error-msg">{regError}</p>}
+            <button className="btn-primary" onClick={handleReg} disabled={loading}>
+              {loading ? "Criando conta..." : "Criar conta"}
+            </button>
+            <p style={{ textAlign: "center", marginTop: 12, fontSize: 13, color: "var(--text-muted)" }}>
+              Já tem conta? <span style={{ color: "var(--sage-dark)", cursor: "pointer", fontWeight: 500 }} onClick={() => setMode("login")}>Entrar</span>
+            </p>
           </>
         )}
       </div>
