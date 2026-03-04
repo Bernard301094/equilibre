@@ -40,38 +40,10 @@ const db = {
 };
 
 
-// ─── Email OTP via Supabase ──────────────────────────────────────────────────
-const emailOtp = {
-  async send(email) {
-    const res = await fetch(`${SUPA_URL}/auth/v1/otp`, {
-      method: "POST",
-      headers: { apikey: SUPA_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ email, create_user: false }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.msg || data.message || "Erro ao enviar e-mail");
-    }
-    return true;
-  },
-  async verify(email, token) {
-    const res = await fetch(`${SUPA_URL}/auth/v1/verify`, {
-      method: "POST",
-      headers: { apikey: SUPA_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ email, token, type: "email" }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.msg || data.message || "Código inválido ou expirado");
-    }
-    return true;
-  },
-};
-
 // ─── Seed exercises ───────────────────────────────────────────────────────────
 const SEED_EXERCISES = [
   { id: "ex1", title: "Respiração 4-7-8", category: "Ansiedade", description: "Técnica de respiração para reduzir a ansiedade rapidamente.", questions: [{ id:"q1",type:"reflect",text:"Antes de começar: em uma palavra, como você está se sentindo agora?" },{ id:"q2",type:"instruction",text:"🌬️ Inspire pelo nariz contando até 4 — segure o ar contando até 7 — expire pela boca contando até 8. Repita 3 vezes." },{ id:"q3",type:"scale",text:"De 0 a 10, qual é o seu nível de ansiedade ANTES do exercício?" },{ id:"q4",type:"scale",text:"De 0 a 10, qual é o seu nível de ansiedade APÓS o exercício?" },{ id:"q5",type:"open",text:"O que você percebeu no seu corpo durante a respiração? Descreva livremente." }] },
-  { id: "ex2", title: "Registro de Pensamentos", category: "Ansiedade", description: "Identificar e questionar pensamentos automáticos negativos.", questions: [{ id:"q1",type:"open",text:"Descreva a situação que gerou ansiedade ou desconforto." },{ id:"q2",type:"open",text:"Que pensamento automático surgiu nesse momento?" },{ id:"q3",type:"scale",text:"Qual a intensidade desse sentimento de 0 a 10?" },{ id:"q4",type:"open",text:"Que evidências confirmam esse pensamento?" },{ id:"q5",type:"open",text:"Que evidências contradizem esse pensamento?" },{ id:"q6",type:"open",text:"Como você poderia pensar de forma mais equilibrada sobre essa situação?" }] },
+  { id: "ex2", title: "Registro de Pensamentos", category: "Ansiedade", description: "Identificar e questionar pensamentos automáticos negativos.", questions: [{ id:"q1",type:"open",text:"Descreva a situación que gerou ansiedade ou desconforto." },{ id:"q2",type:"open",text:"Que pensamento automático surgiu nesse momento?" },{ id:"q3",type:"scale",text:"Qual a intensidade desse sentimento de 0 a 10?" },{ id:"q4",type:"open",text:"Que evidências confirmam esse pensamento?" },{ id:"q5",type:"open",text:"Que evidências contradizem esse pensamento?" },{ id:"q6",type:"open",text:"Como você poderia pensar de forma mais equilibrada sobre essa situação?" }] },
   { id: "ex3", title: "Gratidão Diária", category: "Bem-estar", description: "Prática de foco no positivo para fortalecer o bem-estar emocional.", questions: [{ id:"q1",type:"open",text:"Liste 3 coisas pelas quais você é grato(a) hoje (podem ser pequenas)." },{ id:"q2",type:"open",text:"Qual dessas coisas te tocou mais profundamente? Por quê?" },{ id:"q3",type:"reflect",text:"Feche os olhos por 30 segundos e sinta essa gratidão no seu corpo. Onde você a percebe fisicamente?" },{ id:"q4",type:"open",text:"Como você poderia trazer mais momentos assim para a sua semana?" }] },
   { id: "ex4", title: "Escaneamento Corporal", category: "Mindfulness", description: "Atenção plena ao corpo para reduzir tensão e aumentar presença.", questions: [{ id:"q1",type:"instruction",text:"🧘 Deite-se ou sente-se confortavelmente. Feche os olhos. Comece percebendo seus pés — depois pernas, quadril, abdômen, peito, mãos, braços, ombros, pescoço e cabeça. Leve 3 minutos nesse percurso." },{ id:"q2",type:"open",text:"Em quais partes do corpo você sentiu mais tensão ou desconforto?" },{ id:"q3",type:"open",text:"Em quais partes você sentiu leveza ou relaxamento?" },{ id:"q4",type:"scale",text:"Como você avalia sua qualidade de presença durante o exercício? (0 = muito distraído, 10 = totalmente presente)" },{ id:"q5",type:"open",text:"O que esse exercício revelou sobre como você está carregando seu dia no corpo?" }] },
 ];
@@ -220,8 +192,6 @@ const css = `
   @keyframes spin { to { transform:rotate(360deg); } }
   @keyframes fadeUp { from{opacity:0;transform:translateY(14px);} to{opacity:1;transform:translateY(0);} }
   @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
-
-
 
   /* Delete account modal */
   .delete-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center; z-index:1000; animation:fadeIn .2s ease; }
@@ -374,7 +344,7 @@ function LoginPage({ tab, setTab, form, setForm, error, onLogin, onRegister, set
     if (!reg.email.trim()) { setRegError("Informe seu e-mail."); return; }
     if (reg.password.length < 6) { setRegError("A senha deve ter pelo menos 6 caracteres."); return; }
     if (reg.password !== reg.confirm) { setRegError("As senhas não coincidem."); return; }
-    if (reg.role === "patient" && !reg.inviteCode.trim()) { setRegError("Informe o código de convite."); return; }
+    if (reg.role === "patient" && !reg.inviteCode.trim()) { setRegError("Informe el código de convite."); return; }
     setLoading(true);
     const err = await onRegister(reg);
     setLoading(false);
@@ -488,7 +458,7 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
         <div className="delete-icon">⚠️</div>
         <div className="delete-title">Excluir conta</div>
         <div className="delete-desc">
-          Esta ação é <strong>permanente e irreversível</strong>. Todos os seus dados — exercícios, respostas, diário e histórico — serão apagados para sempre.<br /><br />
+          Esta acción es <strong>permanente e irreversible</strong>. Todos os seus dados — exercícios, respostas, diário e histórico — serão apagados para sempre.<br /><br />
           Digite <strong>{KEYWORD}</strong> para confirmar:
         </div>
         <input
@@ -560,8 +530,8 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
       <main className="main">
         {view === "dashboard" && <TherapistDashboard session={session} setView={setView} />}
         {view === "patients" && <PatientsView session={session} setModal={setModal} />}
-        {view === "exercises" && <ExercisesView />}
-        {view === "create" && <CreateExerciseView onSaved={() => setView("exercises")} />}
+        {view === "exercises" && <ExercisesView session={session} />}
+        {view === "create" && <CreateExerciseView session={session} onSaved={() => setView("exercises")} />}
         {view === "progress" && <TherapistProgress session={session} />}
         {view === "responses" && <ResponsesView session={session} />}
         {view === "notifications" && <NotificationsView session={session} onRead={() => setUnread(0)} />}
@@ -710,13 +680,20 @@ function InviteCodeCard({ invite, onRevoke }) {
 }
 
 // ─── Exercises View ───────────────────────────────────────────────────────────
-function ExercisesView() {
+function ExercisesView({ session }) {
   const [exercises, setExercises] = useState([]);
-  useEffect(() => { db.query("exercises").then(r => setExercises(Array.isArray(r) ? r : [])); }, []);
+  
+  useEffect(() => { 
+    db.query("exercises").then(r => {
+      const all = Array.isArray(r) ? r : [];
+      setExercises(all.filter(ex => !ex.therapist_id || ex.therapist_id === session.id));
+    }); 
+  }, [session.id]);
+  
   const catClass = c => c === "Mindfulness" ? "mindfulness" : c === "Bem-estar" ? "bem-estar" : "";
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
-      <div className="page-header"><h2>Biblioteca de Exercícios</h2><p>Exercícios disponíveis para atribuir aos pacientes</p></div>
+      <div className="page-header"><h2>Biblioteca de Exercícios</h2><p>Exercícios disponibles para atribuir aos pacientes</p></div>
       <div className="grid-auto">
         {exercises.map(ex => (
           <div key={ex.id} className="ex-card">
@@ -773,7 +750,7 @@ function ResponsesView({ session }) {
         </div>
         <div>
           {loading && <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Carregando...</p>}
-          {!loading && filtered.length === 0 && <div className="empty-state"><div className="empty-icon">📭</div><p>Nenhuma resposta ainda.</p></div>}
+          {!loading && filtered.length === 0 && <div className="empty-state"><div className="empty-icon">📭</div><p>Nenhuma respuesta ainda.</p></div>}
           {filtered.map(r => {
             const patient = patients.find(p => p.id === r.patient_id);
             const exercise = exercises.find(e => e.id === r.exercise_id);
@@ -823,7 +800,8 @@ function Modal({ modal, setModal, session }) {
       const ex = await db.query("exercises");
       const assign = await db.query("assignments", { filter: { patient_id: modal.payload.patient.id } });
       const goals = await db.query("goals", { filter: { patient_id: modal.payload.patient.id } });
-      setExercises(Array.isArray(ex) ? ex : []);
+      const filteredEx = (Array.isArray(ex) ? ex : []).filter(e => !e.therapist_id || e.therapist_id === session.id);
+      setExercises(filteredEx);
       setExisting(Array.isArray(assign) ? assign : []);
       const g = Array.isArray(goals) && goals.length > 0 ? goals[0] : null;
       setCurrentGoal(g); if (g) setWeeklyGoal(g.weekly_target);
@@ -938,7 +916,7 @@ const QUESTION_TYPES = [
 ];
 const CATEGORIES = ["Ansiedade", "Bem-estar", "Mindfulness", "Autoconhecimento", "Relacionamentos", "Outro"];
 
-function CreateExerciseView({ onSaved }) {
+function CreateExerciseView({ session, onSaved }) {
   const emptyQ = () => ({ id: "q" + Date.now() + Math.random().toString(36).slice(2,5), type: "open", text: "" });
   const [form, setForm] = useState({ title: "", category: "Ansiedade", description: "" });
   const [questions, setQuestions] = useState([emptyQ()]);
@@ -964,6 +942,7 @@ function CreateExerciseView({ onSaved }) {
     setError(""); setSaving(true);
     await db.insert("exercises", {
       id: "ex" + Date.now(),
+      therapist_id: session.id,
       title: form.title.trim(),
       category: form.category,
       description: form.description.trim(),
@@ -1003,7 +982,7 @@ function CreateExerciseView({ onSaved }) {
         </div>
         <div>
           <label style={labelStyle}>Descrição breve</label>
-          <textarea style={{...fieldStyle, minHeight:70, resize:"vertical"}} value={form.description} onChange={e => setForm(f => ({...f, description:e.target.value}))} placeholder="O que este exercício trabalha?" />
+          <textarea style={{...fieldStyle, minHeight:70, resize:"vertical"}} value={form.description} onChange={e => setForm(f => ({...f, description:e.target.value}))} placeholder="O que este exercício trabaja?" />
         </div>
       </div>
 
@@ -1039,7 +1018,7 @@ function CreateExerciseView({ onSaved }) {
           </div>
         ))}
 
-        <button className="btn btn-outline" style={{ width:"100%", marginTop:6, borderStyle:"dashed" }} onClick={addQ}>+ Adicionar outra pergunta</button>
+        <button className="btn btn-outline" style={{ width:"100%", marginTop:6, borderStyle:"dashed" }} onClick={addQ}>+ Adicionar otra pergunta</button>
       </div>
 
       <div style={{ display:"flex", gap:12, justifyContent:"flex-end" }}>
@@ -1164,7 +1143,7 @@ function TherapistProgress({ session }) {
 
   return (
     <div style={{ animation:"fadeUp .4s ease" }}>
-      <div className="page-header"><h2>📈 Progresso dos Pacientes</h2><p>Acompanhe a evolução das respostas ao longo do tempo</p></div>
+      <div className="page-header"><h2>📈 Progresso dos Pacientes</h2><p>Acompanhe a evolución das respostas ao longo do tempo</p></div>
 
       <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginBottom:24 }}>
         {patients.map(p => (
@@ -1196,7 +1175,7 @@ function TherapistProgress({ session }) {
             {scalePoints && scalePoints.length >= 2 ? (
               <MiniLineChart points={scalePoints.map(p => p.avg)} labels={scalePoints.map(p => p.date)} height={100} />
             ) : (
-              <div className="empty-state" style={{ padding:"24px 0" }}><div className="empty-icon">📊</div><p style={{ fontSize:13 }}>Aguardando respostas com escala para gerar gráfico.</p></div>
+              <div className="empty-state" style={{ padding:"24px 0" }}><div className="empty-icon">📊</div><p style={{ fontSize:13 }}>Aguardando respostas con escala para generar gráfico.</p></div>
             )}
           </div>
         </div>
@@ -1224,7 +1203,7 @@ function NotificationsView({ session, onRead }) {
 
   return (
     <div style={{ animation:"fadeUp .4s ease", maxWidth:600 }}>
-      <div className="page-header"><h2>🔔 Notificações</h2><p>Atividades recentes dos seus pacientes</p></div>
+      <div className="page-header"><h2>🔔 Notificações</h2><p>Atividades recientes dos seus pacientes</p></div>
       {loading && <p style={{ color:"var(--text-muted)", fontSize:14 }}>Carregando...</p>}
       {!loading && notifs.length === 0 && <div className="empty-state"><div className="empty-icon">🔕</div><p>Nenhuma notificação ainda.</p></div>}
       {notifs.map(n => (
@@ -1248,8 +1227,13 @@ function PatientLayout({ session, setSession, view, setView }) {
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
-    db.query("assignments", { filter: { patient_id: session.id, status: "pending" } })
-      .then(r => setPendingCount(Array.isArray(r) ? r.length : 0));
+    const fetchPending = async () => {
+      const r = await db.query("assignments", { filter: { patient_id: session.id, status: "pending" } });
+      setPendingCount(Array.isArray(r) ? r.length : 0);
+    };
+    fetchPending();
+    const intId = setInterval(fetchPending, 5000);
+    return () => clearInterval(intId);
   }, [session.id, view]);
 
   if (activeExercise) return (
@@ -1308,7 +1292,7 @@ function PatientHome({ session, setView }) {
   const [overdue, setOverdue] = useState(0);
 
   useEffect(() => {
-    (async () => {
+    const fetchDashboardData = async () => {
       const pending = await db.query("assignments", { filter: { patient_id: session.id, status: "pending" } });
       const done = await db.query("assignments", { filter: { patient_id: session.id, status: "done" } });
       const goals = await db.query("goals", { filter: { patient_id: session.id } });
@@ -1324,7 +1308,10 @@ function PatientHome({ session, setView }) {
       setCounts({ pending: pendList.length, done: doneList.length });
       const g = Array.isArray(goals) && goals.length > 0 ? goals[0] : null;
       setGoal(g); setDoneThisWeek(weekDone); setOverdue(od);
-    })();
+    };
+    fetchDashboardData();
+    const intId = setInterval(fetchDashboardData, 5000);
+    return () => clearInterval(intId);
   }, [session.id]);
 
   return (
@@ -1361,13 +1348,16 @@ function PatientExercises({ session, setActiveExercise }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
+    const fetchAssignments = async () => {
       const a = await db.query("assignments", { filter: { patient_id: session.id } });
       const ex = await db.query("exercises");
       setAssignments(Array.isArray(a) ? a : []);
       setExercises(Array.isArray(ex) ? ex : []);
       setLoading(false);
-    })();
+    };
+    fetchAssignments();
+    const intId = setInterval(fetchAssignments, 5000);
+    return () => clearInterval(intId);
   }, [session.id]);
 
   const pending = assignments.filter(a => a.status === "pending");
