@@ -222,6 +222,19 @@ const css = `
   @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
 
 
+
+  /* Delete account modal */
+  .delete-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center; z-index:1000; animation:fadeIn .2s ease; }
+  .delete-modal { background:white; border-radius:18px; padding:32px 28px; max-width:380px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.25); text-align:center; }
+  .delete-icon { font-size:48px; margin-bottom:12px; }
+  .delete-title { font-family:Playfair Display,serif; font-size:21px; margin-bottom:8px; color:var(--text); }
+  .delete-desc { font-size:13px; color:var(--text-muted); line-height:1.65; margin-bottom:20px; }
+  .delete-confirm-input { width:100%; padding:10px 14px; border:2px solid var(--warm); border-radius:10px; font-family:DM Sans,sans-serif; font-size:14px; outline:none; box-sizing:border-box; margin-bottom:18px; }
+  .delete-confirm-input:focus { border-color:#c0444a; }
+  .btn-danger { background:#c0444a; color:white; border:none; border-radius:10px; padding:11px 24px; font-size:14px; font-weight:600; cursor:pointer; font-family:DM Sans,sans-serif; transition:opacity .15s; }
+  .btn-danger:disabled { opacity:.45; cursor:not-allowed; }
+  .btn-danger:hover:not(:disabled) { opacity:.88; }
+
   /* Notification bell */
   .notif-bell { position:relative; background:none; border:none; cursor:pointer; font-size:20px; color:rgba(255,255,255,0.7); padding:4px; }
   .notif-bell:hover { color:white; }
@@ -542,8 +555,75 @@ function LoginPage({ tab, setTab, form, setForm, error, onLogin, onRegister, set
   );
 }
 
+
+// ─── Delete Account Modal ─────────────────────────────────────────────────────
+function DeleteAccountModal({ session, onClose, onDeleted }) {
+  const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const KEYWORD = "EXCLUIR";
+
+  const handleDelete = async () => {
+    setError(""); setLoading(true);
+    try {
+      // Remove all user data
+      const assignments = await db.query("assignments", { filter: { patient_id: session.id } });
+      if (Array.isArray(assignments)) for (const a of assignments) await db.remove("assignments", { id: a.id });
+      const responses = await db.query("responses", { filter: { patient_id: session.id } });
+      if (Array.isArray(responses)) for (const r of responses) await db.remove("responses", { id: r.id });
+      const diary = await db.query("diary_entries", { filter: { patient_id: session.id } });
+      if (Array.isArray(diary)) for (const d of diary) await db.remove("diary_entries", { id: d.id });
+      const invites = await db.query("invites", { filter: { therapist_id: session.id } });
+      if (Array.isArray(invites)) for (const i of invites) await db.remove("invites", { id: i.id });
+      const notifs = await db.query("notifications", { filter: { therapist_id: session.id } });
+      if (Array.isArray(notifs)) for (const n of notifs) await db.remove("notifications", { id: n.id });
+      const goals = await db.query("goals", { filter: { patient_id: session.id } });
+      if (Array.isArray(goals)) for (const g of goals) await db.remove("goals", { id: g.id });
+      // Delete user record
+      await db.remove("users", { id: session.id });
+      // Delete Supabase auth user
+      await fetch(`${SUPA_URL}/auth/v1/user`, {
+        method: "DELETE",
+        headers: { apikey: SUPA_KEY, Authorization: `Bearer ${session.access_token}` },
+      });
+      onDeleted();
+    } catch (e) {
+      setError("Erro ao excluir conta. Tente novamente.");
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="delete-overlay" onClick={onClose}>
+      <div className="delete-modal" onClick={e => e.stopPropagation()}>
+        <div className="delete-icon">⚠️</div>
+        <div className="delete-title">Excluir conta</div>
+        <div className="delete-desc">
+          Esta ação é <strong>permanente e irreversível</strong>. Todos os seus dados — exercícios, respostas, diário e histórico — serão apagados para sempre.<br /><br />
+          Digite <strong>{KEYWORD}</strong> para confirmar:
+        </div>
+        <input
+          className="delete-confirm-input"
+          placeholder={KEYWORD}
+          value={confirm}
+          onChange={e => setConfirm(e.target.value.toUpperCase())}
+          autoFocus
+        />
+        {error && <p style={{ color:"#c0444a", fontSize:13, marginBottom:14 }}>{error}</p>}
+        <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+          <button className="btn btn-outline" onClick={onClose}>Cancelar</button>
+          <button className="btn-danger" onClick={handleDelete} disabled={confirm !== KEYWORD || loading}>
+            {loading ? "Excluindo..." : "🗑 Excluir minha conta"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Therapist Layout ─────────────────────────────────────────────────────────
 function TherapistLayout({ session, setSession, view, setView, modal, setModal }) {
+  const [showDelete, setShowDelete] = useState(false);
   const [unread, setUnread] = useState(0);
   useEffect(() => {
     db.query("notifications", { filter: { therapist_id: session.id, read: false } })
@@ -581,7 +661,10 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
           <div className="user-pill">
             <div className="avatar">{session.name[0]}</div>
             <div className="user-info"><div className="name">{session.name.split(" ")[0]}</div><div className="email">{session.email}</div></div>
-            <button className="logout-btn" onClick={() => setSession(null)}>↩</button>
+            <div style={{ display:"flex", gap:6, marginLeft:"auto" }}>
+              <button className="logout-btn" title="Sair" onClick={() => setSession(null)}>↩</button>
+              <button className="logout-btn" title="Excluir conta" onClick={() => setShowDelete(true)} style={{ fontSize:15 }}>🗑</button>
+            </div>
           </div>
         </div>
       </aside>
@@ -595,6 +678,7 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
         {view === "notifications" && <NotificationsView session={session} onRead={() => setUnread(0)} />}
       </main>
       {modal && <Modal modal={modal} setModal={setModal} session={session} />}
+      {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => setSession(null)} />}
     </div>
   );
 }
@@ -1270,6 +1354,7 @@ function NotificationsView({ session, onRead }) {
 
 // ─── Patient Layout ───────────────────────────────────────────────────────────
 function PatientLayout({ session, setSession, view, setView }) {
+  const [showDelete, setShowDelete] = useState(false);
   const [activeExercise, setActiveExercise] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
 
@@ -1308,7 +1393,10 @@ function PatientLayout({ session, setSession, view, setView }) {
           <div className="user-pill">
             <div className="avatar">{session.name[0]}</div>
             <div className="user-info"><div className="name">{session.name.split(" ")[0]}</div><div className="email">{session.email}</div></div>
-            <button className="logout-btn" onClick={() => setSession(null)}>↩</button>
+            <div style={{ display:"flex", gap:6, marginLeft:"auto" }}>
+              <button className="logout-btn" title="Sair" onClick={() => setSession(null)}>↩</button>
+              <button className="logout-btn" title="Excluir conta" onClick={() => setShowDelete(true)} style={{ fontSize:15 }}>🗑</button>
+            </div>
           </div>
         </div>
       </aside>
@@ -1319,6 +1407,7 @@ function PatientLayout({ session, setSession, view, setView }) {
         {view === "progress" && <PatientProgress session={session} />}
         {view === "history" && <PatientHistory session={session} />}
       </main>
+      {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => setSession(null)} />}
     </div>
   );
 }
