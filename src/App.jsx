@@ -77,7 +77,7 @@ const SEED_EXERCISES = [
 ];
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
-const css = 
+const css = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap');
   
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -303,7 +303,7 @@ const css =
     /* Botões de nota redimensionados no celular para caber na tela */
     .scale-btn { width: 38px; height: 38px; font-size: 13px; }
   }
-;
+`;
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
@@ -392,7 +392,7 @@ export default function App() {
 
     try {
       const authRes = await auth.signUp(form.email, form.password, { name: form.name, role: form.role });
-      const userId = authRes.user?.id || ("u" + Date.now());
+      const userId = authRes.user?.id || authRes.id || ("u" + Date.now());
 
       const newUser = { id: userId, name: form.name, email: form.email, role: form.role, therapist_id: therapistId };
       await db.insert("users", newUser);
@@ -1314,14 +1314,14 @@ function PatientLayout({ session, setSession, view, setView }) {
   const [activeExercise, setActiveExercise] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
 
-  // Polling para o badge de pendências
+  // Polling para o badge de pendências no menu lateral
   useEffect(() => {
     const fetchPending = async () => {
       const r = await db.query("assignments", { filter: { patient_id: session.id, status: "pending" } });
       setPendingCount(Array.isArray(r) ? r.length : 0);
     };
-    fetchPending(); // Carga imediata
-    const intId = setInterval(fetchPending, 3000); // Polling a cada 3s para o emblema lateral atualizar
+    fetchPending();
+    const intId = setInterval(fetchPending, 3000); 
     return () => clearInterval(intId);
   }, [session.id]);
 
@@ -1383,7 +1383,7 @@ function PatientHome({ session, setView }) {
   const [doneThisWeek, setDoneThisWeek] = useState(0);
   const [overdue, setOverdue] = useState(0);
 
-  // Polling para Dashboard atualizar automaticamente
+  // Polling para atualizar o Dashboard automaticamente
   useEffect(() => {
     const fetchDashboardData = async () => {
       const pending = await db.query("assignments", { filter: { patient_id: session.id, status: "pending" } });
