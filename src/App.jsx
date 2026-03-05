@@ -551,6 +551,7 @@ export default function App() {
         setSession({ id: authData.user.id, email: authData.user.email, name: meta.name || authData.user.email, role, access_token: authData.access_token, refresh_token: authData.refresh_token });
       } else {
         if (users[0].role !== loginTab) { setLoginError("Conta não encontrada para este perfil."); return; }
+        if (users[0].deleted_at) { setLoginError("Esta conta foi encerrada. Para voltar a aceder, solicite um novo convite à sua profissional."); return; }
         setSession({ ...users[0], access_token: authData.access_token, refresh_token: authData.refresh_token });
       }
       setView(loginTab === "patient" ? "home" : "dashboard");
@@ -736,13 +737,12 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
             read: false,
           }, session.access_token);
         }
-        // Apaga apenas o registo de utilizador e as credenciais de autenticação.
-        // Todo o histórico (responses, diary_entries, assignments, goals, notifications)
-        // é preservado no perfil da profissional.
-        // O convite permanece como "used" — é necessário um novo convite para se re-registar.
-        await db.remove("users", { id: session.id }, session.access_token);
-        await fetch(`${SUPA_URL}/auth/v1/user`, {
-          method: "DELETE",
+        // Marca o utilizador como eliminado — preserva o histórico para a profissional
+        // mas bloqueia qualquer tentativa de login futura.
+        await db.update("users", { id: session.id }, { deleted_at: new Date().toISOString() }, session.access_token);
+        // Revoga a sessão Auth (best-effort — mesmo que falhe, o login fica bloqueado pelo deleted_at)
+        await fetch(`${SUPA_URL}/auth/v1/logout`, {
+          method: "POST",
           headers: { apikey: SUPA_KEY, Authorization: `Bearer ${session.access_token}` },
         });
       } else {
