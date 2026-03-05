@@ -149,6 +149,31 @@ const auth = {
   },
 };
 
+  const storage = {
+    async uploadAvatar(file, userId, token) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}_${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const res = await fetch(`${SUPA_URL}/storage/v1/object/${filePath}`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPA_KEY,
+          'Authorization': `Bearer ${token}`
+        },
+        body: file
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Erro ao subir foto.');
+      }
+      
+      return `${SUPA_URL}/storage/v1/object/public/${filePath}`;
+    }
+  };
+
+
 // ─── Seed exercises ───────────────────────────────────────────────────────────
 const SEED_EXERCISES = [
   {
@@ -206,28 +231,32 @@ const SEED_EXERCISES = [
 ];
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
+// ==========================================
+// CSS
+// ==========================================
 const css = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  
   :root {
     --blue-dark: #17527c; --blue-mid: #86bcde; --blue-light: #b3d7ed;
     --yellow: #ffbd59; --orange: #f6943b;
     --sage-dark: #17527c; --sage: #86bcde; --sage-light: #b3d7ed;
     --accent: #f6943b; --accent-soft: #fff3dd;
-    --cream: #f4f8fc; --warm: #deeaf5; --text: #1a2e3b; --text-muted: #6a8099;
-    --white: #ffffff; --card: rgba(255,255,255,0.95); --danger: #c0544a;
+    --cream: #f4f8fc; --warm: #deeaf5;
+    --text: #1a2e3b; --text-muted: #6a8099;
+    --white: #ffffff; --card: rgba(255,255,255,0.95);
+    --danger: #c0544a;
   }
-
   body.dark-mode {
-    --cream: #0f172a; --warm: #1e293b; --text: #f8fafc; --text-muted: #94a3b8;
+    --cream: #0f172a; --warm: #1e293b;
+    --text: #f8fafc; --text-muted: #94a3b8;
     --white: #1e293b; --card: rgba(30,41,59,0.95);
     --blue-dark: #86bcde; --blue-mid: #3b82f6; --sage-dark: #0f172a;
     --accent-soft: rgba(246,148,59,0.15);
   }
-  
   body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; transition: background 0.3s, color 0.3s; }
   h1,h2,h3 { font-family: 'Playfair Display', serif; }
 
+  /* Login */
   .login-bg { min-height:100vh; background:linear-gradient(135deg,#17527c 0%,#86bcde 55%,#ffbd59 100%); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
   .login-bg::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse 80% 60% at 70% 30%,rgba(255,255,255,0.12) 0%,transparent 60%); }
   .login-card { background:var(--white); border-radius:24px; padding:48px 40px; width:100%; max-width:420px; box-shadow:0 32px 80px rgba(0,0,0,0.18); position:relative; z-index:1; animation:fadeUp .5s ease both; }
@@ -245,6 +274,7 @@ const css = `
   .btn-primary { width:100%; padding:13px; border:none; border-radius:12px; background:var(--sage-dark); color:white; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:500; cursor:pointer; transition:all .2s; margin-top:6px; }
   .btn-primary:hover { background:var(--blue-mid); transform:translateY(-1px); box-shadow:0 6px 20px rgba(23,82,124,0.3); }
 
+  /* Layout Geral */
   .layout { display:flex; min-height:100vh; }
   .sidebar { width:250px; background:var(--sage-dark); color:white; display:flex; flex-direction:column; position:fixed; top:0; left:0; height:100vh; z-index:10; }
   .sidebar-header { padding:26px 22px 18px; border-bottom:1px solid rgba(255,255,255,0.1); }
@@ -256,27 +286,30 @@ const css = `
   .nav-item.active { background:rgba(255,255,255,0.15); color:white; font-weight:500; }
   .nav-item .icon { font-size:17px; }
   .sidebar-footer { padding:14px 10px; border-top:1px solid rgba(255,255,255,0.1); }
-  
-  /* ─── FIX: FOOTER E ÍCONES BLINDADOS CONTRA TEXTOS GRANDES ─── */
+
+  /* FIX: FOOTER E ÍCONES BLINDADOS CONTRA TEXTOS GRANDES */
   .user-pill { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; width: 100%; box-sizing: border-box; }
-  .avatar { width:34px; height:34px; border-radius:50%; background:var(--sage-light); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:var(--sage-dark); flex-shrink: 0; }
+  .avatar { width:34px; height:34px; border-radius:50%; background:var(--sage-light); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:var(--sage-dark); flex-shrink: 0; object-fit: cover; cursor: pointer; }
+  .p-avatar { width:40px; height:40px; border-radius:50%; background:var(--sage-light); display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:15px; color:var(--sage-dark); flex-shrink:0; object-fit: cover; }
+  
   .user-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .user-info .name { font-size:13px; font-weight:500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .user-info .email { font-size:10px; opacity:.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; margin-top: 2px; }
-  
   .pill-actions { display: flex; gap: 4px; margin-left: auto; flex-shrink: 0; }
+
   .pill-btn { background: rgba(255,255,255,0.06); border: none; width: 28px; height: 28px; border-radius: 6px; color: rgba(255,255,255,0.65); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
   .pill-btn:hover { background: rgba(255,255,255,0.15); color: white; transform: translateY(-1px); }
   .pill-btn.delete:hover { background: rgba(192,84,74,0.25); color: #ff8a80; }
   .theme-toggle { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.65); width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
   .theme-toggle:hover { background: rgba(255,255,255,0.15); color: white; }
-  
+
   .main { margin-left:250px; padding:38px; min-height:100vh; background:var(--cream); width:100%; box-sizing: border-box; }
   .patient-sidebar { background:#0e3d5e; }
   .page-header { margin-bottom:28px; }
   .page-header h2 { font-size:26px; color:var(--text); }
   .page-header p { color:var(--text-muted); margin-top:3px; font-size:14px; }
 
+  /* Cards e Grids */
   .card { background:var(--card); border-radius:16px; padding:22px; box-shadow:0 2px 16px rgba(0,0,0,0.06); border:1px solid rgba(255,255,255,0.6); }
   .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
   .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
@@ -294,16 +327,17 @@ const css = `
   .ex-title { font-family:'Playfair Display',serif; font-size:16px; margin-bottom:5px; }
   .ex-desc { font-size:13px; color:var(--text-muted); line-height:1.5; }
 
+  /* Listas e Componentes Menores */
   .patient-row { display:flex; align-items:center; gap:12px; padding:12px; border-radius:10px; cursor:pointer; transition:background .15s; margin-bottom:2px; }
   .patient-row:hover { background:var(--accent-soft); }
-  .p-avatar { width:40px; height:40px; border-radius:50%; background:var(--sage-light); display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:15px; color:var(--sage-dark); flex-shrink:0; }
   .p-name { font-weight:500; font-size:14px; }
   .p-email { font-size:11px; color:var(--text-muted); }
 
+  /* Modais */
   .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px); animation:fadeIn .2s; overflow-y:auto; }
   .modal { background:var(--white); border-radius:20px; padding:30px; width:100%; max-width:500px; animation:fadeUp .25s ease; }
   .modal h3 { font-family:'Playfair Display',serif; font-size:20px; margin-bottom:18px; }
-  
+
   .btn { padding:9px 18px; border-radius:10px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; border:none; }
   .btn-outline { background:transparent; border:1.5px solid var(--warm); color:var(--text-muted); }
   .btn-outline:hover { border-color:var(--sage); color:var(--sage-dark); }
@@ -312,13 +346,14 @@ const css = `
   .btn-sm { padding:6px 12px; font-size:12px; border-radius:8px; }
   .btn-accent { background:var(--accent); color:white; }
   .btn-accent:hover { opacity:.9; }
-  
+
   .ex-pick { display:flex; align-items:center; gap:11px; padding:11px; border-radius:12px; border:1.5px solid var(--warm); margin-bottom:7px; cursor:pointer; transition:all .15s; }
   .ex-pick:hover { border-color:var(--sage); }
   .ex-pick.selected { border-color:var(--blue-dark); background:rgba(23,82,124,0.06); }
   .ex-pick .check { width:20px; height:20px; border-radius:50%; border:2px solid var(--warm); display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; transition:all .15s; }
   .ex-pick.selected .check { background:var(--blue-dark); border-color:var(--blue-dark); color:white; }
 
+  /* Tela de Exerccio (Paciente) */
   .exercise-page { max-width:660px; margin:0 auto; }
   .progress-bar { height:5px; background:var(--warm); border-radius:3px; margin-bottom:30px; overflow:hidden; }
   .progress-fill { height:100%; background:var(--blue-dark); border-radius:3px; transition:width .4s ease; }
@@ -335,63 +370,66 @@ const css = `
   .q-reflect { background:var(--accent-soft); border-radius:12px; padding:14px 18px; font-size:14px; color:var(--accent); font-style:italic; line-height:1.6; margin-bottom:14px; }
   .q-nav { display:flex; justify-content:space-between; align-items:center; margin-top:22px; }
 
+  /* Respostas / UI States */
   .response-item { padding:12px; background:var(--cream); border-radius:10px; margin-bottom:7px; }
   .response-item .q-label { font-size:11px; color:var(--text-muted); margin-bottom:3px; }
   .response-item .q-answer { font-size:14px; color:var(--text); }
   .response-badge { display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:3px 10px; border-radius:20px; font-weight:500; }
   .badge-done { background:#d4edd9; color:#2d7a3a; }
   .badge-pending { background:var(--warm); color:var(--text-muted); }
-
+  
   .empty-state { text-align:center; padding:50px 20px; color:var(--text-muted); }
   .empty-state .empty-icon { font-size:44px; margin-bottom:14px; }
   .empty-state p { font-size:14px; }
-  
+
   .success-banner { background:#d4edd9; color:#2d7a3a; border-radius:10px; padding:11px 14px; font-size:13px; margin-bottom:12px; text-align:center; }
   .error-msg { color:#c0544a; font-size:13px; margin-bottom:8px; }
 
   .spinner { display:flex; align-items:center; justify-content:center; height:100vh; font-family:'DM Sans',sans-serif; color:var(--text-muted); font-size:15px; gap:10px; }
   .spin { width:22px; height:22px; border:2.5px solid var(--warm); border-top-color:var(--blue-dark); border-radius:50%; animation:spin .7s linear infinite; }
+
   @keyframes spin { to { transform:rotate(360deg); } }
   @keyframes fadeUp { from{opacity:0;transform:translateY(14px);} to{opacity:1;transform:translateY(0);} }
   @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
 
+  /* Notificacoes */
   .notif-bell { position:relative; background:none; border:none; cursor:pointer; font-size:20px; color:rgba(255,255,255,0.7); padding:4px; }
   .notif-bell:hover { color:white; }
   .notif-dot { position:absolute; top:0; right:0; width:16px; height:16px; border-radius:50%; background:var(--accent); color:white; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; }
-  
+
+  /* Exclusao de Conta / Delete Geral */
   .delete-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center; z-index:1000; animation:fadeIn .2s ease; }
   .delete-modal { background:var(--white); border-radius:18px; padding:32px 28px; max-width:380px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.25); text-align:center; }
   .delete-icon { font-size:48px; margin-bottom:12px; }
-  .delete-title { font-family:Playfair Display,serif; font-size:21px; margin-bottom:8px; color:var(--text); }
+  .delete-title { font-family:'Playfair Display',serif; font-size:21px; margin-bottom:8px; color:var(--text); }
   .delete-desc { font-size:13px; color:var(--text-muted); line-height:1.65; margin-bottom:20px; }
-  .delete-confirm-input { width:100%; padding:10px 14px; border:2px solid var(--warm); border-radius:10px; font-family:DM Sans,sans-serif; font-size:14px; outline:none; box-sizing:border-box; margin-bottom:18px; background:var(--cream); color:var(--text); }
+  .delete-confirm-input { width:100%; padding:10px 14px; border:2px solid var(--warm); border-radius:10px; font-family:'DM Sans',sans-serif; font-size:14px; outline:none; box-sizing:border-box; margin-bottom:18px; background:var(--cream); color:var(--text); }
   .delete-confirm-input:focus { border-color:#c0444a; }
-  .btn-danger { background:#c0444a; color:white; border:none; border-radius:10px; padding:11px 24px; font-size:14px; font-weight:600; cursor:pointer; font-family:DM Sans,sans-serif; transition:opacity .15s; }
+  .btn-danger { background:#c0444a; color:white; border:none; border-radius:10px; padding:11px 24px; font-size:14px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; transition:opacity .15s; }
   .btn-danger:disabled { opacity:.45; cursor:not-allowed; }
   .btn-danger:hover:not(:disabled) { opacity:.88; }
 
+  /* Dirio & Progresso */
   .chart-wrap { padding:12px 0 4px; }
   .chart-label-row { display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:4px; }
-  
   .mood-btn { width:44px; height:44px; border-radius:50%; border:2px solid var(--warm); background:transparent; font-size:22px; cursor:pointer; transition:all .15s; }
   .mood-btn.sel { border-color:var(--blue-dark); background:rgba(23,82,124,0.08); transform:scale(1.15); }
-  
   .goal-bar-bg { height:10px; background:var(--warm); border-radius:6px; overflow:hidden; margin:8px 0 4px; }
   .goal-bar-fill { height:100%; border-radius:6px; background:linear-gradient(90deg,var(--blue-dark),var(--blue-mid)); transition:width .6s ease; }
-  
   .due-chip { display:inline-flex; align-items:center; gap:4px; font-size:10px; padding:2px 8px; border-radius:20px; font-weight:600; }
   .due-ok { background:#ddeaff; color:#17527c; }
   .due-warn { background:#fff3dd; color:#c07010; }
   .due-late { background:#fde8e8; color:#c0444a; }
-  
-  .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--cream); border-radius:10px; }
+
+  /* Toggle Button */
   .toggle { width:40px; height:22px; border-radius:11px; cursor:pointer; border:none; position:relative; transition:background .2s; }
   .toggle::after { content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:white; transition:transform .2s; }
   .toggle.on { background:var(--blue-dark); }
   .toggle.on::after { transform:translateX(18px); }
   .toggle.off { background:var(--warm); }
 
-  @media(max-width:768px){
+  /* Media Queries Mobile Geral */
+  @media(max-width:768px) {
     .layout { flex-direction: column; }
     .sidebar { width: 100%; height: auto; position: relative; z-index: 10; }
     .sidebar-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 20px; }
@@ -400,12 +438,12 @@ const css = `
     .nav-item { width: auto; flex-shrink: 0; padding: 10px 14px; margin-bottom: 0; }
     .sidebar-footer { padding: 15px 20px; }
     
-    /* ─── FIX: FOOTER E ÍCONES RESPONSIVOS ─── */
+    /* FIX: FOOTER E ÍCONES RESPONSIVOS */
     .user-pill { width: 100%; justify-content: space-between; gap: 10px; }
-    .user-info { flex: 1; min-width: 0; display: flex; flex-direction: column; } 
+    .user-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
     .user-info .name, .user-info .email { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: block; }
-    .pill-actions { margin-left: 0; flex-shrink: 0; display: flex; gap: 4px; } 
-
+    .pill-actions { margin-left: 0; flex-shrink: 0; display: flex; gap: 4px; }
+    
     .main { margin-left: 0; padding: 20px 15px; }
     .grid-3 { grid-template-columns: 1fr; }
     .grid-2 { grid-template-columns: 1fr; }
@@ -416,6 +454,7 @@ const css = `
     .scale-btn { width: 38px; height: 38px; font-size: 13px; }
   }
 `;
+
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function parseQuestions(ex) {
@@ -1058,7 +1097,59 @@ const playNotificationSound = () => {
 };
 
 // ─── Therapist Layout ─────────────────────────────────────────────────────────
+function ProfileModal({ session, setSession, onClose }) {
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('A foto deve ter no máximo 2MB.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const avatarUrl = await storage.uploadAvatar(file, session.id, session.access_token);
+      await db.update('users', { id: session.id }, { avatar_url: avatarUrl }, session.access_token);
+      setSession(prev => ({ ...prev, avatar_url: avatarUrl }));
+      onClose();
+    } catch (error) {
+      alert('Erro ao atualizar foto: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ textAlign: 'center', maxWidth: 320 }}>
+        <h3 style={{ marginBottom: 20 }}>Foto de Perfil</h3>
+        
+        {session.avatar_url ? (
+          <img src={session.avatar_url} alt="Perfil" style={{ width: 100, height: 100, borderRadius: '50%', objectFit: 'cover', marginBottom: 20, border: '3px solid var(--warm)' }} />
+        ) : (
+          <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'var(--sage-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, color: 'var(--sage-dark)', margin: '0 auto 20px auto' }}>
+            {session.name[0].toUpperCase()}
+          </div>
+        )}
+
+        <input type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} />
+
+        <button className="btn btn-sage" style={{ width: '100%', marginBottom: 10 }} onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+          {uploading ? 'A carregar...' : 'Carregar Nova Foto'}
+        </button>
+
+        <button className="btn btn-outline" style={{ width: '100%' }} onClick={onClose}>Fechar</button>
+      </div>
+    </div>
+  );
+}
+
 function TherapistLayout({ session, setSession, view, setView, modal, setModal, toggleTheme, theme }) {
+  const [showProfile, setShowProfile] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
   const [unread, setUnread] = useState(0);
@@ -1069,56 +1160,78 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal, 
     let active = true;
     const fetchNotifs = async () => {
       try {
-        const r = await db.query("notifications", { filter: { therapist_id: session.id, read: false } });
+        const r = await db.query('notifications', { filter: { therapist_id: session.id, read: false } });
         if (active) {
           const currentCount = Array.isArray(r) ? r.length : 0;
           setUnread(currentCount);
-          if (currentCount > prevUnreadRef.current && prevUnreadRef.current !== 0) playNotificationSound();
+          if (currentCount > prevUnreadRef.current && prevUnreadRef.current !== 0) {
+            playNotificationSound();
+          }
           prevUnreadRef.current = currentCount;
         }
-      } catch (e) {}
+      } catch (e) {
+        // fetchNotifs
+      }
     };
-    fetchNotifs();
-    // OPTIMIZAÇÃO: Polling ajustado para 30 segundos
-    const interval = setInterval(fetchNotifs, 30000); 
+    const interval = setInterval(fetchNotifs, 30000);
     return () => { active = false; clearInterval(interval); };
   }, [session.id]);
 
   const navItems = [
-    { id: "dashboard", icon: "🏠", label: "Início" },
-    { id: "patients", icon: "👥", label: "Pacientes" },
-    { id: "exercises", icon: "📋", label: "Exercícios" },
-    { id: "create", icon: "✏️", label: "Criar Exercício" },
-    { id: "progress", icon: "📈", label: "Progresso" },
-    { id: "responses", icon: "📊", label: "Respostas" },
+    { id: 'dashboard', icon: '📊', label: 'Início' },
+    { id: 'patients', icon: '👥', label: 'Pacientes' },
+    { id: 'exercises', icon: '📚', label: 'Exercícios' },
+    { id: 'create', icon: '✍️', label: 'Criar Exercício' },
+    { id: 'progress', icon: '📈', label: 'Progresso' },
+    { id: 'responses', icon: '📥', label: 'Respostas' },
   ];
 
   return (
     <div className="layout">
       <aside className="sidebar">
         <div className="sidebar-header">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-            <div className="brand" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src={LOGO} alt="" style={{ width: 32, height: 32, objectFit: "contain" }} /> Equilibre</div>
-            <button className="notif-bell" onClick={() => setView("notifications")} title="Notificações">🔔{unread > 0 && <span className="notif-dot">{unread > 9 ? "9+" : unread}</span>}</button>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+            <div className="brand" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <img src={LOGO} alt="" style={{ width: 32, height: 32, objectFit: 'contain' }}/>
+              Equilibre
+            </div>
+            <button className="notif-bell" onClick={() => setView('notifications')} title="Notificações">
+              🔔
+              {unread > 0 && <span className="notif-dot">{unread > 9 ? '9+' : unread}</span>}
+            </button>
           </div>
           <div className="role">Área da Psicóloga</div>
         </div>
+
         <nav>
-          {navItems.map((n) => (
-            <button key={n.id} className={`nav-item ${(view === n.id || (n.id === "create" && view === "edit")) ? "active" : ""}`} onClick={() => { setEditingEx(null); setView(n.id); }}>
+          {navItems.map(n => (
+            <button
+              key={n.id}
+              className={`nav-item ${(view === n.id || (n.id === 'create' && view === 'edit')) ? 'active' : ''}`}
+              onClick={() => { setEditingEx(null); setView(n.id); }}
+            >
               <span className="icon">{n.icon}</span>{n.label}
             </button>
           ))}
         </nav>
+
         <div className="sidebar-footer">
           <div className="user-pill">
-            <div className="avatar">{session.name[0]}</div>
+            {session.avatar_url ? (
+              <img src={session.avatar_url} className="avatar" title="Mudar foto" onClick={() => setShowProfile(true)} alt="avatar" />
+            ) : (
+              <div className="avatar" title="Mudar foto" onClick={() => setShowProfile(true)}>
+                {session.name[0].toUpperCase()}
+              </div>
+            )}
             <div className="user-info">
-              <div className="name">{session.name.split(" ")[0]}</div>
+              <div className="name">{session.name.split(' ')[0]}</div>
               <div className="email">{session.email}</div>
             </div>
             <div className="pill-actions">
-              <button className="theme-toggle" onClick={toggleTheme} title="Modo Escuro">{theme === "dark" ? "☀️" : "🌙"}</button>
+              <button className="theme-toggle" onClick={toggleTheme} title="Modo Escuro">
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
               <button className="pill-btn" title="Sair" onClick={() => setShowLogout(true)}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
               </button>
@@ -1129,24 +1242,42 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal, 
           </div>
         </div>
       </aside>
+
       <main className="main">
-        {view === "dashboard" && <TherapistDashboard session={session} setView={setView} />}
-        {view === "patients" && <PatientsView session={session} setModal={setModal} />}
-        {view === "exercises" && <ExercisesView session={session} />}
-        {view === "create" && <CreateExerciseView session={session} onSaved={() => setView("exercises")} />}
-        {view === "progress" && <TherapistProgress session={session} />}
-        {view === "responses" && <ResponsesView session={session} />}
-        {view === "notifications" && <NotificationsView session={session} onRead={() => { setUnread(0); prevUnreadRef.current = 0; }} />}
+        {view === 'dashboard' && <TherapistDashboard session={session} setView={setView} />}
+        {view === 'patients' && <PatientsView session={session} setModal={setModal} />}
+        {view === 'exercises' && <ExercisesView session={session} />}
+        {view === 'create' && <CreateExerciseView session={session} onSaved={() => setView('exercises')} />}
+        {view === 'progress' && <TherapistProgress session={session} />}
+        {view === 'responses' && <ResponsesView session={session} />}
+        {view === 'notifications' && <NotificationsView session={session} onRead={() => { setUnread(0); prevUnreadRef.current = 0; }} />}
       </main>
+
       {modal && <Modal modal={modal} setModal={setModal} session={session} />}
-      {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => { localStorage.removeItem("equilibre_session"); setSession(null); window.location.reload(); }} />}
+      {showProfile && <ProfileModal session={session} setSession={setSession} onClose={() => setShowProfile(false)} />}
+      
+      {showDelete && (
+        <DeleteAccountModal 
+          session={session} 
+          onClose={() => setShowDelete(false)} 
+          onDeleted={() => {
+            localStorage.removeItem('equilibre_session');
+            setSession(null);
+            window.location.reload();
+          }} 
+        />
+      )}
+
       {showLogout && (
         <div className="delete-overlay" onClick={() => setShowLogout(false)}>
-          <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="delete-modal" onClick={e => e.stopPropagation()}>
             <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>👋</div>
             <div className="delete-title" style={{ fontSize: 20 }}>Encerrar sessão?</div>
             <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>Tem certeza que deseja sair da sua conta?</div>
-            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}><button className="btn btn-outline" onClick={() => setShowLogout(false)}>Cancelar</button><button className="btn btn-sage" onClick={() => setSession(null)}>Sair</button></div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button className="btn btn-outline" onClick={() => setShowLogout(false)}>Cancelar</button>
+              <button className="btn btn-sage" onClick={() => setSession(null)}>Sair</button>
+            </div>
           </div>
         </div>
       )}
@@ -1160,10 +1291,8 @@ function TherapistDashboard({ session, setView }) {
 
   useEffect(() => {
     (async () => {
-      const patients = await db.query("users", {
-        select: "id,name,email",
-        filter: { therapist_id: session.id, role: "patient" },
-      });
+      // Na query (aprox. linha 1500)
+      const patients = await db.query('users', { select: 'id,name,email,avatar_url', filter: { therapist_id: session.id, role: 'patient' } });
       const pList = Array.isArray(patients) ? patients : [];
       const pIds = pList.map((p) => p.id);
       // Single batch query instead of N+1 loop — one request for all patients
@@ -1199,7 +1328,11 @@ function TherapistDashboard({ session, setView }) {
         )}
         {stats.recent.map((p) => (
           <div key={p.id} className="patient-row">
-            <div className="p-avatar">{p.name[0]}</div>
+            {p.avatar_url ? (
+            <img src={p.avatar_url} className="p-avatar" alt={p.name} />
+            ) : (
+            <div className="p-avatar">{p.name[0].toUpperCase()}</div>
+            )}
             <div>
               <div className="p-name">{p.name}</div>
               <div className="p-email">{p.email}</div>
@@ -1231,6 +1364,8 @@ function PatientsView({ session, setModal }) {
     const fetch = async () => {
       try {
         const [pts, invs] = await Promise.all([
+          // Adicionado 'avatar_url' no select (se a sua função db.query puxar tudo, não precisa do select, 
+          // mas deixo aqui por segurança caso esteja usando select explícito)
           db.query('users', { filter: { therapist_id: session.id, role: 'patient' } }, session.accesstoken),
           db.query('invites', { filter: { therapist_id: session.id }, order: 'created_at.desc' }, session.accesstoken)
         ]);
@@ -1316,9 +1451,17 @@ function PatientsView({ session, setModal }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {patients.map(p => (
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', border: '1.5px solid var(--warm)', borderRadius: 12, background: 'var(--cream)' }}>
-                <div>
-                  <div style={{ fontWeight: 600, color: 'var(--blue-dark)', marginBottom: 2 }}>{p.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{p.email}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {/* SOLUÇÃO DE FOTO DE PERFIL AQUI */}
+                  {p.avatar_url ? (
+                    <img src={p.avatar_url} className="p-avatar" alt={p.name} />
+                  ) : (
+                    <div className="p-avatar">{p.name[0].toUpperCase()}</div>
+                  )}
+                  <div>
+                    <div style={{ fontWeight: 600, color: 'var(--blue-dark)', marginBottom: 2 }}>{p.name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{p.email}</div>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="btn btn-sage btn-sm" onClick={() => setModal({ type: 'assign', payload: { patient: p } })}>
@@ -1396,7 +1539,7 @@ function PatientsView({ session, setModal }) {
                     </button>
 
                     <button onClick={() => {
-                      const msg = encodeURIComponent(`Olá! Estou a usar o Equilibre para acompanhar o nosso trabalho juntos.\n\nPara criar a sua conta e ficarmos conectados, use o código de convite abaixo:\n\n*${inv.code}*\n\nAceda a https://equilibreapp.vercel.app e clique em "Criar conta" > perfil "Paciente" > insira o código acima.`);
+                      const msg = encodeURIComponent(`Olá! Estou a usar o Equilibre para acompanhar o nosso trabalho juntos.\n\nPara criar a sua conta e ficarmos conectados, use o código de convite abaixo:\n\n*${inv.code}*\n\nAceda a [https://equilibreapp.vercel.app](https://equilibreapp.vercel.app) e clique em "Criar conta" > perfil "Paciente" > insira o código acima.`);
                       window.open(`https://wa.me/?text=${msg}`, '_blank');
                     }} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }} title="Enviar pelo WhatsApp">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="22" height="22"><circle cx="16" cy="16" r="16" fill="#25D366"/><path d="M23.5 8.5A10.44 10.44 0 0 0 16 5.5a10.5 10.5 0 0 0-9.08 15.73L5.5 26.5l5.43-1.42A10.5 10.5 0 0 0 26.5 16a10.44 10.44 0 0 0-3-7.5zm-7.5 16.16a8.71 8.71 0 0 1-4.44-1.21l-.32-.19-3.22.84.86-3.14-.21-.33a8.75 8.75 0 1 1 7.33 4.03zm4.8-6.55c-.26-.13-1.55-.77-1.79-.85s-.41-.13-.59.13-.67.85-.83 1-.3.2-.56.07a7.13 7.13 0 0 1-2.1-1.3 7.9 7.9 0 0 1-1.45-1.81c-.15-.26 0-.4.11-.53s.26-.3.4-.46a1.8 1.8 0 0 0 .26-.43.48.48 0 0 0 0-.46c-.07-.13-.59-1.42-.81-1.94s-.43-.44-.59-.45h-.5a1 1 0 0 0-.7.33 2.93 2.93 0 0 0-.91 2.18 5.1 5.1 0 0 0 1.06 2.7 11.65 11.65 0 0 0 4.47 3.95c.62.27 1.1.43 1.48.55a3.56 3.56 0 0 0 1.63.1 2.69 2.69 0 0 0 1.76-1.24 2.18 2.18 0 0 0 .15-1.24c-.06-.11-.24-.17-.5-.3z" fill="#fff"/></svg>
@@ -1448,6 +1591,7 @@ function PatientsView({ session, setModal }) {
     </div>
   );
 }
+
 
 
 // ─── Exercises View ───────────────────────────────────────────────────────────
@@ -1633,7 +1777,8 @@ function ResponsesView({ session }) {
   useEffect(() => {
     (async () => {
       const [p, ex] = await Promise.all([
-        db.query("users", { select: "id,name", filter: { therapist_id: session.id, role: "patient" } }),
+        // Atualizado para buscar o avatar_url
+        db.query("users", { select: "id,name,avatar_url", filter: { therapist_id: session.id, role: "patient" } }),
         db.query("exercises"),
       ]);
       const pList = Array.isArray(p) ? p : [];
@@ -1655,14 +1800,20 @@ function ResponsesView({ session }) {
         <div className="card">
           <h3 style={{ fontSize: 15, marginBottom: 12 }}>Filtrar</h3>
           
-          {/* FIX: borderRadius: "10px" para combinar con los avatares */}
           <div style={{ padding: "9px 12px", borderRadius: "10px", cursor: "pointer", background: !selPatient ? "rgba(122,158,135,0.12)" : "transparent", fontWeight: !selPatient ? 600 : 400, fontSize: 14, color: !selPatient ? "var(--sage-dark)" : "var(--text-muted)", transition: "all .15s" }} onClick={() => setSelPatient(null)}>
             Todos os pacientes
           </div>
           
           {patients.map((p) => (
             <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: "10px", cursor: "pointer", background: selPatient?.id === p.id ? "rgba(122,158,135,0.12)" : "transparent", transition: "all .15s", marginTop: 4 }} onClick={() => setSelPatient(p)}>
-              <div className="p-avatar" style={{ width: 32, height: 32, fontSize: 13 }}>{p.name[0]}</div>
+              
+              {/* Lógica de Foto de Perfil Atualizada */}
+              {p.avatar_url ? (
+                <img src={p.avatar_url} className="p-avatar" style={{ width: 32, height: 32 }} alt={p.name} />
+              ) : (
+                <div className="p-avatar" style={{ width: 32, height: 32, fontSize: 13 }}>{p.name[0].toUpperCase()}</div>
+              )}
+              
               <span style={{ fontSize: 14, fontWeight: selPatient?.id === p.id ? 600 : 400, color: selPatient?.id === p.id ? "var(--sage-dark)" : "var(--text)" }}>{p.name}</span>
             </div>
           ))}
@@ -1679,7 +1830,18 @@ function ResponsesView({ session }) {
             return (
               <div key={r.id} className="card" style={{ marginBottom: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                  <div><div style={{ fontFamily: "Playfair Display, serif", fontSize: 16 }}>{exercise?.title || "Exercício"}</div><div style={{ fontSize: 11, color: "var(--text-muted)" }}>{patient?.name} · {new Date(r.completed_at).toLocaleDateString("pt-BR")}</div></div>
+                  <div>
+                    <div style={{ fontFamily: "Playfair Display, serif", fontSize: 16 }}>{exercise?.title || "Exercício"}</div>
+                    
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                      {/* Avatar pequeno opcional ao lado do nome do paciente na resposta */}
+                      {patient?.avatar_url ? (
+                        <img src={patient.avatar_url} style={{ width: 16, height: 16, borderRadius: '50%', objectFit: 'cover' }} alt="" />
+                      ) : null}
+                      <span>{patient?.name} · {new Date(r.completed_at).toLocaleDateString("pt-BR")}</span>
+                    </div>
+                    
+                  </div>
                   <span className="response-badge badge-done">✓ Concluído</span>
                 </div>
                 {answers.map((a, i) => {
@@ -1695,6 +1857,7 @@ function ResponsesView({ session }) {
     </div>
   );
 }
+
 
 // ─── NotesTab ─────────────────────────────────────────────────────────────────
 function NotesTab({ notes, setNotes, notesId, saveNotes, savingNotes, notesSaved, onClose }) {
@@ -2512,6 +2675,7 @@ function NotificationsView({ session, onRead }) {
 
 // ─── Patient Layout ───────────────────────────────────────────────────────────
 function PatientLayout({ session, setSession, view, setView, toggleTheme, theme }) {
+  const [showProfile, setShowProfile] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
   const [activeExercise, setActiveExercise] = useState(null);
@@ -2568,7 +2732,20 @@ function PatientLayout({ session, setSession, view, setView, toggleTheme, theme 
         </nav>
         <div className="sidebar-footer">
           <div className="user-pill">
-            <div className="avatar">{session.name[0]}</div>
+                      <div className="user-pill">
+            {session.avatar_url ? (
+              <img src={session.avatar_url} className="avatar" title="Mudar foto" onClick={() => setShowProfile(true)} alt="avatar" />
+            ) : (
+              <div className="avatar" title="Mudar foto" onClick={() => setShowProfile(true)}>
+                {session.name[0].toUpperCase()}
+              </div>
+            )}
+            <div className="user-info">
+              <div className="name">{session.name.split(' ')[0]}</div>
+              <div className="email">{session.email}</div>
+            </div>
+            </div>
+
             <div className="user-info">
               <div className="name">{session.name.split(" ")[0]}</div>
               <div className="email">{session.email}</div>
@@ -2605,6 +2782,7 @@ function PatientLayout({ session, setSession, view, setView, toggleTheme, theme 
           </div>
         </div>
       )}
+      {showProfile && <ProfileModal session={session} setSession={setSession} onClose={() => setShowProfile(false)} />}
     </div>
   );
 }
