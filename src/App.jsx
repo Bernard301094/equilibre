@@ -1168,10 +1168,22 @@ function PatientsView({ session, setModal }) {
 
   const deleteInvite = async (inv) => {
     if (!window.confirm(`Eliminar o convite ${inv.code}?`)) return;
-    if (!inv.id) { alert("Este convite não tem ID — não é possível eliminar individualmente."); return; }
     try {
-      await db.remove("invites", { id: inv.id }, session.access_token);
-      setInvites(prev => prev.filter(i => i.id !== inv.id));
+      // Filtra por code + therapist_id para garantir que a RLS deixa passar
+      let url = `${SUPA_URL}/rest/v1/invites?code=eq.${encodeURIComponent(inv.code)}&therapist_id=eq.${encodeURIComponent(session.id)}`;
+      const res = await fetch(url, {
+        method: "DELETE",
+        headers: {
+          apikey: SUPA_KEY,
+          Authorization: `Bearer ${session.access_token}`,
+          Prefer: "return=representation",
+        },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error([err.message, err.hint, err.details].filter(Boolean).join(" | ") || `HTTP ${res.status}`);
+      }
+      setInvites(prev => prev.filter(i => i.code !== inv.code));
     } catch (e) {
       alert("Erro ao eliminar convite: " + (e?.message || e));
     }
