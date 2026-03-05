@@ -1070,31 +1070,58 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
   );
 }
 
-// ─── Lógica de Som (Web Audio API) ────────────────────────────────────────────
-// Gera um "Ding" suave e agradável nativamente no navegador
-const playNotificationSound = () => {
-  try {
+// ==========================================
+// Lógica de Som (Web Audio API)
+// ==========================================
+let audioCtx = null;
+
+// Tenta inicializar o áudio no primeiro clique do usuário
+const initAudio = () => {
+  if (!audioCtx) {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine'; // Som suave
-    osc.frequency.setValueAtTime(880, ctx.currentTime); // Nota A5
-    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.5);
-
-    gain.gain.setValueAtTime(0.15, ctx.currentTime); // Volume (0.15 é baixinho e confortável)
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start();
-    osc.stop(ctx.currentTime + 0.5);
-  } catch (e) {
-    console.error("Áudio não suportado no navegador", e);
+    if (AudioContext) {
+      audioCtx = new AudioContext();
+    }
+  }
+  // Se o contexto estiver suspenso (política do navegador), retoma
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
   }
 };
+
+// Adiciona um listener global para liberar o áudio no primeiro clique em qualquer lugar da tela
+if (typeof window !== 'undefined') {
+  window.addEventListener('click', initAudio, { once: true });
+  window.addEventListener('keydown', initAudio, { once: true });
+}
+
+const playNotificationSound = () => {
+  try {
+    if (!audioCtx) return; // Se ainda não interagiu, não tenta tocar
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'sine'; // Som suave
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime); // Nota A5
+    osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.5);
+
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime); // Volume baixinho
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.5);
+  } catch (e) {
+    console.warn('Áudio não suportado ou bloqueado no navegador:', e);
+  }
+};
+
 
 // ─── Therapist Layout ─────────────────────────────────────────────────────────
 function ProfileModal({ session, setSession, onClose }) {
