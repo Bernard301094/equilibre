@@ -9,7 +9,7 @@ const SUPA_URL = "https://tbaurubvmakhmbzhqnqh.supabase.co";
 const SUPA_KEY = "sb_publishable_15_BDx6bY-VKAzJByuBajg_mpiGTNQh";
 
 const db = {
-  async query(table, options = {}) {
+  async query(table, options = {}, token = null) {
     let url = `${SUPA_URL}/rest/v1/${table}?`;
     if (options.select) url += `select=${options.select}&`;
     if (options.filter) {
@@ -21,26 +21,34 @@ const db = {
     const res = await fetch(url, {
       headers: {
         apikey: SUPA_KEY,
-        Authorization: `Bearer ${SUPA_KEY}`,
+        Authorization: `Bearer ${token || SUPA_KEY}`,
         "Content-Type": "application/json",
       },
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || err.msg || `Erro ao consultar ${table}`);
+    }
     return res.json();
   },
-  async insert(table, data) {
+  async insert(table, data, token = null) {
     const res = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
       method: "POST",
       headers: {
         apikey: SUPA_KEY,
-        Authorization: `Bearer ${SUPA_KEY}`,
+        Authorization: `Bearer ${token || SUPA_KEY}`,
         "Content-Type": "application/json",
         Prefer: "return=representation",
       },
       body: JSON.stringify(data),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || err.msg || `Erro ao inserir em ${table}`);
+    }
     return res.json();
   },
-  async update(table, filter, data) {
+  async update(table, filter, data, token = null) {
     let url = `${SUPA_URL}/rest/v1/${table}?`;
     Object.entries(filter).forEach(([k, v]) => {
       url += `${k}=eq.${encodeURIComponent(v)}&`;
@@ -49,22 +57,29 @@ const db = {
       method: "PATCH",
       headers: {
         apikey: SUPA_KEY,
-        Authorization: `Bearer ${SUPA_KEY}`,
+        Authorization: `Bearer ${token || SUPA_KEY}`,
         "Content-Type": "application/json",
         Prefer: "return=representation",
       },
       body: JSON.stringify(data),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || err.msg || `Erro ao atualizar ${table}`);
+    }
     return res.json();
   },
-  async remove(table, filter) {
+  async remove(table, filter, token = null) {
     let url = `${SUPA_URL}/rest/v1/${table}?`;
     Object.entries(filter).forEach(([k, v]) => {
       url += `${k}=eq.${encodeURIComponent(v)}&`;
     });
     await fetch(url, {
       method: "DELETE",
-      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
+      headers: {
+        apikey: SUPA_KEY,
+        Authorization: `Bearer ${token || SUPA_KEY}`,
+      },
     });
   },
 };
@@ -89,8 +104,12 @@ const auth = {
       headers: { apikey: SUPA_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
-    if (!res.ok) throw new Error("E-mail ou senha incorretos");
-    return res.json();
+    const data = await res.json();
+    if (!res.ok) {
+      const msg = data?.error_description || data?.msg || data?.message || "E-mail ou senha incorretos";
+      throw new Error(msg);
+    }
+    return data;
   },
 };
 
@@ -431,13 +450,33 @@ export default function App() {
     setLoginError("");
     try {
       const authData = await auth.signIn(loginForm.email, loginForm.password);
-      if (!authData?.user?.id) throw new Error("Resposta de autenticação inválida.");
-      const users = await db.query("users", { filter: { id: authData.user.id } });
-      if (!Array.isArray(users) || users.length === 0 || users[0].role !== loginTab) {
-        setLoginError("Conta não encontrada para este perfil.");
-        return;
+      if (!authData?.access_token) {
+        throw new Error(authData?.error_description || authData?.msg || "Erro na autenticação.");
       }
-      setSession({ ...users[0], access_token: authData.access_token });
+      // Use the user's JWT so RLS policies allow reading the row
+      const users = await db.query("users", { filter: { id: authData.user.id } }, authData.access_token);
+      if (!Array.isArray(users) || users.length === 0) {
+        // Fallback: build session from auth metadata if users table row is missing
+        const meta = authData.user?.user_metadata || {};
+        const role = meta.role || loginTab;
+        if (role !== loginTab) {
+          setLoginError("Conta não encontrada para este perfil.");
+          return;
+        }
+        setSession({
+          id: authData.user.id,
+          email: authData.user.email,
+          name: meta.name || authData.user.email,
+          role,
+          access_token: authData.access_token,
+        });
+      } else {
+        if (users[0].role !== loginTab) {
+          setLoginError("Conta não encontrada para este perfil.");
+          return;
+        }
+        setSession({ ...users[0], access_token: authData.access_token });
+      }
       setView(loginTab === "patient" ? "home" : "dashboard");
     } catch (error) {
       setLoginError(error.message);
