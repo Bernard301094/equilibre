@@ -84,13 +84,19 @@ const db = {
     Object.entries(filter).forEach(([k, v]) => {
       url += `${k}=eq.${encodeURIComponent(v)}&`;
     });
-    await fetch(url, {
+    const res = await fetch(url, {
       method: "DELETE",
       headers: {
         apikey: SUPA_KEY,
         Authorization: `Bearer ${token || SUPA_KEY}`,
+        Prefer: "return=representation",
       },
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const detail = [err.message || err.msg, err.hint, err.details].filter(Boolean).join(" | ");
+      throw new Error(detail || `Erro ao eliminar em ${table} (HTTP ${res.status})`);
+    }
   },
 };
 
@@ -1156,6 +1162,7 @@ function PatientsView({ session, setModal }) {
 
   const deleteInvite = async (inv) => {
     if (!window.confirm(`Eliminar o convite ${inv.code}?`)) return;
+    if (!inv.id) { alert("Este convite não tem ID — não é possível eliminar individualmente."); return; }
     try {
       await db.remove("invites", { id: inv.id }, session.access_token);
       setInvites(prev => prev.filter(i => i.id !== inv.id));
