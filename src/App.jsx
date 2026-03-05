@@ -766,9 +766,10 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
   );
 }
 
-/// ─── Therapist Layout ─────────────────────────────────────────────────────────
+// ─── Therapist Layout ─────────────────────────────────────────────────────────
 function TherapistLayout({ session, setSession, view, setView, modal, setModal }) {
   const [showDelete, setShowDelete] = useState(false);
+  const [showLogout, setShowLogout] = useState(false); // <-- NOVO ESTADO
   const [unread, setUnread] = useState(0);
   const [editingEx, setEditingEx] = useState(null);
 
@@ -823,9 +824,9 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
               <div className="name">{session.name.split(" ")[0]}</div>
               <div className="email">{session.email}</div>
             </div>
-            {/* ÍCONES NOVOS AQUI */}
             <div className="pill-actions">
-              <button className="pill-btn" title="Sair" onClick={() => setSession(null)}>
+              {/* Abre o modal de logout ao invés de fechar direto */}
+              <button className="pill-btn" title="Sair" onClick={() => setShowLogout(true)}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
               </button>
               <button className="pill-btn delete" title="Excluir conta" onClick={() => setShowDelete(true)}>
@@ -846,6 +847,23 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
       </main>
       {modal && <Modal modal={modal} setModal={setModal} session={session} />}
       {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => setSession(null)} />}
+      
+      {/* MODAL DE CONFIRMAÇÃO DE LOGOUT */}
+      {showLogout && (
+        <div className="delete-overlay" onClick={() => setShowLogout(false)}>
+          <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>👋</div>
+            <div className="delete-title" style={{ fontSize: 20 }}>Encerrar sessão?</div>
+            <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>
+              Tem certeza que deseja sair da sua conta?
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <button className="btn btn-outline" onClick={() => setShowLogout(false)}>Cancelar</button>
+              <button className="btn btn-sage" onClick={() => setSession(null)}>Sair</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1793,6 +1811,7 @@ function NotificationsView({ session, onRead }) {
 // ─── Patient Layout ───────────────────────────────────────────────────────────
 function PatientLayout({ session, setSession, view, setView }) {
   const [showDelete, setShowDelete] = useState(false);
+  const [showLogout, setShowLogout] = useState(false); // <-- NOVO ESTADO
   const [activeExercise, setActiveExercise] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
 
@@ -1865,9 +1884,9 @@ function PatientLayout({ session, setSession, view, setView }) {
               <div className="name">{session.name.split(" ")[0]}</div>
               <div className="email">{session.email}</div>
             </div>
-            {/* ÍCONES NOVOS AQUI */}
             <div className="pill-actions">
-              <button className="pill-btn" title="Sair" onClick={() => setSession(null)}>
+              {/* Abre o modal de logout */}
+              <button className="pill-btn" title="Sair" onClick={() => setShowLogout(true)}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
               </button>
               <button className="pill-btn delete" title="Excluir conta" onClick={() => setShowDelete(true)}>
@@ -1885,6 +1904,23 @@ function PatientLayout({ session, setSession, view, setView }) {
         {view === "history" && <PatientHistory session={session} />}
       </main>
       {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => setSession(null)} />}
+      
+      {/* MODAL DE CONFIRMAÇÃO DE LOGOUT */}
+      {showLogout && (
+        <div className="delete-overlay" onClick={() => setShowLogout(false)}>
+          <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>👋</div>
+            <div className="delete-title" style={{ fontSize: 20 }}>Encerrar sessão?</div>
+            <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>
+              Tem certeza que deseja sair da sua conta?
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <button className="btn btn-outline" onClick={() => setShowLogout(false)}>Cancelar</button>
+              <button className="btn btn-sage" onClick={() => setSession(null)}>Sair</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
