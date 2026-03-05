@@ -11,10 +11,19 @@ const SUPA_KEY = "sb_publishable_15_BDx6bY-VKAzJByuBajg_mpiGTNQh";
 const db = {
   async query(table, options = {}, token = null) {
     let url = `${SUPA_URL}/rest/v1/${table}?`;
-    if (options.select) url += `select=${options.select}&`;
+    // Strip spaces from select so "id, name, email" doesn't create a broken URL
+    if (options.select) url += `select=${options.select.replace(/\s+/g, "")}&`;
     if (options.filter) {
       Object.entries(options.filter).forEach(([k, v]) => {
         url += `${k}=eq.${encodeURIComponent(v)}&`;
+      });
+    }
+    // filterIn: { patient_id: ["id1","id2"] } → patient_id=in.(id1,id2)
+    // Eliminates N+1 loops — fetches rows for many IDs in one request
+    if (options.filterIn) {
+      Object.entries(options.filterIn).forEach(([k, vals]) => {
+        if (vals.length === 0) return;
+        url += `${k}=in.(${vals.map(encodeURIComponent).join(",")})&`;
       });
     }
     if (options.order) url += `order=${options.order}&`;
@@ -453,10 +462,8 @@ export default function App() {
       if (!authData?.access_token) {
         throw new Error(authData?.error_description || authData?.msg || "Erro na autenticação.");
       }
-      // Use the user's JWT so RLS policies allow reading the row.
-      // Try by Supabase UUID first; if not found, fall back to email lookup.
-      // This handles the case where the user was stored with a "u"+timestamp ID
-      // (because authRes.user was null/undefined during signup) instead of the UUID.
+      // Look up user row by UUID first; fall back to email if UUID doesn't match
+      // (happens when signup stored a "u"+timestamp ID instead of the real UUID)
       let users = await db.query("users", { filter: { id: authData.user.id } }, authData.access_token);
       if (!Array.isArray(users) || users.length === 0) {
         const byEmail = await db.query("users", { filter: { email: loginForm.email } }, authData.access_token);
@@ -835,20 +842,20 @@ function TherapistDashboard({ session, setView }) {
   useEffect(() => {
     (async () => {
       const patients = await db.query("users", {
-        select: "id, name, email",
+        select: "id,name,email",
         filter: { therapist_id: session.id, role: "patient" },
       });
-      const pIds = (Array.isArray(patients) ? patients : []).map((p) => p.id);
-      let allAssign = [];
-      for (const pid of pIds) {
-        const a = await db.query("assignments", { filter: { patient_id: pid } });
-        if (Array.isArray(a)) allAssign = allAssign.concat(a);
-      }
+      const pList = Array.isArray(patients) ? patients : [];
+      const pIds = pList.map((p) => p.id);
+      // Single batch query instead of N+1 loop — one request for all patients
+      const allAssign = pIds.length > 0
+        ? await db.query("assignments", { filterIn: { patient_id: pIds } }).then((r) => Array.isArray(r) ? r : [])
+        : [];
       setStats({
         patients: pIds.length,
         done: allAssign.filter((a) => a.status === "done").length,
         pending: allAssign.filter((a) => a.status === "pending").length,
-        recent: (Array.isArray(patients) ? patients : []).slice(0, 4),
+        recent: pList.slice(0, 4),
       });
     })();
   }, [session.id]);
@@ -896,7 +903,7 @@ function PatientsView({ session, setModal }) {
   // FIX: useCallback evita dependência desatualizada no useEffect
   const load = useCallback(async () => {
     const p = await db.query("users", {
-      select: "id, name, email",
+      select: "id,name,email",
       filter: { therapist_id: session.id, role: "patient" },
     });
     const inv = await db.query("invites", {
@@ -1060,14 +1067,16 @@ function ResponsesView({ session }) {
 
   useEffect(() => {
     (async () => {
-      const p = await db.query("users", { select: "id, name", filter: { therapist_id: session.id, role: "patient" } });
-      const ex = await db.query("exercises");
+      const [p, ex] = await Promise.all([
+        db.query("users", { select: "id,name", filter: { therapist_id: session.id, role: "patient" } }),
+        db.query("exercises"),
+      ]);
       const pList = Array.isArray(p) ? p : [];
-      let allResp = [];
-      for (const pt of pList) {
-        const r = await db.query("responses", { filter: { patient_id: pt.id }, order: "completed_at.desc" });
-        if (Array.isArray(r)) allResp = allResp.concat(r);
-      }
+      const pIds = pList.map((pt) => pt.id);
+      // Single batch query instead of N+1 loop
+      const allResp = pIds.length > 0
+        ? await db.query("responses", { filterIn: { patient_id: pIds }, order: "completed_at.desc" }).then((r) => Array.isArray(r) ? r : [])
+        : [];
       setPatients(pList);
       setExercises(Array.isArray(ex) ? ex : []);
       setResponses(allResp);
@@ -1172,42 +1181,31 @@ function Modal({ modal, setModal, session }) {
     return <span className="due-chip due-ok">📅 {new Date(dueDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>;
   };
 
-  const [assignErr, setAssignErr] = useState("");
-  const [assigning, setAssigning] = useState(false);
-
   const assign = async () => {
-    setAssignErr("");
-    setAssigning(true);
-    try {
-      for (const exId of selected) {
-        if (!existingIds.includes(exId)) {
-          await db.insert("assignments", {
-            id: "a" + Date.now() + Math.random().toString(36).slice(2, 6),
-            patient_id: patient.id,
-            exercise_id: exId,
-            assigned_at: new Date().toISOString(),
-            status: "pending",
-            due_date: dueDates[exId] || null,
-          });
-        }
-      }
-      if (currentGoal) {
-        await db.update("goals", { id: currentGoal.id }, { weekly_target: weeklyGoal });
-      } else {
-        await db.insert("goals", {
-          id: "g" + Date.now(),
+    for (const exId of selected) {
+      if (!existingIds.includes(exId)) {
+        await db.insert("assignments", {
+          id: "a" + Date.now() + Math.random().toString(36).slice(2, 6),
           patient_id: patient.id,
-          therapist_id: session.id,
-          weekly_target: weeklyGoal,
-          created_at: new Date().toISOString(),
+          exercise_id: exId,
+          assigned_at: new Date().toISOString(),
+          status: "pending",
+          due_date: dueDates[exId] || null,
         });
       }
-      setModal(null);
-    } catch (err) {
-      setAssignErr("Erro ao atribuir: " + err.message);
-    } finally {
-      setAssigning(false);
     }
+    if (currentGoal) {
+      await db.update("goals", { id: currentGoal.id }, { weekly_target: weeklyGoal });
+    } else {
+      await db.insert("goals", {
+        id: "g" + Date.now(),
+        patient_id: patient.id,
+        therapist_id: session.id,
+        weekly_target: weeklyGoal,
+        created_at: new Date().toISOString(),
+      });
+    }
+    setModal(null);
   };
 
   const removeAssign = async (exId) => {
@@ -1279,11 +1277,10 @@ function Modal({ modal, setModal, session }) {
                 </div>
               ))}
 
-            {assignErr && <p className="error-msg" style={{ marginTop: 10 }}>{assignErr}</p>}
             <div style={{ display: "flex", gap: 9, marginTop: 20, justifyContent: "flex-end" }}>
               <button className="btn btn-outline" onClick={() => setModal(null)}>Fechar</button>
-              <button className="btn btn-sage" onClick={assign} disabled={assigning}>
-                {assigning ? "Salvando..." : selected.length > 0 ? `Atribuir ${selected.length} + salvar meta` : "Salvar meta"}
+              <button className="btn btn-sage" onClick={assign}>
+                {selected.length > 0 ? `Atribuir ${selected.length} + salvar meta` : "Salvar meta"}
               </button>
             </div>
           </>
@@ -1486,7 +1483,7 @@ function TherapistProgress({ session }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    db.query("users", { select: "id, name", filter: { therapist_id: session.id, role: "patient" } }).then((r) => {
+    db.query("users", { select: "id,name", filter: { therapist_id: session.id, role: "patient" } }).then((r) => {
       const p = Array.isArray(r) ? r : [];
       setPatients(p);
       if (p.length) setSelPat(p[0]);
@@ -1617,12 +1614,12 @@ function PatientLayout({ session, setSession, view, setView }) {
   const [activeExercise, setActiveExercise] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
 
-  // Session self-heal: the session.id saved in localStorage may be a Supabase
-  // UUID that does NOT match the id stored in the users table (which can be a
-  // "u"+timestamp fallback from signup). Every assignment uses patient_id = the
-  // stored users.id, so a mismatch means queries always return empty and the
-  // patient never sees their exercises. Fix: re-fetch the real row by email on
-  // mount and patch session.id if needed.
+  // ── Session self-heal ───────────────────────────────────────────────────────
+  // The session.id in localStorage may be the Supabase Auth UUID, but the row in
+  // the users table might have been saved with a "u"+timestamp fallback ID (when
+  // signUp returned without a proper user object). Every assignment is stored with
+  // patient_id = users.id, so a mismatch means all queries return empty forever.
+  // Fix: look up the real row by email on mount and patch session.id if needed.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -1786,14 +1783,7 @@ function PatientHome({ session, setView }) {
 // FIX: ExCard definido FORA do componente pai, recebe props explícitas
 function ExCard({ assign, isDone, exercises, onStart }) {
   const ex = exercises.find((e) => e.id === assign.exercise_id);
-  // If the exercise data hasn't loaded yet (race) show a loading placeholder
-  // instead of silently returning null and hiding the assignment.
-  if (!ex) return (
-    <div className="ex-card" style={{ opacity: 0.5 }}>
-      <div className="ex-title" style={{ fontSize: 13, color: "var(--text-muted)" }}>Carregando exercício...</div>
-      <div className="ex-desc" style={{ fontSize: 12 }}>ID: {assign.exercise_id}</div>
-    </div>
-  );
+  if (!ex) return null;
   const qs = parseQuestions(ex);
 
   return (
@@ -1823,27 +1813,49 @@ function PatientExercises({ session, setActiveExercise }) {
   const [assignments, setAssignments] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [fetchErr, setFetchErr] = useState("");
 
   useEffect(() => {
     let active = true;
     let firstLoad = true;
 
     const fetchAssignments = async () => {
+      // With FK in DB: assignments?select=*,exercises(*) returns nested exercise
+      // data in one round-trip. Falls back gracefully if FK is missing.
+      let assignments_raw = [];
+      let exercises_raw = [];
       try {
+        const nested = await db.query("assignments", {
+          select: "*,exercises(*)",
+          filter: { patient_id: session.id },
+        });
+        if (Array.isArray(nested) && nested.length > 0 && nested[0].exercises) {
+          // Nested join worked — extract exercises from the embedded data
+          assignments_raw = nested;
+          exercises_raw = nested.map((a) => a.exercises).filter(Boolean);
+        } else {
+          // FK not set up yet — fall back to two separate queries
+          const [a, ex] = await Promise.all([
+            db.query("assignments", { filter: { patient_id: session.id } }),
+            db.query("exercises"),
+          ]);
+          assignments_raw = Array.isArray(a) ? a : [];
+          exercises_raw = Array.isArray(ex) ? ex : [];
+        }
+      } catch {
+        // Last resort fallback
         const [a, ex] = await Promise.all([
           db.query("assignments", { filter: { patient_id: session.id } }),
           db.query("exercises"),
         ]);
-        if (!active) return;
-        setAssignments(Array.isArray(a) ? a : []);
-        setExercises(Array.isArray(ex) ? ex : []);
-        setFetchErr("");
-      } catch (err) {
-        if (active) setFetchErr("Erro ao carregar exercícios: " + err.message);
-      } finally {
-        if (active && firstLoad) { setLoading(false); firstLoad = false; }
+        assignments_raw = Array.isArray(a) ? a : [];
+        exercises_raw = Array.isArray(ex) ? ex : [];
       }
+      if (!active) return;
+      setAssignments(assignments_raw);
+      // Deduplicate exercises (nested join may produce duplicates)
+      const seen = new Set();
+      setExercises(exercises_raw.filter((e) => e && !seen.has(e.id) && seen.add(e.id)));
+      if (firstLoad) { setLoading(false); firstLoad = false; }
     };
 
     fetchAssignments();
@@ -1859,7 +1871,6 @@ function PatientExercises({ session, setActiveExercise }) {
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
       <div className="page-header"><h2>Meus Exercícios</h2></div>
-      {fetchErr && <p className="error-msg">{fetchErr}</p>}
       {pending.length > 0 && (
         <>
           <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-muted)", marginBottom: 11 }}>Para fazer</div>
