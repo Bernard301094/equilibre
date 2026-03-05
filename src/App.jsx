@@ -120,6 +120,16 @@ const auth = {
     }
     return data;
   },
+  async refresh(refreshToken) {
+    const res = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: "POST",
+      headers: { apikey: SUPA_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error_description || "Erro ao renovar sessão");
+    return data;
+  },
 };
 
 // ─── Seed exercises ───────────────────────────────────────────────────────────
@@ -462,6 +472,23 @@ export default function App() {
     else localStorage.removeItem("equilibre_session");
   }, [session]);
 
+  // Auto-refresh JWT antes de expirar (a cada 50 min)
+  useEffect(() => {
+    if (!session?.refresh_token) return;
+    const interval = setInterval(async () => {
+      try {
+        const data = await auth.refresh(session.refresh_token);
+        if (data?.access_token) {
+          setSession(prev => prev ? { ...prev, access_token: data.access_token, refresh_token: data.refresh_token } : prev);
+        }
+      } catch (e) {
+        console.warn("Falha ao renovar token, sessão encerrada.", e);
+        setSession(null);
+      }
+    }, 50 * 60 * 1000); // 50 minutos
+    return () => clearInterval(interval);
+  }, [session?.refresh_token]);
+
   useEffect(() => {
     if (!document.querySelector("style[data-app='equilibre']")) {
       const styleEl = document.createElement("style");
@@ -520,10 +547,10 @@ export default function App() {
         const meta = authData.user?.user_metadata || {};
         const role = meta.role || loginTab;
         if (role !== loginTab) { setLoginError("Conta não encontrada para este perfil."); return; }
-        setSession({ id: authData.user.id, email: authData.user.email, name: meta.name || authData.user.email, role, access_token: authData.access_token });
+        setSession({ id: authData.user.id, email: authData.user.email, name: meta.name || authData.user.email, role, access_token: authData.access_token, refresh_token: authData.refresh_token });
       } else {
         if (users[0].role !== loginTab) { setLoginError("Conta não encontrada para este perfil."); return; }
-        setSession({ ...users[0], access_token: authData.access_token });
+        setSession({ ...users[0], access_token: authData.access_token, refresh_token: authData.refresh_token });
       }
       setView(loginTab === "patient" ? "home" : "dashboard");
     } catch (error) {
@@ -695,26 +722,59 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
     setError("");
     setLoading(true);
     try {
-      for (const [table, field] of [
-        ["assignments", "patient_id"],
-        ["responses", "patient_id"],
-        ["diary_entries", "patient_id"],
-        ["invites", "therapist_id"],
-        ["notifications", "therapist_id"],
-        ["goals", "patient_id"],
-      ]) {
-        const rows = await db.query(table, { filter: { [field]: session.id } });
-        if (Array.isArray(rows)) {
-          for (const row of rows) await db.remove(table, { id: row.id });
+      if (session.role === "patient") {
+        // Dados do paciente
+        for (const [table, field] of [
+          ["assignments", "patient_id"],
+          ["responses", "patient_id"],
+          ["diary_entries", "patient_id"],
+          ["goals", "patient_id"],
+        ]) {
+          const rows = await db.query(table, { filter: { [field]: session.id } }, session.access_token);
+          if (Array.isArray(rows)) {
+            for (const row of rows) await db.remove(table, { id: row.id }, session.access_token);
+          }
+        }
+        // Notificações onde este paciente é o autor
+        const notifs = await db.query("notifications", { filter: { patient_id: session.id } }, session.access_token);
+        if (Array.isArray(notifs)) {
+          for (const n of notifs) await db.remove("notifications", { id: n.id }, session.access_token);
+        }
+        // Resetar convite para "pending" → profissional não precisa gerar novo
+        const usedInvites = await db.query("invites", { filter: { used_by: session.id } }, session.access_token);
+        if (Array.isArray(usedInvites)) {
+          for (const inv of usedInvites) {
+            await db.update("invites", { id: inv.id }, { status: "pending", used_by: null, used_at: null }, session.access_token);
+          }
+        }
+      } else {
+        // Terapeuta: remove todos os dados vinculados
+        for (const [table, field] of [
+          ["invites", "therapist_id"],
+          ["notifications", "therapist_id"],
+          ["assignments", "therapist_id"],
+          ["goals", "therapist_id"],
+          ["clinical_notes", "therapist_id"],
+        ]) {
+          const rows = await db.query(table, { filter: { [field]: session.id } }, session.access_token);
+          if (Array.isArray(rows)) {
+            for (const row of rows) await db.remove(table, { id: row.id }, session.access_token);
+          }
+        }
+        // Desvincular pacientes da terapeuta
+        const patients = await db.query("users", { filter: { therapist_id: session.id, role: "patient" } }, session.access_token);
+        if (Array.isArray(patients)) {
+          for (const p of patients) await db.update("users", { id: p.id }, { therapist_id: null }, session.access_token);
         }
       }
-      await db.remove("users", { id: session.id });
+      await db.remove("users", { id: session.id }, session.access_token);
       await fetch(`${SUPA_URL}/auth/v1/user`, {
         method: "DELETE",
         headers: { apikey: SUPA_KEY, Authorization: `Bearer ${session.access_token}` },
       });
       onDeleted();
-    } catch {
+    } catch (e) {
+      console.error(e);
       setError("Erro ao excluir conta. Tente novamente.");
       setLoading(false);
     }
@@ -727,6 +787,12 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
         <div className="delete-title">Excluir conta</div>
         <div className="delete-desc">
           Esta ação é <strong>permanente e irreversível</strong>. Todos os seus dados serão apagados para sempre.
+          {session.role === "patient" && (
+            <><br /><br />✅ <strong>Seu código de convite será liberado automaticamente</strong> — se quiser criar uma nova conta, basta pedir um novo convite à sua profissional ou usar o mesmo código.</>
+          )}
+          {session.role === "therapist" && (
+            <><br /><br />⚠️ Seus pacientes serão <strong>desvinculados</strong> mas suas contas serão mantidas.</>
+          )}
           <br /><br />
           Digite <strong>{KEYWORD}</strong> para confirmar:
         </div>
@@ -963,7 +1029,6 @@ function PatientsView({ session, setModal }) {
     try {
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       const newInv = {
-        id: "i" + Date.now(),
         code,
         therapist_id: session.id,
         patient_email: inviteEmail,
@@ -972,9 +1037,10 @@ function PatientsView({ session, setModal }) {
       };
       
       // FIX: Adicionado session.access_token na inserção
-      await db.insert("invites", newInv, session.access_token);
+      const inserted = await db.insert("invites", newInv, session.access_token);
+      const savedInv = Array.isArray(inserted) ? inserted[0] : { ...newInv };
       
-      setInvites(prev => [newInv, ...prev]);
+      setInvites(prev => [savedInv, ...prev]);
       setInviteEmail("");
     } catch (e) {
       console.error(e);
@@ -1067,6 +1133,14 @@ function PatientsView({ session, setModal }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 14, letterSpacing: "1px", color: "var(--blue-dark)" }}>{inv.code}</span>
                     <button onClick={() => copyCode(inv.code)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16 }} title="Copiar código">📋</button>
+                    <button
+                      onClick={() => {
+                        const msg = encodeURIComponent(`Olá! 😊 Estou a usar o Equilibre para acompanhar o nosso trabalho juntos.\n\nPara criar a sua conta e ficarmos conectados, use o código de convite abaixo:\n\n🔑 *${inv.code}*\n\nAcesse: https://equilibreapp.vercel.app e clique em "Criar conta" → perfil Paciente → insira o código acima.`);
+                        window.open(`https://wa.me/?text=${msg}`, "_blank");
+                      }}
+                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18 }}
+                      title="Enviar pelo WhatsApp"
+                    >💬</button>
                   </div>
                 )}
               </div>
