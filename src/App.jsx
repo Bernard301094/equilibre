@@ -2210,7 +2210,6 @@ const MOODS = [
 ];
 
 function PatientDiary({ session }) {
-  // Pega a data local correta para evitar que mude de dia mais cedo por causa do fuso horário
   const getLocalToday = () => {
     const d = new Date();
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
@@ -2219,12 +2218,17 @@ function PatientDiary({ session }) {
 
   const [entries, setEntries] = useState([]);
   const [todayEntry, setTodayEntry] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [reminder, setReminder] = useState(false);
+
+  // Estados para o formulário (Criação e Edição)
+  const [editingEntry, setEditingEntry] = useState(null);
   const [mood, setMood] = useState(null);
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [reminder, setReminder] = useState(false);
-  const [loading, setLoading] = useState(true);
+
+  // Estado para o modal de exclusão
+  const [deletingEntry, setDeletingEntry] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -2237,11 +2241,8 @@ function PatientDiary({ session }) {
         setEntries(list);
         
         const te = list.find((x) => x.date === today);
-        if (te) { 
-          setTodayEntry(te); 
-          setMood(te.mood); 
-          setText(te.text || ""); 
-        }
+        if (te) setTodayEntry(te);
+    
         if (Array.isArray(u) && u.length) setReminder(!!u[0].reminder_email);
       } catch (err) {
         console.error("Erro ao carregar diário:", err);
@@ -2254,25 +2255,65 @@ function PatientDiary({ session }) {
   const save = async () => {
     setSaving(true);
     try {
-      if (todayEntry) {
-        await db.update("diary_entries", { id: todayEntry.id }, { mood, text, updated_at: new Date().toISOString() });
-        // Atualiza a lista instantaneamente
-        setEntries(prev => prev.map(e => e.id === todayEntry.id ? { ...e, mood, text } : e));
+      if (editingEntry) {
+        // Atualizando um registro existente
+        await db.update("diary_entries", { id: editingEntry.id }, { mood, text, updated_at: new Date().toISOString() });
+        setEntries(prev => prev.map(e => e.id === editingEntry.id ? { ...e, mood, text } : e));
+        
+        // Se estivermos editando o registro de hoje, atualiza a referência dele
+        if (editingEntry.date === today) {
+          setTodayEntry(prev => ({ ...prev, mood, text }));
+        }
+        setEditingEntry(null); // Fecha o editor
       } else {
+        // Criando o registro de hoje
         const entry = { id: "d" + Date.now(), patient_id: session.id, date: today, mood, text, created_at: new Date().toISOString() };
         await db.insert("diary_entries", entry);
         setTodayEntry(entry);
-        // Adiciona no topo da lista instantaneamente
         setEntries((prev) => [entry, ...prev]);
       }
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
+      // Limpa os campos do formulário
+      setMood(null);
+      setText("");
     } catch (e) {
       alert("Erro ao salvar diário. Tente novamente.");
     } finally {
       setSaving(false);
     }
   };
+
+  const startEdit = (entry) => {
+    setEditingEntry(entry);
+    setMood(entry.mood);
+    setText(entry.text || "");
+    window.scrollTo({ top: 0, behavior: "smooth" }); // Rola para cima para o paciente ver o formulário
+  };
+
+  const cancelEdit = () => {
+    setEditingEntry(null);
+    setMood(null);
+    setText("");
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingEntry) return;
+    try {
+      await db.remove("diary_entries", { id: deletingEntry.id });
+      setEntries(prev => prev.filter(e => e.id !== deletingEntry.id));
+      
+      // Se apagou o de hoje, limpa o state para o quadro de criação voltar a aparecer
+      if (deletingEntry.date === today) {
+        setTodayEntry(null);
+      }
+      // Se estava editando o que acabou de apagar, fecha o editor
+      if (editingEntry?.id === deletingEntry.id) {
+        cancelEdit();
+      }
+      setDeletingEntry(null);
+    } catch (e) {
+      alert("Erro ao excluir registro.");
+    }
+  };
 
   const toggleReminder = async () => {
     const newVal = !reminder;
@@ -2281,6 +2322,9 @@ function PatientDiary({ session }) {
   };
 
   if (loading) return <div style={{ color: "var(--text-muted)", padding: 20 }}>Carregando diário...</div>;
+
+  // Só mostra o formulário se o paciente ainda não tiver preenchido hoje OU se ele clicou em "Editar"
+  const showForm = !todayEntry || editingEntry;
 
   return (
     <div style={{ animation: "fadeUp .4s ease", maxWidth: 640 }}>
@@ -2296,36 +2340,44 @@ function PatientDiary({ session }) {
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 20, border: "1.5px solid var(--blue-mid)" }}>
-        <h3 style={{ fontSize: 15, marginBottom: 14, color: "var(--blue-dark)" }}>
-          Como você está hoje?{" "}
-          <span style={{ fontWeight: 400, fontSize: 13, color: "var(--text-muted)" }}>
-            ({new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })})
-          </span>
-        </h3>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", marginBottom: 18 }}>
-          {MOODS.map((m) => (
-            <div key={m.val} style={{ textAlign: "center", cursor: "pointer" }} onClick={() => setMood(m.val)}>
-              <button className={`mood-btn ${mood === m.val ? "sel" : ""}`}>{m.emoji}</button>
-              <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}>{m.label}</div>
-            </div>
-          ))}
-        </div>
-        <textarea className="q-textarea" placeholder="Como foi seu dia? O que você está sentindo? (opcional)" value={text} onChange={(e) => setText(e.target.value)} style={{ minHeight: 90 }} />
-        {saved && <div className="success-banner" style={{ marginTop: 10 }}>✅ Registro salvo!</div>}
-        <button className="btn btn-sage" style={{ marginTop: 12, width: "100%" }} onClick={save} disabled={!mood || saving}>
-          {saving ? "Salvando..." : todayEntry ? "✏️ Atualizar registro de hoje" : "💾 Salvar registro de hoje"}
-        </button>
-      </div>
+      {/* ─── QUADRO DE CRIAÇÃO / EDIÇÃO ─── */}
+      {showForm && (
+        <div className="card" style={{ marginBottom: 24, border: editingEntry ? "1.5px solid var(--orange)" : "1.5px solid var(--blue-mid)", animation: "fadeIn .3s ease" }}>
+          <h3 style={{ fontSize: 15, marginBottom: 14, color: editingEntry ? "var(--orange)" : "var(--blue-dark)" }}>
+            {editingEntry 
+              ? `Editando registro de ${new Date(editingEntry.date + "T12:00:00").toLocaleDateString("pt-BR")}` 
+              : "Como você está hoje?"}
+          </h3>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", marginBottom: 18 }}>
+            {MOODS.map((m) => (
+              <div key={m.val} style={{ textAlign: "center", cursor: "pointer" }} onClick={() => setMood(m.val)}>
+                <button className={`mood-btn ${mood === m.val ? "sel" : ""}`}>{m.emoji}</button>
+                <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}>{m.label}</div>
+              </div>
+            ))}
+          </div>
+          <textarea className="q-textarea" placeholder="Como foi seu dia? O que você está sentindo? (opcional)" value={text} onChange={(e) => setText(e.target.value)} style={{ minHeight: 90 }} />
+          
+          <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+            {editingEntry && (
+              <button className="btn btn-outline" style={{ flex: 1 }} onClick={cancelEdit}>
+                Cancelar
+              </button>
+            )}
+            <button className="btn btn-sage" style={{ flex: 2 }} onClick={save} disabled={!mood || saving}>
+              {saving ? "Salvando..." : editingEntry ? "Atualizar registro" : "💾 Salvar meu dia"}
+            </button>
+          </div>
+        </div>
+      )}
 
+      {/* ─── HISTÓRICO DE REGISTROS ─── */}
       <h3 style={{ fontSize: 15, marginBottom: 12 }}>Seu Histórico</h3>
       
-      {/* Removemos o filtro! Agora entries mostra TUDO, incluindo hoje */}
-      {entries.slice(0, 10).map((e) => {
+      {entries.map((e) => {
         const m = MOODS.find((x) => x.val === e.mood);
         const isToday = e.date === today;
         return (
-          // Se for o registro de hoje, ganha uma borda verde sutil para destacar que foi salvo
           <div key={e.id} className="card" style={{ marginBottom: 10, display: "flex", gap: 14, alignItems: "flex-start", border: isToday ? "1.5px solid var(--sage-light)" : "1px solid rgba(255,255,255,0.6)" }}>
             <div style={{ fontSize: 28 }}>{m?.emoji || "😐"}</div>
             <div style={{ flex: 1 }}>
@@ -2339,6 +2391,26 @@ function PatientDiary({ session }) {
                 </span>
               </div>
               {e.text && <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5, margin: 0 }}>{e.text}</p>}
+              
+              {/* Botões de Ação do Histórico */}
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button 
+                  onClick={() => startEdit(e)} 
+                  style={{ background: "transparent", border: "1px solid var(--warm)", borderRadius: 6, padding: "4px 10px", cursor: "pointer", color: "var(--text-muted)", fontSize: 11, fontWeight: 500, transition: "all .15s" }}
+                  onMouseEnter={(ev) => ev.target.style.borderColor = "var(--sage)"}
+                  onMouseLeave={(ev) => ev.target.style.borderColor = "var(--warm)"}
+                >
+                  ✏️ Editar
+                </button>
+                <button 
+                  onClick={() => setDeletingEntry(e)} 
+                  style={{ background: "transparent", border: "1px solid var(--warm)", borderRadius: 6, padding: "4px 10px", cursor: "pointer", color: "var(--danger)", fontSize: 11, fontWeight: 500, transition: "all .15s", opacity: 0.7 }}
+                  onMouseEnter={(ev) => { ev.target.style.borderColor = "var(--danger)"; ev.target.style.opacity = "1"; }}
+                  onMouseLeave={(ev) => { ev.target.style.borderColor = "var(--warm)"; ev.target.style.opacity = "0.7"; }}
+                >
+                  🗑️ Excluir
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -2346,6 +2418,23 @@ function PatientDiary({ session }) {
       {entries.length === 0 && (
         <div className="empty-state"><div className="empty-icon">📖</div><p>Nenhum registro ainda. Comece hoje!</p></div>
       )}
+
+      {/* ─── MODAL DE EXCLUSÃO ─── */}
+      {deletingEntry && (
+        <div className="delete-overlay" onClick={() => setDeletingEntry(null)}>
+          <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>🗑️</div>
+            <div className="delete-title" style={{ fontSize: 20 }}>Excluir registro?</div>
+            <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>
+              Tem certeza que deseja apagar o registro do dia <strong>{new Date(deletingEntry.date + "T12:00:00").toLocaleDateString("pt-BR")}</strong>?
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <button className="btn btn-outline" onClick={() => setDeletingEntry(null)}>Cancelar</button>
+              <button className="btn-danger" onClick={confirmDelete}>Excluir</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
