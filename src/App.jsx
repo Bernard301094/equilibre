@@ -768,7 +768,6 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
 function TherapistLayout({ session, setSession, view, setView, modal, setModal }) {
   const [showDelete, setShowDelete] = useState(false);
   const [unread, setUnread] = useState(0);
-  const [editingEx, setEditingEx] = useState(null); // Nuevo estado para edición
 
   useEffect(() => {
     db.query("notifications", { filter: { therapist_id: session.id, read: false } }).then((r) =>
@@ -801,7 +800,7 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
         </div>
         <nav>
           {navItems.map((n) => (
-            <button key={n.id} className={`nav-item ${(view === n.id || (n.id === "create" && view === "edit")) ? "active" : ""}`} onClick={() => { setEditingEx(null); setView(n.id); }}>
+            <button key={n.id} className={`nav-item ${view === n.id ? "active" : ""}`} onClick={() => setView(n.id)}>
               <span className="icon">{n.icon}</span>
               {n.label}
             </button>
@@ -824,9 +823,8 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
       <main className="main">
         {view === "dashboard" && <TherapistDashboard session={session} setView={setView} />}
         {view === "patients" && <PatientsView session={session} setModal={setModal} />}
-        {view === "exercises" && <ExercisesView session={session} onEdit={(ex) => { setEditingEx(ex); setView("edit"); }} />}
-        {view === "create" && <CreateExerciseView key="create" session={session} onSaved={() => setView("exercises")} />}
-        {view === "edit" && <CreateExerciseView key="edit" session={session} initialExercise={editingEx} onSaved={() => { setEditingEx(null); setView("exercises"); }} />}
+        {view === "exercises" && <ExercisesView session={session} />}
+        {view === "create" && <CreateExerciseView session={session} onSaved={() => setView("exercises")} />}
         {view === "progress" && <TherapistProgress session={session} />}
         {view === "responses" && <ResponsesView session={session} />}
         {view === "notifications" && <NotificationsView session={session} onRead={() => setUnread(0)} />}
@@ -1025,17 +1023,35 @@ function InviteCodeCard({ invite, onRevoke }) {
 }
 
 // ─── Exercises View ───────────────────────────────────────────────────────────
-function ExercisesView({ session, onEdit }) {
+function ExercisesView({ session }) {
   const [exercises, setExercises] = useState([]);
+  const [editingEx, setEditingEx] = useState(null); // Controla si estamos editando
+  const [refresh, setRefresh] = useState(0); // Para forzar la recarga tras guardar
 
   useEffect(() => {
     db.query("exercises").then((r) => {
       const all = Array.isArray(r) ? r : [];
       setExercises(all.filter((ex) => !ex.therapist_id || ex.therapist_id === session.id));
     });
-  }, [session.id]);
+  }, [session.id, refresh]);
 
   const catClass = (c) => (c === "Mindfulness" ? "mindfulness" : c === "Bem-estar" ? "bem-estar" : "");
+
+  // Si estamos en modo edición, mostramos el componente de Crear/Editar
+  // directamente aquí, dentro de la Biblioteca.
+  if (editingEx) {
+    return (
+      <CreateExerciseView 
+        key={editingEx.id} 
+        session={session} 
+        initialExercise={editingEx} 
+        onSaved={() => {
+          setEditingEx(null); // Cierra el editor
+          setRefresh(r => r + 1); // Recarga la lista de la base de datos
+        }} 
+      />
+    );
+  }
 
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
@@ -1050,8 +1066,10 @@ function ExercisesView({ session, onEdit }) {
             <div key={ex.id} className="ex-card" style={{ position: "relative" }}>
               {isOwner && (
                 <button
-                  onClick={() => onEdit(ex)}
-                  style={{ position: "absolute", top: 16, right: 16, background: "var(--cream)", border: "1px solid var(--warm)", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontWeight: 500, color: "var(--text-muted)" }}
+                  onClick={() => setEditingEx(ex)}
+                  style={{ position: "absolute", top: 16, right: 16, background: "var(--cream)", border: "1px solid var(--warm)", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontWeight: 500, color: "var(--text-muted)", transition: "all .15s" }}
+                  onMouseEnter={(e) => e.target.style.borderColor = "var(--sage)"}
+                  onMouseLeave={(e) => e.target.style.borderColor = "var(--warm)"}
                 >
                   ✏️ Editar
                 </button>
