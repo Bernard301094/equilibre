@@ -89,7 +89,6 @@ const db = {
       headers: {
         apikey: SUPA_KEY,
         Authorization: `Bearer ${token || SUPA_KEY}`,
-        Prefer: "return=representation",
       },
     });
     if (!res.ok) {
@@ -1169,17 +1168,17 @@ function PatientsView({ session, setModal }) {
   const deleteInvite = async (inv) => {
     if (!window.confirm(`Eliminar o convite ${inv.code}?`)) return;
     try {
-      const filtro = inv.id ? `id=eq.${inv.id}` : `code=eq.${inv.code}`;
-      const res = await fetch(`${SUPA_URL}/rest/v1/invites?${filtro}`, {
+      const res = await fetch(`${SUPA_URL}/rest/v1/invites?code=eq.${inv.code}`, {
         method: "DELETE",
         headers: {
           apikey: SUPA_KEY,
-          Authorization: `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${SUPA_KEY}`,
         },
       });
-      const body = await res.text();
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${body}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `HTTP ${res.status}`);
+      }
       setInvites(prev => prev.filter(i => i.code !== inv.code));
     } catch (e) {
       alert("Erro ao eliminar convite: " + (e?.message || e));
