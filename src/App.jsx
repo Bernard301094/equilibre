@@ -902,7 +902,7 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal, 
         {view === "notifications" && <NotificationsView session={session} onRead={() => { setUnread(0); prevUnreadRef.current = 0; }} />}
       </main>
       {modal && <Modal modal={modal} setModal={setModal} session={session} />}
-      {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => setSession(null)} />}
+      {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => { localStorage.removeItem("equilibre_session"); setSession(null); window.location.reload(); }} />}
       {showLogout && (
         <div className="delete-overlay" onClick={() => setShowLogout(false)}>
           <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
@@ -2238,7 +2238,7 @@ function PatientLayout({ session, setSession, view, setView, toggleTheme, theme 
         {view === "history" && <PatientHistory session={session} />}
       </main>
 
-      {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => setSession(null)} />}
+      {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => { localStorage.removeItem("equilibre_session"); setSession(null); window.location.reload(); }} />}
       {showLogout && (
         <div className="delete-overlay" onClick={() => setShowLogout(false)}>
           <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
