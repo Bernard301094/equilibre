@@ -2221,7 +2221,7 @@ function PatientDiary({ session }) {
   const [loading, setLoading] = useState(true);
   const [reminder, setReminder] = useState(false);
 
-  // Estados para o formulário (Criação e Edição)
+  // Estados para o formulário
   const [editingEntry, setEditingEntry] = useState(null);
   const [mood, setMood] = useState(null);
   const [text, setText] = useState("");
@@ -2256,23 +2256,18 @@ function PatientDiary({ session }) {
     setSaving(true);
     try {
       if (editingEntry) {
-        // Atualizando um registro existente
         await db.update("diary_entries", { id: editingEntry.id }, { mood, text, updated_at: new Date().toISOString() });
         setEntries(prev => prev.map(e => e.id === editingEntry.id ? { ...e, mood, text } : e));
-        
-        // Se estivermos editando o registro de hoje, atualiza a referência dele
         if (editingEntry.date === today) {
           setTodayEntry(prev => ({ ...prev, mood, text }));
         }
-        setEditingEntry(null); // Fecha o editor
+        setEditingEntry(null);
       } else {
-        // Criando o registro de hoje
         const entry = { id: "d" + Date.now(), patient_id: session.id, date: today, mood, text, created_at: new Date().toISOString() };
         await db.insert("diary_entries", entry);
         setTodayEntry(entry);
         setEntries((prev) => [entry, ...prev]);
       }
-      // Limpa os campos do formulário
       setMood(null);
       setText("");
     } catch (e) {
@@ -2286,7 +2281,7 @@ function PatientDiary({ session }) {
     setEditingEntry(entry);
     setMood(entry.mood);
     setText(entry.text || "");
-    window.scrollTo({ top: 0, behavior: "smooth" }); // Rola para cima para o paciente ver o formulário
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const cancelEdit = () => {
@@ -2300,15 +2295,8 @@ function PatientDiary({ session }) {
     try {
       await db.remove("diary_entries", { id: deletingEntry.id });
       setEntries(prev => prev.filter(e => e.id !== deletingEntry.id));
-      
-      // Se apagou o de hoje, limpa o state para o quadro de criação voltar a aparecer
-      if (deletingEntry.date === today) {
-        setTodayEntry(null);
-      }
-      // Se estava editando o que acabou de apagar, fecha o editor
-      if (editingEntry?.id === deletingEntry.id) {
-        cancelEdit();
-      }
+      if (deletingEntry.date === today) setTodayEntry(null);
+      if (editingEntry?.id === deletingEntry.id) cancelEdit();
       setDeletingEntry(null);
     } catch (e) {
       alert("Erro ao excluir registro.");
@@ -2323,8 +2311,13 @@ function PatientDiary({ session }) {
 
   if (loading) return <div style={{ color: "var(--text-muted)", padding: 20 }}>Carregando diário...</div>;
 
-  // Só mostra o formulário se o paciente ainda não tiver preenchido hoje OU se ele clicou em "Editar"
   const showForm = !todayEntry || editingEntry;
+
+  // ─── Lógica do Dashboard de Humor ───
+  // Pega os últimos 14 dias (ou menos) e inverte para ficar cronológico (esquerda pra direita)
+  const chartEntries = [...entries].slice(0, 14).reverse();
+  const moodPoints = chartEntries.map(e => e.mood);
+  const moodLabels = chartEntries.map(e => new Date(e.date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }));
 
   return (
     <div style={{ animation: "fadeUp .4s ease", maxWidth: 640 }}>
@@ -2371,6 +2364,15 @@ function PatientDiary({ session }) {
         </div>
       )}
 
+      {/* ─── DASHBOARD DE HUMOR (NOVO) ─── */}
+      {entries.length >= 2 && (
+        <div className="card" style={{ marginBottom: 24, animation: "fadeIn .4s ease" }}>
+          <h3 style={{ fontSize: 15, marginBottom: 4 }}>Evolução do Humor</h3>
+          <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>Seu histórico recente (1 = Difícil, 5 = Ótimo)</p>
+          <MiniLineChart points={moodPoints} labels={moodLabels} height={90} color="var(--orange)" />
+        </div>
+      )}
+
       {/* ─── HISTÓRICO DE REGISTROS ─── */}
       <h3 style={{ fontSize: 15, marginBottom: 12 }}>Seu Histórico</h3>
       
@@ -2392,7 +2394,6 @@ function PatientDiary({ session }) {
               </div>
               {e.text && <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5, margin: 0 }}>{e.text}</p>}
               
-              {/* Botões de Ação do Histórico */}
               <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                 <button 
                   onClick={() => startEdit(e)} 
