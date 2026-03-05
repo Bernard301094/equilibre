@@ -567,7 +567,7 @@ export default function App() {
       document.title = "Equilibre";
       const favicon = document.querySelector("link[rel~='icon']") || document.createElement('link');
       favicon.rel = 'icon';
-      favicon.type = 'image/jpeg';
+      favicon.type = 'image/png';
       favicon.href = LOGO;
       document.head.appendChild(favicon);
 
