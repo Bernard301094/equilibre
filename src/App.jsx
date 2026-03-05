@@ -229,17 +229,20 @@ const css = `
   .nav-item.active { background:rgba(255,255,255,0.15); color:white; font-weight:500; }
   .nav-item .icon { font-size:17px; }
   .sidebar-footer { padding:14px 10px; border-top:1px solid rgba(255,255,255,0.1); }
-  .user-pill { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:10px; }
-  .avatar { width:34px; height:34px; border-radius:50%; background:var(--sage-light); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:var(--sage-dark); }
-  .user-info .name { font-size:13px; font-weight:500; }
-  .user-info .email { font-size:10px; opacity:.5; }
   
-  .pill-actions { display: flex; gap: 6px; margin-left: auto; }
-  .pill-btn { background: rgba(255,255,255,0.06); border: none; width: 32px; height: 32px; border-radius: 8px; color: rgba(255,255,255,0.65); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+  /* ─── FIX: FOOTER E ÍCONES BLINDADOS CONTRA TEXTOS GRANDES ─── */
+  .user-pill { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; width: 100%; box-sizing: border-box; }
+  .avatar { width:34px; height:34px; border-radius:50%; background:var(--sage-light); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:var(--sage-dark); flex-shrink: 0; }
+  .user-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .user-info .name { font-size:13px; font-weight:500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-info .email { font-size:10px; opacity:.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; margin-top: 2px; }
+  
+  .pill-actions { display: flex; gap: 4px; margin-left: auto; flex-shrink: 0; }
+  .pill-btn { background: rgba(255,255,255,0.06); border: none; width: 28px; height: 28px; border-radius: 6px; color: rgba(255,255,255,0.65); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
   .pill-btn:hover { background: rgba(255,255,255,0.15); color: white; transform: translateY(-1px); }
   .pill-btn.delete:hover { background: rgba(192,84,74,0.25); color: #ff8a80; }
-  .theme-toggle { background: transparent; border: 1px solid var(--warm); color: var(--text-muted); width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
-  .theme-toggle:hover { background: var(--warm); color: var(--text); }
+  .theme-toggle { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.65); width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+  .theme-toggle:hover { background: rgba(255,255,255,0.15); color: white; }
   
   .main { margin-left:250px; padding:38px; min-height:100vh; background:var(--cream); width:100%; box-sizing: border-box; }
   .patient-sidebar { background:#0e3d5e; }
@@ -369,6 +372,13 @@ const css = `
     .sidebar nav { display: flex; overflow-x: auto; padding: 10px 20px; white-space: nowrap; gap: 10px; }
     .nav-item { width: auto; flex-shrink: 0; padding: 10px 14px; margin-bottom: 0; }
     .sidebar-footer { padding: 15px 20px; }
+    
+    /* ─── FIX: FOOTER E ÍCONES RESPONSIVOS ─── */
+    .user-pill { width: 100%; justify-content: space-between; gap: 10px; }
+    .user-info { flex: 1; min-width: 0; display: flex; flex-direction: column; } 
+    .user-info .name, .user-info .email { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: block; }
+    .pill-actions { margin-left: 0; flex-shrink: 0; display: flex; gap: 4px; } 
+
     .main { margin-left: 0; padding: 20px 15px; }
     .grid-3 { grid-template-columns: 1fr; }
     .grid-2 { grid-template-columns: 1fr; }
@@ -1909,13 +1919,13 @@ function PatientHome({ session, setView }) {
       <div className="page-header"><h2>Olá, {session.name.split(" ")[0]} 🌱</h2><p>Como você está se sentindo hoje?</p></div>
       <div className="grid-3" style={{ marginBottom: 20 }}>
         
-        {/* GAMIFICAÇÃO: Muda o ícone de acordo com o número de dias seguidos */}
+        {/* GAMIFICAÇÃO */}
         <div className="stat-card">
           <div className="stat-icon">{data.streak >= 7 ? "🌳" : data.streak >= 3 ? "🌿" : "🌱"}</div>
           <div className="stat-val">{data.streak}</div>
           <div className="stat-label">Dias seguidos</div>
         </div>
-        
+
         <div className="stat-card"><div className="stat-icon">⏳</div><div className="stat-val">{data.pending}</div><div className="stat-label">Para fazer</div></div>
         {data.overdue > 0 ? <div className="stat-card" style={{ border: "1.5px solid #f6943b" }}><div className="stat-icon">⚠️</div><div className="stat-val" style={{ color: "var(--accent)" }}>{data.overdue}</div><div className="stat-label">Com prazo vencido</div></div> : <div className="stat-card"><div className="stat-icon">✅</div><div className="stat-val">{data.done}</div><div className="stat-label">Concluídos</div></div>}
       </div>
