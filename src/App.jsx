@@ -227,8 +227,10 @@ const css = `
   .avatar { width:34px; height:34px; border-radius:50%; background:var(--sage-light); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:var(--sage-dark); }
   .user-info .name { font-size:13px; font-weight:500; }
   .user-info .email { font-size:10px; opacity:.5; }
-  .logout-btn { background:none; border:none; color:rgba(255,255,255,0.45); cursor:pointer; font-size:17px; margin-left:auto; }
-  .logout-btn:hover { color:white; }
+  .pill-actions { display: flex; gap: 6px; margin-left: auto; }
+  .pill-btn { background: rgba(255,255,255,0.06); border: none; width: 32px; height: 32px; border-radius: 8px; color: rgba(255,255,255,0.65); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+  .pill-btn:hover { background: rgba(255,255,255,0.15); color: white; transform: translateY(-1px); }
+  .pill-btn.delete:hover { background: rgba(192,84,74,0.25); color: #ff8a80; }
   .main { margin-left:250px; padding:38px; min-height:100vh; background:var(--cream); width:100%; box-sizing: border-box; }
   .patient-sidebar { background:#0e3d5e; }
   .page-header { margin-bottom:28px; }
@@ -764,13 +766,12 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
   );
 }
 
-// ─── Therapist Layout ─────────────────────────────────────────────────────────
+/// ─── Therapist Layout ─────────────────────────────────────────────────────────
 function TherapistLayout({ session, setSession, view, setView, modal, setModal }) {
   const [showDelete, setShowDelete] = useState(false);
   const [unread, setUnread] = useState(0);
   const [editingEx, setEditingEx] = useState(null);
 
-  // FIX: Atualiza a campainha de notificações em tempo real (a cada 5 segundos)
   useEffect(() => {
     let active = true;
     const fetchNotifs = async () => {
@@ -822,9 +823,14 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
               <div className="name">{session.name.split(" ")[0]}</div>
               <div className="email">{session.email}</div>
             </div>
-            <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
-              <button className="logout-btn" title="Sair" onClick={() => setSession(null)}>↩</button>
-              <button className="logout-btn" title="Excluir conta" onClick={() => setShowDelete(true)} style={{ fontSize: 15 }}>🗑</button>
+            {/* ÍCONES NOVOS AQUI */}
+            <div className="pill-actions">
+              <button className="pill-btn" title="Sair" onClick={() => setSession(null)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              </button>
+              <button className="pill-btn delete" title="Excluir conta" onClick={() => setShowDelete(true)}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
             </div>
           </div>
         </div>
@@ -832,9 +838,8 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
       <main className="main">
         {view === "dashboard" && <TherapistDashboard session={session} setView={setView} />}
         {view === "patients" && <PatientsView session={session} setModal={setModal} />}
-        {view === "exercises" && <ExercisesView session={session} onEdit={(ex) => { setEditingEx(ex); setView("edit"); }} />}
-        {view === "create" && <CreateExerciseView key="create" session={session} onSaved={() => setView("exercises")} />}
-        {view === "edit" && <CreateExerciseView key="edit" session={session} initialExercise={editingEx} onSaved={() => { setEditingEx(null); setView("exercises"); }} />}
+        {view === "exercises" && <ExercisesView session={session} />}
+        {view === "create" && <CreateExerciseView session={session} onSaved={() => setView("exercises")} />}
         {view === "progress" && <TherapistProgress session={session} />}
         {view === "responses" && <ResponsesView session={session} />}
         {view === "notifications" && <NotificationsView session={session} onRead={() => setUnread(0)} />}
@@ -1787,102 +1792,101 @@ function NotificationsView({ session, onRead }) {
 
 // ─── Patient Layout ───────────────────────────────────────────────────────────
 function PatientLayout({ session, setSession, view, setView }) {
-  const [showDelete, setShowDelete] = useState(false);
-  const [activeExercise, setActiveExercise] = useState(null);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [showDelete, setShowDelete] = useState(false);
+  const [activeExercise, setActiveExercise] = useState(null);
+  const [pendingCount, setPendingCount] = useState(0);
 
-  // ── Session self-heal ───────────────────────────────────────────────────────
-  // The session.id in localStorage may be the Supabase Auth UUID, but the row in
-  // the users table might have been saved with a "u"+timestamp fallback ID (when
-  // signUp returned without a proper user object). Every assignment is stored with
-  // patient_id = users.id, so a mismatch means all queries return empty forever.
-  // Fix: look up the real row by email on mount and patch session.id if needed.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const rows = await db.query("users", { filter: { email: session.email } });
-        if (!cancelled && Array.isArray(rows) && rows.length > 0 && rows[0].id !== session.id) {
-          setSession((prev) => ({ ...prev, ...rows[0] }));
-        }
-      } catch { /* non-critical */ }
-    })();
-    return () => { cancelled = true; };
-  }, [session.email]); // eslint-disable-line
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await db.query("users", { filter: { email: session.email } });
+        if (!cancelled && Array.isArray(rows) && rows.length > 0 && rows[0].id !== session.id) {
+          setSession((prev) => ({ ...prev, ...rows[0] }));
+        }
+      } catch { /* non-critical */ }
+    })();
+    return () => { cancelled = true; };
+  }, [session.email]);
 
-  useEffect(() => {
-    let active = true;
-    const fetchPending = async () => {
-      try {
-        const r = await db.query("assignments", { filter: { patient_id: session.id, status: "pending" } });
-        if (active) setPendingCount(Array.isArray(r) ? r.length : 0);
-      } catch { /* ignore */ }
-    };
-    fetchPending();
-    const intId = setInterval(fetchPending, 5000);
-    return () => { active = false; clearInterval(intId); };
-  }, [session.id]);
+  useEffect(() => {
+    let active = true;
+    const fetchPending = async () => {
+      try {
+        const r = await db.query("assignments", { filter: { patient_id: session.id, status: "pending" } });
+        if (active) setPendingCount(Array.isArray(r) ? r.length : 0);
+      } catch { /* ignore */ }
+    };
+    fetchPending();
+    const intId = setInterval(fetchPending, 5000);
+    return () => { active = false; clearInterval(intId); };
+  }, [session.id]);
 
-  if (activeExercise)
-    return (
-      <ExercisePage
-        exercise={activeExercise}
-        session={session}
-        onBack={() => { setActiveExercise(null); setView("exercises"); }}
-      />
-    );
+  if (activeExercise)
+    return (
+      <ExercisePage
+        exercise={activeExercise}
+        session={session}
+        onBack={() => { setActiveExercise(null); setView("exercises"); }}
+      />
+    );
 
-  const patNav = [
-    { id: "home", icon: "🏠", label: "Início" },
-    { id: "exercises", icon: "📋", label: "Meus Exercícios" },
-    { id: "diary", icon: "📓", label: "Diário" },
-    { id: "progress", icon: "📊", label: "Meu Progresso" },
-    { id: "history", icon: "📖", label: "Histórico" },
-  ];
+  const patNav = [
+    { id: "home", icon: "🏠", label: "Início" },
+    { id: "exercises", icon: "📋", label: "Meus Exercícios" },
+    { id: "diary", icon: "📓", label: "Diário" },
+    { id: "progress", icon: "📊", label: "Meu Progresso" },
+    { id: "history", icon: "📖", label: "Histórico" },
+  ];
 
-  return (
-    <div className="layout">
-      <aside className="sidebar patient-sidebar">
-        <div className="sidebar-header">
-          <div className="brand" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <img src={LOGO} alt="" style={{ width: 32, height: 32, objectFit: "contain" }} /> Equilibre
-          </div>
-          <div className="role">Área do Paciente</div>
-        </div>
-        <nav>
-          {patNav.map((n) => (
-            <button key={n.id} className={`nav-item ${view === n.id ? "active" : ""}`} onClick={() => setView(n.id)}>
-              <span className="icon">{n.icon}</span>{n.label}
-              {n.id === "exercises" && pendingCount > 0 && (
-                <span style={{ marginLeft: "auto", background: "var(--accent)", color: "white", borderRadius: 20, fontSize: 10, padding: "2px 7px" }}>{pendingCount}</span>
-              )}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-footer">
-          <div className="user-pill">
-            <div className="avatar">{session.name[0]}</div>
-            <div className="user-info">
-              <div className="name">{session.name.split(" ")[0]}</div>
-              <div className="email">{session.email}</div>
-            </div>
-            <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
-              <button className="logout-btn" title="Sair" onClick={() => setSession(null)}>↩</button>
-              <button className="logout-btn" title="Excluir conta" onClick={() => setShowDelete(true)} style={{ fontSize: 15 }}>🗑</button>
-            </div>
-          </div>
-        </div>
-      </aside>
-      <main className="main">
-        {view === "home" && <PatientHome session={session} setView={setView} />}
-        {view === "exercises" && <PatientExercises session={session} setActiveExercise={setActiveExercise} />}
-        {view === "diary" && <PatientDiary session={session} />}
-        {view === "progress" && <PatientProgress session={session} />}
-        {view === "history" && <PatientHistory session={session} />}
-      </main>
-      {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => setSession(null)} />}
-    </div>
-  );
+  return (
+    <div className="layout">
+      <aside className="sidebar patient-sidebar">
+        <div className="sidebar-header">
+          <div className="brand" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <img src={LOGO} alt="" style={{ width: 32, height: 32, objectFit: "contain" }} /> Equilibre
+          </div>
+          <div className="role">Área do Paciente</div>
+        </div>
+        <nav>
+          {patNav.map((n) => (
+            <button key={n.id} className={`nav-item ${view === n.id ? "active" : ""}`} onClick={() => setView(n.id)}>
+              <span className="icon">{n.icon}</span>{n.label}
+              {n.id === "exercises" && pendingCount > 0 && (
+                <span style={{ marginLeft: "auto", background: "var(--accent)", color: "white", borderRadius: 20, fontSize: 10, padding: "2px 7px" }}>{pendingCount}</span>
+              )}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-footer">
+          <div className="user-pill">
+            <div className="avatar">{session.name[0]}</div>
+            <div className="user-info">
+              <div className="name">{session.name.split(" ")[0]}</div>
+              <div className="email">{session.email}</div>
+            </div>
+            {/* ÍCONES NOVOS AQUI */}
+            <div className="pill-actions">
+              <button className="pill-btn" title="Sair" onClick={() => setSession(null)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              </button>
+              <button className="pill-btn delete" title="Excluir conta" onClick={() => setShowDelete(true)}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+      <main className="main">
+        {view === "home" && <PatientHome session={session} setView={setView} />}
+        {view === "exercises" && <PatientExercises session={session} setActiveExercise={setActiveExercise} />}
+        {view === "diary" && <PatientDiary session={session} />}
+        {view === "progress" && <PatientProgress session={session} />}
+        {view === "history" && <PatientHistory session={session} />}
+      </main>
+      {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => setSession(null)} />}
+    </div>
+  );
 }
 
 // ─── Patient Home ─────────────────────────────────────────────────────────────
