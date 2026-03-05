@@ -435,7 +435,16 @@ export default function App() {
 
   const [ready, setReady] = useState(false);
   const [dbError, setDbError] = useState(false);
-  const [view, setView] = useState("dashboard");
+  const [view, setView] = useState(() => {
+    try {
+      const saved = localStorage.getItem("equilibre_session");
+      if (saved) {
+        const parsedSession = JSON.parse(saved);
+        return parsedSession.role === "patient" ? "home" : "dashboard";
+      }
+    } catch {}
+    return "dashboard";
+  });
   const [modal, setModal] = useState(null);
   const [loginTab, setLoginTab] = useState("therapist");
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
