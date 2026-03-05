@@ -928,127 +928,164 @@ function TherapistDashboard({ session, setView }) {
 function PatientsView({ session, setModal }) {
   const [patients, setPatients] = useState([]);
   const [invites, setInvites] = useState([]);
-  const [label, setLabel] = useState("");
   const [loading, setLoading] = useState(true);
-
-  // FIX: useCallback evita dependência desatualizada no useEffect
-  const load = useCallback(async () => {
-    const p = await db.query("users", {
-      select: "id,name,email",
-      filter: { therapist_id: session.id, role: "patient" },
-    });
-    const inv = await db.query("invites", {
-      filter: { therapist_id: session.id },
-      order: "created_at.desc",
-    });
-    setPatients(Array.isArray(p) ? p : []);
-    setInvites(Array.isArray(inv) ? inv : []);
-    setLoading(false);
-  }, [session.id]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [generating, setGenerating] = useState(false);
+  
+  // Estado para controlar qual paciente está sendo desvinculado
+  const [unlinkingPatient, setUnlinkingPatient] = useState(null);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let active = true;
+    const fetch = async () => {
+      try {
+        const [pts, invs] = await Promise.all([
+          db.query("users", { filter: { therapist_id: session.id, role: "patient" } }),
+          db.query("invites", { filter: { therapist_id: session.id }, order: "created_at.desc" })
+        ]);
+        if (!active) return;
+        setPatients(Array.isArray(pts) ? pts : []);
+        setInvites(Array.isArray(invs) ? invs : []);
+      } catch (e) {
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    fetch();
+    return () => { active = false; };
+  }, [session.id]);
 
-  const generateCode = async () => {
-    const code = (
-      Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 5)
-    ).toUpperCase().slice(0, 7);
-    await db.insert("invites", {
-      code,
-      therapist_id: session.id,
-      label: label.trim(),
-      status: "pending",
-      created_at: new Date().toISOString(),
-    });
-    setLabel("");
-    load();
+  const generateInvite = async () => {
+    if (!inviteEmail) return alert("Digite um e-mail para o convite.");
+    setGenerating(true);
+    try {
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const newInv = {
+        id: "i" + Date.now(),
+        code,
+        therapist_id: session.id,
+        patient_email: inviteEmail,
+        status: "pending",
+        created_at: new Date().toISOString()
+      };
+      await db.insert("invites", newInv);
+      setInvites(prev => [newInv, ...prev]);
+      setInviteEmail("");
+    } catch (e) {
+      alert("Erro ao gerar convite.");
+    } finally {
+      setGenerating(false);
+    }
   };
 
-  const revokeCode = async (code) => {
-    await db.remove("invites", { code });
-    load();
+  const copyCode = (code) => {
+    navigator.clipboard.writeText(code);
+    alert("Código copiado: " + code);
   };
+
+  // Função para Desvincular o paciente
+  const confirmUnlink = async () => {
+    if (!unlinkingPatient) return;
+    try {
+      // Remove o vínculo (therapist_id) do paciente no banco
+      await db.update("users", { id: unlinkingPatient.id }, { therapist_id: null });
+      
+      // Remove o paciente da lista na tela atual
+      setPatients(prev => prev.filter(p => p.id !== unlinkingPatient.id));
+      setUnlinkingPatient(null);
+    } catch (e) {
+      alert("Erro ao desvincular paciente. Tente novamente.");
+    }
+  };
+
+  if (loading) return <div style={{ color: "var(--text-muted)", fontSize: 14 }}>Carregando pacientes...</div>;
 
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
       <div className="page-header">
-        <h2>Pacientes</h2>
-        <p>Gere um código único para cada paciente</p>
+        <h2>👥 Meus Pacientes</h2>
+        <p>Gerencie seus pacientes e envie convites</p>
       </div>
 
-      <div className="card" style={{ marginBottom: 22, border: "1.5px solid var(--sage-light)" }}>
-        <h3 style={{ fontSize: 16, marginBottom: 4 }}>🔑 Gerar código de convite</h3>
-        <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14 }}>Cada código é único, pessoal e de uso único.</p>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Nome do paciente (opcional)" style={{ flex: 1, minWidth: 180, padding: "10px 14px", border: "1.5px solid var(--warm)", borderRadius: 10, fontFamily: "DM Sans, sans-serif", fontSize: 14, background: "var(--cream)", outline: "none" }} />
-          <button className="btn btn-sage" onClick={generateCode}>+ Gerar código</button>
+      <div className="grid-2">
+        <div className="card">
+          <h3 style={{ fontSize: 16, marginBottom: 14 }}>Pacientes Ativos ({patients.length})</h3>
+          {patients.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Nenhum paciente cadastrado.</p>}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {patients.map(p => (
+              <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", border: "1.5px solid var(--warm)", borderRadius: 12, background: "var(--cream)" }}>
+                <div>
+                  <div style={{ fontWeight: 600, color: "var(--blue-dark)", marginBottom: 2 }}>{p.name}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{p.email}</div>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button className="btn btn-sage btn-sm" onClick={() => setModal({ type: "assign", payload: { patient: p } })}>
+                    Gerenciar
+                  </button>
+                  <button 
+                    className="btn btn-outline btn-sm" 
+                    style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
+                    onClick={() => setUnlinkingPatient(p)}
+                    title="Desvincular Paciente"
+                  >
+                    Desvincular
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="card">
+          <h3 style={{ fontSize: 16, marginBottom: 14 }}>Convidar Novo Paciente</h3>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.5 }}>
+            Gere um código único para que seu paciente possa se cadastrar no aplicativo e ser vinculado automaticamente à sua conta.
+          </p>
+          <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+            <input type="email" placeholder="E-mail do paciente..." value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} style={{ flex: 1, padding: "10px 14px", border: "1.5px solid var(--warm)", borderRadius: 8, outline: "none", fontFamily: "DM Sans" }} />
+            <button className="btn btn-sage" onClick={generateInvite} disabled={generating}>{generating ? "Gerando..." : "Gerar Código"}</button>
+          </div>
+
+          <h3 style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".05em" }}>Convites Gerados</h3>
+          {invites.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Nenhum convite gerado.</p>}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {invites.map(inv => (
+              <div key={inv.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", border: "1px solid var(--warm)", borderRadius: 8, background: "var(--white)", opacity: inv.status === "used" ? 0.6 : 1 }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{inv.patient_email}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Gerado em: {new Date(inv.created_at).toLocaleDateString("pt-BR")}</div>
+                </div>
+                {inv.status === "used" ? (
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--sage-dark)", background: "var(--sage-light)", padding: "4px 8px", borderRadius: 6 }}>Utilizado</span>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 14, letterSpacing: "1px", color: "var(--blue-dark)" }}>{inv.code}</span>
+                    <button onClick={() => copyCode(inv.code)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16 }} title="Copiar código">📋</button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {invites.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-muted)", marginBottom: 10 }}>Códigos gerados</div>
-          {invites.map((inv) => <InviteCodeCard key={inv.code} invite={inv} onRevoke={revokeCode} />)}
+      {/* MODAL DE CONFIRMAÇÃO DE DESVÍNCULO */}
+      {unlinkingPatient && (
+        <div className="delete-overlay" onClick={() => setUnlinkingPatient(null)}>
+          <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>⚠️</div>
+            <div className="delete-title" style={{ fontSize: 20 }}>Desvincular Paciente?</div>
+            <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>
+              Tem certeza que deseja desvincular <strong>{unlinkingPatient.name}</strong> da sua conta? <br/><br/>
+              O paciente perderá acesso aos exercícios que você enviou, e você não poderá mais ver o diário ou os dados dele. O cadastro do paciente em si <strong>não</strong> será excluído.
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <button className="btn btn-outline" onClick={() => setUnlinkingPatient(null)}>Cancelar</button>
+              <button className="btn-danger" onClick={confirmUnlink}>Desvincular</button>
+            </div>
+          </div>
         </div>
       )}
-
-      <div className="card">
-        <h3 style={{ fontSize: 16, marginBottom: 14 }}>Pacientes cadastrados ({patients.length})</h3>
-        {loading && <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Carregando...</p>}
-        {!loading && patients.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-icon">🌱</div>
-            <p>Nenhum paciente ainda.</p>
-            <p style={{ fontSize: 13, marginTop: 6 }}>Gere um código acima e envie ao paciente.</p>
-          </div>
-        )}
-        {patients.map((p) => (
-          <div key={p.id} className="patient-row" onClick={() => setModal({ type: "assign", payload: { patient: p } })}>
-            <div className="p-avatar">{p.name[0]}</div>
-            <div style={{ flex: 1 }}>
-              <div className="p-name">{p.name}</div>
-              <div className="p-email">{p.email}</div>
-            </div>
-            <button className="btn btn-accent btn-sm" onClick={(e) => { e.stopPropagation(); setModal({ type: "assign", payload: { patient: p } }); }}>+ Atribuir</button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function InviteCodeCard({ invite, onRevoke }) {
-  const [copied, setCopied] = useState(false);
-  const msg = `Olá! Sua psicóloga criou um acesso exclusivo para você no *Equilibre*.\n\n1. Acesse o site: https://equilibreapp.vercel.app/\n2. Clique em "Criar conta" → "Sou Paciente"\n3. Use o código: *${invite.code}*\n\n⚠️ Código pessoal e de uso único. 🌿`;
-  const copy = () => {
-    navigator.clipboard.writeText(invite.code).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-  const whatsapp = () => window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
-
-  return (
-    <div style={{ background: invite.status === "used" ? "#f0f0f0" : "var(--accent-soft)", border: `1.5px solid ${invite.status === "used" ? "#ddd" : "var(--accent)"}`, borderRadius: 12, padding: "13px 16px", marginBottom: 9 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "monospace", fontSize: 20, fontWeight: 700, letterSpacing: ".18em", color: invite.status === "used" ? "#aaa" : "var(--accent)" }}>{invite.code}</div>
-          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
-            {invite.status === "used"
-              ? `✅ Utilizado em ${new Date(invite.used_at).toLocaleDateString("pt-BR")}`
-              : "⏳ Aguardando cadastro"}
-            {invite.label ? ` — ${invite.label}` : ""}
-          </div>
-        </div>
-        {invite.status === "pending" && (
-          <div style={{ display: "flex", gap: 7 }}>
-            <button className="btn btn-sm" onClick={copy} style={{ background: copied ? "#d4edd9" : "white", color: copied ? "#2d7a3a" : "var(--accent)", border: "1.5px solid var(--accent)" }}>{copied ? "✓" : "Copiar"}</button>
-            <button className="btn btn-sm btn-accent" onClick={whatsapp}>📲 WhatsApp</button>
-            <button className="btn btn-sm" onClick={() => onRevoke(invite.code)} style={{ color: "var(--danger)", border: "1.5px solid var(--danger)", background: "white" }}>✕</button>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
