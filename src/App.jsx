@@ -53,7 +53,8 @@ const db = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || err.msg || `Erro ao inserir em ${table}`);
+      const detail = [err.message || err.msg, err.hint, err.details].filter(Boolean).join(" | ");
+      throw new Error(detail || `Erro ao inserir em ${table} (HTTP ${res.status})`);
     }
     return res.json();
   },
@@ -723,30 +724,14 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
     setLoading(true);
     try {
       if (session.role === "patient") {
-        // Dados do paciente
-        for (const [table, field] of [
-          ["assignments", "patient_id"],
-          ["responses", "patient_id"],
-          ["diary_entries", "patient_id"],
-          ["goals", "patient_id"],
-        ]) {
-          const rows = await db.query(table, { filter: { [field]: session.id } }, session.access_token);
-          if (Array.isArray(rows)) {
-            for (const row of rows) await db.remove(table, { id: row.id }, session.access_token);
-          }
-        }
-        // Notificações onde este paciente é o autor
+        // Mantém responses, diary_entries e assignments — a profissional precisa do histórico
+        // Remove apenas notificações geradas por este paciente (avisos de exercício concluído)
         const notifs = await db.query("notifications", { filter: { patient_id: session.id } }, session.access_token);
         if (Array.isArray(notifs)) {
           for (const n of notifs) await db.remove("notifications", { id: n.id }, session.access_token);
         }
-        // Resetar convite para "pending" → profissional não precisa gerar novo
-        const usedInvites = await db.query("invites", { filter: { used_by: session.id } }, session.access_token);
-        if (Array.isArray(usedInvites)) {
-          for (const inv of usedInvites) {
-            await db.update("invites", { id: inv.id }, { status: "pending", used_by: null, used_at: null }, session.access_token);
-          }
-        }
+        // O convite permanece como "used" — a profissional deverá gerar um novo código
+        // caso o paciente queira criar uma nova conta
       } else {
         // Terapeuta: remove todos os dados vinculados
         for (const [table, field] of [
@@ -788,7 +773,7 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
         <div className="delete-desc">
           Esta ação é <strong>permanente e irreversível</strong>. Todos os seus dados serão apagados para sempre.
           {session.role === "patient" && (
-            <><br /><br />✅ <strong>Seu código de convite será liberado automaticamente</strong> — se quiser criar uma nova conta, basta pedir um novo convite à sua profissional ou usar o mesmo código.</>
+            <><br /><br />📋 O histórico das suas sessões ficará <strong>preservado no perfil da sua profissional</strong>. Para criar uma nova conta, será necessário um <strong>novo código de convite</strong>.</>
           )}
           {session.role === "therapist" && (
             <><br /><br />⚠️ Seus pacientes serão <strong>desvinculados</strong> mas suas contas serão mantidas.</>
@@ -995,7 +980,7 @@ function PatientsView({ session, setModal }) {
   const [patients, setPatients] = useState([]);
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [inviteEmail, setInviteEmail] = useState("");
+  
   const [generating, setGenerating] = useState(false);
   
   // Estado para controlar qual paciente está a ser desvinculado
@@ -1024,27 +1009,24 @@ function PatientsView({ session, setModal }) {
   }, [session.id, session.access_token]);
 
   const generateInvite = async () => {
-    if (!inviteEmail) return alert("Digite um e-mail para o convite.");
     setGenerating(true);
     try {
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       const newInv = {
         code,
         therapist_id: session.id,
-        patient_email: inviteEmail,
         status: "pending",
-        created_at: new Date().toISOString()
       };
-      
-      // FIX: Adicionado session.access_token na inserção
+
       const inserted = await db.insert("invites", newInv, session.access_token);
-      const savedInv = Array.isArray(inserted) ? inserted[0] : { ...newInv };
-      
+      const savedInv = Array.isArray(inserted) && inserted[0]
+        ? inserted[0]
+        : { ...newInv, created_at: new Date().toISOString() };
+
       setInvites(prev => [savedInv, ...prev]);
-      setInviteEmail("");
     } catch (e) {
-      console.error(e);
-      alert("Erro ao gerar convite. Verifique a consola para mais detalhes.");
+      console.error("Erro ao gerar convite:", e);
+      alert("Erro ao gerar convite:\n" + (e?.message || JSON.stringify(e)));
     } finally {
       setGenerating(false);
     }
@@ -1111,27 +1093,28 @@ function PatientsView({ session, setModal }) {
         <div className="card">
           <h3 style={{ fontSize: 16, marginBottom: 14 }}>Convidar Novo Paciente</h3>
           <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.5 }}>
-            Gere um código único para que o seu paciente se possa registar na aplicação e ser vinculado automaticamente à sua conta.
+            Gere um código único e partilhe pelo WhatsApp com o seu paciente. Ao usá-lo no registo, ele ficará automaticamente vinculado à sua conta.
           </p>
-          <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-            <input type="email" placeholder="E-mail do paciente..." value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} style={{ flex: 1, padding: "10px 14px", border: "1.5px solid var(--warm)", borderRadius: 8, outline: "none", fontFamily: "DM Sans" }} />
-            <button className="btn btn-sage" onClick={generateInvite} disabled={generating}>{generating ? "A gerar..." : "Gerar Código"}</button>
-          </div>
+          <button className="btn btn-sage" onClick={generateInvite} disabled={generating} style={{ marginBottom: 24 }}>
+            {generating ? "A gerar..." : "＋ Gerar Novo Código"}
+          </button>
 
           <h3 style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".05em" }}>Convites Gerados</h3>
-          {invites.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Nenhum convite gerado.</p>}
+          {invites.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Nenhum convite gerado ainda.</p>}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {invites.map(inv => (
               <div key={inv.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", border: "1px solid var(--warm)", borderRadius: 8, background: "var(--white)", opacity: inv.status === "used" ? 0.6 : 1 }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{inv.patient_email}</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Gerado a: {new Date(inv.created_at).toLocaleDateString("pt-BR")}</div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                  {inv.created_at ? new Date(inv.created_at).toLocaleDateString("pt-BR") : "—"}
                 </div>
                 {inv.status === "used" ? (
-                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--sage-dark)", background: "var(--sage-light)", padding: "4px 8px", borderRadius: 6 }}>Utilizado</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 14, letterSpacing: "1px", color: "var(--text-muted)" }}>{inv.code}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--sage-dark)", background: "var(--sage-light)", padding: "4px 8px", borderRadius: 6 }}>Utilizado</span>
+                  </div>
                 ) : (
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 14, letterSpacing: "1px", color: "var(--blue-dark)" }}>{inv.code}</span>
+                    <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 16, letterSpacing: "2px", color: "var(--blue-dark)" }}>{inv.code}</span>
                     <button onClick={() => copyCode(inv.code)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16 }} title="Copiar código">📋</button>
                     <button
                       onClick={() => {
