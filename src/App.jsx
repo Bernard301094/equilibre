@@ -766,19 +766,60 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
   );
 }
 
+// ─── Lógica de Som (Web Audio API) ────────────────────────────────────────────
+// Gera um "Ding" suave e agradável nativamente no navegador
+const playNotificationSound = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine'; // Som suave
+    osc.frequency.setValueAtTime(880, ctx.currentTime); // Nota A5
+    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.5);
+
+    gain.gain.setValueAtTime(0.15, ctx.currentTime); // Volume (0.15 é baixinho e confortável)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.5);
+  } catch (e) {
+    console.error("Áudio não suportado no navegador", e);
+  }
+};
+
 // ─── Therapist Layout ─────────────────────────────────────────────────────────
 function TherapistLayout({ session, setSession, view, setView, modal, setModal }) {
   const [showDelete, setShowDelete] = useState(false);
-  const [showLogout, setShowLogout] = useState(false); // <-- NOVO ESTADO
+  const [showLogout, setShowLogout] = useState(false);
   const [unread, setUnread] = useState(0);
   const [editingEx, setEditingEx] = useState(null);
+  
+  // Usamos o useRef para lembrar quantas notificações tínhamos na checagem anterior
+  const prevUnreadRef = React.useRef(0); 
 
   useEffect(() => {
     let active = true;
     const fetchNotifs = async () => {
       try {
         const r = await db.query("notifications", { filter: { therapist_id: session.id, read: false } });
-        if (active) setUnread(Array.isArray(r) ? r.length : 0);
+        if (active) {
+          const currentCount = Array.isArray(r) ? r.length : 0;
+          setUnread(currentCount);
+          
+          // Se o número atual for MAIOR que o anterior, significa que chegou mensagem nova! Toca o som.
+          // (Apenas se prevUnreadRef não for a carga inicial de quando a página abriu)
+          if (currentCount > prevUnreadRef.current && prevUnreadRef.current !== 0) {
+            playNotificationSound();
+          }
+          
+          // Atualiza a "memória" para a próxima checagem
+          prevUnreadRef.current = currentCount;
+        }
       } catch (e) {}
     };
     fetchNotifs();
@@ -825,7 +866,6 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
               <div className="email">{session.email}</div>
             </div>
             <div className="pill-actions">
-              {/* Abre o modal de logout ao invés de fechar direto */}
               <button className="pill-btn" title="Sair" onClick={() => setShowLogout(true)}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
               </button>
@@ -843,12 +883,11 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
         {view === "create" && <CreateExerciseView session={session} onSaved={() => setView("exercises")} />}
         {view === "progress" && <TherapistProgress session={session} />}
         {view === "responses" && <ResponsesView session={session} />}
-        {view === "notifications" && <NotificationsView session={session} onRead={() => setUnread(0)} />}
+        {view === "notifications" && <NotificationsView session={session} onRead={() => { setUnread(0); prevUnreadRef.current = 0; }} />}
       </main>
       {modal && <Modal modal={modal} setModal={setModal} session={session} />}
       {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => setSession(null)} />}
       
-      {/* MODAL DE CONFIRMAÇÃO DE LOGOUT */}
       {showLogout && (
         <div className="delete-overlay" onClick={() => setShowLogout(false)}>
           <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
@@ -867,6 +906,7 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
     </div>
   );
 }
+
 
 // ─── Therapist Dashboard ──────────────────────────────────────────────────────
 function TherapistDashboard({ session, setView }) {
