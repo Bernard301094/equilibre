@@ -1170,7 +1170,7 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal, 
           prevUnreadRef.current = currentCount;
         }
       } catch (e) {
-        // fetchNotifs
+        // optimização
       }
     };
     const interval = setInterval(fetchNotifs, 30000);
@@ -1284,6 +1284,7 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal, 
     </div>
   );
 }
+
 
 // ─── Therapist Dashboard ──────────────────────────────────────────────────────
 function TherapistDashboard({ session, setView }) {
@@ -2673,7 +2674,9 @@ function NotificationsView({ session, onRead }) {
   );
 }
 
-// ─── Patient Layout ───────────────────────────────────────────────────────────
+// ==========================================
+// Patient Layout
+// ==========================================
 function PatientLayout({ session, setSession, view, setView, toggleTheme, theme }) {
   const [showProfile, setShowProfile] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -2685,9 +2688,11 @@ function PatientLayout({ session, setSession, view, setView, toggleTheme, theme 
     let cancelled = false;
     (async () => {
       try {
-        const rows = await db.query("users", { filter: { email: session.email } });
-        if (!cancelled && Array.isArray(rows) && rows.length > 0 && rows[0].id !== session.id) setSession((prev) => ({ ...prev, ...rows[0] }));
-      } catch { }
+        const rows = await db.query('users', { filter: { email: session.email } });
+        if (!cancelled && Array.isArray(rows) && rows.length > 0 && rows[0].id !== session.id) {
+          setSession(prev => ({ ...prev, ...rows[0] }));
+        }
+      } catch {}
     })();
     return () => { cancelled = true; };
   }, [session.email]);
@@ -2696,43 +2701,58 @@ function PatientLayout({ session, setSession, view, setView, toggleTheme, theme 
     let active = true;
     const fetchPending = async () => {
       try {
-        const r = await db.query("assignments", { filter: { patient_id: session.id, status: "pending" } });
+        const r = await db.query('assignments', { filter: { patient_id: session.id, status: 'pending' } });
         if (active) setPendingCount(Array.isArray(r) ? r.length : 0);
-      } catch { }
+      } catch {}
     };
     fetchPending();
     const intId = setInterval(fetchPending, 30000);
     return () => { active = false; clearInterval(intId); };
   }, [session.id]);
 
-  if (activeExercise) return <ExercisePage exercise={activeExercise} session={session} onBack={() => { setActiveExercise(null); setView("exercises"); }} />;
+  if (activeExercise) {
+    return <ExercisePage exercise={activeExercise} session={session} onBack={() => { setActiveExercise(null); setView('exercises'); }} />;
+  }
 
   const patNav = [
-    { id: "home", icon: "🏠", label: "Início" },
-    { id: "exercises", icon: "📋", label: "Meus Exercícios" },
-    { id: "diary", icon: "📓", label: "Diário" },
-    { id: "progress", icon: "📊", label: "Meu Progresso" },
-    { id: "history", icon: "📖", label: "Histórico" },
+    { id: 'home', icon: '🏠', label: 'Início' },
+    { id: 'exercises', icon: '📝', label: 'Meus Exercícios' },
+    { id: 'diary', icon: '📖', label: 'Diário' },
+    { id: 'progress', icon: '📈', label: 'Meu Progresso' },
+    { id: 'history', icon: '🕰️', label: 'Histórico' }
   ];
 
   return (
     <div className="layout">
       <aside className="sidebar patient-sidebar">
         <div className="sidebar-header">
-          <div className="brand" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src={LOGO} alt="" style={{ width: 32, height: 32, objectFit: "contain" }} /> Equilibre</div>
+          <div className="brand" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <img src={LOGO} alt="" style={{ width: 32, height: 32, objectFit: 'contain' }}/>
+            Equilibre
+          </div>
           <div className="role">Área do Paciente</div>
         </div>
+
         <nav>
-          {patNav.map((n) => (
-            <button key={n.id} className={`nav-item ${view === n.id ? "active" : ""}`} onClick={() => setView(n.id)}>
-              <span className="icon">{n.icon}</span>{n.label}
-              {n.id === "exercises" && pendingCount > 0 && <span style={{ marginLeft: "auto", background: "var(--accent)", color: "white", borderRadius: 20, fontSize: 10, padding: "2px 7px" }}>{pendingCount}</span>}
+          {patNav.map(n => (
+            <button
+              key={n.id}
+              className={`nav-item ${view === n.id ? 'active' : ''}`}
+              onClick={() => setView(n.id)}
+            >
+              <span className="icon">{n.icon}</span>
+              {n.label}
+              {n.id === 'exercises' && pendingCount > 0 && (
+                <span style={{ marginLeft: 'auto', background: 'var(--accent)', color: 'white', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 700 }}>
+                  {pendingCount}
+                </span>
+              )}
             </button>
           ))}
         </nav>
+
         <div className="sidebar-footer">
           <div className="user-pill">
-                      <div className="user-pill">
             {session.avatar_url ? (
               <img src={session.avatar_url} className="avatar" title="Mudar foto" onClick={() => setShowProfile(true)} alt="avatar" />
             ) : (
@@ -2744,14 +2764,10 @@ function PatientLayout({ session, setSession, view, setView, toggleTheme, theme 
               <div className="name">{session.name.split(' ')[0]}</div>
               <div className="email">{session.email}</div>
             </div>
-            </div>
-
-            <div className="user-info">
-              <div className="name">{session.name.split(" ")[0]}</div>
-              <div className="email">{session.email}</div>
-            </div>
             <div className="pill-actions">
-              <button className="theme-toggle" onClick={toggleTheme} title="Modo Escuro">{theme === "dark" ? "☀️" : "🌙"}</button>
+              <button className="theme-toggle" onClick={toggleTheme} title="Modo Escuro">
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
               <button className="pill-btn" title="Sair" onClick={() => setShowLogout(true)}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
               </button>
@@ -2762,30 +2778,46 @@ function PatientLayout({ session, setSession, view, setView, toggleTheme, theme 
           </div>
         </div>
       </aside>
+
       <main className="main">
-        {/* FIX: setSession foi passado aqui para atualizar o usuário na hora */}
-        {view === "home" && <PatientHome session={session} setSession={setSession} setView={setView} />}
-        {view === "exercises" && <PatientExercises session={session} setActiveExercise={setActiveExercise} />}
-        {view === "diary" && <PatientDiary session={session} />}
-        {view === "progress" && <PatientProgress session={session} />}
-        {view === "history" && <PatientHistory session={session} />}
+        {view === 'home' && <PatientHome session={session} setSession={setSession} setView={setView} />}
+        {view === 'exercises' && <PatientExercises session={session} onStart={setActiveExercise} />}
+        {view === 'diary' && <PatientDiary session={session} />}
+        {view === 'progress' && <PatientProgress session={session} />}
+        {view === 'history' && <PatientHistory session={session} />}
       </main>
 
-      {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => { localStorage.removeItem("equilibre_session"); setSession(null); window.location.reload(); }} />}
+      {showProfile && <ProfileModal session={session} setSession={setSession} onClose={() => setShowProfile(false)} />}
+
+      {showDelete && (
+        <DeleteAccountModal 
+          session={session} 
+          onClose={() => setShowDelete(false)} 
+          onDeleted={() => {
+            localStorage.removeItem('equilibre_session');
+            setSession(null);
+            window.location.reload();
+          }} 
+        />
+      )}
+
       {showLogout && (
         <div className="delete-overlay" onClick={() => setShowLogout(false)}>
-          <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="delete-modal" onClick={e => e.stopPropagation()}>
             <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>👋</div>
             <div className="delete-title" style={{ fontSize: 20 }}>Encerrar sessão?</div>
             <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>Tem certeza que deseja sair da sua conta?</div>
-            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}><button className="btn btn-outline" onClick={() => setShowLogout(false)}>Cancelar</button><button className="btn btn-sage" onClick={() => setSession(null)}>Sair</button></div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button className="btn btn-outline" onClick={() => setShowLogout(false)}>Cancelar</button>
+              <button className="btn btn-sage" onClick={() => setSession(null)}>Sair</button>
+            </div>
           </div>
         </div>
       )}
-      {showProfile && <ProfileModal session={session} setSession={setSession} onClose={() => setShowProfile(false)} />}
     </div>
   );
 }
+
 
 // ─── Patient Home ─────────────────────────────────────────────────────────────
 function PatientHome({ session, setSession, setView }) {
