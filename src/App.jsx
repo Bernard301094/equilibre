@@ -1403,14 +1403,33 @@ function Modal({ modal, setModal, session }) {
     setNotesSaved(false);
     try {
       if (notesId) {
-        await db.update("clinical_notes", { id: notesId }, { notes }, session.access_token);
+        // FIX: incluir therapist_id no filtro para satisfazer as políticas RLS do Supabase.
+        // Sem isso, o PATCH retorna 200 com array vazio e não salva nada.
+        const result = await db.update(
+          "clinical_notes",
+          { id: notesId, therapist_id: session.id },
+          { notes },
+          session.access_token
+        );
+        // Detectar falha silenciosa (RLS bloqueou sem lançar erro)
+        if (!result || (Array.isArray(result) && result.length === 0)) {
+          throw new Error("Nenhuma linha foi atualizada. Verifique as permissões da tabela clinical_notes.");
+        }
       } else {
         const newId = "cn" + Date.now();
-        await db.insert("clinical_notes", { id: newId, patient_id: patient.id, therapist_id: session.id, notes }, session.access_token);
+        // FIX: adicionado created_at (geralmente NOT NULL na tabela)
+        const result = await db.insert(
+          "clinical_notes",
+          { id: newId, patient_id: patient.id, therapist_id: session.id, notes, created_at: new Date().toISOString() },
+          session.access_token
+        );
+        // Detectar falha silenciosa (RLS bloqueou sem lançar erro)
+        if (!result || (Array.isArray(result) && result.length === 0)) {
+          throw new Error("Registro não foi criado. Verifique as permissões da tabela clinical_notes no Supabase.");
+        }
         setNotesId(newId);
       }
       
-      // FIX: Feedback visual melhorado. O botão vai ficar verde por 3 segundos.
       setNotesSaved(true);
       setTimeout(() => setNotesSaved(false), 3000);
       
