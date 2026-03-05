@@ -131,6 +131,17 @@ const auth = {
     if (!res.ok) throw new Error(data?.error_description || "Erro ao renovar sessão");
     return data;
   },
+  async resetPassword(email) {
+    const res = await fetch(`${SUPA_URL}/auth/v1/recover`, {
+      method: "POST",
+      headers: { apikey: SUPA_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || err.msg || "Erro ao enviar e-mail de recuperação");
+    }
+  },
 };
 
 // ─── Seed exercises ───────────────────────────────────────────────────────────
@@ -582,8 +593,25 @@ export default function App() {
     }
 
     try {
-      const authRes = await auth.signUp(form.email, form.password, { name: form.name, role: form.role });
-      const userId = authRes?.user?.id || "u" + Date.now();
+      let userId;
+      try {
+        const authRes = await auth.signUp(form.email, form.password, { name: form.name, role: form.role });
+        userId = authRes?.user?.id;
+      } catch (signUpErr) {
+        // E-mail já existe no Auth (conta encerrada anteriormente) — autentica para obter o id
+        if (signUpErr.message?.toLowerCase().includes("already registered") || signUpErr.message?.toLowerCase().includes("already been registered")) {
+          try {
+            const authRes = await auth.signIn(form.email, form.password);
+            if (!authRes?.access_token) return "Erro ao autenticar. Tente novamente.";
+            userId = authRes?.user?.id;
+          } catch {
+            return "Este e-mail já tem uma conta anterior. Use a mesma senha da conta anterior para se re-registar com o novo convite.";
+          }
+        } else {
+          throw signUpErr;
+        }
+      }
+      if (!userId) return "Erro ao criar conta. Tente novamente.";
       const newUser = { id: userId, name: form.name, email: form.email, role: form.role, therapist_id: therapistId };
       await db.insert("users", newUser);
 
@@ -626,6 +654,9 @@ function LoginPage({ tab, setTab, form, setForm, error, onLogin, onRegister, set
   const [regError, setRegError] = useState("");
   const [regSuccess, setRegSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetMsg, setResetMsg] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
 
   const handleReg = async () => {
     setRegError("");
@@ -681,6 +712,12 @@ function LoginPage({ tab, setTab, form, setForm, error, onLogin, onRegister, set
             </div>
             {error && <p className="error-msg">{error}</p>}
             <button className="btn-primary" onClick={onLogin}>Entrar</button>
+            <p style={{ textAlign: "center", marginTop: 12, fontSize: 13, color: "var(--text-muted)" }}>
+              <span
+                style={{ color: "var(--sage-dark)", cursor: "pointer", fontWeight: 500 }}
+                onClick={() => { setMode("forgot"); setResetMsg(""); setResetEmail(form.email || ""); }}
+              >Esqueceu a senha?</span>
+            </p>
           </>
         )}
 
@@ -711,6 +748,55 @@ function LoginPage({ tab, setTab, form, setForm, error, onLogin, onRegister, set
             <p style={{ textAlign: "center", marginTop: 12, fontSize: 13, color: "var(--text-muted)" }}>
               Já tem conta?{" "}
               <span style={{ color: "var(--sage-dark)", cursor: "pointer", fontWeight: 500 }} onClick={() => setMode("login")}>Entrar</span>
+            </p>
+          </>
+        )}
+
+        {mode === "forgot" && (
+          <>
+            <div style={{ textAlign: "center", marginBottom: 20 }}>
+              <div style={{ fontSize: 36, marginBottom: 8 }}>🔑</div>
+              <h2 style={{ fontSize: 18, marginBottom: 6 }}>Recuperar senha</h2>
+              <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
+                Informe o seu e-mail e enviaremos um link para redefinir a sua senha.
+              </p>
+            </div>
+            <div className="field">
+              <label>E-mail</label>
+              <input
+                type="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="seu@email.com"
+                onKeyDown={(e) => e.key === "Enter" && handleReset()}
+              />
+            </div>
+            {resetMsg && (
+              <p style={{ fontSize: 13, color: resetMsg.startsWith("✅") ? "var(--sage-dark)" : "#c0444a", marginBottom: 12, textAlign: "center" }}>
+                {resetMsg}
+              </p>
+            )}
+            <button
+              className="btn-primary"
+              disabled={resetLoading}
+              onClick={async () => {
+                if (!resetEmail.trim()) { setResetMsg("Informe o seu e-mail."); return; }
+                setResetLoading(true);
+                setResetMsg("");
+                try {
+                  await auth.resetPassword(resetEmail.trim());
+                  setResetMsg("✅ E-mail enviado! Verifique a sua caixa de entrada.");
+                } catch (e) {
+                  setResetMsg(e.message || "Erro ao enviar e-mail.");
+                } finally {
+                  setResetLoading(false);
+                }
+              }}
+            >
+              {resetLoading ? "A enviar..." : "Enviar link de recuperação"}
+            </button>
+            <p style={{ textAlign: "center", marginTop: 12, fontSize: 13, color: "var(--text-muted)" }}>
+              <span style={{ color: "var(--sage-dark)", cursor: "pointer", fontWeight: 500 }} onClick={() => setMode("login")}>← Voltar ao login</span>
             </p>
           </>
         )}
