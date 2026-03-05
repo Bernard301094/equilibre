@@ -545,6 +545,12 @@ export default function App() {
         if (Array.isArray(byEmail) && byEmail.length > 0) users = byEmail;
       }
       if (!Array.isArray(users) || users.length === 0) {
+        // Pacientes SEMPRE precisam de um registo válido em users (criado via convite).
+        // Se não existe registo, a conta foi encerrada ou nunca foi criada corretamente.
+        if (loginTab === "patient") {
+          setLoginError("Conta encerrada ou não encontrada. Para aceder, solicite um novo convite à sua profissional.");
+          return;
+        }
         const meta = authData.user?.user_metadata || {};
         const role = meta.role || loginTab;
         if (role !== loginTab) { setLoginError("Conta não encontrada para este perfil."); return; }
@@ -740,8 +746,10 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
             console.warn("Notificação não enviada (não crítico):", e);
           }
         }
-        // Marca deleted_at para bloquear login futuro
-        await db.update("users", { id: session.id }, { deleted_at: new Date().toISOString() }, session.access_token);
+        // Remove o registo de users — bloqueia o login sem depender de colunas extras.
+        // Todo o histórico (responses, diary_entries, assignments, goals) fica preservado
+        // nas outras tabelas, referenciado pelo patient_id UUID.
+        await db.remove("users", { id: session.id }, session.access_token);
         // Invalida sessão Auth (best-effort)
         try {
           await fetch(`${SUPA_URL}/auth/v1/logout`, {
