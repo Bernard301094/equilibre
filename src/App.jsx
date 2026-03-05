@@ -932,7 +932,7 @@ function PatientsView({ session, setModal }) {
   const [inviteEmail, setInviteEmail] = useState("");
   const [generating, setGenerating] = useState(false);
   
-  // Estado para controlar qual paciente está sendo desvinculado
+  // Estado para controlar qual paciente está a ser desvinculado
   const [unlinkingPatient, setUnlinkingPatient] = useState(null);
 
   useEffect(() => {
@@ -940,20 +940,22 @@ function PatientsView({ session, setModal }) {
     const fetch = async () => {
       try {
         const [pts, invs] = await Promise.all([
-          db.query("users", { filter: { therapist_id: session.id, role: "patient" } }),
-          db.query("invites", { filter: { therapist_id: session.id }, order: "created_at.desc" })
+          // FIX: Adicionado session.access_token
+          db.query("users", { filter: { therapist_id: session.id, role: "patient" } }, session.access_token),
+          db.query("invites", { filter: { therapist_id: session.id }, order: "created_at.desc" }, session.access_token)
         ]);
         if (!active) return;
         setPatients(Array.isArray(pts) ? pts : []);
         setInvites(Array.isArray(invs) ? invs : []);
       } catch (e) {
+        console.error("Erro ao carregar pacientes:", e);
       } finally {
         if (active) setLoading(false);
       }
     };
     fetch();
     return () => { active = false; };
-  }, [session.id]);
+  }, [session.id, session.access_token]);
 
   const generateInvite = async () => {
     if (!inviteEmail) return alert("Digite um e-mail para o convite.");
@@ -968,11 +970,15 @@ function PatientsView({ session, setModal }) {
         status: "pending",
         created_at: new Date().toISOString()
       };
-      await db.insert("invites", newInv);
+      
+      // FIX: Adicionado session.access_token na inserção
+      await db.insert("invites", newInv, session.access_token);
+      
       setInvites(prev => [newInv, ...prev]);
       setInviteEmail("");
     } catch (e) {
-      alert("Erro ao gerar convite.");
+      console.error(e);
+      alert("Erro ao gerar convite. Verifique a consola para mais detalhes.");
     } finally {
       setGenerating(false);
     }
@@ -987,10 +993,10 @@ function PatientsView({ session, setModal }) {
   const confirmUnlink = async () => {
     if (!unlinkingPatient) return;
     try {
-      // Remove o vínculo (therapist_id) do paciente no banco
-      await db.update("users", { id: unlinkingPatient.id }, { therapist_id: null });
+      // FIX: Adicionado session.access_token na atualização
+      await db.update("users", { id: unlinkingPatient.id }, { therapist_id: null }, session.access_token);
       
-      // Remove o paciente da lista na tela atual
+      // Remove o paciente da lista no ecrã atual
       setPatients(prev => prev.filter(p => p.id !== unlinkingPatient.id));
       setUnlinkingPatient(null);
     } catch (e) {
@@ -998,19 +1004,19 @@ function PatientsView({ session, setModal }) {
     }
   };
 
-  if (loading) return <div style={{ color: "var(--text-muted)", fontSize: 14 }}>Carregando pacientes...</div>;
+  if (loading) return <div style={{ color: "var(--text-muted)", fontSize: 14 }}>A carregar pacientes...</div>;
 
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
       <div className="page-header">
-        <h2>👥 Meus Pacientes</h2>
-        <p>Gerencie seus pacientes e envie convites</p>
+        <h2>👥 Os Meus Pacientes</h2>
+        <p>Faça a gestão dos seus pacientes e envie convites</p>
       </div>
 
       <div className="grid-2">
         <div className="card">
           <h3 style={{ fontSize: 16, marginBottom: 14 }}>Pacientes Ativos ({patients.length})</h3>
-          {patients.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Nenhum paciente cadastrado.</p>}
+          {patients.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Nenhum paciente registado.</p>}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {patients.map(p => (
               <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", border: "1.5px solid var(--warm)", borderRadius: 12, background: "var(--cream)" }}>
@@ -1020,7 +1026,7 @@ function PatientsView({ session, setModal }) {
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button className="btn btn-sage btn-sm" onClick={() => setModal({ type: "assign", payload: { patient: p } })}>
-                    Gerenciar
+                    Gerir
                   </button>
                   <button 
                     className="btn btn-outline btn-sm" 
@@ -1039,11 +1045,11 @@ function PatientsView({ session, setModal }) {
         <div className="card">
           <h3 style={{ fontSize: 16, marginBottom: 14 }}>Convidar Novo Paciente</h3>
           <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.5 }}>
-            Gere um código único para que seu paciente possa se cadastrar no aplicativo e ser vinculado automaticamente à sua conta.
+            Gere um código único para que o seu paciente se possa registar na aplicação e ser vinculado automaticamente à sua conta.
           </p>
           <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
             <input type="email" placeholder="E-mail do paciente..." value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} style={{ flex: 1, padding: "10px 14px", border: "1.5px solid var(--warm)", borderRadius: 8, outline: "none", fontFamily: "DM Sans" }} />
-            <button className="btn btn-sage" onClick={generateInvite} disabled={generating}>{generating ? "Gerando..." : "Gerar Código"}</button>
+            <button className="btn btn-sage" onClick={generateInvite} disabled={generating}>{generating ? "A gerar..." : "Gerar Código"}</button>
           </div>
 
           <h3 style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".05em" }}>Convites Gerados</h3>
@@ -1053,7 +1059,7 @@ function PatientsView({ session, setModal }) {
               <div key={inv.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", border: "1px solid var(--warm)", borderRadius: 8, background: "var(--white)", opacity: inv.status === "used" ? 0.6 : 1 }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 500 }}>{inv.patient_email}</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Gerado em: {new Date(inv.created_at).toLocaleDateString("pt-BR")}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Gerado a: {new Date(inv.created_at).toLocaleDateString("pt-BR")}</div>
                 </div>
                 {inv.status === "used" ? (
                   <span style={{ fontSize: 12, fontWeight: 600, color: "var(--sage-dark)", background: "var(--sage-light)", padding: "4px 8px", borderRadius: 6 }}>Utilizado</span>
@@ -1069,15 +1075,15 @@ function PatientsView({ session, setModal }) {
         </div>
       </div>
 
-      {/* MODAL DE CONFIRMAÇÃO DE DESVÍNCULO */}
+      {/* MODAL DE CONFIRMAÇÃO DE DESVINCULAÇÃO */}
       {unlinkingPatient && (
         <div className="delete-overlay" onClick={() => setUnlinkingPatient(null)}>
           <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
             <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>⚠️</div>
             <div className="delete-title" style={{ fontSize: 20 }}>Desvincular Paciente?</div>
             <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>
-              Tem certeza que deseja desvincular <strong>{unlinkingPatient.name}</strong> da sua conta? <br/><br/>
-              O paciente perderá acesso aos exercícios que você enviou, e você não poderá mais ver o diário ou os dados dele. O cadastro do paciente em si <strong>não</strong> será excluído.
+              Tem a certeza de que deseja desvincular <strong>{unlinkingPatient.name}</strong> da sua conta? <br/><br/>
+              O paciente perderá o acesso aos exercícios que lhe enviou, e deixará de poder ver o diário ou os dados dele. O registo do paciente em si <strong>não</strong> será apagado.
             </div>
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
               <button className="btn btn-outline" onClick={() => setUnlinkingPatient(null)}>Cancelar</button>
