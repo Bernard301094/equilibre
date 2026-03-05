@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
 
 const LOGO = "/equilibre-icon.jpeg";
 
@@ -435,6 +435,7 @@ export default function App() {
 
   const [ready, setReady] = useState(false);
   const [dbError, setDbError] = useState(false);
+  
   const [view, setView] = useState(() => {
     try {
       const saved = localStorage.getItem("equilibre_session");
@@ -445,6 +446,7 @@ export default function App() {
     } catch {}
     return "dashboard";
   });
+  
   const [modal, setModal] = useState(null);
   const [loginTab, setLoginTab] = useState("therapist");
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
@@ -467,11 +469,16 @@ export default function App() {
   useEffect(() => {
     (async () => {
       try {
-        const existing = await db.query("exercises", { select: "id" });
-        if (!Array.isArray(existing) || existing.length === 0) {
-          for (const ex of SEED_EXERCISES) {
-            await db.insert("exercises", { ...ex, questions: JSON.stringify(ex.questions) });
+        // OPTIMIZAÇÃO: Verifica no cache se os exercícios já foram semeados
+        const seeded = localStorage.getItem("eq_seeded");
+        if (!seeded) {
+          const existing = await db.query("exercises", { select: "id" });
+          if (!Array.isArray(existing) || existing.length === 0) {
+            for (const ex of SEED_EXERCISES) {
+              await db.insert("exercises", { ...ex, questions: JSON.stringify(ex.questions) });
+            }
           }
+          localStorage.setItem("eq_seeded", "true");
         }
         setReady(true);
       } catch {
@@ -767,7 +774,8 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal, 
       } catch (e) {}
     };
     fetchNotifs();
-    const interval = setInterval(fetchNotifs, 5000);
+    // OPTIMIZAÇÃO: Polling ajustado para 30 segundos
+    const interval = setInterval(fetchNotifs, 30000); 
     return () => { active = false; clearInterval(interval); };
   }, [session.id]);
 
@@ -1581,10 +1589,8 @@ function CreateExerciseView({ session, onSaved, initialExercise }) {
 }
 
 // ─── Mini SVG Line Chart ──────────────────────────────────────────────────────
-function MiniLineChart({ points, color = "var(--blue-dark)", height = 70, labels }) {
-  if (!points || points.length < 2)
-    return <div style={{ textAlign: "center", padding: "18px 0", color: "var(--text-muted)", fontSize: 12 }}>Dados insuficientes para gráfico</div>;
-
+const MiniLineChart = memo(function MiniLineChart({ points, color = "var(--blue-dark)", height = 70, labels }) {
+  if (!points || points.length < 2) return <div style={{ textAlign: "center", padding: "18px 0", color: "var(--text-muted)", fontSize: 12 }}>Dados insuficientes para gráfico</div>;
   const vals = points.map(Number);
   const min = Math.min(...vals);
   const max = Math.max(...vals);
@@ -1599,29 +1605,14 @@ function MiniLineChart({ points, color = "var(--blue-dark)", height = 70, labels
   return (
     <div className="chart-wrap">
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height }} preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.18" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <polygon points={fillPts} fill="url(#cg)" />
-        <polyline points={polyPts} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-        {vals.map((v, i) => (
-          <g key={i}>
-            <circle cx={toX(i)} cy={toY(v)} r="4.5" fill="white" stroke={color} strokeWidth="2" />
-            <text x={toX(i)} y={toY(v) - 8} textAnchor="middle" fontSize="9" fill={color} fontWeight="700">{v}</text>
-          </g>
-        ))}
+        <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.18" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
+        <polygon points={fillPts} fill="url(#cg)" /><polyline points={polyPts} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+        {vals.map((v, i) => (<g key={i}><circle cx={toX(i)} cy={toY(v)} r="4.5" fill="white" stroke={color} strokeWidth="2" /><text x={toX(i)} y={toY(v) - 8} textAnchor="middle" fontSize="9" fill={color} fontWeight="700">{v}</text></g>))}
       </svg>
-      {labels && (
-        <div className="chart-label-row">
-          {labels.map((l, i) => <span key={i}>{l}</span>)}
-        </div>
-      )}
+      {labels && <div className="chart-label-row">{labels.map((l, i) => <span key={i}>{l}</span>)}</div>}
     </div>
   );
-}
+});
 
 // ─── Weekly Goal Bar ──────────────────────────────────────────────────────────
 function WeekGoalBar({ done, target }) {
@@ -1811,7 +1802,8 @@ function PatientLayout({ session, setSession, view, setView, toggleTheme, theme 
       } catch { }
     };
     fetchPending();
-    const intId = setInterval(fetchPending, 5000);
+    // OPTIMIZAÇÃO: Polling ajustado para 30 segundos
+    const intId = setInterval(fetchPending, 30000);
     return () => { active = false; clearInterval(intId); };
   }, [session.id]);
 
@@ -1907,37 +1899,30 @@ function PatientHome({ session, setView }) {
       const weekDone = respList.filter((r) => new Date(r.completed_at) >= startOfWeek).length;
       const od = pendList.filter((a) => a.due_date && new Date(a.due_date) < now).length;
 
-      // FIX: Data Local (Evita bugs de fuso horário na gamificação)
       const getLocalDayStr = (offsetDays = 0) => {
         const d = new Date();
         d.setDate(d.getDate() - offsetDays);
         return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
       };
 
-      // Função para verificar se houve alguma ação no dia
       const hasActivity = (ds) => {
         return dList.some(e => e.date === ds) || respList.some(r => r.completed_at && r.completed_at.startsWith(ds));
       };
 
-      // ─── LÓGICA DE GAMIFICAÇÃO ESTILO DUOLINGO ───
       let streak = 0;
-      
       if (hasActivity(getLocalDayStr(0))) {
-        // Fez hoje! Conta hoje e vai voltando pro passado
         streak = 1;
         for (let i = 1; i < 30; i++) {
           if (hasActivity(getLocalDayStr(i))) streak++;
           else break;
         }
       } else if (hasActivity(getLocalDayStr(1))) {
-        // Ainda não fez hoje, mas fez ontem. Mantém a ofensiva (dá tempo dele fazer hoje)
         streak = 1;
         for (let i = 2; i < 30; i++) {
           if (hasActivity(getLocalDayStr(i))) streak++;
           else break;
         }
       } else {
-        // Falhou hoje e ontem. A planta morreu :( Volta para 0.
         streak = 0;
       }
 
@@ -1945,7 +1930,8 @@ function PatientHome({ session, setView }) {
     };
     
     fetch();
-    const intId = setInterval(fetch, 5000);
+    // OPTIMIZAÇÃO: Polling ajustado para 30 segundos
+    const intId = setInterval(fetch, 30000);
     return () => { active = false; clearInterval(intId); };
   }, [session.id]);
 
@@ -1957,7 +1943,6 @@ function PatientHome({ session, setView }) {
       </div>
       
       <div className="grid-3" style={{ marginBottom: 20 }}>
-        {/* GAMIFICAÇÃO: Ícone dinâmico baseado no streak */}
         <div className="stat-card">
           <div className="stat-icon">{data.streak >= 7 ? "🌳" : data.streak >= 3 ? "🌿" : "🌱"}</div>
           <div className="stat-val">{data.streak}</div>
@@ -1970,7 +1955,6 @@ function PatientHome({ session, setView }) {
           : <div className="stat-card"><div className="stat-icon">✅</div><div className="stat-val">{data.done}</div><div className="stat-label">Concluídos</div></div>}
       </div>
 
-      {/* BANNER EXPLICATIVO DA GAMIFICAÇÃO */}
       <div className="card" style={{ marginBottom: 20, background: "var(--accent-soft)", border: "1px solid var(--accent)", padding: "16px 20px" }}>
         <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
           <div style={{ fontSize: 26, marginTop: 2 }}>🪴</div>
@@ -2001,7 +1985,6 @@ function PatientHome({ session, setView }) {
 }
 
 // ─── Patient Exercises ────────────────────────────────────────────────────────
-// FIX: ExCard definido FORA do componente pai, recebe props explícitas
 function ExCard({ assign, isDone, exercises, onStart }) {
   const ex = exercises.find((e) => e.id === assign.exercise_id);
   if (!ex) return null;
@@ -2040,8 +2023,6 @@ function PatientExercises({ session, setActiveExercise }) {
     let firstLoad = true;
 
     const fetchAssignments = async () => {
-      // With FK in DB: assignments?select=*,exercises(*) returns nested exercise
-      // data in one round-trip. Falls back gracefully if FK is missing.
       let assignments_raw = [];
       let exercises_raw = [];
       try {
@@ -2050,11 +2031,9 @@ function PatientExercises({ session, setActiveExercise }) {
           filter: { patient_id: session.id },
         });
         if (Array.isArray(nested) && nested.length > 0 && nested[0].exercises) {
-          // Nested join worked — extract exercises from the embedded data
           assignments_raw = nested;
           exercises_raw = nested.map((a) => a.exercises).filter(Boolean);
         } else {
-          // FK not set up yet — fall back to two separate queries
           const [a, ex] = await Promise.all([
             db.query("assignments", { filter: { patient_id: session.id } }),
             db.query("exercises"),
@@ -2063,7 +2042,6 @@ function PatientExercises({ session, setActiveExercise }) {
           exercises_raw = Array.isArray(ex) ? ex : [];
         }
       } catch {
-        // Last resort fallback
         const [a, ex] = await Promise.all([
           db.query("assignments", { filter: { patient_id: session.id } }),
           db.query("exercises"),
@@ -2073,14 +2051,14 @@ function PatientExercises({ session, setActiveExercise }) {
       }
       if (!active) return;
       setAssignments(assignments_raw);
-      // Deduplicate exercises (nested join may produce duplicates)
       const seen = new Set();
       setExercises(exercises_raw.filter((e) => e && !seen.has(e.id) && seen.add(e.id)));
       if (firstLoad) { setLoading(false); firstLoad = false; }
     };
 
     fetchAssignments();
-    const intId = setInterval(fetchAssignments, 5000);
+    // OPTIMIZAÇÃO: Polling ajustado para 30 segundos
+    const intId = setInterval(fetchAssignments, 30000);
     return () => { active = false; clearInterval(intId); };
   }, [session.id]);
 
