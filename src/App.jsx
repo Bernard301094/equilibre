@@ -180,7 +180,6 @@ const SEED_EXERCISES = [
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 const css = `
-  
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   
   :root {
@@ -191,8 +190,15 @@ const css = `
     --cream: #f4f8fc; --warm: #deeaf5; --text: #1a2e3b; --text-muted: #6a8099;
     --white: #ffffff; --card: rgba(255,255,255,0.95); --danger: #c0544a;
   }
+
+  body.dark-mode {
+    --cream: #0f172a; --warm: #1e293b; --text: #f8fafc; --text-muted: #94a3b8;
+    --white: #1e293b; --card: rgba(30,41,59,0.95);
+    --blue-dark: #86bcde; --blue-mid: #3b82f6; --sage-dark: #0f172a;
+    --accent-soft: rgba(246,148,59,0.15);
+  }
   
-  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; transition: background 0.3s, color 0.3s; }
   h1,h2,h3 { font-family: 'Playfair Display', serif; }
 
   .login-bg { min-height:100vh; background:linear-gradient(135deg,#17527c 0%,#86bcde 55%,#ffbd59 100%); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
@@ -227,10 +233,14 @@ const css = `
   .avatar { width:34px; height:34px; border-radius:50%; background:var(--sage-light); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:var(--sage-dark); }
   .user-info .name { font-size:13px; font-weight:500; }
   .user-info .email { font-size:10px; opacity:.5; }
+  
   .pill-actions { display: flex; gap: 6px; margin-left: auto; }
   .pill-btn { background: rgba(255,255,255,0.06); border: none; width: 32px; height: 32px; border-radius: 8px; color: rgba(255,255,255,0.65); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
   .pill-btn:hover { background: rgba(255,255,255,0.15); color: white; transform: translateY(-1px); }
   .pill-btn.delete:hover { background: rgba(192,84,74,0.25); color: #ff8a80; }
+  .theme-toggle { background: transparent; border: 1px solid var(--warm); color: var(--text-muted); width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+  .theme-toggle:hover { background: var(--warm); color: var(--text); }
+  
   .main { margin-left:250px; padding:38px; min-height:100vh; background:var(--cream); width:100%; box-sizing: border-box; }
   .patient-sidebar { background:#0e3d5e; }
   .page-header { margin-bottom:28px; }
@@ -320,11 +330,11 @@ const css = `
   .notif-dot { position:absolute; top:0; right:0; width:16px; height:16px; border-radius:50%; background:var(--accent); color:white; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; }
   
   .delete-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center; z-index:1000; animation:fadeIn .2s ease; }
-  .delete-modal { background:white; border-radius:18px; padding:32px 28px; max-width:380px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.25); text-align:center; }
+  .delete-modal { background:var(--white); border-radius:18px; padding:32px 28px; max-width:380px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.25); text-align:center; }
   .delete-icon { font-size:48px; margin-bottom:12px; }
   .delete-title { font-family:Playfair Display,serif; font-size:21px; margin-bottom:8px; color:var(--text); }
   .delete-desc { font-size:13px; color:var(--text-muted); line-height:1.65; margin-bottom:20px; }
-  .delete-confirm-input { width:100%; padding:10px 14px; border:2px solid var(--warm); border-radius:10px; font-family:DM Sans,sans-serif; font-size:14px; outline:none; box-sizing:border-box; margin-bottom:18px; }
+  .delete-confirm-input { width:100%; padding:10px 14px; border:2px solid var(--warm); border-radius:10px; font-family:DM Sans,sans-serif; font-size:14px; outline:none; box-sizing:border-box; margin-bottom:18px; background:var(--cream); color:var(--text); }
   .delete-confirm-input:focus { border-color:#c0444a; }
   .btn-danger { background:#c0444a; color:white; border:none; border-radius:10px; padding:11px 24px; font-size:14px; font-weight:600; cursor:pointer; font-family:DM Sans,sans-serif; transition:opacity .15s; }
   .btn-danger:disabled { opacity:.45; cursor:not-allowed; }
@@ -381,36 +391,34 @@ function parseAnswers(r) {
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
+  const [theme, setTheme] = useState(() => localStorage.getItem("eq_theme") || "light");
+
   useEffect(() => {
-    // ── CSS global ─────────────────────────────────────────────────────────────
-    // Injecting via document.head guarantees the styles persist across every
-    // render path (loading, login, dashboard). A <style> inside JSX body gets
-    // destroyed whenever React swaps the render branch (e.g. !ready → !session).
+    if (theme === "dark") document.body.classList.add("dark-mode");
+    else document.body.classList.remove("dark-mode");
+    localStorage.setItem("eq_theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => t === "light" ? "dark" : "light");
+
+  useEffect(() => {
     if (!document.querySelector("style[data-app='equilibre']")) {
       const styleEl = document.createElement("style");
       styleEl.dataset.app = "equilibre";
       styleEl.textContent = css;
       document.head.appendChild(styleEl);
     }
-
     document.title = "Equilibre";
-
-    // ── Favicon ────────────────────────────────────────────────────────────────
-    const favicon =
-      document.querySelector("link[rel~='icon']") || document.createElement("link");
+    const favicon = document.querySelector("link[rel~='icon']") || document.createElement("link");
     favicon.rel = "icon";
     favicon.type = "image/jpeg";
     favicon.href = "/equilibre-icon.jpeg";
     document.head.appendChild(favicon);
-
-    // ── Google Fonts ───────────────────────────────────────────────────────────
-    // @import inside a dynamic <style> tag is ignored by browsers — must use <link>
     if (!document.querySelector("link[data-fonts='equilibre']")) {
       const fonts = document.createElement("link");
       fonts.rel = "stylesheet";
       fonts.dataset.fonts = "equilibre";
-      fonts.href =
-        "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap";
+      fonts.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap";
       document.head.appendChild(fonts);
     }
   }, []);
@@ -443,10 +451,7 @@ export default function App() {
         const existing = await db.query("exercises", { select: "id" });
         if (!Array.isArray(existing) || existing.length === 0) {
           for (const ex of SEED_EXERCISES) {
-            await db.insert("exercises", {
-              ...ex,
-              questions: JSON.stringify(ex.questions),
-            });
+            await db.insert("exercises", { ...ex, questions: JSON.stringify(ex.questions) });
           }
         }
         setReady(true);
@@ -461,36 +466,20 @@ export default function App() {
     setLoginError("");
     try {
       const authData = await auth.signIn(loginForm.email, loginForm.password);
-      if (!authData?.access_token) {
-        throw new Error(authData?.error_description || authData?.msg || "Erro na autenticação.");
-      }
-      // Look up user row by UUID first; fall back to email if UUID doesn't match
-      // (happens when signup stored a "u"+timestamp ID instead of the real UUID)
+      if (!authData?.access_token) throw new Error(authData?.error_description || authData?.msg || "Erro na autenticação.");
+      
       let users = await db.query("users", { filter: { id: authData.user.id } }, authData.access_token);
       if (!Array.isArray(users) || users.length === 0) {
         const byEmail = await db.query("users", { filter: { email: loginForm.email } }, authData.access_token);
         if (Array.isArray(byEmail) && byEmail.length > 0) users = byEmail;
       }
       if (!Array.isArray(users) || users.length === 0) {
-        // Last resort: build session from auth metadata
         const meta = authData.user?.user_metadata || {};
         const role = meta.role || loginTab;
-        if (role !== loginTab) {
-          setLoginError("Conta não encontrada para este perfil.");
-          return;
-        }
-        setSession({
-          id: authData.user.id,
-          email: authData.user.email,
-          name: meta.name || authData.user.email,
-          role,
-          access_token: authData.access_token,
-        });
+        if (role !== loginTab) { setLoginError("Conta não encontrada para este perfil."); return; }
+        setSession({ id: authData.user.id, email: authData.user.email, name: meta.name || authData.user.email, role, access_token: authData.access_token });
       } else {
-        if (users[0].role !== loginTab) {
-          setLoginError("Conta não encontrada para este perfil.");
-          return;
-        }
+        if (users[0].role !== loginTab) { setLoginError("Conta não encontrada para este perfil."); return; }
         setSession({ ...users[0], access_token: authData.access_token });
       }
       setView(loginTab === "patient" ? "home" : "dashboard");
@@ -505,7 +494,6 @@ export default function App() {
     if (form.password.length < 6) return "A senha deve ter pelo menos 6 caracteres.";
 
     let therapistId = null;
-
     if (form.role === "patient") {
       const code = form.inviteCode.trim().toUpperCase();
       const invites = await db.query("invites", { filter: { code } });
@@ -516,26 +504,13 @@ export default function App() {
     }
 
     try {
-      const authRes = await auth.signUp(form.email, form.password, {
-        name: form.name,
-        role: form.role,
-      });
+      const authRes = await auth.signUp(form.email, form.password, { name: form.name, role: form.role });
       const userId = authRes?.user?.id || "u" + Date.now();
-      const newUser = {
-        id: userId,
-        name: form.name,
-        email: form.email,
-        role: form.role,
-        therapist_id: therapistId,
-      };
+      const newUser = { id: userId, name: form.name, email: form.email, role: form.role, therapist_id: therapistId };
       await db.insert("users", newUser);
 
       if (form.role === "patient") {
-        await db.update(
-          "invites",
-          { code: form.inviteCode.trim().toUpperCase() },
-          { status: "used", used_by: userId, used_at: new Date().toISOString() }
-        );
+        await db.update("invites", { code: form.inviteCode.trim().toUpperCase() }, { status: "used", used_by: userId, used_at: new Date().toISOString() });
       }
       return null;
     } catch (error) {
@@ -543,61 +518,20 @@ export default function App() {
     }
   };
 
-  // Determine content — keeping <style> in fixed tree position so React reuses
-  // the same DOM node across all render states (no flash of unstyled content)
   let content;
   if (!ready) {
-    content = (
-      <div className="spinner">
-        <div className="spin" />
-        <span>Conectando ao Equilibre...</span>
-      </div>
-    );
+    content = <div className="spinner"><div className="spin" /><span>Conectando ao Equilibre...</span></div>;
   } else if (dbError) {
-    content = (
-      <div className="spinner">
-        <span>⚠️ Erro ao conectar ao banco de dados. Verifique as configurações.</span>
-      </div>
-    );
+    content = <div className="spinner"><span>⚠️ Erro ao conectar ao banco de dados. Verifique as configurações.</span></div>;
   } else if (!session) {
-    content = (
-      <LoginPage
-        tab={loginTab}
-        setTab={setLoginTab}
-        form={loginForm}
-        setForm={setLoginForm}
-        error={loginError}
-        onLogin={handleLogin}
-        onRegister={handleRegister}
-        setLoginError={setLoginError}
-      />
-    );
+    content = <LoginPage tab={loginTab} setTab={setLoginTab} form={loginForm} setForm={setLoginForm} error={loginError} onLogin={handleLogin} onRegister={handleRegister} setLoginError={setLoginError} />;
   } else {
-    content = session.role === "therapist" ? (
-      <TherapistLayout
-        session={session}
-        setSession={setSession}
-        view={view}
-        setView={setView}
-        modal={modal}
-        setModal={setModal}
-      />
-    ) : (
-      <PatientLayout
-        session={session}
-        setSession={setSession}
-        view={view}
-        setView={setView}
-      />
-    );
+    content = session.role === "therapist" 
+      ? <TherapistLayout session={session} setSession={setSession} view={view} setView={setView} modal={modal} setModal={setModal} toggleTheme={toggleTheme} theme={theme} />
+      : <PatientLayout session={session} setSession={setSession} view={view} setView={setView} toggleTheme={toggleTheme} theme={theme} />;
   }
 
-  return (
-    <>
-      <style>{css}</style>
-      {content}
-    </>
-  );
+  return <><style>{css}</style>{content}</>;
 }
 
 // ─── Login / Register ─────────────────────────────────────────────────────────
@@ -793,16 +727,14 @@ const playNotificationSound = () => {
 };
 
 // ─── Therapist Layout ─────────────────────────────────────────────────────────
-function TherapistLayout({ session, setSession, view, setView, modal, setModal }) {
-  const [showDelete, setShowDelete] = useState(false);
-  const [showLogout, setShowLogout] = useState(false);
-  const [unread, setUnread] = useState(0);
+function TherapistLayout({ session, setSession, view, setView, modal, setModal, toggleTheme, theme }) {
+  const [showDelete, setShowDelete] = useState(false);
+  const [showLogout, setShowLogout] = useState(false);
+  const [unread, setUnread] = useState(0);
   const [editingEx, setEditingEx] = useState(null);
-  
-  // Usamos o useRef para lembrar quantas notificações tínhamos na checagem anterior
-  const prevUnreadRef = React.useRef(0); 
+  const prevUnreadRef = useRef(0);
 
-  useEffect(() => {
+  useEffect(() => {
     let active = true;
     const fetchNotifs = async () => {
       try {
@@ -810,14 +742,7 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
         if (active) {
           const currentCount = Array.isArray(r) ? r.length : 0;
           setUnread(currentCount);
-          
-          // Se o número atual for MAIOR que o anterior, significa que chegou mensagem nova! Toca o som.
-          // (Apenas se prevUnreadRef não for a carga inicial de quando a página abriu)
-          if (currentCount > prevUnreadRef.current && prevUnreadRef.current !== 0) {
-            playNotificationSound();
-          }
-          
-          // Atualiza a "memória" para a próxima checagem
+          if (currentCount > prevUnreadRef.current && prevUnreadRef.current !== 0) playNotificationSound();
           prevUnreadRef.current = currentCount;
         }
       } catch (e) {}
@@ -825,88 +750,77 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
     fetchNotifs();
     const interval = setInterval(fetchNotifs, 5000);
     return () => { active = false; clearInterval(interval); };
-  }, [session.id]);
+  }, [session.id]);
 
-  const navItems = [
-    { id: "dashboard", icon: "🏠", label: "Início" },
-    { id: "patients", icon: "👥", label: "Pacientes" },
-    { id: "exercises", icon: "📋", label: "Exercícios" },
-    { id: "create", icon: "✏️", label: "Criar Exercício" },
-    { id: "progress", icon: "📈", label: "Progresso" },
-    { id: "responses", icon: "📊", label: "Respostas" },
-  ];
+  const navItems = [
+    { id: "dashboard", icon: "🏠", label: "Início" },
+    { id: "patients", icon: "👥", label: "Pacientes" },
+    { id: "exercises", icon: "📋", label: "Exercícios" },
+    { id: "create", icon: "✏️", label: "Criar Exercício" },
+    { id: "progress", icon: "📈", label: "Progresso" },
+    { id: "responses", icon: "📊", label: "Respostas" },
+  ];
 
-  return (
-    <div className="layout">
-      <aside className="sidebar">
-        <div className="sidebar-header">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-            <div className="brand" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <img src={LOGO} alt="" style={{ width: 32, height: 32, objectFit: "contain" }} /> Equilibre
-            </div>
-            <button className="notif-bell" onClick={() => setView("notifications")} title="Notificações">
-              🔔{unread > 0 && <span className="notif-dot">{unread > 9 ? "9+" : unread}</span>}
-            </button>
-          </div>
-          <div className="role">Área da Psicóloga</div>
-        </div>
-        <nav>
-          {navItems.map((n) => (
-            <button key={n.id} className={`nav-item ${(view === n.id || (n.id === "create" && view === "edit")) ? "active" : ""}`} onClick={() => { setEditingEx(null); setView(n.id); }}>
-              <span className="icon">{n.icon}</span>
-              {n.label}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-footer">
-          <div className="user-pill">
-            <div className="avatar">{session.name[0]}</div>
-            <div className="user-info">
-              <div className="name">{session.name.split(" ")[0]}</div>
-              <div className="email">{session.email}</div>
-            </div>
-            <div className="pill-actions">
-              <button className="pill-btn" title="Sair" onClick={() => setShowLogout(true)}>
+  return (
+    <div className="layout">
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+            <div className="brand" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src={LOGO} alt="" style={{ width: 32, height: 32, objectFit: "contain" }} /> Equilibre</div>
+            <button className="notif-bell" onClick={() => setView("notifications")} title="Notificações">🔔{unread > 0 && <span className="notif-dot">{unread > 9 ? "9+" : unread}</span>}</button>
+          </div>
+          <div className="role">Área da Psicóloga</div>
+        </div>
+        <nav>
+          {navItems.map((n) => (
+            <button key={n.id} className={`nav-item ${(view === n.id || (n.id === "create" && view === "edit")) ? "active" : ""}`} onClick={() => { setEditingEx(null); setView(n.id); }}>
+              <span className="icon">{n.icon}</span>{n.label}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-footer">
+          <div className="user-pill">
+            <div className="avatar">{session.name[0]}</div>
+            <div className="user-info">
+              <div className="name">{session.name.split(" ")[0]}</div>
+              <div className="email">{session.email}</div>
+            </div>
+            <div className="pill-actions">
+              <button className="theme-toggle" onClick={toggleTheme} title="Modo Escuro">{theme === "dark" ? "☀️" : "🌙"}</button>
+              <button className="pill-btn" title="Sair" onClick={() => setShowLogout(true)}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
               </button>
-              <button className="pill-btn delete" title="Excluir conta" onClick={() => setShowDelete(true)}>
+              <button className="pill-btn delete" title="Excluir conta" onClick={() => setShowDelete(true)}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
               </button>
-            </div>
-          </div>
-        </div>
-      </aside>
-      <main className="main">
-        {view === "dashboard" && <TherapistDashboard session={session} setView={setView} />}
-        {view === "patients" && <PatientsView session={session} setModal={setModal} />}
-        {view === "exercises" && <ExercisesView session={session} />}
-        {view === "create" && <CreateExerciseView session={session} onSaved={() => setView("exercises")} />}
-        {view === "progress" && <TherapistProgress session={session} />}
-        {view === "responses" && <ResponsesView session={session} />}
-        {view === "notifications" && <NotificationsView session={session} onRead={() => { setUnread(0); prevUnreadRef.current = 0; }} />}
-      </main>
-      {modal && <Modal modal={modal} setModal={setModal} session={session} />}
-      {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => setSession(null)} />}
-      
+            </div>
+          </div>
+        </div>
+      </aside>
+      <main className="main">
+        {view === "dashboard" && <TherapistDashboard session={session} setView={setView} />}
+        {view === "patients" && <PatientsView session={session} setModal={setModal} />}
+        {view === "exercises" && <ExercisesView session={session} />}
+        {view === "create" && <CreateExerciseView session={session} onSaved={() => setView("exercises")} />}
+        {view === "progress" && <TherapistProgress session={session} />}
+        {view === "responses" && <ResponsesView session={session} />}
+        {view === "notifications" && <NotificationsView session={session} onRead={() => { setUnread(0); prevUnreadRef.current = 0; }} />}
+      </main>
+      {modal && <Modal modal={modal} setModal={setModal} session={session} />}
+      {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => setSession(null)} />}
       {showLogout && (
         <div className="delete-overlay" onClick={() => setShowLogout(false)}>
           <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
             <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>👋</div>
             <div className="delete-title" style={{ fontSize: 20 }}>Encerrar sessão?</div>
-            <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>
-              Tem certeza que deseja sair da sua conta?
-            </div>
-            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-              <button className="btn btn-outline" onClick={() => setShowLogout(false)}>Cancelar</button>
-              <button className="btn btn-sage" onClick={() => setSession(null)}>Sair</button>
-            </div>
+            <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>Tem certeza que deseja sair da sua conta?</div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}><button className="btn btn-outline" onClick={() => setShowLogout(false)}>Cancelar</button><button className="btn btn-sage" onClick={() => setSession(null)}>Sair</button></div>
           </div>
         </div>
       )}
-    </div>
-  );
+    </div>
+  );
 }
-
 
 // ─── Therapist Dashboard ──────────────────────────────────────────────────────
 function TherapistDashboard({ session, setView }) {
@@ -1849,157 +1763,139 @@ function NotificationsView({ session, onRead }) {
 }
 
 // ─── Patient Layout ───────────────────────────────────────────────────────────
-function PatientLayout({ session, setSession, view, setView }) {
-  const [showDelete, setShowDelete] = useState(false);
-  const [showLogout, setShowLogout] = useState(false); // <-- NOVO ESTADO
-  const [activeExercise, setActiveExercise] = useState(null);
-  const [pendingCount, setPendingCount] = useState(0);
+function PatientLayout({ session, setSession, view, setView, toggleTheme, theme }) {
+  const [showDelete, setShowDelete] = useState(false);
+  const [showLogout, setShowLogout] = useState(false);
+  const [activeExercise, setActiveExercise] = useState(null);
+  const [pendingCount, setPendingCount] = useState(0);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const rows = await db.query("users", { filter: { email: session.email } });
-        if (!cancelled && Array.isArray(rows) && rows.length > 0 && rows[0].id !== session.id) {
-          setSession((prev) => ({ ...prev, ...rows[0] }));
-        }
-      } catch { /* non-critical */ }
-    })();
-    return () => { cancelled = true; };
-  }, [session.email]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await db.query("users", { filter: { email: session.email } });
+        if (!cancelled && Array.isArray(rows) && rows.length > 0 && rows[0].id !== session.id) setSession((prev) => ({ ...prev, ...rows[0] }));
+      } catch { }
+    })();
+    return () => { cancelled = true; };
+  }, [session.email]);
 
-  useEffect(() => {
-    let active = true;
-    const fetchPending = async () => {
-      try {
-        const r = await db.query("assignments", { filter: { patient_id: session.id, status: "pending" } });
-        if (active) setPendingCount(Array.isArray(r) ? r.length : 0);
-      } catch { /* ignore */ }
-    };
-    fetchPending();
-    const intId = setInterval(fetchPending, 5000);
-    return () => { active = false; clearInterval(intId); };
-  }, [session.id]);
+  useEffect(() => {
+    let active = true;
+    const fetchPending = async () => {
+      try {
+        const r = await db.query("assignments", { filter: { patient_id: session.id, status: "pending" } });
+        if (active) setPendingCount(Array.isArray(r) ? r.length : 0);
+      } catch { }
+    };
+    fetchPending();
+    const intId = setInterval(fetchPending, 5000);
+    return () => { active = false; clearInterval(intId); };
+  }, [session.id]);
 
-  if (activeExercise)
-    return (
-      <ExercisePage
-        exercise={activeExercise}
-        session={session}
-        onBack={() => { setActiveExercise(null); setView("exercises"); }}
-      />
-    );
+  if (activeExercise) return <ExercisePage exercise={activeExercise} session={session} onBack={() => { setActiveExercise(null); setView("exercises"); }} />;
 
-  const patNav = [
-    { id: "home", icon: "🏠", label: "Início" },
-    { id: "exercises", icon: "📋", label: "Meus Exercícios" },
-    { id: "diary", icon: "📓", label: "Diário" },
-    { id: "progress", icon: "📊", label: "Meu Progresso" },
-    { id: "history", icon: "📖", label: "Histórico" },
-  ];
+  const patNav = [
+    { id: "home", icon: "🏠", label: "Início" },
+    { id: "exercises", icon: "📋", label: "Meus Exercícios" },
+    { id: "diary", icon: "📓", label: "Diário" },
+    { id: "progress", icon: "📊", label: "Meu Progresso" },
+    { id: "history", icon: "📖", label: "Histórico" },
+  ];
 
-  return (
-    <div className="layout">
-      <aside className="sidebar patient-sidebar">
-        <div className="sidebar-header">
-          <div className="brand" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <img src={LOGO} alt="" style={{ width: 32, height: 32, objectFit: "contain" }} /> Equilibre
-          </div>
-          <div className="role">Área do Paciente</div>
-        </div>
-        <nav>
-          {patNav.map((n) => (
-            <button key={n.id} className={`nav-item ${view === n.id ? "active" : ""}`} onClick={() => setView(n.id)}>
-              <span className="icon">{n.icon}</span>{n.label}
-              {n.id === "exercises" && pendingCount > 0 && (
-                <span style={{ marginLeft: "auto", background: "var(--accent)", color: "white", borderRadius: 20, fontSize: 10, padding: "2px 7px" }}>{pendingCount}</span>
-              )}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-footer">
-          <div className="user-pill">
-            <div className="avatar">{session.name[0]}</div>
-            <div className="user-info">
-              <div className="name">{session.name.split(" ")[0]}</div>
-              <div className="email">{session.email}</div>
-            </div>
-            <div className="pill-actions">
-              {/* Abre o modal de logout */}
-              <button className="pill-btn" title="Sair" onClick={() => setShowLogout(true)}>
+  return (
+    <div className="layout">
+      <aside className="sidebar patient-sidebar">
+        <div className="sidebar-header">
+          <div className="brand" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src={LOGO} alt="" style={{ width: 32, height: 32, objectFit: "contain" }} /> Equilibre</div>
+          <div className="role">Área do Paciente</div>
+        </div>
+        <nav>
+          {patNav.map((n) => (
+            <button key={n.id} className={`nav-item ${view === n.id ? "active" : ""}`} onClick={() => setView(n.id)}>
+              <span className="icon">{n.icon}</span>{n.label}
+              {n.id === "exercises" && pendingCount > 0 && <span style={{ marginLeft: "auto", background: "var(--accent)", color: "white", borderRadius: 20, fontSize: 10, padding: "2px 7px" }}>{pendingCount}</span>}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-footer">
+          <div className="user-pill">
+            <div className="avatar">{session.name[0]}</div>
+            <div className="user-info">
+              <div className="name">{session.name.split(" ")[0]}</div>
+              <div className="email">{session.email}</div>
+            </div>
+            <div className="pill-actions">
+              <button className="theme-toggle" onClick={toggleTheme} title="Modo Escuro">{theme === "dark" ? "☀️" : "🌙"}</button>
+              <button className="pill-btn" title="Sair" onClick={() => setShowLogout(true)}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
               </button>
-              <button className="pill-btn delete" title="Excluir conta" onClick={() => setShowDelete(true)}>
+              <button className="pill-btn delete" title="Excluir conta" onClick={() => setShowDelete(true)}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
               </button>
-            </div>
-          </div>
-        </div>
-      </aside>
-      <main className="main">
-        {view === "home" && <PatientHome session={session} setView={setView} />}
-        {view === "exercises" && <PatientExercises session={session} setActiveExercise={setActiveExercise} />}
-        {view === "diary" && <PatientDiary session={session} />}
-        {view === "progress" && <PatientProgress session={session} />}
-        {view === "history" && <PatientHistory session={session} />}
-      </main>
-      {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => setSession(null)} />}
-      
-      {/* MODAL DE CONFIRMAÇÃO DE LOGOUT */}
+            </div>
+          </div>
+        </div>
+      </aside>
+      <main className="main">
+        {view === "home" && <PatientHome session={session} setView={setView} />}
+        {view === "exercises" && <PatientExercises session={session} setActiveExercise={setActiveExercise} />}
+        {view === "diary" && <PatientDiary session={session} />}
+        {view === "progress" && <PatientProgress session={session} />}
+        {view === "history" && <PatientHistory session={session} />}
+      </main>
+
+      {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => setSession(null)} />}
       {showLogout && (
         <div className="delete-overlay" onClick={() => setShowLogout(false)}>
           <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
             <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>👋</div>
             <div className="delete-title" style={{ fontSize: 20 }}>Encerrar sessão?</div>
-            <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>
-              Tem certeza que deseja sair da sua conta?
-            </div>
-            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-              <button className="btn btn-outline" onClick={() => setShowLogout(false)}>Cancelar</button>
-              <button className="btn btn-sage" onClick={() => setSession(null)}>Sair</button>
-            </div>
+            <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>Tem certeza que deseja sair da sua conta?</div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}><button className="btn btn-outline" onClick={() => setShowLogout(false)}>Cancelar</button><button className="btn btn-sage" onClick={() => setSession(null)}>Sair</button></div>
           </div>
         </div>
       )}
-    </div>
-  );
+    </div>
+  );
 }
 
 // ─── Patient Home ─────────────────────────────────────────────────────────────
 function PatientHome({ session, setView }) {
-  const [counts, setCounts] = useState({ pending: 0, done: 0 });
-  const [goal, setGoal] = useState(null);
-  const [doneThisWeek, setDoneThisWeek] = useState(0);
-  const [overdue, setOverdue] = useState(0);
+  const [data, setData] = useState({ pending: 0, done: 0, streak: 0, goal: null, weekDone: 0, overdue: 0 });
 
   useEffect(() => {
     let active = true;
-
     const fetch = async () => {
-      const [pending, done, goals, responses] = await Promise.all([
+      const [pending, done, goals, responses, diary] = await Promise.all([
         db.query("assignments", { filter: { patient_id: session.id, status: "pending" } }),
         db.query("assignments", { filter: { patient_id: session.id, status: "done" } }),
         db.query("goals", { filter: { patient_id: session.id } }),
         db.query("responses", { filter: { patient_id: session.id }, order: "completed_at.desc" }),
+        db.query("diary_entries", { filter: { patient_id: session.id }, order: "date.desc" })
       ]);
-
       if (!active) return;
 
       const now = new Date();
       const startOfWeek = new Date(now);
       startOfWeek.setDate(now.getDate() - now.getDay());
       const respList = Array.isArray(responses) ? responses : [];
+      const dList = Array.isArray(diary) ? diary : [];
       const pendList = Array.isArray(pending) ? pending : [];
       const weekDone = respList.filter((r) => new Date(r.completed_at) >= startOfWeek).length;
       const od = pendList.filter((a) => a.due_date && new Date(a.due_date) < now).length;
 
-      setCounts({ pending: pendList.length, done: Array.isArray(done) ? done.length : 0 });
-      const g = Array.isArray(goals) && goals.length > 0 ? goals[0] : null;
-      setGoal(g);
-      setDoneThisWeek(weekDone);
-      setOverdue(od);
-    };
+      let streak = 0;
+      for (let i = 0; i < 30; i++) {
+        const d = new Date(now);
+        d.setDate(now.getDate() - i);
+        const ds = d.toISOString().split("T")[0];
+        if (dList.find((e) => e.date === ds) || respList.find((r) => r.completed_at?.startsWith(ds))) streak++;
+        else break;
+      }
 
+      setData({ pending: pendList.length, done: Array.isArray(done) ? done.length : 0, streak, goal: Array.isArray(goals) && goals.length > 0 ? goals[0] : null, weekDone, overdue: od });
+    };
     fetch();
     const intId = setInterval(fetch, 5000);
     return () => { active = false; clearInterval(intId); };
@@ -2007,30 +1903,24 @@ function PatientHome({ session, setView }) {
 
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
-      <div className="page-header">
-        <h2>Olá, {session.name.split(" ")[0]} 🌱</h2>
-        <p>Como você está se sentindo hoje?</p>
-      </div>
+      <div className="page-header"><h2>Olá, {session.name.split(" ")[0]} 🌱</h2><p>Como você está se sentindo hoje?</p></div>
       <div className="grid-3" style={{ marginBottom: 20 }}>
-        <div className="stat-card"><div className="stat-icon">⏳</div><div className="stat-val">{counts.pending}</div><div className="stat-label">Para fazer</div></div>
-        <div className="stat-card"><div className="stat-icon">✅</div><div className="stat-val">{counts.done}</div><div className="stat-label">Concluídos</div></div>
-        {overdue > 0
-          ? <div className="stat-card" style={{ border: "1.5px solid #f6943b" }}><div className="stat-icon">⚠️</div><div className="stat-val" style={{ color: "var(--accent)" }}>{overdue}</div><div className="stat-label">Com prazo vencido</div></div>
-          : <div className="stat-card"><div className="stat-icon">📅</div><div className="stat-val" style={{ fontSize: 22 }}>OK</div><div className="stat-label">Prazos em dia</div></div>}
+        
+        {/* GAMIFICAÇÃO: Muda o ícone de acordo com o número de dias seguidos */}
+        <div className="stat-card">
+          <div className="stat-icon">{data.streak >= 7 ? "🌳" : data.streak >= 3 ? "🌿" : "🌱"}</div>
+          <div className="stat-val">{data.streak}</div>
+          <div className="stat-label">Dias seguidos</div>
+        </div>
+        
+        <div className="stat-card"><div className="stat-icon">⏳</div><div className="stat-val">{data.pending}</div><div className="stat-label">Para fazer</div></div>
+        {data.overdue > 0 ? <div className="stat-card" style={{ border: "1.5px solid #f6943b" }}><div className="stat-icon">⚠️</div><div className="stat-val" style={{ color: "var(--accent)" }}>{data.overdue}</div><div className="stat-label">Com prazo vencido</div></div> : <div className="stat-card"><div className="stat-icon">✅</div><div className="stat-val">{data.done}</div><div className="stat-label">Concluídos</div></div>}
       </div>
 
-      {goal && (
-        <div className="card" style={{ marginBottom: 18 }}>
-          <WeekGoalBar done={doneThisWeek} target={goal.weekly_target} />
-        </div>
-      )}
+      {data.goal && <div className="card" style={{ marginBottom: 18 }}><WeekGoalBar done={data.weekDone} target={data.goal.weekly_target} /></div>}
 
-      {counts.pending > 0
-        ? <div className="card" style={{ background: "linear-gradient(135deg,var(--blue-dark),var(--blue-mid))", color: "white", cursor: "pointer" }} onClick={() => setView("exercises")}>
-            <div style={{ fontSize: 22, marginBottom: 7 }}>📋</div>
-            <h3 style={{ fontSize: 17, marginBottom: 5 }}>Você tem {counts.pending} exercício{counts.pending > 1 ? "s" : ""} pendente{counts.pending > 1 ? "s" : ""}!</h3>
-            <p style={{ opacity: 0.85, fontSize: 13 }}>Clique aqui para começar quando estiver pronto(a).</p>
-          </div>
+      {data.pending > 0
+        ? <div className="card" style={{ background: "linear-gradient(135deg,var(--blue-dark),var(--blue-mid))", color: "white", cursor: "pointer" }} onClick={() => setView("exercises")}><div style={{ fontSize: 22, marginBottom: 7 }}>📋</div><h3 style={{ fontSize: 17, marginBottom: 5 }}>Você tem {data.pending} exercício{data.pending > 1 ? "s" : ""} pendente{data.pending > 1 ? "s" : ""}!</h3><p style={{ opacity: 0.85, fontSize: 13 }}>Clique aqui para começar quando estiver pronto(a).</p></div>
         : <div className="card"><div className="empty-state"><div className="empty-icon">🎉</div><p>Você está em dia com seus exercícios!</p></div></div>}
     </div>
   );
