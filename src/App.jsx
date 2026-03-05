@@ -2113,159 +2113,212 @@ function Modal({ modal, setModal, session }) {
   );
 }
 
-// ─── Create / Edit Exercise View ──────────────────────────────────────────────
+// ==========================================
+// Create / Edit Exercise View
+// ==========================================
 const QUESTION_TYPES = [
-  { value: "open", label: "📝 Resposta aberta" },
-  { value: "scale", label: "🔢 Escala 0–10" },
-  { value: "reflect", label: "💭 Reflexão (opcional)" },
-  { value: "instruction", label: "📢 Instrução (sem resposta)" },
+  { value: 'open', label: 'Resposta aberta' },
+  { value: 'scale', label: 'Escala (0–10)' },
+  { value: 'reflect', label: 'Reflexão (opcional)' },
+  { value: 'instruction', label: 'Instrução (sem resposta)' },
 ];
-const CATEGORIES = ["Ansiedade", "Bem-estar", "Mindfulness", "Autoconhecimento", "Relacionamentos", "Outro"];
+
+const CATEGORIES = ['Ansiedade', 'Bem-estar', 'Mindfulness', 'Autoconhecimento', 'Relacionamentos', 'Outro'];
 
 function makeEmptyQuestion() {
-  return { id: "q" + Date.now() + Math.random().toString(36).slice(2, 5), type: "open", text: "" };
+  return { id: 'q_' + Date.now() + Math.random().toString(36).slice(2, 5), type: 'open', text: '' };
 }
 
 function CreateExerciseView({ session, onSaved, initialExercise }) {
   const isEditing = !!initialExercise;
-
-  const [form, setForm] = useState(() => {
-    if (isEditing) return { title: initialExercise.title, category: initialExercise.category || "Ansiedade", description: initialExercise.description };
-    return { title: "", category: "Ansiedade", description: "" };
+  const [form, setForm] = useState(() => {
+    if (isEditing) return { title: initialExercise.title, category: initialExercise.category || 'Ansiedade', description: initialExercise.description };
+    return { title: '', category: 'Ansiedade', description: '' };
   });
 
-  const [questions, setQuestions] = useState(() => {
+  const [questions, setQuestions] = useState(() => {
     if (isEditing) return parseQuestions(initialExercise);
     return [makeEmptyQuestion()];
   });
 
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
 
-  const addQ = () => setQuestions((qs) => [...qs, makeEmptyQuestion()]);
-  const removeQ = (i) => setQuestions((qs) => qs.filter((_, idx) => idx !== i));
-  const updateQ = (i, field, val) =>
-    setQuestions((qs) => qs.map((q, idx) => (idx === i ? { ...q, [field]: val } : q)));
-  const moveQ = (i, dir) => {
-    setQuestions((qs) => {
-      const arr = [...qs];
-      const j = i + dir;
-      if (j < 0 || j >= arr.length) return arr;
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      return arr;
-    });
-  };
+  const addQ = () => setQuestions(qs => [...qs, makeEmptyQuestion()]);
+  const removeQ = (i) => setQuestions(qs => qs.filter((_, idx) => idx !== i));
+  const updateQ = (i, field, val) => setQuestions(qs => qs.map((q, idx) => idx === i ? { ...q, [field]: val } : q));
+  
+  const moveQ = (i, dir) => {
+    setQuestions(qs => {
+      const arr = [...qs];
+      const j = i + dir;
+      if (j < 0 || j >= arr.length) return arr;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      return arr;
+    });
+  };
 
-  const save = async () => {
-    if (!form.title.trim()) { setError("Informe o título do exercício."); return; }
-    if (!form.description.trim()) { setError("Informe a descrição."); return; }
-    if (questions.some((q) => !q.text.trim())) { setError("Todas as perguntas/instruções precisam ter texto."); return; }
-    setError("");
-    setSaving(true);
+  const save = async () => {
+    if (!form.title.trim()) { setError('Informe o título do exercício.'); return; }
+    if (!form.description.trim()) { setError('Informe a descrição.'); return; }
+    if (questions.some(q => !q.text.trim())) { setError('Todas as perguntas/instruções precisam ter texto.'); return; }
 
+    setError('');
+    setSaving(true);
     try {
       const payload = {
         title: form.title.trim(),
-        category: form.category,
-        description: form.description.trim(),
-        questions: JSON.stringify(questions),
+        category: form.category,
+        description: form.description.trim(),
+        questions: JSON.stringify(questions),
       };
 
       if (isEditing) {
-        await db.update("exercises", { id: initialExercise.id }, payload, session.access_token);
+        await db.update('exercises', { id: initialExercise.id }, payload, session.access_token);
       } else {
-        await db.insert("exercises", {
-          id: "ex" + Date.now(),
-          therapist_id: session.id,
+        await db.insert('exercises', {
+          id: 'ex_' + Date.now(),
+          therapist_id: session.id,
           ...payload
-        }, session.access_token);
+        }, session.access_token);
       }
-      
-      setSuccess(isEditing ? "Exercício atualizado com sucesso!" : "Exercício criado com sucesso!");
-      setTimeout(() => { setSuccess(""); onSaved(); }, 1500);
+
+      setSuccess(isEditing ? 'Exercício atualizado com sucesso!' : 'Exercício criado com sucesso!');
+      setTimeout(() => {
+        setSuccess('');
+        onSaved();
+      }, 1500);
     } catch (err) {
-      setError("Erro ao salvar: " + err.message);
+      setError('Erro ao salvar: ' + err.message);
     } finally {
-      setSaving(false);
+      setSaving(false);
     }
-  };
+  };
 
-  const fieldStyle = { width: "100%", padding: "11px 14px", border: "1.5px solid var(--warm)", borderRadius: 10, fontFamily: "DM Sans, sans-serif", fontSize: 15, background: "var(--cream)", color: "var(--text)", outline: "none" };
-  const labelStyle = { display: "block", fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginBottom: 5, textTransform: "uppercase", letterSpacing: ".06em" };
+  const fieldStyle = {
+    width: '100%', padding: '11px 14px', border: '1.5px solid var(--warm)', borderRadius: 10,
+    fontFamily: '"DM Sans", sans-serif', fontSize: 15, background: 'var(--cream)', color: 'var(--text)', outline: 'none'
+  };
+  
+  const labelStyle = {
+    display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.06em'
+  };
 
-  return (
-    <div style={{ animation: "fadeUp .4s ease", maxWidth: 720 }}>
-      <div className="page-header">
-        <h2>{isEditing ? "✏️ Editar Exercício" : "✏️ Criar Exercício"}</h2>
-        <p>{isEditing ? "Modifique as informações do exercício selecionado" : "Monte um exercício personalizado para seus pacientes"}</p>
-      </div>
+  return (
+    <div style={{ animation: 'fadeUp .4s ease', maxWidth: 720 }}>
+      <div className="page-header">
+        <h2>{isEditing ? 'Editar Exercício' : 'Criar Exercício'}</h2>
+        <p>{isEditing ? 'Modifique as informações do exercício selecionado' : 'Monte um exercício personalizado para seus pacientes'}</p>
+      </div>
 
-      {success && <div className="success-banner">✅ {success}</div>}
-      {error && <p className="error-msg">{error}</p>}
+      {success && <div className="success-banner">{success}</div>}
+      {error && <p className="error-msg">{error}</p>}
 
-      <div className="card" style={{ marginBottom: 20 }}>
-        <h3 style={{ fontSize: 16, marginBottom: 16, color: "var(--blue-dark)" }}>Informações gerais</h3>
-        <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>Título do exercício</label>
-          <input style={fieldStyle} value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Ex: Diário das Emoções" />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
-          <div>
-            <label style={labelStyle}>Categoria</label>
-            <select style={{ ...fieldStyle, cursor: "pointer" }} value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-        </div>
-        <div>
-          <label style={labelStyle}>Descrição breve</label>
-          <textarea style={{ ...fieldStyle, minHeight: 70, resize: "vertical" }} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="O que este exercício trabalha?" />
-        </div>
-      </div>
+      <div className="card" style={{ marginBottom: 20 }}>
+        <h3 style={{ fontSize: 16, marginBottom: 16, color: 'var(--blue-dark)' }}>Informações gerais</h3>
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelStyle}>Título do exercício</label>
+          <input
+            style={fieldStyle}
+            value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+            placeholder="Ex: Diário das Emoções"
+          />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+          <div>
+            <label style={labelStyle}>Categoria</label>
+            <select
+              style={{ ...fieldStyle, cursor: 'pointer' }}
+              value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+            >
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label style={labelStyle}>Descrição breve</label>
+          <textarea
+            style={{ ...fieldStyle, minHeight: 70, resize: 'vertical' }}
+            value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+            placeholder="O que este exercício trabalha?"
+          />
+        </div>
+      </div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ fontSize: 16, color: "var(--blue-dark)" }}>Perguntas ({questions.length})</h3>
-          <button className="btn btn-sage btn-sm" onClick={addQ}>+ Adicionar pergunta</button>
-        </div>
-        
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h3 style={{ fontSize: 16, color: 'var(--blue-dark)' }}>Perguntas ({questions.length})</h3>
+          <button className="btn btn-sage btn-sm" onClick={addQ}>+ Adicionar pergunta</button>
+        </div>
+
         {isEditing && (
-          <div style={{ padding: "10px 14px", background: "rgba(246, 148, 59, 0.1)", borderRadius: 10, marginBottom: 16, fontSize: 12, color: "var(--accent)", border: "1px solid var(--accent)" }}>
-            ⚠️ <strong>Atenção:</strong> Se você excluir ou reordenar perguntas de um exercício que já foi respondido por pacientes, as respostas antigas podem ficar desalinhadas no histórico.
+          <div style={{ padding: '10px 14px', background: 'rgba(246, 148, 59, 0.1)', borderRadius: 10, marginBottom: 16, fontSize: 12, color: 'var(--accent)', border: '1px solid var(--accent)' }}>
+            <strong>Atenção:</strong> Se você excluir ou reordenar perguntas de um exercício que já foi respondido por pacientes, as respostas antigas podem ficar desalinhadas no histórico.
           </div>
         )}
 
-        {questions.map((q, i) => (
-          <div key={q.id} style={{ background: "var(--cream)", borderRadius: 14, padding: "16px 16px 12px", marginBottom: 12, border: "1.5px solid var(--warm)", position: "relative" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 11 }}>
-              <span style={{ background: "var(--blue-dark)", color: "white", width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
-              <select style={{ flex: 1, padding: "7px 10px", border: "1.5px solid var(--warm)", borderRadius: 8, fontFamily: "DM Sans, sans-serif", fontSize: 13, background: "white", color: "var(--text)", cursor: "pointer", outline: "none" }} value={q.type} onChange={(e) => updateQ(i, "type", e.target.value)}>
-                {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
-              <button onClick={() => moveQ(i, -1)} disabled={i === 0} style={{ background: "none", border: "none", cursor: i === 0 ? "not-allowed" : "pointer", opacity: i === 0 ? 0.3 : 1, fontSize: 16, padding: "2px 4px" }}>↑</button>
-              <button onClick={() => moveQ(i, 1)} disabled={i === questions.length - 1} style={{ background: "none", border: "none", cursor: i === questions.length - 1 ? "not-allowed" : "pointer", opacity: i === questions.length - 1 ? 0.3 : 1, fontSize: 16, padding: "2px 4px" }}>↓</button>
-              <button onClick={() => removeQ(i)} disabled={questions.length === 1} style={{ background: "none", border: "none", cursor: questions.length === 1 ? "not-allowed" : "pointer", color: "var(--danger)", fontSize: 16, opacity: questions.length === 1 ? 0.3 : 1, padding: "2px 4px" }}>✕</button>
-            </div>
-            <textarea style={{ width: "100%", minHeight: 70, padding: "10px 12px", border: "1.5px solid var(--warm)", borderRadius: 10, fontFamily: "DM Sans, sans-serif", fontSize: 14, background: "white", color: "var(--text)", resize: "vertical", outline: "none" }} placeholder={q.type === "instruction" ? "Escreva a instrução ou orientação para o paciente..." : "Escreva a pergunta..."} value={q.text} onChange={(e) => updateQ(i, "text", e.target.value)} />
-            {q.type === "instruction" && <div style={{ fontSize: 11, color: "var(--blue-dark)", marginTop: 5 }}>💡 Instrução — o paciente lerá mas não precisa responder.</div>}
-            {q.type === "reflect" && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 5 }}>💭 Reflexão — campo de texto livre, preenchimento opcional.</div>}
-            {q.type === "scale" && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 5 }}>🔢 Escala — o paciente escolherá um valor de 0 a 10.</div>}
-          </div>
-        ))}
+        {questions.map((q, i) => (
+          <div key={q.id} style={{ background: 'var(--cream)', borderRadius: 14, padding: '16px 16px 12px', marginBottom: 12, border: '1.5px solid var(--warm)', position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 11 }}>
+              <span style={{ background: 'var(--blue-dark)', color: 'white', width: 24, height: 24, borderRadius: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
+              
+              <select
+                style={{
+                  flex: 1,
+                  padding: '7px 10px',
+                  border: '1.5px solid var(--warm)',
+                  borderRadius: 8,
+                  fontFamily: '"DM Sans", sans-serif',
+                  fontSize: 13,
+                  background: 'var(--cream)', // CORREÇÃO PARA O DARK MODE
+                  color: 'var(--text)',
+                  cursor: 'pointer',
+                  outline: 'none'
+                }}
+                value={q.type}
+                onChange={(e) => updateQ(i, 'type', e.target.value)}
+              >
+                {QUESTION_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
 
-        <button className="btn btn-outline" style={{ width: "100%", marginTop: 6, borderStyle: "dashed" }} onClick={addQ}>+ Adicionar outra pergunta</button>
-      </div>
+              <button onClick={() => moveQ(i, -1)} disabled={i === 0} style={{ background: 'none', border: 'none', cursor: i === 0 ? 'not-allowed' : 'pointer', opacity: i === 0 ? 0.3 : 1, fontSize: 16, padding: '2px 4px' }}>⬆️</button>
+              <button onClick={() => moveQ(i, 1)} disabled={i === questions.length - 1} style={{ background: 'none', border: 'none', cursor: i === questions.length - 1 ? 'not-allowed' : 'pointer', opacity: i === questions.length - 1 ? 0.3 : 1, fontSize: 16, padding: '2px 4px' }}>⬇️</button>
+              <button onClick={() => removeQ(i)} disabled={questions.length === 1} style={{ background: 'none', border: 'none', cursor: questions.length === 1 ? 'not-allowed' : 'pointer', color: 'var(--danger)', fontSize: 16, opacity: questions.length === 1 ? 0.3 : 1, padding: '2px 4px' }}>🗑️</button>
+            </div>
+            
+            <textarea
+              style={{
+                width: '100%',
+                minHeight: 70,
+                padding: '10px 12px',
+                border: '1.5px solid var(--warm)',
+                borderRadius: 10,
+                fontFamily: '"DM Sans", sans-serif',
+                fontSize: 14,
+                background: 'var(--cream)', // CORREÇÃO PARA O DARK MODE
+                color: 'var(--text)',
+                resize: 'vertical',
+                outline: 'none'
+              }}
+              placeholder={q.type === 'instruction' ? "Escreva a instrução ou orientação para o paciente..." : "Escreva a pergunta..."}
+              value={q.text}
+              onChange={(e) => updateQ(i, 'text', e.target.value)}
+            />
+            {q.type === 'instruction' && <div style={{ fontSize: 11, color: 'var(--blue-dark)', marginTop: 5 }}>Instrução: o paciente lerá, mas não precisa responder.</div>}
+            {q.type === 'reflect' && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>Reflexão: campo de texto livre, preenchimento opcional.</div>}
+            {q.type === 'scale' && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>Escala: o paciente escolherá um valor de 0 a 10.</div>}
+          </div>
+        ))}
+      </div>
 
-      <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-        <button className="btn btn-outline" onClick={onSaved}>Cancelar</button>
-        <button className="btn btn-sage" style={{ padding: "11px 28px" }} onClick={save} disabled={saving}>
-          {saving ? "Salvando..." : isEditing ? "💾 Atualizar exercício" : "💾 Salvar exercício"}
-        </button>
-      </div>
-    </div>
-  );
+      <button className="btn btn-sage" style={{ width: '100%', padding: '14px', fontSize: 15 }} onClick={save} disabled={saving}>
+        {saving ? 'A salvar...' : 'Salvar Exercício'}
+      </button>
+    </div>
+  );
 }
+
 
 // ─── Mini SVG Line Chart ──────────────────────────────────────────────────────
 const MiniLineChart = memo(function MiniLineChart({ points, color = "var(--blue-dark)", height = 70, labels }) {
