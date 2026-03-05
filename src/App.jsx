@@ -724,14 +724,27 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
     setLoading(true);
     try {
       if (session.role === "patient") {
-        // Mantém responses, diary_entries e assignments — a profissional precisa do histórico
-        // Remove apenas notificações geradas por este paciente (avisos de exercício concluído)
-        const notifs = await db.query("notifications", { filter: { patient_id: session.id } }, session.access_token);
-        if (Array.isArray(notifs)) {
-          for (const n of notifs) await db.remove("notifications", { id: n.id }, session.access_token);
+        // Notifica a profissional antes de apagar as credenciais
+        if (session.therapist_id) {
+          await db.insert("notifications", {
+            therapist_id: session.therapist_id,
+            patient_id: session.id,
+            patient_name: session.name,
+            type: "account_deleted",
+            exercise_title: "Conta encerrada pelo paciente",
+            created_at: new Date().toISOString(),
+            read: false,
+          }, session.access_token);
         }
-        // O convite permanece como "used" — a profissional deverá gerar um novo código
-        // caso o paciente queira criar uma nova conta
+        // Apaga apenas o registo de utilizador e as credenciais de autenticação.
+        // Todo o histórico (responses, diary_entries, assignments, goals, notifications)
+        // é preservado no perfil da profissional.
+        // O convite permanece como "used" — é necessário um novo convite para se re-registar.
+        await db.remove("users", { id: session.id }, session.access_token);
+        await fetch(`${SUPA_URL}/auth/v1/user`, {
+          method: "DELETE",
+          headers: { apikey: SUPA_KEY, Authorization: `Bearer ${session.access_token}` },
+        });
       } else {
         // Terapeuta: remove todos os dados vinculados
         for (const [table, field] of [
@@ -751,12 +764,12 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
         if (Array.isArray(patients)) {
           for (const p of patients) await db.update("users", { id: p.id }, { therapist_id: null }, session.access_token);
         }
+        await db.remove("users", { id: session.id }, session.access_token);
+        await fetch(`${SUPA_URL}/auth/v1/user`, {
+          method: "DELETE",
+          headers: { apikey: SUPA_KEY, Authorization: `Bearer ${session.access_token}` },
+        });
       }
-      await db.remove("users", { id: session.id }, session.access_token);
-      await fetch(`${SUPA_URL}/auth/v1/user`, {
-        method: "DELETE",
-        headers: { apikey: SUPA_KEY, Authorization: `Bearer ${session.access_token}` },
-      });
       onDeleted();
     } catch (e) {
       console.error(e);
@@ -773,7 +786,7 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
         <div className="delete-desc">
           Esta ação é <strong>permanente e irreversível</strong>. Todos os seus dados serão apagados para sempre.
           {session.role === "patient" && (
-            <><br /><br />📋 O histórico das suas sessões ficará <strong>preservado no perfil da sua profissional</strong>. Para criar uma nova conta, será necessário um <strong>novo código de convite</strong>.</>
+            <><br /><br />📋 O seu histórico de sessões ficará <strong>preservado no perfil da sua profissional</strong>. Para criar uma nova conta será necessário um <strong>novo código de convite</strong> da sua profissional.</>
           )}
           {session.role === "therapist" && (
             <><br /><br />⚠️ Seus pacientes serão <strong>desvinculados</strong> mas suas contas serão mantidas.</>
@@ -2140,16 +2153,22 @@ function NotificationsView({ session, onRead }) {
       <div className="page-header"><h2>🔔 Notificações</h2><p>Atividades recentes dos seus pacientes</p></div>
       {loading && <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Carregando...</p>}
       {!loading && notifs.length === 0 && <div className="empty-state"><div className="empty-icon">🔕</div><p>Nenhuma notificação ainda.</p></div>}
-      {notifs.map((n) => (
-        <div key={n.id} className="card" style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 14, opacity: n.read ? 0.65 : 1 }}>
-          <div style={{ fontSize: 28 }}>✅</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 500, fontSize: 14 }}><strong>{n.patient_name}</strong> concluiu <em>{n.exercise_title}</em></div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{new Date(n.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</div>
+      {notifs.map((n) => {
+        const isDeleted = n.type === "account_deleted";
+        return (
+          <div key={n.id} className="card" style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 14, opacity: n.read ? 0.65 : 1, borderLeft: isDeleted ? "3px solid #c0444a" : undefined }}>
+            <div style={{ fontSize: 28 }}>{isDeleted ? "🚪" : "✅"}</div>
+            <div style={{ flex: 1 }}>
+              {isDeleted
+                ? <div style={{ fontWeight: 500, fontSize: 14 }}><strong>{n.patient_name}</strong> encerrou a conta e já não tem acesso à aplicação.</div>
+                : <div style={{ fontWeight: 500, fontSize: 14 }}><strong>{n.patient_name}</strong> concluiu <em>{n.exercise_title}</em></div>
+              }
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{new Date(n.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</div>
+            </div>
+            {!n.read && <span className="response-badge" style={{ background: isDeleted ? "rgba(192,68,74,0.1)" : "rgba(23,82,124,0.1)", color: isDeleted ? "#c0444a" : "var(--blue-dark)" }}>Novo</span>}
           </div>
-          {!n.read && <span className="response-badge" style={{ background: "rgba(23,82,124,0.1)", color: "var(--blue-dark)" }}>Novo</span>}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
