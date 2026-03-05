@@ -454,9 +454,18 @@ export default function App() {
         throw new Error(authData?.error_description || authData?.msg || "Erro na autenticação.");
       }
       // Use the user's JWT so RLS policies allow reading the row
-      const users = await db.query("users", { filter: { id: authData.user.id } }, authData.access_token);
+      let users = await db.query("users", { filter: { id: authData.user.id } }, authData.access_token);
+
+      // Fallback: if UUID lookup returns nothing (user may have been stored with a
+      // legacy "u"+timestamp ID when authRes.user.id was unavailable at signup),
+      // search by email so session.id matches the stored patient_id in assignments.
       if (!Array.isArray(users) || users.length === 0) {
-        // Fallback: build session from auth metadata if users table row is missing
+        const byEmail = await db.query("users", { filter: { email: loginForm.email } }, authData.access_token);
+        if (Array.isArray(byEmail) && byEmail.length > 0) users = byEmail;
+      }
+
+      if (!Array.isArray(users) || users.length === 0) {
+        // Last-resort fallback: build session from auth metadata if users table row is missing
         const meta = authData.user?.user_metadata || {};
         const role = meta.role || loginTab;
         if (role !== loginTab) {
@@ -504,7 +513,8 @@ export default function App() {
         name: form.name,
         role: form.role,
       });
-      const userId = authRes?.user?.id || "u" + Date.now();
+      // Supabase can return the user as authRes.user.id (v2) or authRes.id (v1)
+      const userId = authRes?.user?.id || authRes?.id || "u" + Date.now();
       const newUser = {
         id: userId,
         name: form.name,
@@ -1777,21 +1787,27 @@ function PatientExercises({ session, setActiveExercise }) {
   const [assignments, setAssignments] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState("");
 
   useEffect(() => {
     let active = true;
     let firstLoad = true;
 
     const fetchAssignments = async () => {
-      const [a, ex] = await Promise.all([
-        db.query("assignments", { filter: { patient_id: session.id } }),
-        db.query("exercises"),
-      ]);
-      if (!active) return;
-      setAssignments(Array.isArray(a) ? a : []);
-      setExercises(Array.isArray(ex) ? ex : []);
-      // FIX: setLoading apenas no primeiro carregamento
-      if (firstLoad) { setLoading(false); firstLoad = false; }
+      try {
+        const [a, ex] = await Promise.all([
+          db.query("assignments", { filter: { patient_id: session.id } }),
+          db.query("exercises"),
+        ]);
+        if (!active) return;
+        setAssignments(Array.isArray(a) ? a : []);
+        setExercises(Array.isArray(ex) ? ex : []);
+        setFetchError("");
+      } catch (err) {
+        if (active) setFetchError("Erro ao carregar exercícios. Tentando novamente...");
+      } finally {
+        if (active && firstLoad) { setLoading(false); firstLoad = false; }
+      }
     };
 
     fetchAssignments();
@@ -1807,6 +1823,7 @@ function PatientExercises({ session, setActiveExercise }) {
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
       <div className="page-header"><h2>Meus Exercícios</h2></div>
+      {fetchError && <p className="error-msg">{fetchError}</p>}
       {pending.length > 0 && (
         <>
           <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-muted)", marginBottom: 11 }}>Para fazer</div>
