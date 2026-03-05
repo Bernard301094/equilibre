@@ -1916,10 +1916,13 @@ function PatientHome({ session, setView }) {
 
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
-      <div className="page-header"><h2>Olá, {session.name.split(" ")[0]} 🌱</h2><p>Como você está se sentindo hoje?</p></div>
+      <div className="page-header">
+        <h2>Olá, {session.name.split(" ")[0]} 🌱</h2>
+        <p>Como você está se sentindo hoje?</p>
+      </div>
+      
       <div className="grid-3" style={{ marginBottom: 20 }}>
-        
-        {/* GAMIFICAÇÃO */}
+        {/* GAMIFICAÇÃO: Ícone dinâmico */}
         <div className="stat-card">
           <div className="stat-icon">{data.streak >= 7 ? "🌳" : data.streak >= 3 ? "🌿" : "🌱"}</div>
           <div className="stat-val">{data.streak}</div>
@@ -1927,13 +1930,36 @@ function PatientHome({ session, setView }) {
         </div>
 
         <div className="stat-card"><div className="stat-icon">⏳</div><div className="stat-val">{data.pending}</div><div className="stat-label">Para fazer</div></div>
-        {data.overdue > 0 ? <div className="stat-card" style={{ border: "1.5px solid #f6943b" }}><div className="stat-icon">⚠️</div><div className="stat-val" style={{ color: "var(--accent)" }}>{data.overdue}</div><div className="stat-label">Com prazo vencido</div></div> : <div className="stat-card"><div className="stat-icon">✅</div><div className="stat-val">{data.done}</div><div className="stat-label">Concluídos</div></div>}
+        {data.overdue > 0 
+          ? <div className="stat-card" style={{ border: "1.5px solid #f6943b" }}><div className="stat-icon">⚠️</div><div className="stat-val" style={{ color: "var(--accent)" }}>{data.overdue}</div><div className="stat-label">Com prazo vencido</div></div> 
+          : <div className="stat-card"><div className="stat-icon">✅</div><div className="stat-val">{data.done}</div><div className="stat-label">Concluídos</div></div>}
       </div>
 
-      {data.goal && <div className="card" style={{ marginBottom: 18 }}><WeekGoalBar done={data.weekDone} target={data.goal.weekly_target} /></div>}
+      {/* BANNER EXPLICATIVO DA GAMIFICAÇÃO */}
+      <div className="card" style={{ marginBottom: 20, background: "var(--accent-soft)", border: "1px solid var(--accent)", padding: "16px 20px" }}>
+        <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+          <div style={{ fontSize: 26, marginTop: 2 }}>🪴</div>
+          <div>
+            <h3 style={{ fontSize: 15, color: "var(--accent)", marginBottom: 6 }}>Cultive seu bem-estar</h3>
+            <p style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6 }}>
+              A sua constância faz a sua planta virtual crescer! Faça um exercício ou registre o seu Diário Emocional todos os dias para não perder a sua ofensiva:
+              <br />
+              <span style={{ display: "inline-block", marginTop: 8 }}>
+                <strong>🌱 Semente</strong> (1-2 dias) &nbsp;•&nbsp; <strong>🌿 Broto</strong> (3-6 dias) &nbsp;•&nbsp; <strong>🌳 Árvore</strong> (7+ dias)
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {data.goal && <div className="card" style={{ marginBottom: 20 }}><WeekGoalBar done={data.weekDone} target={data.goal.weekly_target} /></div>}
 
       {data.pending > 0
-        ? <div className="card" style={{ background: "linear-gradient(135deg,var(--blue-dark),var(--blue-mid))", color: "white", cursor: "pointer" }} onClick={() => setView("exercises")}><div style={{ fontSize: 22, marginBottom: 7 }}>📋</div><h3 style={{ fontSize: 17, marginBottom: 5 }}>Você tem {data.pending} exercício{data.pending > 1 ? "s" : ""} pendente{data.pending > 1 ? "s" : ""}!</h3><p style={{ opacity: 0.85, fontSize: 13 }}>Clique aqui para começar quando estiver pronto(a).</p></div>
+        ? <div className="card" style={{ background: "linear-gradient(135deg,var(--blue-dark),var(--blue-mid))", color: "white", cursor: "pointer" }} onClick={() => setView("exercises")}>
+            <div style={{ fontSize: 22, marginBottom: 7 }}>📋</div>
+            <h3 style={{ fontSize: 17, marginBottom: 5 }}>Você tem {data.pending} exercício{data.pending > 1 ? "s" : ""} pendente{data.pending > 1 ? "s" : ""}!</h3>
+            <p style={{ opacity: 0.85, fontSize: 13 }}>Clique aqui para começar quando estiver pronto(a).</p>
+          </div>
         : <div className="card"><div className="empty-state"><div className="empty-icon">🎉</div><p>Você está em dia com seus exercícios!</p></div></div>}
     </div>
   );
