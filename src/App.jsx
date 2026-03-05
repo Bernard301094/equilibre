@@ -1282,14 +1282,24 @@ function ResponsesView({ session }) {
   );
 }
 
-// ─── Modal (assign exercise) ──────────────────────────────────────────────────
+// ─── Modal (Atribuir Exercícios e Prontuário) ─────────────────────────────────
 function Modal({ modal, setModal, session }) {
+  const [tab, setTab] = useState("assign"); // "assign" | "notes"
+  
+  // Estados para Exercícios
   const [exercises, setExercises] = useState([]);
   const [existing, setExisting] = useState([]);
   const [selected, setSelected] = useState([]);
   const [dueDates, setDueDates] = useState({});
   const [weeklyGoal, setWeeklyGoal] = useState(3);
   const [currentGoal, setCurrentGoal] = useState(null);
+  
+  // Estados para Prontuário Clínico
+  const [notes, setNotes] = useState("");
+  const [notesId, setNotesId] = useState(null);
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -1298,24 +1308,30 @@ function Modal({ modal, setModal, session }) {
       const ex = await db.query("exercises");
       const assign = await db.query("assignments", { filter: { patient_id: modal.payload.patient.id } });
       const goals = await db.query("goals", { filter: { patient_id: modal.payload.patient.id } });
-      const filteredEx = (Array.isArray(ex) ? ex : []).filter(
-        (e) => !e.therapist_id || e.therapist_id === session.id
-      );
+      const clinicalNotes = await db.query("clinical_notes", { filter: { patient_id: modal.payload.patient.id, therapist_id: session.id } });
+      
+      const filteredEx = (Array.isArray(ex) ? ex : []).filter((e) => !e.therapist_id || e.therapist_id === session.id);
       setExercises(filteredEx);
       setExisting(Array.isArray(assign) ? assign : []);
+      
       const g = Array.isArray(goals) && goals.length > 0 ? goals[0] : null;
       setCurrentGoal(g);
       if (g) setWeeklyGoal(g.weekly_target);
+
+      // Carrega anotações se existirem
+      if (Array.isArray(clinicalNotes) && clinicalNotes.length > 0) {
+        setNotesId(clinicalNotes[0].id);
+        setNotes(clinicalNotes[0].notes);
+      }
+      
       setLoading(false);
     })();
   }, [modal, session.id]);
 
   if (modal.type !== "assign") return null;
-
   const { patient } = modal.payload;
   const existingIds = existing.map((a) => a.exercise_id);
-  const toggle = (id) =>
-    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  const toggle = (id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
   const getDueChip = (dueDate) => {
     if (!dueDate) return null;
@@ -1341,13 +1357,7 @@ function Modal({ modal, setModal, session }) {
     if (currentGoal) {
       await db.update("goals", { id: currentGoal.id }, { weekly_target: weeklyGoal });
     } else {
-      await db.insert("goals", {
-        id: "g" + Date.now(),
-        patient_id: patient.id,
-        therapist_id: session.id,
-        weekly_target: weeklyGoal,
-        created_at: new Date().toISOString(),
-      });
+      await db.insert("goals", { id: "g" + Date.now(), patient_id: patient.id, therapist_id: session.id, weekly_target: weeklyGoal, created_at: new Date().toISOString() });
     }
     setModal(null);
   };
@@ -1360,49 +1370,77 @@ function Modal({ modal, setModal, session }) {
     }
   };
 
+  const saveNotes = async () => {
+    setSavingNotes(true);
+    setNotesSaved(false);
+    try {
+      if (notesId) {
+        await db.update("clinical_notes", { id: notesId }, { notes });
+      } else {
+        const newId = "cn" + Date.now();
+        await db.insert("clinical_notes", { id: newId, patient_id: patient.id, therapist_id: session.id, notes });
+        setNotesId(newId);
+      }
+      setNotesSaved(true);
+      setTimeout(() => setNotesSaved(false), 2000);
+    } catch (e) {
+      alert("Erro ao salvar prontuário.");
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
   const inputSt = { padding: "6px 10px", border: "1.5px solid var(--warm)", borderRadius: 8, fontFamily: "DM Sans,sans-serif", fontSize: 12, background: "white", color: "var(--text)", outline: "none" };
 
   return (
     <div className="overlay" onClick={() => setModal(null)}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3>Exercícios — {patient.name}</h3>
-        {loading ? (
-          <p style={{ color: "var(--text-muted)" }}>Carregando...</p>
-        ) : (
-          <>
-            <div style={{ background: "var(--cream)", borderRadius: 12, padding: "12px 14px", marginBottom: 18, border: "1.5px solid var(--warm)" }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--blue-dark)", marginBottom: 8 }}>🎯 Meta semanal de exercícios</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <input type="range" min="1" max="10" value={weeklyGoal} onChange={(e) => setWeeklyGoal(Number(e.target.value))} style={{ flex: 1, accentColor: "var(--blue-dark)" }} />
-                <span style={{ fontWeight: 700, fontSize: 18, color: "var(--blue-dark)", minWidth: 22 }}>{weeklyGoal}</span>
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>por semana</span>
-              </div>
-            </div>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column", maxHeight: "90vh" }}>
+        
+        {/* HEADER E ABAS */}
+        <div style={{ padding: "24px 30px 0", borderBottom: "1.5px solid var(--warm)", background: "var(--cream)" }}>
+          <h3 style={{ marginBottom: 16 }}>{patient.name}</h3>
+          <div style={{ display: "flex", gap: 20 }}>
+            <button onClick={() => setTab("assign")} style={{ background: "none", border: "none", borderBottom: tab === "assign" ? "3px solid var(--blue-dark)" : "3px solid transparent", paddingBottom: 10, fontSize: 14, fontWeight: tab === "assign" ? 700 : 500, color: tab === "assign" ? "var(--blue-dark)" : "var(--text-muted)", cursor: "pointer", transition: "all .2s" }}>📋 Exercícios & Metas</button>
+            <button onClick={() => setTab("notes")} style={{ background: "none", border: "none", borderBottom: tab === "notes" ? "3px solid var(--blue-dark)" : "3px solid transparent", paddingBottom: 10, fontSize: 14, fontWeight: tab === "notes" ? 700 : 500, color: tab === "notes" ? "var(--blue-dark)" : "var(--text-muted)", cursor: "pointer", transition: "all .2s" }}>🔒 Prontuário</button>
+          </div>
+        </div>
 
-            {existingIds.length > 0 && (
-              <div style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text-muted)", marginBottom: 8 }}>Atribuídos</div>
-                {existing.map((a) => {
-                  const ex = exercises.find((e) => e.id === a.exercise_id);
-                  if (!ex) return null;
-                  return (
-                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "var(--cream)", borderRadius: 10, marginBottom: 5, flexWrap: "wrap" }}>
-                      <span style={{ flex: 1, fontSize: 13 }}>{ex.title}</span>
-                      {getDueChip(a.due_date)}
-                      <span className={`response-badge ${a.status === "done" ? "badge-done" : "badge-pending"}`}>
-                        {a.status === "done" ? "✓ Feito" : "⏳ Pendente"}
-                      </span>
-                      <button onClick={() => removeAssign(a.exercise_id)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer", fontSize: 15 }}>✕</button>
-                    </div>
-                  );
-                })}
+        {/* CORPO DO MODAL */}
+        <div style={{ padding: "24px 30px", overflowY: "auto", flex: 1 }}>
+          {loading ? (
+            <p style={{ color: "var(--text-muted)" }}>Carregando dados do paciente...</p>
+          ) : tab === "assign" ? (
+            /* CONTEÚDO: EXERCÍCIOS (Igual ao que já existia) */
+            <>
+              <div style={{ background: "var(--cream)", borderRadius: 12, padding: "12px 14px", marginBottom: 18, border: "1.5px solid var(--warm)" }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--blue-dark)", marginBottom: 8 }}>🎯 Meta semanal de exercícios</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <input type="range" min="1" max="10" value={weeklyGoal} onChange={(e) => setWeeklyGoal(Number(e.target.value))} style={{ flex: 1, accentColor: "var(--blue-dark)" }} />
+                  <span style={{ fontWeight: 700, fontSize: 18, color: "var(--blue-dark)", minWidth: 22 }}>{weeklyGoal}</span>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>por semana</span>
+                </div>
               </div>
-            )}
 
-            <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text-muted)", marginBottom: 8 }}>Adicionar</div>
-            {exercises
-              .filter((ex) => !existingIds.includes(ex.id))
-              .map((ex) => (
+              {existingIds.length > 0 && (
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text-muted)", marginBottom: 8 }}>Atribuídos</div>
+                  {existing.map((a) => {
+                    const ex = exercises.find((e) => e.id === a.exercise_id);
+                    if (!ex) return null;
+                    return (
+                      <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "var(--cream)", borderRadius: 10, marginBottom: 5, flexWrap: "wrap" }}>
+                        <span style={{ flex: 1, fontSize: 13 }}>{ex.title}</span>
+                        {getDueChip(a.due_date)}
+                        <span className={`response-badge ${a.status === "done" ? "badge-done" : "badge-pending"}`}>{a.status === "done" ? "✓ Feito" : "⏳ Pendente"}</span>
+                        <button onClick={() => removeAssign(a.exercise_id)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer", fontSize: 15 }}>✕</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text-muted)", marginBottom: 8 }}>Adicionar</div>
+              {exercises.filter((ex) => !existingIds.includes(ex.id)).map((ex) => (
                 <div key={ex.id}>
                   <div className={`ex-pick ${selected.includes(ex.id) ? "selected" : ""}`} onClick={() => toggle(ex.id)} style={{ marginBottom: selected.includes(ex.id) ? 4 : 7 }}>
                     <div className="check">{selected.includes(ex.id) ? "✓" : ""}</div>
@@ -1420,15 +1458,36 @@ function Modal({ modal, setModal, session }) {
                   )}
                 </div>
               ))}
-
-            <div style={{ display: "flex", gap: 9, marginTop: 20, justifyContent: "flex-end" }}>
-              <button className="btn btn-outline" onClick={() => setModal(null)}>Fechar</button>
-              <button className="btn btn-sage" onClick={assign}>
-                {selected.length > 0 ? `Atribuir ${selected.length} + salvar meta` : "Salvar meta"}
-              </button>
+              <div style={{ display: "flex", gap: 9, marginTop: 20, justifyContent: "flex-end" }}>
+                <button className="btn btn-outline" onClick={() => setModal(null)}>Fechar</button>
+                <button className="btn btn-sage" onClick={assign}>{selected.length > 0 ? `Atribuir ${selected.length} + salvar meta` : "Salvar meta"}</button>
+              </div>
+            </>
+          ) : (
+            /* CONTEÚDO: PRONTUÁRIO CLÍNICO (Novo) */
+            <div style={{ animation: "fadeIn .3s ease", display: "flex", flexDirection: "column", height: "100%" }}>
+              <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.5 }}>
+                Anotações privadas e impressões clínicas sobre as sessões. <strong>O paciente não tem acesso a este campo.</strong>
+              </div>
+              <textarea 
+                className="q-textarea" 
+                placeholder="Ex: O paciente apresentou melhora na ansiedade. Discutimos a técnica de respiração na última sessão..." 
+                value={notes} 
+                onChange={(e) => setNotes(e.target.value)} 
+                style={{ flex: 1, minHeight: 250, resize: "none", marginBottom: 20 }} 
+              />
+              <div style={{ display: "flex", gap: 9, justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 13, color: "#2d7a3a", fontWeight: 500, opacity: notesSaved ? 1 : 0, transition: "opacity .3s" }}>✓ Salvo com sucesso</span>
+                <div style={{ display: "flex", gap: 9 }}>
+                  <button className="btn btn-outline" onClick={() => setModal(null)}>Fechar</button>
+                  <button className="btn btn-sage" onClick={saveNotes} disabled={savingNotes}>
+                    {savingNotes ? "Salvando..." : "💾 Salvar Prontuário"}
+                  </button>
+                </div>
+              </div>
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
@@ -2142,13 +2201,13 @@ function PatientHistory({ session }) {
   );
 }
 
-// ─── Patient Diary ────────────────────────────────────────────────────────────
+// ─── Patient Diary (Com Análise de Sentimento / Alerta) ───────────────────────
 const MOODS = [
-  { val: 1, emoji: "😔", label: "Difícil" },
-  { val: 2, emoji: "😕", label: "Baixo" },
-  { val: 3, emoji: "😐", label: "Neutro" },
-  { val: 4, emoji: "🙂", label: "Bem" },
-  { val: 5, emoji: "😄", label: "Ótimo" },
+  { val: 1, emoji: "😔", label: "Difícil" },
+  { val: 2, emoji: "😕", label: "Baixo" },
+  { val: 3, emoji: "😐", label: "Neutro" },
+  { val: 4, emoji: "🙂", label: "Bem" },
+  { val: 5, emoji: "😄", label: "Ótimo" },
 ];
 
 function PatientDiary({ session }) {
@@ -2156,60 +2215,73 @@ function PatientDiary({ session }) {
     const d = new Date();
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
   };
-  const today = getLocalToday();
+  const today = getLocalToday();
 
-  const [entries, setEntries] = useState([]);
-  const [todayEntry, setTodayEntry] = useState(null);
+  const [entries, setEntries] = useState([]);
+  const [todayEntry, setTodayEntry] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [reminder, setReminder] = useState(false);
+  const [reminder, setReminder] = useState(false);
 
-  // Estados para o formulário
   const [editingEntry, setEditingEntry] = useState(null);
-  const [mood, setMood] = useState(null);
-  const [text, setText] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  // Estado para o modal de exclusão
+  const [mood, setMood] = useState(null);
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
   const [deletingEntry, setDeletingEntry] = useState(null);
 
-  useEffect(() => {
-    (async () => {
+  useEffect(() => {
+    (async () => {
       try {
-        const [e, u] = await Promise.all([
-          db.query("diary_entries", { filter: { patient_id: session.id }, order: "date.desc" }),
-          db.query("users", { filter: { id: session.id } }),
-        ]);
-        const list = Array.isArray(e) ? e : [];
-        setEntries(list);
+        const [e, u] = await Promise.all([
+          db.query("diary_entries", { filter: { patient_id: session.id }, order: "date.desc" }),
+          db.query("users", { filter: { id: session.id } }),
+        ]);
+        const list = Array.isArray(e) ? e : [];
+        setEntries(list);
         
-        const te = list.find((x) => x.date === today);
-        if (te) setTodayEntry(te);
+        const te = list.find((x) => x.date === today);
+        if (te) setTodayEntry(te);
     
-        if (Array.isArray(u) && u.length) setReminder(!!u[0].reminder_email);
+        if (Array.isArray(u) && u.length) setReminder(!!u[0].reminder_email);
       } catch (err) {
         console.error("Erro ao carregar diário:", err);
       } finally {
         setLoading(false);
       }
-    })();
-  }, [session.id, today]);
+    })();
+  }, [session.id, today]);
 
-  const save = async () => {
-    setSaving(true);
+  const save = async () => {
+    setSaving(true);
     try {
-      if (editingEntry) {
-        await db.update("diary_entries", { id: editingEntry.id }, { mood, text, updated_at: new Date().toISOString() });
+      // 🧠 INTEGRAÇÃO NLP: Análise de Risco no Front-end
+      // Se o humor for 1 (Difícil) ou contiver palavras-chave, alerta a psicóloga
+      const riskWords = ["triste", "desespero", "pânico", "morte", "ansiedade forte", "chorar", "não aguento", "suicídio", "angústia", "crise"];
+      const textLower = text.toLowerCase();
+      const hasRiskWord = riskWords.some(w => textLower.includes(w));
+      
+      if ((mood === 1 || hasRiskWord) && session.therapist_id && !editingEntry) {
+        await db.insert("notifications", {
+          id: "n" + Date.now() + "alert",
+          therapist_id: session.therapist_id,
+          patient_id: session.id,
+          patient_name: session.name,
+          exercise_title: `🚨 ALERTA: Paciente relatou humor ${MOODS.find(m=>m.val===mood).label} ou usou palavras de alerta no diário.`,
+          created_at: new Date().toISOString(),
+          read: false,
+        });
+      }
+
+      if (editingEntry) {
+        await db.update("diary_entries", { id: editingEntry.id }, { mood, text, updated_at: new Date().toISOString() });
         setEntries(prev => prev.map(e => e.id === editingEntry.id ? { ...e, mood, text } : e));
-        if (editingEntry.date === today) {
-          setTodayEntry(prev => ({ ...prev, mood, text }));
-        }
+        if (editingEntry.date === today) setTodayEntry(prev => ({ ...prev, mood, text }));
         setEditingEntry(null);
-      } else {
-        const entry = { id: "d" + Date.now(), patient_id: session.id, date: today, mood, text, created_at: new Date().toISOString() };
-        await db.insert("diary_entries", entry);
-        setTodayEntry(entry);
-        setEntries((prev) => [entry, ...prev]);
-      }
+      } else {
+        const entry = { id: "d" + Date.now(), patient_id: session.id, date: today, mood, text, created_at: new Date().toISOString() };
+        await db.insert("diary_entries", entry);
+        setTodayEntry(entry);
+        setEntries((prev) => [entry, ...prev]);
+      }
       setMood(null);
       setText("");
     } catch (e) {
@@ -2217,20 +2289,10 @@ function PatientDiary({ session }) {
     } finally {
       setSaving(false);
     }
-  };
-
-  const startEdit = (entry) => {
-    setEditingEntry(entry);
-    setMood(entry.mood);
-    setText(entry.text || "");
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const cancelEdit = () => {
-    setEditingEntry(null);
-    setMood(null);
-    setText("");
-  };
+  const startEdit = (entry) => { setEditingEntry(entry); setMood(entry.mood); setText(entry.text || ""); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const cancelEdit = () => { setEditingEntry(null); setMood(null); setText(""); };
 
   const confirmDelete = async () => {
     if (!deletingEntry) return;
@@ -2245,68 +2307,56 @@ function PatientDiary({ session }) {
     }
   };
 
-  const toggleReminder = async () => {
-    const newVal = !reminder;
-    setReminder(newVal);
+  const toggleReminder = async () => {
+    const newVal = !reminder;
+    setReminder(newVal);
     try { await db.update("users", { id: session.id }, { reminder_email: newVal }); } catch(e) {}
-  };
+  };
 
   if (loading) return <div style={{ color: "var(--text-muted)", padding: 20 }}>Carregando diário...</div>;
 
   const showForm = !todayEntry || editingEntry;
-
-  // ─── Lógica do Dashboard de Humor ───
-  // Pega os últimos 14 dias (ou menos) e inverte para ficar cronológico (esquerda pra direita)
   const chartEntries = [...entries].slice(0, 14).reverse();
   const moodPoints = chartEntries.map(e => e.mood);
   const moodLabels = chartEntries.map(e => new Date(e.date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }));
 
-  return (
-    <div style={{ animation: "fadeUp .4s ease", maxWidth: 640 }}>
-      <div className="page-header"><h2>📓 Diário Emocional</h2><p>Registre como você está se sentindo a cada dia</p></div>
+  return (
+    <div style={{ animation: "fadeUp .4s ease", maxWidth: 640 }}>
+      <div className="page-header"><h2>📓 Diário Emocional</h2><p>Registre como você está se sentindo a cada dia</p></div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
-        <div className="toggle-row">
-          <div>
-            <div style={{ fontWeight: 500, fontSize: 14 }}>⏰ Lembrete diário por e-mail</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>Receba um e-mail todo dia às 20h para registrar seu humor</div>
-          </div>
-          <button className={`toggle ${reminder ? "on" : "off"}`} onClick={toggleReminder} />
-        </div>
-      </div>
-
-      {/* ─── QUADRO DE CRIAÇÃO / EDIÇÃO ─── */}
-      {showForm && (
-        <div className="card" style={{ marginBottom: 24, border: editingEntry ? "1.5px solid var(--orange)" : "1.5px solid var(--blue-mid)", animation: "fadeIn .3s ease" }}>
-          <h3 style={{ fontSize: 15, marginBottom: 14, color: editingEntry ? "var(--orange)" : "var(--blue-dark)" }}>
-            {editingEntry 
-              ? `Editando registro de ${new Date(editingEntry.date + "T12:00:00").toLocaleDateString("pt-BR")}` 
-              : "Como você está hoje?"}
-          </h3>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", marginBottom: 18 }}>
-            {MOODS.map((m) => (
-              <div key={m.val} style={{ textAlign: "center", cursor: "pointer" }} onClick={() => setMood(m.val)}>
-                <button className={`mood-btn ${mood === m.val ? "sel" : ""}`}>{m.emoji}</button>
-                <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}>{m.label}</div>
-              </div>
-            ))}
-          </div>
-          <textarea className="q-textarea" placeholder="Como foi seu dia? O que você está sentindo? (opcional)" value={text} onChange={(e) => setText(e.target.value)} style={{ minHeight: 90 }} />
-          
-          <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-            {editingEntry && (
-              <button className="btn btn-outline" style={{ flex: 1 }} onClick={cancelEdit}>
-                Cancelar
-              </button>
-            )}
-            <button className="btn btn-sage" style={{ flex: 2 }} onClick={save} disabled={!mood || saving}>
-              {saving ? "Salvando..." : editingEntry ? "Atualizar registro" : "💾 Salvar meu dia"}
-            </button>
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="toggle-row">
+          <div>
+            <div style={{ fontWeight: 500, fontSize: 14 }}>⏰ Lembrete diário por e-mail</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>Receba um e-mail todo dia às 20h para registrar seu humor</div>
           </div>
-        </div>
+          <button className={`toggle ${reminder ? "on" : "off"}`} onClick={toggleReminder} />
+        </div>
+      </div>
+
+      {showForm && (
+        <div className="card" style={{ marginBottom: 24, border: editingEntry ? "1.5px solid var(--orange)" : "1.5px solid var(--blue-mid)", animation: "fadeIn .3s ease" }}>
+          <h3 style={{ fontSize: 15, marginBottom: 14, color: editingEntry ? "var(--orange)" : "var(--blue-dark)" }}>
+            {editingEntry ? `Editando registro de ${new Date(editingEntry.date + "T12:00:00").toLocaleDateString("pt-BR")}` : "Como você está hoje?"}
+          </h3>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", marginBottom: 18 }}>
+            {MOODS.map((m) => (
+              <div key={m.val} style={{ textAlign: "center", cursor: "pointer" }} onClick={() => setMood(m.val)}>
+                <button className={`mood-btn ${mood === m.val ? "sel" : ""}`}>{m.emoji}</button>
+                <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}>{m.label}</div>
+              </div>
+            ))}
+          </div>
+          <textarea className="q-textarea" placeholder="Como foi seu dia? O que você está sentindo? (opcional)" value={text} onChange={(e) => setText(e.target.value)} style={{ minHeight: 90 }} />
+          <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+            {editingEntry && <button className="btn btn-outline" style={{ flex: 1 }} onClick={cancelEdit}>Cancelar</button>}
+            <button className="btn btn-sage" style={{ flex: 2 }} onClick={save} disabled={!mood || saving}>
+              {saving ? "Salvando..." : editingEntry ? "Atualizar registro" : "💾 Salvar meu dia"}
+            </button>
+          </div>
+        </div>
       )}
 
-      {/* ─── DASHBOARD DE HUMOR (NOVO) ─── */}
       {entries.length >= 2 && (
         <div className="card" style={{ marginBottom: 24, animation: "fadeIn .4s ease" }}>
           <h3 style={{ fontSize: 15, marginBottom: 4 }}>Evolução do Humor</h3>
@@ -2315,71 +2365,41 @@ function PatientDiary({ session }) {
         </div>
       )}
 
-      {/* ─── HISTÓRICO DE REGISTROS ─── */}
-      <h3 style={{ fontSize: 15, marginBottom: 12 }}>Seu Histórico</h3>
-      
-      {entries.map((e) => {
-        const m = MOODS.find((x) => x.val === e.mood);
+      <h3 style={{ fontSize: 15, marginBottom: 12 }}>Seu Histórico</h3>
+      {entries.map((e) => {
+        const m = MOODS.find((x) => x.val === e.mood);
         const isToday = e.date === today;
-        return (
-          <div key={e.id} className="card" style={{ marginBottom: 10, display: "flex", gap: 14, alignItems: "flex-start", border: isToday ? "1.5px solid var(--sage-light)" : "1px solid rgba(255,255,255,0.6)" }}>
-            <div style={{ fontSize: 28 }}>{m?.emoji || "😐"}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ fontWeight: 500, fontSize: 13 }}>
-                  {m?.label} 
-                  {isToday && <span style={{fontSize: 9, background: "var(--sage-light)", color: "var(--sage-dark)", padding: "3px 8px", borderRadius: 10, marginLeft: 8, fontWeight: 700, letterSpacing: ".05em"}}>HOJE</span>}
-                </span>
-                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                  {new Date(e.date + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })}
-                </span>
-              </div>
-              {e.text && <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5, margin: 0 }}>{e.text}</p>}
-              
-              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                <button 
-                  onClick={() => startEdit(e)} 
-                  style={{ background: "transparent", border: "1px solid var(--warm)", borderRadius: 6, padding: "4px 10px", cursor: "pointer", color: "var(--text-muted)", fontSize: 11, fontWeight: 500, transition: "all .15s" }}
-                  onMouseEnter={(ev) => ev.target.style.borderColor = "var(--sage)"}
-                  onMouseLeave={(ev) => ev.target.style.borderColor = "var(--warm)"}
-                >
-                  ✏️ Editar
-                </button>
-                <button 
-                  onClick={() => setDeletingEntry(e)} 
-                  style={{ background: "transparent", border: "1px solid var(--warm)", borderRadius: 6, padding: "4px 10px", cursor: "pointer", color: "var(--danger)", fontSize: 11, fontWeight: 500, transition: "all .15s", opacity: 0.7 }}
-                  onMouseEnter={(ev) => { ev.target.style.borderColor = "var(--danger)"; ev.target.style.opacity = "1"; }}
-                  onMouseLeave={(ev) => { ev.target.style.borderColor = "var(--warm)"; ev.target.style.opacity = "0.7"; }}
-                >
-                  🗑️ Excluir
-                </button>
+        return (
+          <div key={e.id} className="card" style={{ marginBottom: 10, display: "flex", gap: 14, alignItems: "flex-start", border: isToday ? "1.5px solid var(--sage-light)" : "1px solid rgba(255,255,255,0.6)" }}>
+            <div style={{ fontSize: 28 }}>{m?.emoji || "😐"}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                <span style={{ fontWeight: 500, fontSize: 13 }}>{m?.label} {isToday && <span style={{fontSize: 9, background: "var(--sage-light)", color: "var(--sage-dark)", padding: "3px 8px", borderRadius: 10, marginLeft: 8, fontWeight: 700, letterSpacing: ".05em"}}>HOJE</span>}</span>
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{new Date(e.date + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })}</span>
               </div>
-            </div>
-          </div>
-        );
-      })}
-      {entries.length === 0 && (
-        <div className="empty-state"><div className="empty-icon">📖</div><p>Nenhum registro ainda. Comece hoje!</p></div>
-      )}
+              {e.text && <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5, margin: 0 }}>{e.text}</p>}
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button onClick={() => startEdit(e)} style={{ background: "transparent", border: "1px solid var(--warm)", borderRadius: 6, padding: "4px 10px", cursor: "pointer", color: "var(--text-muted)", fontSize: 11, fontWeight: 500, transition: "all .15s" }} onMouseEnter={(ev) => ev.target.style.borderColor = "var(--sage)"} onMouseLeave={(ev) => ev.target.style.borderColor = "var(--warm)"}>✏️ Editar</button>
+                <button onClick={() => setDeletingEntry(e)} style={{ background: "transparent", border: "1px solid var(--warm)", borderRadius: 6, padding: "4px 10px", cursor: "pointer", color: "var(--danger)", fontSize: 11, fontWeight: 500, transition: "all .15s", opacity: 0.7 }} onMouseEnter={(ev) => { ev.target.style.borderColor = "var(--danger)"; ev.target.style.opacity = "1"; }} onMouseLeave={(ev) => { ev.target.style.borderColor = "var(--warm)"; ev.target.style.opacity = "0.7"; }}>🗑️ Excluir</button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      {entries.length === 0 && <div className="empty-state"><div className="empty-icon">📖</div><p>Nenhum registro ainda. Comece hoje!</p></div>}
 
-      {/* ─── MODAL DE EXCLUSÃO ─── */}
       {deletingEntry && (
         <div className="delete-overlay" onClick={() => setDeletingEntry(null)}>
           <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
             <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>🗑️</div>
             <div className="delete-title" style={{ fontSize: 20 }}>Excluir registro?</div>
-            <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>
-              Tem certeza que deseja apagar o registro do dia <strong>{new Date(deletingEntry.date + "T12:00:00").toLocaleDateString("pt-BR")}</strong>?
-            </div>
-            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-              <button className="btn btn-outline" onClick={() => setDeletingEntry(null)}>Cancelar</button>
-              <button className="btn-danger" onClick={confirmDelete}>Excluir</button>
-            </div>
+            <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>Tem certeza que deseja apagar o registro do dia <strong>{new Date(deletingEntry.date + "T12:00:00").toLocaleDateString("pt-BR")}</strong>?</div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}><button className="btn btn-outline" onClick={() => setDeletingEntry(null)}>Cancelar</button><button className="btn-danger" onClick={confirmDelete}>Excluir</button></div>
           </div>
         </div>
       )}
-    </div>
-  );
+    </div>
+  );
 }
 
 // ─── Patient Progress ─────────────────────────────────────────────────────────

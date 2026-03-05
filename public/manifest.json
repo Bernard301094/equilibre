@@ -1,0 +1,20 @@
+{
+  "short_name": "Equilibre",
+  "name": "Equilibre - Terapia Digital",
+  "icons": [
+    {
+      "src": "equilibre-icon.jpeg",
+      "type": "image/jpeg",
+      "sizes": "192x192"
+    },
+    {
+      "src": "equilibre-icon.jpeg",
+      "type": "image/jpeg",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#17527c",
+  "background_color": "#f4f8fc"
+}
