@@ -1391,14 +1391,11 @@ function Modal({ modal, setModal, session }) {
   const [weeklyGoal, setWeeklyGoal] = useState(3);
   const [currentGoal, setCurrentGoal] = useState(null);
   
-  // Estados para Prontuário Clínico
-  const [notes, setNotes] = useState("");
-  const [notesId, setNotesId] = useState(null);
+  // Estados para Prontuário Clínico (Histórico Múltiplo)
+  const [notesList, setNotesList] = useState([]);
+  const [isWritingNew, setIsWritingNew] = useState(false);
+  const [newNoteText, setNewNoteText] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
-  const [notesSaved, setNotesSaved] = useState(false);
-  
-  // NOVO: Controle de Modo de Visualização / Edição
-  const [editMode, setEditMode] = useState(true);
 
   const [loading, setLoading] = useState(true);
 
@@ -1412,9 +1409,10 @@ function Modal({ modal, setModal, session }) {
         
         let clinicalNotes = [];
         try {
-          clinicalNotes = await db.query("clinical_notes", { select: "id,notes", filter: { patient_id: modal.payload.patient.id, therapist_id: session.id } }, session.access_token);
+          // FIX: Busca todas as anotações do paciente, ordenadas da mais recente para a mais antiga
+          clinicalNotes = await db.query("clinical_notes", { filter: { patient_id: modal.payload.patient.id, therapist_id: session.id }, order: "created_at.desc" }, session.access_token);
         } catch (e) {
-          console.warn("Prontuário não encontrado.");
+          console.warn("Prontuário não encontrado ou coluna created_at faltando.");
         }
         
         const filteredEx = (Array.isArray(ex) ? ex : []).filter((e) => !e.therapist_id || e.therapist_id === session.id);
@@ -1425,13 +1423,8 @@ function Modal({ modal, setModal, session }) {
         setCurrentGoal(g);
         if (g) setWeeklyGoal(g.weekly_target);
 
-        // Se encontrou o prontuário e ele tem texto, entra no Modo de Leitura
-        if (Array.isArray(clinicalNotes) && clinicalNotes.length > 0) {
-          setNotesId(clinicalNotes[0].id);
-          const savedText = clinicalNotes[0].notes || "";
-          setNotes(savedText);
-          if (savedText.trim() !== "") setEditMode(false);
-        }
+        // Alimenta a lista de anotações com o histórico do banco
+        setNotesList(Array.isArray(clinicalNotes) ? clinicalNotes : []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -1482,32 +1475,34 @@ function Modal({ modal, setModal, session }) {
     }
   };
 
-  const saveNotes = async () => {
+  // Função para salvar uma NOVA anotação
+  const saveNewNote = async () => {
+    if (!newNoteText.trim()) return;
     setSavingNotes(true);
-    setNotesSaved(false);
     try {
-      if (notesId) {
-        await db.update("clinical_notes", { id: notesId }, { notes }, session.access_token);
-      } else {
-        const newId = "cn" + Date.now();
-        await db.insert("clinical_notes", { id: newId, patient_id: patient.id, therapist_id: session.id, notes }, session.access_token);
-        setNotesId(newId);
-      }
+      const newId = "cn" + Date.now();
+      const nowISO = new Date().toISOString();
+      const newNoteObj = { 
+        id: newId, 
+        patient_id: patient.id, 
+        therapist_id: session.id, 
+        notes: newNoteText, 
+        created_at: nowISO 
+      };
       
-      setNotesSaved(true);
-      setEditMode(false); // Volta para o Modo de Leitura após salvar com sucesso!
-      setTimeout(() => setNotesSaved(false), 3000);
+      // Salva no Supabase
+      await db.insert("clinical_notes", newNoteObj, session.access_token);
+      
+      // Atualiza a lista na tela imediatamente (colocando a nova no topo)
+      setNotesList(prev => [newNoteObj, ...prev]);
+      setNewNoteText(""); // Limpa o formulário
+      setIsWritingNew(false); // Fecha a caixa de texto
       
     } catch (e) {
       alert("Erro ao salvar prontuário: " + e.message);
     } finally {
       setSavingNotes(false);
     }
-  };
-
-  const insertDate = () => {
-    const dateStr = `\n\n🗓️ ${new Date().toLocaleDateString("pt-BR")} - `;
-    setNotes(prev => prev ? prev + dateStr : dateStr.trim());
   };
 
   const inputSt = { padding: "6px 10px", border: "1.5px solid var(--warm)", borderRadius: 8, fontFamily: "DM Sans,sans-serif", fontSize: 12, background: "white", color: "var(--text)", outline: "none" };
@@ -1584,74 +1579,64 @@ function Modal({ modal, setModal, session }) {
               </div>
             </>
           ) : (
-            /* CONTEÚDO: PRONTUÁRIO CLÍNICO (Com Visualização Elegante) */
+            /* CONTEÚDO: HISTÓRICO DE PRONTUÁRIOS (Novo formato em lista) */
             <div style={{ animation: "fadeIn .3s ease", display: "flex", flexDirection: "column", height: "100%" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
-                  Anotações privadas sobre o paciente. <strong>O paciente não tem acesso.</strong>
+                  Evolução clínica do paciente. <strong>Acesso exclusivo da psicóloga.</strong>
                 </div>
-                {/* Botão de Editar visível apenas no Modo Leitura */}
-                {!editMode && (
-                  <button className="btn btn-outline btn-sm" onClick={() => setEditMode(true)}>✏️ Editar Prontuário</button>
+                {!isWritingNew && (
+                  <button className="btn btn-sage btn-sm" onClick={() => setIsWritingNew(true)}>+ Nova Anotação</button>
                 )}
               </div>
 
-              {editMode ? (
-                /* MODO EDIÇÃO: O TextArea e botão de Inserir Data */
-                <>
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-                    <button 
-                      className="btn btn-sm" 
-                      style={{ background: "var(--warm)", border: "none", color: "var(--blue-dark)", fontWeight: 600 }} 
-                      onClick={insertDate}
-                    >
-                      + Inserir Data de Hoje
-                    </button>
-                  </div>
+              {/* Formulário para adicionar nova anotação */}
+              {isWritingNew && (
+                <div className="card" style={{ marginBottom: 20, padding: 16, border: "1.5px solid var(--sage)", background: "var(--cream)" }}>
+                  <h4 style={{ fontSize: 14, color: "var(--blue-dark)", marginBottom: 10 }}>Nova anotação (Sessão de Hoje)</h4>
                   <textarea 
                     className="q-textarea" 
-                    placeholder="Ex: O paciente apresentou melhora na ansiedade. Discutimos a técnica de respiração na última sessão..." 
-                    value={notes} 
-                    onChange={(e) => setNotes(e.target.value)} 
-                    style={{ flex: 1, minHeight: 250, resize: "none", marginBottom: 20 }} 
+                    placeholder="Escreva as observações clínicas, humor do paciente, técnicas aplicadas..." 
+                    value={newNoteText} 
+                    onChange={(e) => setNewNoteText(e.target.value)} 
+                    style={{ flex: 1, minHeight: 120, resize: "vertical", marginBottom: 12, width: "100%" }} 
                     autoFocus
                   />
-                </>
-              ) : (
-                /* MODO LEITURA: Documento formatado com quebras de linha preservadas */
-                <div 
-                  className="card" 
-                  style={{ 
-                    flex: 1, 
-                    minHeight: 250, 
-                    marginBottom: 20, 
-                    background: "var(--white)", 
-                    border: "1px solid var(--warm)", 
-                    overflowY: "auto",
-                    padding: "16px 20px"
-                  }}
-                >
-                  <div style={{ whiteSpace: "pre-wrap", fontSize: 14, color: "var(--text)", lineHeight: 1.6 }}>
-                    {notes}
+                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                    <button className="btn btn-outline" onClick={() => setIsWritingNew(false)}>Cancelar</button>
+                    <button className="btn btn-sage" onClick={saveNewNote} disabled={savingNotes || !newNoteText.trim()}>
+                      {savingNotes ? "Salvando..." : "💾 Salvar Sessão"}
+                    </button>
                   </div>
                 </div>
               )}
 
-              <div style={{ display: "flex", gap: 9, justifyContent: "flex-end", alignItems: "center" }}>
-                {notesSaved && <span style={{ fontSize: 13, color: "#2d7a3a", fontWeight: 500, marginRight: "auto" }}>✓ Salvo com sucesso!</span>}
-                <button className="btn btn-outline" onClick={() => setModal(null)}>Fechar</button>
-                
-                {editMode && (
-                  <button 
-                    className="btn" 
-                    style={{ background: "var(--sage-dark)", color: "white" }} 
-                    onClick={saveNotes} 
-                    disabled={savingNotes}
-                  >
-                    {savingNotes ? "Salvando..." : "💾 Salvar Prontuário"}
-                  </button>
+              {/* Lista do histórico (Linha do Tempo) */}
+              <div style={{ flex: 1, paddingBottom: 20 }}>
+                {notesList.length === 0 && !isWritingNew && (
+                  <div className="empty-state" style={{ padding: "30px 0" }}>
+                    <div className="empty-icon">📝</div>
+                    <p>Nenhuma anotação ainda.</p>
+                  </div>
                 )}
+                
+                {notesList.map(note => (
+                  <div key={note.id} className="card" style={{ marginBottom: 12, padding: "16px 20px", borderLeft: "4px solid var(--sage)" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>
+                      📅 {new Date(note.created_at || new Date()).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                    <div style={{ whiteSpace: "pre-wrap", fontSize: 14, color: "var(--text)", lineHeight: 1.6 }}>
+                      {note.notes}
+                    </div>
+                  </div>
+                ))}
               </div>
+
+              {!isWritingNew && (
+                <div style={{ display: "flex", justifyContent: "flex-end", borderTop: "1px solid var(--warm)", paddingTop: 16 }}>
+                  <button className="btn btn-outline" onClick={() => setModal(null)}>Fechar Janela</button>
+                </div>
+              )}
             </div>
           )}
         </div>
