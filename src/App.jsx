@@ -401,37 +401,8 @@ function parseAnswers(r) {
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [theme, setTheme] = useState(() => localStorage.getItem("eq_theme") || "light");
-
-  useEffect(() => {
-    if (theme === "dark") document.body.classList.add("dark-mode");
-    else document.body.classList.remove("dark-mode");
-    localStorage.setItem("eq_theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(t => t === "light" ? "dark" : "light");
-
-  useEffect(() => {
-    if (!document.querySelector("style[data-app='equilibre']")) {
-      const styleEl = document.createElement("style");
-      styleEl.dataset.app = "equilibre";
-      styleEl.textContent = css;
-      document.head.appendChild(styleEl);
-    }
-    document.title = "Equilibre";
-    const favicon = document.querySelector("link[rel~='icon']") || document.createElement("link");
-    favicon.rel = "icon";
-    favicon.type = "image/jpeg";
-    favicon.href = "/equilibre-icon.jpeg";
-    document.head.appendChild(favicon);
-    if (!document.querySelector("link[data-fonts='equilibre']")) {
-      const fonts = document.createElement("link");
-      fonts.rel = "stylesheet";
-      fonts.dataset.fonts = "equilibre";
-      fonts.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap";
-      document.head.appendChild(fonts);
-    }
-  }, []);
+  // 1. O tema começa como "light" por padrão (garante a tela de login clara)
+  const [theme, setTheme] = useState("light");
 
   const [ready, setReady] = useState(false);
   const [dbError, setDbError] = useState(false);
@@ -461,15 +432,61 @@ export default function App() {
     }
   });
 
+  // 2. Sempre que a sessão mudar, carrega o tema do usuário logado ou força "light" se sair
+  useEffect(() => {
+    if (session) {
+      const userTheme = localStorage.getItem(`eq_theme_${session.id}`) || "light";
+      setTheme(userTheme);
+    } else {
+      setTheme("light");
+    }
+  }, [session]);
+
+  // 3. Aplica a classe no body e salva no localStorage atrelado ao ID do usuário específico
+  useEffect(() => {
+    if (theme === "dark") {
+      document.body.classList.add("dark-mode");
+    } else {
+      document.body.classList.remove("dark-mode");
+    }
+    
+    if (session) {
+      localStorage.setItem(`eq_theme_${session.id}`, theme);
+    }
+  }, [theme, session]);
+
+  const toggleTheme = () => setTheme(t => t === "light" ? "dark" : "light");
+
   useEffect(() => {
     if (session) localStorage.setItem("equilibre_session", JSON.stringify(session));
     else localStorage.removeItem("equilibre_session");
   }, [session]);
 
   useEffect(() => {
+    if (!document.querySelector("style[data-app='equilibre']")) {
+      const styleEl = document.createElement("style");
+      styleEl.dataset.app = "equilibre";
+      styleEl.textContent = css;
+      document.head.appendChild(styleEl);
+    }
+    document.title = "Equilibre";
+    const favicon = document.querySelector("link[rel~='icon']") || document.createElement("link");
+    favicon.rel = "icon";
+    favicon.type = "image/jpeg";
+    favicon.href = "/equilibre-icon.jpeg";
+    document.head.appendChild(favicon);
+    if (!document.querySelector("link[data-fonts='equilibre']")) {
+      const fonts = document.createElement("link");
+      fonts.rel = "stylesheet";
+      fonts.dataset.fonts = "equilibre";
+      fonts.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap";
+      document.head.appendChild(fonts);
+    }
+  }, []);
+
+  useEffect(() => {
     (async () => {
       try {
-        // OPTIMIZAÇÃO: Verifica no cache se os exercícios já foram semeados
         const seeded = localStorage.getItem("eq_seeded");
         if (!seeded) {
           const existing = await db.query("exercises", { select: "id" });
