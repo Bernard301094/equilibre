@@ -1576,8 +1576,6 @@ function PatientLayout({ session, setSession, view, setView }) {
         onBack={() => { setActiveExercise(null); setView("exercises"); }}
       />
     );
-      </div>
-    );
 
   const patNav = [
     { id: "home", icon: "🏠", label: "Início" },
