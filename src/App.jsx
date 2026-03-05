@@ -2118,7 +2118,6 @@ function PatientLayout({ session, setSession, view, setView, toggleTheme, theme 
       } catch { }
     };
     fetchPending();
-    // OPTIMIZAÇÃO: Polling ajustado para 30 segundos
     const intId = setInterval(fetchPending, 30000);
     return () => { active = false; clearInterval(intId); };
   }, [session.id]);
@@ -2168,7 +2167,8 @@ function PatientLayout({ session, setSession, view, setView, toggleTheme, theme 
         </div>
       </aside>
       <main className="main">
-        {view === "home" && <PatientHome session={session} setView={setView} />}
+        {/* FIX: setSession foi passado aqui para atualizar o usuário na hora */}
+        {view === "home" && <PatientHome session={session} setSession={setSession} setView={setView} />}
         {view === "exercises" && <PatientExercises session={session} setActiveExercise={setActiveExercise} />}
         {view === "diary" && <PatientDiary session={session} />}
         {view === "progress" && <PatientProgress session={session} />}
@@ -2191,8 +2191,13 @@ function PatientLayout({ session, setSession, view, setView, toggleTheme, theme 
 }
 
 // ─── Patient Home ─────────────────────────────────────────────────────────────
-function PatientHome({ session, setView }) {
+function PatientHome({ session, setSession, setView }) {
   const [data, setData] = useState({ pending: 0, done: 0, streak: 0, goal: null, weekDone: 0, overdue: 0 });
+  
+  // Estados para vinculação de novo terapeuta
+  const [inviteCode, setInviteCode] = useState("");
+  const [linking, setLinking] = useState(false);
+  const [linkMsg, setLinkMsg] = useState({ type: "", text: "" });
 
   useEffect(() => {
     let active = true;
@@ -2246,10 +2251,40 @@ function PatientHome({ session, setView }) {
     };
     
     fetch();
-    // OPTIMIZAÇÃO: Polling ajustado para 30 segundos
     const intId = setInterval(fetch, 30000);
     return () => { active = false; clearInterval(intId); };
   }, [session.id]);
+
+  const handleLinkTherapist = async () => {
+    if (!inviteCode.trim()) { setLinkMsg({ type: "error", text: "Digite um código válido." }); return; }
+    setLinking(true);
+    setLinkMsg({ type: "", text: "" });
+    try {
+      const code = inviteCode.trim().toUpperCase();
+      const invites = await db.query("invites", { filter: { code } });
+      if (!Array.isArray(invites) || invites.length === 0) throw new Error("Código não encontrado. Verifique a digitação.");
+      
+      const invite = invites[0];
+      if (invite.status !== "pending") throw new Error("Este código já foi utilizado ou expirou.");
+
+      const newTherapistId = invite.therapist_id;
+
+      // Atualiza o Paciente no banco
+      await db.update("users", { id: session.id }, { therapist_id: newTherapistId }, session.access_token);
+      
+      // Queima o Convite no banco
+      await db.update("invites", { code }, { status: "used", used_by: session.id, used_at: new Date().toISOString() }, session.access_token);
+
+      // Atualiza a sessão na tela (faz o card sumir instantaneamente)
+      setSession(prev => ({ ...prev, therapist_id: newTherapistId }));
+      setLinkMsg({ type: "success", text: "Profissional vinculado com sucesso!" });
+      setInviteCode("");
+    } catch (e) {
+      setLinkMsg({ type: "error", text: e.message });
+    } finally {
+      setLinking(false);
+    }
+  };
 
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
@@ -2257,6 +2292,38 @@ function PatientHome({ session, setView }) {
         <h2>Olá, {session.name.split(" ")[0]} 🌱</h2>
         <p>Como você está se sentindo hoje?</p>
       </div>
+
+      {/* NOVO: CARD DE VINCULAR PROFISSIONAL (Só aparece se o therapist_id for null) */}
+      {!session.therapist_id && (
+        <div className="card" style={{ marginBottom: 20, border: "2px solid var(--blue-mid)", background: "var(--white)" }}>
+          <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+            <div style={{ fontSize: 26, marginTop: 2 }}>🤝</div>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ fontSize: 16, color: "var(--blue-dark)", marginBottom: 8 }}>Vincular novo profissional</h3>
+              <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.5 }}>
+                Você não possui uma psicóloga vinculada no momento. Para receber novos exercícios personalizados, digite abaixo o código de convite enviado pela sua nova profissional:
+              </p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                <input
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                  placeholder="Ex: AB3X9K7"
+                  maxLength={8}
+                  style={{ flex: 1, minWidth: 150, padding: "10px 14px", border: "1.5px solid var(--warm)", borderRadius: 10, fontFamily: "monospace", fontSize: 16, letterSpacing: ".1em", background: "var(--cream)", outline: "none", color: "var(--text)" }}
+                />
+                <button className="btn btn-sage" onClick={handleLinkTherapist} disabled={linking}>
+                  {linking ? "Vinculando..." : "Vincular Conta"}
+                </button>
+              </div>
+              {linkMsg.text && (
+                <div style={{ marginTop: 12, fontSize: 13, color: linkMsg.type === "error" ? "#c0444a" : "#2d7a3a", fontWeight: 500 }}>
+                  {linkMsg.type === "error" ? "⚠️ " : "✅ "}{linkMsg.text}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className="grid-3" style={{ marginBottom: 20 }}>
         <div className="stat-card">
