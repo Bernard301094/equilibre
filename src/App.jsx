@@ -766,73 +766,75 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
 
 // ─── Therapist Layout ─────────────────────────────────────────────────────────
 function TherapistLayout({ session, setSession, view, setView, modal, setModal }) {
-  const [showDelete, setShowDelete] = useState(false);
-  const [unread, setUnread] = useState(0);
+  const [showDelete, setShowDelete] = useState(false);
+  const [unread, setUnread] = useState(0);
+  const [editingEx, setEditingEx] = useState(null); // Nuevo estado para edición
 
-  useEffect(() => {
-    db.query("notifications", { filter: { therapist_id: session.id, read: false } }).then((r) =>
-      setUnread(Array.isArray(r) ? r.length : 0)
-    );
-  }, [session.id, view]);
+  useEffect(() => {
+    db.query("notifications", { filter: { therapist_id: session.id, read: false } }).then((r) =>
+      setUnread(Array.isArray(r) ? r.length : 0)
+    );
+  }, [session.id, view]);
 
-  const navItems = [
-    { id: "dashboard", icon: "🏠", label: "Início" },
-    { id: "patients", icon: "👥", label: "Pacientes" },
-    { id: "exercises", icon: "📋", label: "Exercícios" },
-    { id: "create", icon: "✏️", label: "Criar Exercício" },
-    { id: "progress", icon: "📈", label: "Progresso" },
-    { id: "responses", icon: "📊", label: "Respostas" },
-  ];
+  const navItems = [
+    { id: "dashboard", icon: "🏠", label: "Início" },
+    { id: "patients", icon: "👥", label: "Pacientes" },
+    { id: "exercises", icon: "📋", label: "Exercícios" },
+    { id: "create", icon: "✏️", label: "Criar Exercício" },
+    { id: "progress", icon: "📈", label: "Progresso" },
+    { id: "responses", icon: "📊", label: "Respostas" },
+  ];
 
-  return (
-    <div className="layout">
-      <aside className="sidebar">
-        <div className="sidebar-header">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-            <div className="brand" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <img src={LOGO} alt="" style={{ width: 32, height: 32, objectFit: "contain" }} /> Equilibre
-            </div>
-            <button className="notif-bell" onClick={() => setView("notifications")} title="Notificações">
-              🔔{unread > 0 && <span className="notif-dot">{unread > 9 ? "9+" : unread}</span>}
-            </button>
-          </div>
-          <div className="role">Área da Psicóloga</div>
-        </div>
-        <nav>
-          {navItems.map((n) => (
-            <button key={n.id} className={`nav-item ${view === n.id ? "active" : ""}`} onClick={() => setView(n.id)}>
-              <span className="icon">{n.icon}</span>
-              {n.label}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-footer">
-          <div className="user-pill">
-            <div className="avatar">{session.name[0]}</div>
-            <div className="user-info">
-              <div className="name">{session.name.split(" ")[0]}</div>
-              <div className="email">{session.email}</div>
-            </div>
-            <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
-              <button className="logout-btn" title="Sair" onClick={() => setSession(null)}>↩</button>
-              <button className="logout-btn" title="Excluir conta" onClick={() => setShowDelete(true)} style={{ fontSize: 15 }}>🗑</button>
-            </div>
-          </div>
-        </div>
-      </aside>
-      <main className="main">
-        {view === "dashboard" && <TherapistDashboard session={session} setView={setView} />}
-        {view === "patients" && <PatientsView session={session} setModal={setModal} />}
-        {view === "exercises" && <ExercisesView session={session} />}
-        {view === "create" && <CreateExerciseView session={session} onSaved={() => setView("exercises")} />}
-        {view === "progress" && <TherapistProgress session={session} />}
-        {view === "responses" && <ResponsesView session={session} />}
-        {view === "notifications" && <NotificationsView session={session} onRead={() => setUnread(0)} />}
-      </main>
-      {modal && <Modal modal={modal} setModal={setModal} session={session} />}
-      {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => setSession(null)} />}
-    </div>
-  );
+  return (
+    <div className="layout">
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+            <div className="brand" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <img src={LOGO} alt="" style={{ width: 32, height: 32, objectFit: "contain" }} /> Equilibre
+            </div>
+            <button className="notif-bell" onClick={() => setView("notifications")} title="Notificações">
+              🔔{unread > 0 && <span className="notif-dot">{unread > 9 ? "9+" : unread}</span>}
+            </button>
+          </div>
+          <div className="role">Área da Psicóloga</div>
+        </div>
+        <nav>
+          {navItems.map((n) => (
+            <button key={n.id} className={`nav-item ${(view === n.id || (n.id === "create" && view === "edit")) ? "active" : ""}`} onClick={() => { setEditingEx(null); setView(n.id); }}>
+              <span className="icon">{n.icon}</span>
+              {n.label}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-footer">
+          <div className="user-pill">
+            <div className="avatar">{session.name[0]}</div>
+            <div className="user-info">
+              <div className="name">{session.name.split(" ")[0]}</div>
+              <div className="email">{session.email}</div>
+            </div>
+            <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+              <button className="logout-btn" title="Sair" onClick={() => setSession(null)}>↩</button>
+              <button className="logout-btn" title="Excluir conta" onClick={() => setShowDelete(true)} style={{ fontSize: 15 }}>🗑</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+      <main className="main">
+        {view === "dashboard" && <TherapistDashboard session={session} setView={setView} />}
+        {view === "patients" && <PatientsView session={session} setModal={setModal} />}
+        {view === "exercises" && <ExercisesView session={session} onEdit={(ex) => { setEditingEx(ex); setView("edit"); }} />}
+        {view === "create" && <CreateExerciseView key="create" session={session} onSaved={() => setView("exercises")} />}
+        {view === "edit" && <CreateExerciseView key="edit" session={session} initialExercise={editingEx} onSaved={() => { setEditingEx(null); setView("exercises"); }} />}
+        {view === "progress" && <TherapistProgress session={session} />}
+        {view === "responses" && <ResponsesView session={session} />}
+        {view === "notifications" && <NotificationsView session={session} onRead={() => setUnread(0)} />}
+      </main>
+      {modal && <Modal modal={modal} setModal={setModal} session={session} />}
+      {showDelete && <DeleteAccountModal session={session} onClose={() => setShowDelete(false)} onDeleted={() => setSession(null)} />}
+    </div>
+  );
 }
 
 // ─── Therapist Dashboard ──────────────────────────────────────────────────────
@@ -1023,38 +1025,49 @@ function InviteCodeCard({ invite, onRevoke }) {
 }
 
 // ─── Exercises View ───────────────────────────────────────────────────────────
-function ExercisesView({ session }) {
-  const [exercises, setExercises] = useState([]);
+function ExercisesView({ session, onEdit }) {
+  const [exercises, setExercises] = useState([]);
 
-  useEffect(() => {
-    db.query("exercises").then((r) => {
-      const all = Array.isArray(r) ? r : [];
-      setExercises(all.filter((ex) => !ex.therapist_id || ex.therapist_id === session.id));
-    });
-  }, [session.id]);
+  useEffect(() => {
+    db.query("exercises").then((r) => {
+      const all = Array.isArray(r) ? r : [];
+      setExercises(all.filter((ex) => !ex.therapist_id || ex.therapist_id === session.id));
+    });
+  }, [session.id]);
 
-  const catClass = (c) => (c === "Mindfulness" ? "mindfulness" : c === "Bem-estar" ? "bem-estar" : "");
+  const catClass = (c) => (c === "Mindfulness" ? "mindfulness" : c === "Bem-estar" ? "bem-estar" : "");
 
-  return (
-    <div style={{ animation: "fadeUp .4s ease" }}>
-      <div className="page-header">
-        <h2>Biblioteca de Exercícios</h2>
-        <p>Exercícios disponíveis para atribuir aos pacientes</p>
-      </div>
-      <div className="grid-auto">
-        {exercises.map((ex) => (
-          <div key={ex.id} className="ex-card">
-            <span className={`ex-cat ${catClass(ex.category)}`}>{ex.category}</span>
-            <div className="ex-title">{ex.title}</div>
-            <div className="ex-desc">{ex.description}</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 12 }}>
-              📝 {parseQuestions(ex).length} perguntas
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  return (
+    <div style={{ animation: "fadeUp .4s ease" }}>
+      <div className="page-header">
+        <h2>Biblioteca de Exercícios</h2>
+        <p>Exercícios disponíveis para atribuir aos pacientes</p>
+      </div>
+      <div className="grid-auto">
+        {exercises.map((ex) => {
+          const isOwner = ex.therapist_id === session.id;
+          return (
+            <div key={ex.id} className="ex-card" style={{ position: "relative" }}>
+              {isOwner && (
+                <button
+                  onClick={() => onEdit(ex)}
+                  style={{ position: "absolute", top: 16, right: 16, background: "var(--cream)", border: "1px solid var(--warm)", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontWeight: 500, color: "var(--text-muted)" }}
+                >
+                  ✏️ Editar
+                </button>
+              )}
+              <span className={`ex-cat ${catClass(ex.category)}`}>{ex.category}</span>
+              <div className="ex-title" style={{ paddingRight: isOwner ? 70 : 0 }}>{ex.title}</div>
+              <div className="ex-desc">{ex.description}</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 12 }}>
+                📝 {parseQuestions(ex).length} perguntas
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 // ─── Responses View ───────────────────────────────────────────────────────────
@@ -1290,128 +1303,158 @@ function Modal({ modal, setModal, session }) {
   );
 }
 
-// ─── Create Exercise View ─────────────────────────────────────────────────────
+// ─── Create / Edit Exercise View ──────────────────────────────────────────────
 const QUESTION_TYPES = [
-  { value: "open", label: "📝 Resposta aberta" },
-  { value: "scale", label: "🔢 Escala 0–10" },
-  { value: "reflect", label: "💭 Reflexão (opcional)" },
-  { value: "instruction", label: "📢 Instrução (sem resposta)" },
+  { value: "open", label: "📝 Resposta aberta" },
+  { value: "scale", label: "🔢 Escala 0–10" },
+  { value: "reflect", label: "💭 Reflexão (opcional)" },
+  { value: "instruction", label: "📢 Instrução (sem resposta)" },
 ];
 const CATEGORIES = ["Ansiedade", "Bem-estar", "Mindfulness", "Autoconhecimento", "Relacionamentos", "Outro"];
 
-// FIX: função fora do componente — não recriada a cada render
 function makeEmptyQuestion() {
-  return { id: "q" + Date.now() + Math.random().toString(36).slice(2, 5), type: "open", text: "" };
+  return { id: "q" + Date.now() + Math.random().toString(36).slice(2, 5), type: "open", text: "" };
 }
 
-function CreateExerciseView({ session, onSaved }) {
-  const [form, setForm] = useState({ title: "", category: "Ansiedade", description: "" });
-  const [questions, setQuestions] = useState(() => [makeEmptyQuestion()]);
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
+function CreateExerciseView({ session, onSaved, initialExercise }) {
+  const isEditing = !!initialExercise;
 
-  const addQ = () => setQuestions((qs) => [...qs, makeEmptyQuestion()]);
-  const removeQ = (i) => setQuestions((qs) => qs.filter((_, idx) => idx !== i));
-  const updateQ = (i, field, val) =>
-    setQuestions((qs) => qs.map((q, idx) => (idx === i ? { ...q, [field]: val } : q)));
-  const moveQ = (i, dir) => {
-    setQuestions((qs) => {
-      const arr = [...qs];
-      const j = i + dir;
-      if (j < 0 || j >= arr.length) return arr;
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      return arr;
-    });
-  };
+  const [form, setForm] = useState(() => {
+    if (isEditing) return { title: initialExercise.title, category: initialExercise.category || "Ansiedade", description: initialExercise.description };
+    return { title: "", category: "Ansiedade", description: "" };
+  });
 
-  const save = async () => {
-    if (!form.title.trim()) { setError("Informe o título do exercício."); return; }
-    if (!form.description.trim()) { setError("Informe a descrição."); return; }
-    if (questions.some((q) => !q.text.trim())) { setError("Todas as perguntas/instruções precisam ter texto."); return; }
-    setError("");
-    setSaving(true);
-    await db.insert("exercises", {
-      id: "ex" + Date.now(),
-      therapist_id: session.id,
-      title: form.title.trim(),
-      category: form.category,
-      description: form.description.trim(),
-      questions: JSON.stringify(questions),
-    });
-    setSaving(false);
-    setSuccess("Exercício criado com sucesso!");
-    setTimeout(() => { setSuccess(""); onSaved(); }, 1500);
-  };
+  const [questions, setQuestions] = useState(() => {
+    if (isEditing) return parseQuestions(initialExercise);
+    return [makeEmptyQuestion()];
+  });
 
-  const fieldStyle = { width: "100%", padding: "11px 14px", border: "1.5px solid var(--warm)", borderRadius: 10, fontFamily: "DM Sans, sans-serif", fontSize: 15, background: "var(--cream)", color: "var(--text)", outline: "none" };
-  const labelStyle = { display: "block", fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginBottom: 5, textTransform: "uppercase", letterSpacing: ".06em" };
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
 
-  return (
-    <div style={{ animation: "fadeUp .4s ease", maxWidth: 720 }}>
-      <div className="page-header">
-        <h2>✏️ Criar Exercício</h2>
-        <p>Monte um exercício personalizado para seus pacientes</p>
-      </div>
+  const addQ = () => setQuestions((qs) => [...qs, makeEmptyQuestion()]);
+  const removeQ = (i) => setQuestions((qs) => qs.filter((_, idx) => idx !== i));
+  const updateQ = (i, field, val) =>
+    setQuestions((qs) => qs.map((q, idx) => (idx === i ? { ...q, [field]: val } : q)));
+  const moveQ = (i, dir) => {
+    setQuestions((qs) => {
+      const arr = [...qs];
+      const j = i + dir;
+      if (j < 0 || j >= arr.length) return arr;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      return arr;
+    });
+  };
 
-      {success && <div className="success-banner">✅ {success}</div>}
-      {error && <p className="error-msg">{error}</p>}
+  const save = async () => {
+    if (!form.title.trim()) { setError("Informe o título do exercício."); return; }
+    if (!form.description.trim()) { setError("Informe a descrição."); return; }
+    if (questions.some((q) => !q.text.trim())) { setError("Todas as perguntas/instruções precisam ter texto."); return; }
+    setError("");
+    setSaving(true);
 
-      <div className="card" style={{ marginBottom: 20 }}>
-        <h3 style={{ fontSize: 16, marginBottom: 16, color: "var(--blue-dark)" }}>Informações gerais</h3>
-        <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>Título do exercício</label>
-          <input style={fieldStyle} value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Ex: Diário das Emoções" />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
-          <div>
-            <label style={labelStyle}>Categoria</label>
-            <select style={{ ...fieldStyle, cursor: "pointer" }} value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+    try {
+      const payload = {
+        title: form.title.trim(),
+        category: form.category,
+        description: form.description.trim(),
+        questions: JSON.stringify(questions),
+      };
+
+      if (isEditing) {
+        await db.update("exercises", { id: initialExercise.id }, payload, session.access_token);
+      } else {
+        await db.insert("exercises", {
+          id: "ex" + Date.now(),
+          therapist_id: session.id,
+          ...payload
+        }, session.access_token);
+      }
+      
+      setSuccess(isEditing ? "Exercício atualizado com sucesso!" : "Exercício criado com sucesso!");
+      setTimeout(() => { setSuccess(""); onSaved(); }, 1500);
+    } catch (err) {
+      setError("Erro ao salvar: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const fieldStyle = { width: "100%", padding: "11px 14px", border: "1.5px solid var(--warm)", borderRadius: 10, fontFamily: "DM Sans, sans-serif", fontSize: 15, background: "var(--cream)", color: "var(--text)", outline: "none" };
+  const labelStyle = { display: "block", fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginBottom: 5, textTransform: "uppercase", letterSpacing: ".06em" };
+
+  return (
+    <div style={{ animation: "fadeUp .4s ease", maxWidth: 720 }}>
+      <div className="page-header">
+        <h2>{isEditing ? "✏️ Editar Exercício" : "✏️ Criar Exercício"}</h2>
+        <p>{isEditing ? "Modifique as informações do exercício selecionado" : "Monte um exercício personalizado para seus pacientes"}</p>
+      </div>
+
+      {success && <div className="success-banner">✅ {success}</div>}
+      {error && <p className="error-msg">{error}</p>}
+
+      <div className="card" style={{ marginBottom: 20 }}>
+        <h3 style={{ fontSize: 16, marginBottom: 16, color: "var(--blue-dark)" }}>Informações gerais</h3>
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelStyle}>Título do exercício</label>
+          <input style={fieldStyle} value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Ex: Diário das Emoções" />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+          <div>
+            <label style={labelStyle}>Categoria</label>
+            <select style={{ ...fieldStyle, cursor: "pointer" }} value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label style={labelStyle}>Descrição breve</label>
+          <textarea style={{ ...fieldStyle, minHeight: 70, resize: "vertical" }} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="O que este exercício trabalha?" />
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <h3 style={{ fontSize: 16, color: "var(--blue-dark)" }}>Perguntas ({questions.length})</h3>
+          <button className="btn btn-sage btn-sm" onClick={addQ}>+ Adicionar pergunta</button>
+        </div>
+        
+        {isEditing && (
+          <div style={{ padding: "10px 14px", background: "rgba(246, 148, 59, 0.1)", borderRadius: 10, marginBottom: 16, fontSize: 12, color: "var(--accent)", border: "1px solid var(--accent)" }}>
+            ⚠️ <strong>Atenção:</strong> Se você excluir ou reordenar perguntas de um exercício que já foi respondido por pacientes, as respostas antigas podem ficar desalinhadas no histórico.
           </div>
-        </div>
-        <div>
-          <label style={labelStyle}>Descrição breve</label>
-          <textarea style={{ ...fieldStyle, minHeight: 70, resize: "vertical" }} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="O que este exercício trabalha?" />
-        </div>
-      </div>
+        )}
 
-      <div className="card" style={{ marginBottom: 20 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ fontSize: 16, color: "var(--blue-dark)" }}>Perguntas ({questions.length})</h3>
-          <button className="btn btn-sage btn-sm" onClick={addQ}>+ Adicionar pergunta</button>
-        </div>
+        {questions.map((q, i) => (
+          <div key={q.id} style={{ background: "var(--cream)", borderRadius: 14, padding: "16px 16px 12px", marginBottom: 12, border: "1.5px solid var(--warm)", position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 11 }}>
+              <span style={{ background: "var(--blue-dark)", color: "white", width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
+              <select style={{ flex: 1, padding: "7px 10px", border: "1.5px solid var(--warm)", borderRadius: 8, fontFamily: "DM Sans, sans-serif", fontSize: 13, background: "white", color: "var(--text)", cursor: "pointer", outline: "none" }} value={q.type} onChange={(e) => updateQ(i, "type", e.target.value)}>
+                {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+              <button onClick={() => moveQ(i, -1)} disabled={i === 0} style={{ background: "none", border: "none", cursor: i === 0 ? "not-allowed" : "pointer", opacity: i === 0 ? 0.3 : 1, fontSize: 16, padding: "2px 4px" }}>↑</button>
+              <button onClick={() => moveQ(i, 1)} disabled={i === questions.length - 1} style={{ background: "none", border: "none", cursor: i === questions.length - 1 ? "not-allowed" : "pointer", opacity: i === questions.length - 1 ? 0.3 : 1, fontSize: 16, padding: "2px 4px" }}>↓</button>
+              <button onClick={() => removeQ(i)} disabled={questions.length === 1} style={{ background: "none", border: "none", cursor: questions.length === 1 ? "not-allowed" : "pointer", color: "var(--danger)", fontSize: 16, opacity: questions.length === 1 ? 0.3 : 1, padding: "2px 4px" }}>✕</button>
+            </div>
+            <textarea style={{ width: "100%", minHeight: 70, padding: "10px 12px", border: "1.5px solid var(--warm)", borderRadius: 10, fontFamily: "DM Sans, sans-serif", fontSize: 14, background: "white", color: "var(--text)", resize: "vertical", outline: "none" }} placeholder={q.type === "instruction" ? "Escreva a instrução ou orientação para o paciente..." : "Escreva a pergunta..."} value={q.text} onChange={(e) => updateQ(i, "text", e.target.value)} />
+            {q.type === "instruction" && <div style={{ fontSize: 11, color: "var(--blue-dark)", marginTop: 5 }}>💡 Instrução — o paciente lerá mas não precisa responder.</div>}
+            {q.type === "reflect" && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 5 }}>💭 Reflexão — campo de texto livre, preenchimento opcional.</div>}
+            {q.type === "scale" && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 5 }}>🔢 Escala — o paciente escolherá um valor de 0 a 10.</div>}
+          </div>
+        ))}
 
-        {questions.map((q, i) => (
-          <div key={q.id} style={{ background: "var(--cream)", borderRadius: 14, padding: "16px 16px 12px", marginBottom: 12, border: "1.5px solid var(--warm)", position: "relative" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 11 }}>
-              <span style={{ background: "var(--blue-dark)", color: "white", width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
-              <select style={{ flex: 1, padding: "7px 10px", border: "1.5px solid var(--warm)", borderRadius: 8, fontFamily: "DM Sans, sans-serif", fontSize: 13, background: "white", color: "var(--text)", cursor: "pointer", outline: "none" }} value={q.type} onChange={(e) => updateQ(i, "type", e.target.value)}>
-                {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
-              <button onClick={() => moveQ(i, -1)} disabled={i === 0} style={{ background: "none", border: "none", cursor: i === 0 ? "not-allowed" : "pointer", opacity: i === 0 ? 0.3 : 1, fontSize: 16, padding: "2px 4px" }}>↑</button>
-              <button onClick={() => moveQ(i, 1)} disabled={i === questions.length - 1} style={{ background: "none", border: "none", cursor: i === questions.length - 1 ? "not-allowed" : "pointer", opacity: i === questions.length - 1 ? 0.3 : 1, fontSize: 16, padding: "2px 4px" }}>↓</button>
-              <button onClick={() => removeQ(i)} disabled={questions.length === 1} style={{ background: "none", border: "none", cursor: questions.length === 1 ? "not-allowed" : "pointer", color: "var(--danger)", fontSize: 16, opacity: questions.length === 1 ? 0.3 : 1, padding: "2px 4px" }}>✕</button>
-            </div>
-            <textarea style={{ width: "100%", minHeight: 70, padding: "10px 12px", border: "1.5px solid var(--warm)", borderRadius: 10, fontFamily: "DM Sans, sans-serif", fontSize: 14, background: "white", color: "var(--text)", resize: "vertical", outline: "none" }} placeholder={q.type === "instruction" ? "Escreva a instrução ou orientação para o paciente..." : "Escreva a pergunta..."} value={q.text} onChange={(e) => updateQ(i, "text", e.target.value)} />
-            {q.type === "instruction" && <div style={{ fontSize: 11, color: "var(--blue-dark)", marginTop: 5 }}>💡 Instrução — o paciente lerá mas não precisa responder.</div>}
-            {q.type === "reflect" && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 5 }}>💭 Reflexão — campo de texto livre, preenchimento opcional.</div>}
-            {q.type === "scale" && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 5 }}>🔢 Escala — o paciente escolherá um valor de 0 a 10.</div>}
-          </div>
-        ))}
+        <button className="btn btn-outline" style={{ width: "100%", marginTop: 6, borderStyle: "dashed" }} onClick={addQ}>+ Adicionar outra pergunta</button>
+      </div>
 
-        <button className="btn btn-outline" style={{ width: "100%", marginTop: 6, borderStyle: "dashed" }} onClick={addQ}>+ Adicionar outra pergunta</button>
-      </div>
-
-      <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-        <button className="btn btn-outline" onClick={onSaved}>Cancelar</button>
-        <button className="btn btn-sage" style={{ padding: "11px 28px" }} onClick={save} disabled={saving}>
-          {saving ? "Salvando..." : "💾 Salvar exercício"}
-        </button>
-      </div>
-    </div>
-  );
+      <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+        <button className="btn btn-outline" onClick={onSaved}>Cancelar</button>
+        <button className="btn btn-sage" style={{ padding: "11px 28px" }} onClick={save} disabled={saving}>
+          {saving ? "Salvando..." : isEditing ? "💾 Atualizar exercício" : "💾 Salvar exercício"}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 // ─── Mini SVG Line Chart ──────────────────────────────────────────────────────
