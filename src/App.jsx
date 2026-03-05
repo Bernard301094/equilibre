@@ -1038,26 +1038,25 @@ function ExercisesView({ session }) {
   const [editingEx, setEditingEx] = useState(null); // Controla tela de edição
   const [previewEx, setPreviewEx] = useState(null); // Controla a vista prévia
   const [refresh, setRefresh] = useState(0);
+  const [deletingEx, setDeletingEx] = useState(null); // Controla o Modal de Exclusão
 
   useEffect(() => {
     db.query("exercises").then((r) => {
       const all = Array.isArray(r) ? r : [];
-      // Traz os exercícios criados pelo psicólogo E os padrões do sistema (therapist_id nulo)
       setExercises(all.filter((ex) => !ex.therapist_id || ex.therapist_id === session.id));
     });
   }, [session.id, refresh]);
 
   const catClass = (c) => (c === "Mindfulness" ? "mindfulness" : c === "Bem-estar" ? "bem-estar" : "");
 
-  const handleDelete = async (e, id) => {
-    e.stopPropagation(); // Evita abrir a vista prévia ao clicar no botão de apagar
-    if (window.confirm("⚠️ Tem certeza que deseja excluir este exercício?\n\nEle será apagado para sempre e removido da lista de tarefas dos pacientes.")) {
-      try {
-        await db.remove("exercises", { id }, session.access_token);
-        setRefresh(r => r + 1);
-      } catch (err) {
-        alert("Erro ao excluir exercício.");
-      }
+  const confirmDelete = async () => {
+    if (!deletingEx) return;
+    try {
+      await db.remove("exercises", { id: deletingEx.id }, session.access_token);
+      setRefresh(r => r + 1);
+      setDeletingEx(null);
+    } catch (err) {
+      alert("Erro ao excluir exercício.");
     }
   };
 
@@ -1140,7 +1139,7 @@ function ExercisesView({ session }) {
               key={ex.id} 
               className="ex-card" 
               style={{ position: "relative" }} 
-              onClick={() => setPreviewEx(ex)} // Abre a vista prévia ao clicar no card
+              onClick={() => setPreviewEx(ex)} 
             >
               {/* Botões de Ação Rápida */}
               <div style={{ position: "absolute", top: 14, right: 14, display: "flex", gap: 6 }}>
@@ -1155,7 +1154,7 @@ function ExercisesView({ session }) {
                 </button>
                 <button
                   title="Excluir"
-                  onClick={(e) => handleDelete(e, ex.id)}
+                  onClick={(e) => { e.stopPropagation(); setDeletingEx(ex); }}
                   style={{ background: "var(--cream)", border: "1px solid var(--danger)", borderRadius: 8, padding: "6px", cursor: "pointer", color: "var(--danger)", transition: "all .15s", opacity: 0.7 }}
                   onMouseEnter={(e) => e.target.style.opacity = "1"}
                   onMouseLeave={(e) => e.target.style.opacity = "0.7"}
@@ -1181,6 +1180,26 @@ function ExercisesView({ session }) {
           </div>
         )}
       </div>
+
+      {/* ─── MODAL DE CONFIRMAÇÃO DE EXCLUSÃO ─── */}
+      {deletingEx && (
+        <div className="delete-overlay" onClick={() => setDeletingEx(null)}>
+          <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>🗑️</div>
+            <div className="delete-title" style={{ fontSize: 20 }}>Excluir exercício?</div>
+            <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>
+              Tem certeza que deseja excluir <strong>"{deletingEx.title}"</strong>?<br/><br/>
+              Esta ação removerá o exercício da sua biblioteca e das tarefas pendentes dos seus pacientes. As respostas antigas ainda serão mantidas no histórico.
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <button className="btn btn-outline" onClick={() => setDeletingEx(null)}>Cancelar</button>
+              <button className="btn-danger" onClick={confirmDelete}>
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
