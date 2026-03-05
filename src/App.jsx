@@ -1169,20 +1169,7 @@ function PatientsView({ session, setModal }) {
   const deleteInvite = async (inv) => {
     if (!window.confirm(`Eliminar o convite ${inv.code}?`)) return;
     try {
-      // Filtra por code + therapist_id para garantir que a RLS deixa passar
-      let url = `${SUPA_URL}/rest/v1/invites?code=eq.${encodeURIComponent(inv.code)}&therapist_id=eq.${encodeURIComponent(session.id)}`;
-      const res = await fetch(url, {
-        method: "DELETE",
-        headers: {
-          apikey: SUPA_KEY,
-          Authorization: `Bearer ${session.access_token}`,
-          Prefer: "return=representation",
-        },
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error([err.message, err.hint, err.details].filter(Boolean).join(" | ") || `HTTP ${res.status}`);
-      }
+      await db.remove("invites", { code: inv.code }, session.access_token);
       setInvites(prev => prev.filter(i => i.code !== inv.code));
     } catch (e) {
       alert("Erro ao eliminar convite: " + (e?.message || e));
@@ -1255,7 +1242,7 @@ function PatientsView({ session, setModal }) {
           {invites.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Nenhum convite gerado ainda.</p>}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {invites.map(inv => (
-              <div key={inv.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", border: "1px solid var(--warm)", borderRadius: 8, background: "var(--white)", opacity: inv.status === "used" ? 0.6 : 1 }}>
+              <div key={inv.code} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", border: "1px solid var(--warm)", borderRadius: 8, background: "var(--white)", opacity: inv.status === "used" ? 0.6 : 1 }}>
                 <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
                   {inv.created_at ? new Date(inv.created_at).toLocaleDateString("pt-BR") : "—"}
                 </div>
