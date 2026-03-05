@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 
-const LOGO = "/equilibre-icon.jpeg";
+const LOGO = "/equilibre-icon.png";
 
 // ─── Supabase client ──────────────────────────────────────────────────────────
 const SUPA_URL = "https://tbaurubvmakhmbzhqnqh.supabase.co";
