@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const LOGO = 'data:image/jpeg;base64,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';
 
@@ -350,7 +350,18 @@ function parseAnswers(r) {
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
   useEffect(() => {
-    // Favicon
+    // ── CSS global ─────────────────────────────────────────────────────────────
+    // Injecting via document.head guarantees the styles persist across every
+    // render path (loading, login, dashboard). A <style> inside JSX body gets
+    // destroyed whenever React swaps the render branch (e.g. !ready → !session).
+    if (!document.querySelector("style[data-app='equilibre']")) {
+      const styleEl = document.createElement("style");
+      styleEl.dataset.app = "equilibre";
+      styleEl.textContent = css;
+      document.head.appendChild(styleEl);
+    }
+
+    // ── Favicon ────────────────────────────────────────────────────────────────
     const favicon =
       document.querySelector("link[rel~='icon']") || document.createElement("link");
     favicon.type = "image/jpeg";
@@ -359,7 +370,8 @@ export default function App() {
     document.head.appendChild(favicon);
     document.title = "Equilibre";
 
-    // Google Fonts — must be a <link> tag, @import inside dynamic <style> is ignored
+    // ── Google Fonts ───────────────────────────────────────────────────────────
+    // @import inside a dynamic <style> tag is ignored by browsers — must use <link>
     if (!document.querySelector("link[data-fonts='equilibre']")) {
       const fonts = document.createElement("link");
       fonts.rel = "stylesheet";
@@ -473,23 +485,24 @@ export default function App() {
     }
   };
 
-  if (!ready)
-    return (
+  // Determine content — keeping <style> in fixed tree position so React reuses
+  // the same DOM node across all render states (no flash of unstyled content)
+  let content;
+  if (!ready) {
+    content = (
       <div className="spinner">
-        <style>{css}</style>
         <div className="spin" />
         <span>Conectando ao Equilibre...</span>
       </div>
     );
-  if (dbError)
-    return (
+  } else if (dbError) {
+    content = (
       <div className="spinner">
-        <style>{css}</style>
         <span>⚠️ Erro ao conectar ao banco de dados. Verifique as configurações.</span>
       </div>
     );
-  if (!session)
-    return (
+  } else if (!session) {
+    content = (
       <LoginPage
         tab={loginTab}
         setTab={setLoginTab}
@@ -501,28 +514,31 @@ export default function App() {
         setLoginError={setLoginError}
       />
     );
+  } else {
+    content = session.role === "therapist" ? (
+      <TherapistLayout
+        session={session}
+        setSession={setSession}
+        view={view}
+        setView={setView}
+        modal={modal}
+        setModal={setModal}
+      />
+    ) : (
+      <PatientLayout
+        session={session}
+        setSession={setSession}
+        view={view}
+        setView={setView}
+      />
+    );
+  }
 
   return (
-    <div>
+    <>
       <style>{css}</style>
-      {session.role === "therapist" ? (
-        <TherapistLayout
-          session={session}
-          setSession={setSession}
-          view={view}
-          setView={setView}
-          modal={modal}
-          setModal={setModal}
-        />
-      ) : (
-        <PatientLayout
-          session={session}
-          setSession={setSession}
-          view={view}
-          setView={setView}
-        />
-      )}
-    </div>
+      {content}
+    </>
   );
 }
 
@@ -1554,9 +1570,12 @@ function PatientLayout({ session, setSession, view, setView }) {
 
   if (activeExercise)
     return (
-      <div>
-        <style>{css}</style>
-        <ExercisePage exercise={activeExercise} session={session} onBack={() => { setActiveExercise(null); setView("exercises"); }} />
+      <ExercisePage
+        exercise={activeExercise}
+        session={session}
+        onBack={() => { setActiveExercise(null); setView("exercises"); }}
+      />
+    );
       </div>
     );
 
