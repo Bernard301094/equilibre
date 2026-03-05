@@ -768,12 +768,21 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
 function TherapistLayout({ session, setSession, view, setView, modal, setModal }) {
   const [showDelete, setShowDelete] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [editingEx, setEditingEx] = useState(null);
 
+  // FIX: Atualiza a campainha de notificações em tempo real (a cada 5 segundos)
   useEffect(() => {
-    db.query("notifications", { filter: { therapist_id: session.id, read: false } }).then((r) =>
-      setUnread(Array.isArray(r) ? r.length : 0)
-    );
-  }, [session.id, view]);
+    let active = true;
+    const fetchNotifs = async () => {
+      try {
+        const r = await db.query("notifications", { filter: { therapist_id: session.id, read: false } });
+        if (active) setUnread(Array.isArray(r) ? r.length : 0);
+      } catch (e) {}
+    };
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 5000);
+    return () => { active = false; clearInterval(interval); };
+  }, [session.id]);
 
   const navItems = [
     { id: "dashboard", icon: "🏠", label: "Início" },
@@ -800,7 +809,7 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
         </div>
         <nav>
           {navItems.map((n) => (
-            <button key={n.id} className={`nav-item ${view === n.id ? "active" : ""}`} onClick={() => setView(n.id)}>
+            <button key={n.id} className={`nav-item ${(view === n.id || (n.id === "create" && view === "edit")) ? "active" : ""}`} onClick={() => { setEditingEx(null); setView(n.id); }}>
               <span className="icon">{n.icon}</span>
               {n.label}
             </button>
@@ -823,8 +832,9 @@ function TherapistLayout({ session, setSession, view, setView, modal, setModal }
       <main className="main">
         {view === "dashboard" && <TherapistDashboard session={session} setView={setView} />}
         {view === "patients" && <PatientsView session={session} setModal={setModal} />}
-        {view === "exercises" && <ExercisesView session={session} />}
-        {view === "create" && <CreateExerciseView session={session} onSaved={() => setView("exercises")} />}
+        {view === "exercises" && <ExercisesView session={session} onEdit={(ex) => { setEditingEx(ex); setView("edit"); }} />}
+        {view === "create" && <CreateExerciseView key="create" session={session} onSaved={() => setView("exercises")} />}
+        {view === "edit" && <CreateExerciseView key="edit" session={session} initialExercise={editingEx} onSaved={() => { setEditingEx(null); setView("exercises"); }} />}
         {view === "progress" && <TherapistProgress session={session} />}
         {view === "responses" && <ResponsesView session={session} />}
         {view === "notifications" && <NotificationsView session={session} onRead={() => setUnread(0)} />}
@@ -2014,7 +2024,13 @@ const MOODS = [
 ];
 
 function PatientDiary({ session }) {
-  const today = new Date().toISOString().split("T")[0];
+  // Pega a data local correta para evitar que mude de dia mais cedo por causa do fuso horário
+  const getLocalToday = () => {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
+  };
+  const today = getLocalToday();
+
   const [entries, setEntries] = useState([]);
   const [todayEntry, setTodayEntry] = useState(null);
   const [mood, setMood] = useState(null);
@@ -2022,47 +2038,51 @@ function PatientDiary({ session }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [reminder, setReminder] = useState(false);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
         const [e, u] = await Promise.all([
-          // Pasamos el token para asegurar que Supabase acepte la lectura
-          db.query("diary_entries", { filter: { patient_id: session.id }, order: "date.desc" }, session.access_token),
-          db.query("users", { filter: { id: session.id } }, session.access_token),
+          db.query("diary_entries", { filter: { patient_id: session.id }, order: "date.desc" }),
+          db.query("users", { filter: { id: session.id } }),
         ]);
         const list = Array.isArray(e) ? e : [];
         setEntries(list);
+        
         const te = list.find((x) => x.date === today);
-        if (te) { setTodayEntry(te); setMood(te.mood); setText(te.text || ""); }
+        if (te) { 
+          setTodayEntry(te); 
+          setMood(te.mood); 
+          setText(te.text || ""); 
+        }
         if (Array.isArray(u) && u.length) setReminder(!!u[0].reminder_email);
       } catch (err) {
         console.error("Erro ao carregar diário:", err);
+      } finally {
+        setLoading(false);
       }
     })();
-  }, [session.id, session.access_token, today]);
+  }, [session.id, today]);
 
   const save = async () => {
     setSaving(true);
-    setError("");
     try {
       if (todayEntry) {
-        // Enviar actualización con Token
-        await db.update("diary_entries", { id: todayEntry.id }, { mood, text, updated_at: new Date().toISOString() }, session.access_token);
-        // FIX: Sincronizar el estado local para que la UI se entere del cambio sin refrescar
+        await db.update("diary_entries", { id: todayEntry.id }, { mood, text, updated_at: new Date().toISOString() });
+        // Atualiza a lista instantaneamente
         setEntries(prev => prev.map(e => e.id === todayEntry.id ? { ...e, mood, text } : e));
       } else {
         const entry = { id: "d" + Date.now(), patient_id: session.id, date: today, mood, text, created_at: new Date().toISOString() };
-        // Insertar con Token
-        await db.insert("diary_entries", entry, session.access_token);
+        await db.insert("diary_entries", entry);
         setTodayEntry(entry);
+        // Adiciona no topo da lista instantaneamente
         setEntries((prev) => [entry, ...prev]);
       }
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
-      setError("Erro ao salvar: " + err.message);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (e) {
+      alert("Erro ao salvar diário. Tente novamente.");
     } finally {
       setSaving(false);
     }
@@ -2071,10 +2091,10 @@ function PatientDiary({ session }) {
   const toggleReminder = async () => {
     const newVal = !reminder;
     setReminder(newVal);
-    try {
-      await db.update("users", { id: session.id }, { reminder_email: newVal }, session.access_token);
-    } catch(e) {}
+    try { await db.update("users", { id: session.id }, { reminder_email: newVal }); } catch(e) {}
   };
+
+  if (loading) return <div style={{ color: "var(--text-muted)", padding: 20 }}>Carregando diário...</div>;
 
   return (
     <div style={{ animation: "fadeUp .4s ease", maxWidth: 640 }}>
@@ -2107,37 +2127,38 @@ function PatientDiary({ session }) {
         </div>
         <textarea className="q-textarea" placeholder="Como foi seu dia? O que você está sentindo? (opcional)" value={text} onChange={(e) => setText(e.target.value)} style={{ minHeight: 90 }} />
         {saved && <div className="success-banner" style={{ marginTop: 10 }}>✅ Registro salvo!</div>}
-        {error && <div className="error-msg" style={{ marginTop: 10 }}>{error}</div>}
         <button className="btn btn-sage" style={{ marginTop: 12, width: "100%" }} onClick={save} disabled={!mood || saving}>
-          {saving ? "Salvando..." : todayEntry ? "✏️ Atualizar registro" : "💾 Salvar registro de hoje"}
+          {saving ? "Salvando..." : todayEntry ? "✏️ Atualizar registro de hoje" : "💾 Salvar registro de hoje"}
         </button>
       </div>
 
-      <h3 style={{ fontSize: 15, marginBottom: 12 }}>Registros anteriores</h3>
-      {entries.filter((e) => e.date !== today).slice(0, 10).map((e) => {
+      <h3 style={{ fontSize: 15, marginBottom: 12 }}>Seu Histórico</h3>
+      
+      {/* Removemos o filtro! Agora entries mostra TUDO, incluindo hoje */}
+      {entries.slice(0, 10).map((e) => {
         const m = MOODS.find((x) => x.val === e.mood);
+        const isToday = e.date === today;
         return (
-          <div key={e.id} className="card" style={{ marginBottom: 10, display: "flex", gap: 14, alignItems: "flex-start" }}>
+          // Se for o registro de hoje, ganha uma borda verde sutil para destacar que foi salvo
+          <div key={e.id} className="card" style={{ marginBottom: 10, display: "flex", gap: 14, alignItems: "flex-start", border: isToday ? "1.5px solid var(--sage-light)" : "1px solid rgba(255,255,255,0.6)" }}>
             <div style={{ fontSize: 28 }}>{m?.emoji || "😐"}</div>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ fontWeight: 500, fontSize: 13 }}>{m?.label}</span>
-                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{new Date(e.date).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })}</span>
+                <span style={{ fontWeight: 500, fontSize: 13 }}>
+                  {m?.label} 
+                  {isToday && <span style={{fontSize: 9, background: "var(--sage-light)", color: "var(--sage-dark)", padding: "3px 8px", borderRadius: 10, marginLeft: 8, fontWeight: 700, letterSpacing: ".05em"}}>HOJE</span>}
+                </span>
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                  {new Date(e.date + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })}
+                </span>
               </div>
               {e.text && <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5, margin: 0 }}>{e.text}</p>}
             </div>
           </div>
         );
       })}
-      
-      {/* FIX: Mostrar un mensaje tranquilizador si guardó hoy pero no tiene historial */}
-      {entries.filter((e) => e.date !== today).length === 0 && (
-        <div className="empty-state">
-          <div className="empty-icon">📖</div>
-          <p>{todayEntry 
-            ? "Você já fez seu registro de hoje! Os históricos anteriores aparecerão aqui." 
-            : "Nenhum registro anterior. Comece hoje!"}</p>
-        </div>
+      {entries.length === 0 && (
+        <div className="empty-state"><div className="empty-icon">📖</div><p>Nenhum registro ainda. Comece hoje!</p></div>
       )}
     </div>
   );
