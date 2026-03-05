@@ -1197,10 +1197,7 @@ function ResponsesView({ session }) {
       ]);
       const pList = Array.isArray(p) ? p : [];
       const pIds = pList.map((pt) => pt.id);
-      // Single batch query instead of N+1 loop
-      const allResp = pIds.length > 0
-        ? await db.query("responses", { filterIn: { patient_id: pIds }, order: "completed_at.desc" }).then((r) => Array.isArray(r) ? r : [])
-        : [];
+      const allResp = pIds.length > 0 ? await db.query("responses", { filterIn: { patient_id: pIds }, order: "completed_at.desc" }).then((r) => Array.isArray(r) ? r : []) : [];
       setPatients(pList);
       setExercises(Array.isArray(ex) ? ex : []);
       setResponses(allResp);
@@ -1216,19 +1213,23 @@ function ResponsesView({ session }) {
       <div className="grid-2" style={{ alignItems: "start" }}>
         <div className="card">
           <h3 style={{ fontSize: 15, marginBottom: 12 }}>Filtrar</h3>
-          <div style={{ padding: "9px 12px", borderRadius: 9, cursor: "pointer", background: !selPatient ? "rgba(122,158,135,0.12)" : "transparent", fontWeight: !selPatient ? 500 : 400, fontSize: 14 }} onClick={() => setSelPatient(null)}>Todos os pacientes</div>
+          
+          {/* FIX: borderRadius: "10px" para combinar con los avatares */}
+          <div style={{ padding: "9px 12px", borderRadius: "10px", cursor: "pointer", background: !selPatient ? "rgba(122,158,135,0.12)" : "transparent", fontWeight: !selPatient ? 600 : 400, fontSize: 14, color: !selPatient ? "var(--sage-dark)" : "var(--text-muted)", transition: "all .15s" }} onClick={() => setSelPatient(null)}>
+            Todos os pacientes
+          </div>
+          
           {patients.map((p) => (
-            <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 12px", borderRadius: 9, cursor: "pointer", background: selPatient?.id === p.id ? "rgba(122,158,135,0.12)" : "transparent" }} onClick={() => setSelPatient(p)}>
-              <div className="p-avatar" style={{ width: 30, height: 30, fontSize: 12 }}>{p.name[0]}</div>
-              <span style={{ fontSize: 13, fontWeight: selPatient?.id === p.id ? 500 : 400 }}>{p.name}</span>
+            <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: "10px", cursor: "pointer", background: selPatient?.id === p.id ? "rgba(122,158,135,0.12)" : "transparent", transition: "all .15s", marginTop: 4 }} onClick={() => setSelPatient(p)}>
+              <div className="p-avatar" style={{ width: 32, height: 32, fontSize: 13 }}>{p.name[0]}</div>
+              <span style={{ fontSize: 14, fontWeight: selPatient?.id === p.id ? 600 : 400, color: selPatient?.id === p.id ? "var(--sage-dark)" : "var(--text)" }}>{p.name}</span>
             </div>
           ))}
         </div>
+        
         <div>
           {loading && <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Carregando...</p>}
-          {!loading && filtered.length === 0 && (
-            <div className="empty-state"><div className="empty-icon">📭</div><p>Nenhuma resposta ainda.</p></div>
-          )}
+          {!loading && filtered.length === 0 && <div className="empty-state"><div className="empty-icon">📭</div><p>Nenhuma resposta ainda.</p></div>}
           {filtered.map((r) => {
             const patient = patients.find((p) => p.id === r.patient_id);
             const exercise = exercises.find((e) => e.id === r.exercise_id);
@@ -1237,21 +1238,13 @@ function ResponsesView({ session }) {
             return (
               <div key={r.id} className="card" style={{ marginBottom: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                  <div>
-                    <div style={{ fontFamily: "Playfair Display, serif", fontSize: 16 }}>{exercise?.title || "Exercício"}</div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{patient?.name} · {new Date(r.completed_at).toLocaleDateString("pt-BR")}</div>
-                  </div>
+                  <div><div style={{ fontFamily: "Playfair Display, serif", fontSize: 16 }}>{exercise?.title || "Exercício"}</div><div style={{ fontSize: 11, color: "var(--text-muted)" }}>{patient?.name} · {new Date(r.completed_at).toLocaleDateString("pt-BR")}</div></div>
                   <span className="response-badge badge-done">✓ Concluído</span>
                 </div>
                 {answers.map((a, i) => {
                   const q = questions[i];
                   if (!q || q.type === "instruction" || !a) return null;
-                  return (
-                    <div key={i} className="response-item">
-                      <div className="q-label">{q.text}</div>
-                      <div className="q-answer">{a}</div>
-                    </div>
-                  );
+                  return <div key={i} className="response-item"><div className="q-label">{q.text}</div><div className="q-answer">{a}</div></div>;
                 })}
               </div>
             );
@@ -1660,8 +1653,7 @@ function TherapistProgress({ session }) {
         const qs = ex ? parseQuestions(ex) : [];
         const ans = parseAnswers(r);
         const scaleAnswers = qs.reduce((acc, q, i) => {
-          if (q.type === "scale" && ans[i] !== "" && ans[i] !== undefined)
-            acc.push({ label: q.text.slice(0, 25) + "…", val: Number(ans[i]) });
+          if (q.type === "scale" && ans[i] !== "" && ans[i] !== undefined) acc.push({ label: q.text.slice(0, 25) + "…", val: Number(ans[i]) });
           return acc;
         }, []);
         return { date: new Date(r.completed_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }), ex: ex?.title || "", scaleAnswers, completedAt: r.completed_at };
@@ -1683,12 +1675,23 @@ function TherapistProgress({ session }) {
     avg: Math.round((r.scaleAnswers.reduce((s, a) => s + a.val, 0) / r.scaleAnswers.length) * 10) / 10,
   }));
 
+  const handlePrint = () => window.print();
+
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
-      <div className="page-header"><h2>📈 Progresso dos Pacientes</h2><p>Acompanhe a evolução das respostas ao longo do tempo</p></div>
+      <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div><h2>📈 Progresso dos Pacientes</h2><p>Acompanhe a evolução das respostas ao longo do tempo</p></div>
+        {selPat && <button className="btn btn-outline" onClick={handlePrint}>🖨️ Gerar PDF</button>}
+      </div>
+      
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 24 }}>
         {patients.map((p) => (
-          <button key={p.id} onClick={() => setSelPat(p)} style={{ padding: "8px 16px", borderRadius: 20, border: `2px solid ${selPat?.id === p.id ? "var(--blue-dark)" : "var(--warm)"}`, background: selPat?.id === p.id ? "rgba(23,82,124,0.07)" : "white", cursor: "pointer", fontFamily: "DM Sans,sans-serif", fontSize: 13, fontWeight: selPat?.id === p.id ? 600 : 400, color: selPat?.id === p.id ? "var(--blue-dark)" : "var(--text-muted)" }}>
+          <button 
+            key={p.id} 
+            onClick={() => setSelPat(p)} 
+            /* FIX: border-radius ajustado para 10px em vez del 20 excesivo */
+            style={{ padding: "9px 16px", borderRadius: "10px", border: `1.5px solid ${selPat?.id === p.id ? "var(--blue-dark)" : "var(--warm)"}`, background: selPat?.id === p.id ? "rgba(23,82,124,0.07)" : "var(--white)", cursor: "pointer", fontFamily: "DM Sans,sans-serif", fontSize: 14, fontWeight: selPat?.id === p.id ? 600 : 500, color: selPat?.id === p.id ? "var(--blue-dark)" : "var(--text-muted)", transition: "all .15s" }}
+          >
             {p.name.split(" ")[0]}
           </button>
         ))}
