@@ -1773,13 +1773,11 @@ function TherapistProgress({ session }) {
     avg: Math.round((r.scaleAnswers.reduce((s, a) => s + a.val, 0) / r.scaleAnswers.length) * 10) / 10,
   }));
 
-  const handlePrint = () => window.print();
-
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
-      <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div><h2>📈 Progresso dos Pacientes</h2><p>Acompanhe a evolução das respostas ao longo do tempo</p></div>
-        {selPat && <button className="btn btn-outline" onClick={handlePrint}>🖨️ Gerar PDF</button>}
+      <div className="page-header">
+        <h2>📈 Progresso dos Pacientes</h2>
+        <p>Acompanhe a evolução das respostas ao longo do tempo</p>
       </div>
       
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 24 }}>
@@ -1787,7 +1785,6 @@ function TherapistProgress({ session }) {
           <button 
             key={p.id} 
             onClick={() => setSelPat(p)} 
-            /* FIX: border-radius ajustado para 10px em vez del 20 excesivo */
             style={{ padding: "9px 16px", borderRadius: "10px", border: `1.5px solid ${selPat?.id === p.id ? "var(--blue-dark)" : "var(--warm)"}`, background: selPat?.id === p.id ? "rgba(23,82,124,0.07)" : "var(--white)", cursor: "pointer", fontFamily: "DM Sans,sans-serif", fontSize: 14, fontWeight: selPat?.id === p.id ? 600 : 500, color: selPat?.id === p.id ? "var(--blue-dark)" : "var(--text-muted)", transition: "all .15s" }}
           >
             {p.name.split(" ")[0]}
