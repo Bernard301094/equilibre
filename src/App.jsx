@@ -1898,17 +1898,43 @@ function PatientHome({ session, setView }) {
       const weekDone = respList.filter((r) => new Date(r.completed_at) >= startOfWeek).length;
       const od = pendList.filter((a) => a.due_date && new Date(a.due_date) < now).length;
 
+      // FIX: Data Local (Evita bugs de fuso horário na gamificação)
+      const getLocalDayStr = (offsetDays = 0) => {
+        const d = new Date();
+        d.setDate(d.getDate() - offsetDays);
+        return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
+      };
+
+      // Função para verificar se houve alguma ação no dia
+      const hasActivity = (ds) => {
+        return dList.some(e => e.date === ds) || respList.some(r => r.completed_at && r.completed_at.startsWith(ds));
+      };
+
+      // ─── LÓGICA DE GAMIFICAÇÃO ESTILO DUOLINGO ───
       let streak = 0;
-      for (let i = 0; i < 30; i++) {
-        const d = new Date(now);
-        d.setDate(now.getDate() - i);
-        const ds = d.toISOString().split("T")[0];
-        if (dList.find((e) => e.date === ds) || respList.find((r) => r.completed_at?.startsWith(ds))) streak++;
-        else break;
+      
+      if (hasActivity(getLocalDayStr(0))) {
+        // Fez hoje! Conta hoje e vai voltando pro passado
+        streak = 1;
+        for (let i = 1; i < 30; i++) {
+          if (hasActivity(getLocalDayStr(i))) streak++;
+          else break;
+        }
+      } else if (hasActivity(getLocalDayStr(1))) {
+        // Ainda não fez hoje, mas fez ontem. Mantém a ofensiva (dá tempo dele fazer hoje)
+        streak = 1;
+        for (let i = 2; i < 30; i++) {
+          if (hasActivity(getLocalDayStr(i))) streak++;
+          else break;
+        }
+      } else {
+        // Falhou hoje e ontem. A planta morreu :( Volta para 0.
+        streak = 0;
       }
 
       setData({ pending: pendList.length, done: Array.isArray(done) ? done.length : 0, streak, goal: Array.isArray(goals) && goals.length > 0 ? goals[0] : null, weekDone, overdue: od });
     };
+    
     fetch();
     const intId = setInterval(fetch, 5000);
     return () => { active = false; clearInterval(intId); };
@@ -1922,7 +1948,7 @@ function PatientHome({ session, setView }) {
       </div>
       
       <div className="grid-3" style={{ marginBottom: 20 }}>
-        {/* GAMIFICAÇÃO: Ícone dinâmico */}
+        {/* GAMIFICAÇÃO: Ícone dinâmico baseado no streak */}
         <div className="stat-card">
           <div className="stat-icon">{data.streak >= 7 ? "🌳" : data.streak >= 3 ? "🌿" : "🌱"}</div>
           <div className="stat-val">{data.streak}</div>
@@ -1942,10 +1968,10 @@ function PatientHome({ session, setView }) {
           <div>
             <h3 style={{ fontSize: 15, color: "var(--accent)", marginBottom: 6 }}>Cultive seu bem-estar</h3>
             <p style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6 }}>
-              A sua constância faz a sua planta virtual crescer! Faça um exercício ou registre o seu Diário Emocional todos os dias para não perder a sua ofensiva:
+              Sua constância faz sua planta virtual crescer! Faça um exercício ou registre o seu diário todos os dias. <strong>Se você pular um dia inteiro, a contagem zera e ela volta a ser uma semente!</strong>
               <br />
               <span style={{ display: "inline-block", marginTop: 8 }}>
-                <strong>🌱 Semente</strong> (1-2 dias) &nbsp;•&nbsp; <strong>🌿 Broto</strong> (3-6 dias) &nbsp;•&nbsp; <strong>🌳 Árvore</strong> (7+ dias)
+                <strong>🌱 1 a 2 dias</strong> &nbsp;•&nbsp; <strong>🌿 3 a 6 dias</strong> &nbsp;•&nbsp; <strong>🌳 7+ dias</strong>
               </span>
             </p>
           </div>
