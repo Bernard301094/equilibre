@@ -1396,6 +1396,11 @@ function Modal({ modal, setModal, session }) {
   const [isWritingNew, setIsWritingNew] = useState(false);
   const [newNoteText, setNewNoteText] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  
+  // Estados para Edição e Exclusão de Prontuário Antigo
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editingNoteText, setEditingNoteText] = useState("");
+  const [deletingNote, setDeletingNote] = useState(null);
 
   const [loading, setLoading] = useState(true);
 
@@ -1409,10 +1414,10 @@ function Modal({ modal, setModal, session }) {
         
         let clinicalNotes = [];
         try {
-          // FIX: Busca todas as anotações do paciente, ordenadas da mais recente para a mais antiga
+          // Busca todas as anotações do paciente, ordenadas da mais recente para a mais antiga
           clinicalNotes = await db.query("clinical_notes", { filter: { patient_id: modal.payload.patient.id, therapist_id: session.id }, order: "created_at.desc" }, session.access_token);
         } catch (e) {
-          console.warn("Prontuário não encontrado ou coluna created_at faltando.");
+          console.warn("Prontuário não encontrado.");
         }
         
         const filteredEx = (Array.isArray(ex) ? ex : []).filter((e) => !e.therapist_id || e.therapist_id === session.id);
@@ -1423,7 +1428,6 @@ function Modal({ modal, setModal, session }) {
         setCurrentGoal(g);
         if (g) setWeeklyGoal(g.weekly_target);
 
-        // Alimenta a lista de anotações com o histórico do banco
         setNotesList(Array.isArray(clinicalNotes) ? clinicalNotes : []);
       } catch (err) {
         console.error(err);
@@ -1475,33 +1479,50 @@ function Modal({ modal, setModal, session }) {
     }
   };
 
-  // Função para salvar uma NOVA anotação
+  // ─── LÓGICA DE PRONTUÁRIOS ───
+  
   const saveNewNote = async () => {
     if (!newNoteText.trim()) return;
     setSavingNotes(true);
     try {
       const newId = "cn" + Date.now();
       const nowISO = new Date().toISOString();
-      const newNoteObj = { 
-        id: newId, 
-        patient_id: patient.id, 
-        therapist_id: session.id, 
-        notes: newNoteText, 
-        created_at: nowISO 
-      };
-      
-      // Salva no Supabase
+      const newNoteObj = { id: newId, patient_id: patient.id, therapist_id: session.id, notes: newNoteText, created_at: nowISO };
       await db.insert("clinical_notes", newNoteObj, session.access_token);
-      
-      // Atualiza a lista na tela imediatamente (colocando a nova no topo)
       setNotesList(prev => [newNoteObj, ...prev]);
-      setNewNoteText(""); // Limpa o formulário
-      setIsWritingNew(false); // Fecha a caixa de texto
-      
+      setNewNoteText("");
+      setIsWritingNew(false);
     } catch (e) {
       alert("Erro ao salvar prontuário: " + e.message);
     } finally {
       setSavingNotes(false);
+    }
+  };
+
+  const saveEditedNote = async () => {
+    if (!editingNoteText.trim() || !editingNoteId) return;
+    setSavingNotes(true);
+    try {
+      const nowISO = new Date().toISOString();
+      await db.update("clinical_notes", { id: editingNoteId }, { notes: editingNoteText, updated_at: nowISO }, session.access_token);
+      setNotesList(prev => prev.map(n => n.id === editingNoteId ? { ...n, notes: editingNoteText, updated_at: nowISO } : n));
+      setEditingNoteId(null);
+      setEditingNoteText("");
+    } catch (e) {
+      alert("Erro ao editar prontuário: " + e.message);
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
+  const confirmDeleteNote = async () => {
+    if (!deletingNote) return;
+    try {
+      await db.remove("clinical_notes", { id: deletingNote.id }, session.access_token);
+      setNotesList(prev => prev.filter(n => n.id !== deletingNote.id));
+      setDeletingNote(null);
+    } catch (e) {
+      alert("Erro ao excluir prontuário: " + e.message);
     }
   };
 
@@ -1579,7 +1600,7 @@ function Modal({ modal, setModal, session }) {
               </div>
             </>
           ) : (
-            /* CONTEÚDO: HISTÓRICO DE PRONTUÁRIOS (Novo formato em lista) */
+            /* CONTEÚDO: HISTÓRICO DE PRONTUÁRIOS */
             <div style={{ animation: "fadeIn .3s ease", display: "flex", flexDirection: "column", height: "100%" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
@@ -1590,9 +1611,9 @@ function Modal({ modal, setModal, session }) {
                 )}
               </div>
 
-              {/* Formulário para adicionar nova anotação */}
+              {/* Formulário para Nova Anotação */}
               {isWritingNew && (
-                <div className="card" style={{ marginBottom: 20, padding: 16, border: "1.5px solid var(--sage)", background: "var(--cream)" }}>
+                <div className="card" style={{ marginBottom: 20, padding: 16, border: "1.5px solid var(--sage)", background: "var(--cream)", animation: "fadeIn .3s ease" }}>
                   <h4 style={{ fontSize: 14, color: "var(--blue-dark)", marginBottom: 10 }}>Nova anotação (Sessão de Hoje)</h4>
                   <textarea 
                     className="q-textarea" 
@@ -1603,7 +1624,7 @@ function Modal({ modal, setModal, session }) {
                     autoFocus
                   />
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                    <button className="btn btn-outline" onClick={() => setIsWritingNew(false)}>Cancelar</button>
+                    <button className="btn btn-outline" onClick={() => { setIsWritingNew(false); setNewNoteText(""); }}>Cancelar</button>
                     <button className="btn btn-sage" onClick={saveNewNote} disabled={savingNotes || !newNoteText.trim()}>
                       {savingNotes ? "Salvando..." : "💾 Salvar Sessão"}
                     </button>
@@ -1611,7 +1632,7 @@ function Modal({ modal, setModal, session }) {
                 </div>
               )}
 
-              {/* Lista do histórico (Linha do Tempo) */}
+              {/* Lista do Histórico */}
               <div style={{ flex: 1, paddingBottom: 20 }}>
                 {notesList.length === 0 && !isWritingNew && (
                   <div className="empty-state" style={{ padding: "30px 0" }}>
@@ -1621,13 +1642,46 @@ function Modal({ modal, setModal, session }) {
                 )}
                 
                 {notesList.map(note => (
-                  <div key={note.id} className="card" style={{ marginBottom: 12, padding: "16px 20px", borderLeft: "4px solid var(--sage)" }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>
-                      📅 {new Date(note.created_at || new Date()).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  <div key={note.id} className="card" style={{ marginBottom: 12, padding: "16px 20px", borderLeft: "4px solid var(--sage)", animation: "fadeIn .3s ease" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8, flexWrap: "wrap", gap: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>
+                        📅 {new Date(note.created_at || new Date()).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        {note.updated_at && (
+                          <span style={{ color: "var(--orange)", marginLeft: 6, display: "inline-block" }}>
+                            • Editado: {new Date(note.updated_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Botões de Ação */}
+                      {editingNoteId !== note.id && (
+                        <div style={{ display: "flex", gap: 12 }}>
+                          <button onClick={() => { setEditingNoteId(note.id); setEditingNoteText(note.notes); setIsWritingNew(false); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--blue-dark)", fontWeight: 500 }} title="Editar">✏️ Editar</button>
+                          <button onClick={() => setDeletingNote(note)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--danger)", fontWeight: 500 }} title="Excluir">🗑️ Excluir</button>
+                        </div>
+                      )}
                     </div>
-                    <div style={{ whiteSpace: "pre-wrap", fontSize: 14, color: "var(--text)", lineHeight: 1.6 }}>
-                      {note.notes}
-                    </div>
+
+                    {/* Modo de Edição Inline */}
+                    {editingNoteId === note.id ? (
+                      <div style={{ marginTop: 10, animation: "fadeIn .2s ease" }}>
+                        <textarea 
+                          className="q-textarea" 
+                          value={editingNoteText} 
+                          onChange={(e) => setEditingNoteText(e.target.value)} 
+                          style={{ width: "100%", minHeight: 120, resize: "vertical", marginBottom: 12 }} 
+                          autoFocus
+                        />
+                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                          <button className="btn btn-outline" onClick={() => { setEditingNoteId(null); setEditingNoteText(""); }}>Cancelar</button>
+                          <button className="btn btn-sage" onClick={saveEditedNote} disabled={savingNotes || !editingNoteText.trim()}>Salvar Alteração</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ whiteSpace: "pre-wrap", fontSize: 14, color: "var(--text)", lineHeight: 1.6 }}>
+                        {note.notes}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1641,6 +1695,23 @@ function Modal({ modal, setModal, session }) {
           )}
         </div>
       </div>
+
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
+      {deletingNote && (
+        <div className="delete-overlay" onClick={() => setDeletingNote(null)}>
+          <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>🗑️</div>
+            <div className="delete-title" style={{ fontSize: 20 }}>Excluir anotação?</div>
+            <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>
+              Tem certeza que deseja apagar permanentemente a anotação do dia <strong>{new Date(deletingNote.created_at || new Date()).toLocaleDateString("pt-BR")}</strong>?
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <button className="btn btn-outline" onClick={() => setDeletingNote(null)}>Cancelar</button>
+              <button className="btn-danger" onClick={confirmDeleteNote}>Excluir</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
