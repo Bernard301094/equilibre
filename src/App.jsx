@@ -426,55 +426,60 @@ function parseAnswers(r) {
   return Array.isArray(r.answers) ? r.answers : JSON.parse(r.answers || "[]");
 }
 
-// ─── Main App ─────────────────────────────────────────────────────────────────
+// ==========================================
+// Main App
+// ==========================================
 export default function App() {
-  // 1. O tema começa como "light" por padrão (garante a tela de login clara)
-  const [theme, setTheme] = useState("light");
-
+  // 1. O tema começa como 'light' por padrão (garante a tela de login clara)
+  const [theme, setTheme] = useState('light');
+  
   const [ready, setReady] = useState(false);
   const [dbError, setDbError] = useState(false);
   
   const [view, setView] = useState(() => {
     try {
-      const saved = localStorage.getItem("equilibre_session");
+      const saved = localStorage.getItem('equilibre_session');
       if (saved) {
         const parsedSession = JSON.parse(saved);
-        return parsedSession.role === "patient" ? "home" : "dashboard";
+        return parsedSession.role === 'patient' ? 'home' : 'dashboard';
       }
-    } catch {}
-    return "dashboard";
+      return 'dashboard';
+    } catch {
+      return 'dashboard';
+    }
   });
-  
-  const [modal, setModal] = useState(null);
-  const [loginTab, setLoginTab] = useState("therapist");
-  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
-  const [loginError, setLoginError] = useState("");
 
+  const [modal, setModal] = useState(null);
+  
+  const [loginTab, setLoginTab] = useState('therapist');
+  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [loginError, setLoginError] = useState('');
+  
   const [session, setSession] = useState(() => {
     try {
-      const saved = localStorage.getItem("equilibre_session");
+      const saved = localStorage.getItem('equilibre_session');
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
   });
 
-  // 2. Sempre que a sessão mudar, carrega o tema do usuário logado ou força "light" se sair
+  // 2. Sempre que a sessão mudar, carrega o tema do usuário logado (ou força 'light' se sair)
   useEffect(() => {
     if (session) {
-      const userTheme = localStorage.getItem(`eq_theme_${session.id}`) || "light";
+      const userTheme = localStorage.getItem(`eq_theme_${session.id}`) || 'light';
       setTheme(userTheme);
     } else {
-      setTheme("light");
+      setTheme('light');
     }
   }, [session]);
 
   // 3. Aplica a classe no body e salva no localStorage atrelado ao ID do usuário específico
   useEffect(() => {
-    if (theme === "dark") {
-      document.body.classList.add("dark-mode");
+    if (theme === 'dark') {
+      document.body.classList.add('dark-mode');
     } else {
-      document.body.classList.remove("dark-mode");
+      document.body.classList.remove('dark-mode');
     }
     
     if (session) {
@@ -482,11 +487,14 @@ export default function App() {
     }
   }, [theme, session]);
 
-  const toggleTheme = () => setTheme(t => t === "light" ? "dark" : "light");
+  const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light');
 
   useEffect(() => {
-    if (session) localStorage.setItem("equilibre_session", JSON.stringify(session));
-    else localStorage.removeItem("equilibre_session");
+    if (session) {
+      localStorage.setItem('equilibre_session', JSON.stringify(session));
+    } else {
+      localStorage.removeItem('equilibre_session');
+    }
   }, [session]);
 
   // Auto-refresh JWT antes de expirar (a cada 50 min)
@@ -496,10 +504,14 @@ export default function App() {
       try {
         const data = await auth.refresh(session.refresh_token);
         if (data?.access_token) {
-          setSession(prev => prev ? { ...prev, access_token: data.access_token, refresh_token: data.refresh_token } : prev);
+          setSession(prev => prev ? { 
+            ...prev, 
+            access_token: data.access_token, 
+            refresh_token: data.refresh_token 
+          } : prev);
         }
       } catch (e) {
-        console.warn("Falha ao renovar token, sessão encerrada.", e);
+        console.warn('Falha ao renovar token, sessão encerrada.', e);
         setSession(null);
       }
     }, 50 * 60 * 1000); // 50 minutos
@@ -507,145 +519,248 @@ export default function App() {
   }, [session?.refresh_token]);
 
   useEffect(() => {
-    if (!document.querySelector("style[data-app='equilibre']")) {
-      const styleEl = document.createElement("style");
-      styleEl.dataset.app = "equilibre";
+    if (!document.querySelector('style[data-app="equilibre"]')) {
+      const styleEl = document.createElement('style');
+      styleEl.dataset.app = 'equilibre';
       styleEl.textContent = css;
       document.head.appendChild(styleEl);
-    }
-    document.title = "Equilibre";
-    const favicon = document.querySelector("link[rel~='icon']") || document.createElement("link");
-    favicon.rel = "icon";
-    favicon.type = "image/jpeg";
-    favicon.href = "/equilibre-icon.jpeg";
-    document.head.appendChild(favicon);
-    if (!document.querySelector("link[data-fonts='equilibre']")) {
-      const fonts = document.createElement("link");
-      fonts.rel = "stylesheet";
-      fonts.dataset.fonts = "equilibre";
-      fonts.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap";
-      document.head.appendChild(fonts);
+      
+      document.title = "Equilibre";
+      const favicon = document.querySelector("link[rel~='icon']") || document.createElement('link');
+      favicon.rel = 'icon';
+      favicon.type = 'image/jpeg';
+      favicon.href = LOGO;
+      document.head.appendChild(favicon);
+
+      if (!document.querySelector('link[data-fonts="equilibre"]')) {
+        const fonts = document.createElement('link');
+        fonts.rel = 'stylesheet';
+        fonts.dataset.fonts = 'equilibre';
+        fonts.href = 'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap';
+        document.head.appendChild(fonts);
+      }
     }
   }, []);
 
   useEffect(() => {
-    (async () => {
+    async function seed() {
       try {
-        const seeded = localStorage.getItem("eq_seeded");
+        const seeded = localStorage.getItem('eq_seeded');
         if (!seeded) {
-          const existing = await db.query("exercises", { select: "id" });
+          const existing = await db.query('exercises', { select: 'id' });
           if (!Array.isArray(existing) || existing.length === 0) {
             for (const ex of SEED_EXERCISES) {
-              await db.insert("exercises", { ...ex, questions: JSON.stringify(ex.questions) });
+              await db.insert('exercises', { ...ex, questions: JSON.stringify(ex.questions) });
             }
           }
-          localStorage.setItem("eq_seeded", "true");
+          localStorage.setItem('eq_seeded', 'true');
         }
         setReady(true);
       } catch {
         setDbError(true);
         setReady(true);
       }
-    })();
+    }
+    seed();
   }, []);
 
   const handleLogin = async () => {
-    setLoginError("");
+    setLoginError('');
     try {
       const authData = await auth.signIn(loginForm.email, loginForm.password);
-      if (!authData?.access_token) throw new Error(authData?.error_description || authData?.msg || "Erro na autenticação.");
-      
-      let users = await db.query("users", { filter: { id: authData.user.id } }, authData.access_token);
-      if (!Array.isArray(users) || users.length === 0) {
-        const byEmail = await db.query("users", { filter: { email: loginForm.email } }, authData.access_token);
-        if (Array.isArray(byEmail) && byEmail.length > 0) users = byEmail;
+      if (!authData?.access_token) {
+        throw new Error(authData?.error_description || authData?.msg || 'Erro na autenticação.');
       }
+
+      let users = await db.query('users', { filter: { id: authData.user.id } }, authData.access_token);
+      
+      if (!Array.isArray(users) || users.length === 0) {
+        const byEmail = await db.query('users', { filter: { email: loginForm.email } }, authData.access_token);
+        if (Array.isArray(byEmail) && byEmail.length > 0) {
+          users = byEmail;
+        }
+      }
+
       if (!Array.isArray(users) || users.length === 0) {
         // Pacientes SEMPRE precisam de um registo válido em users (criado via convite).
-        // Se não existe registo, a conta foi encerrada ou nunca foi criada corretamente.
-        if (loginTab === "patient") {
-          setLoginError("Conta encerrada ou não encontrada. Para aceder, solicite um novo convite à sua profissional.");
+        if (loginTab === 'patient') {
+          setLoginError('Conta encerrada ou não encontrada. Para aceder, solicite um novo convite à sua profissional.');
           return;
         }
+        
         const meta = authData.user?.user_metadata || {};
         const role = meta.role || loginTab;
-        if (role !== loginTab) { setLoginError("Conta não encontrada para este perfil."); return; }
-        setSession({ id: authData.user.id, email: authData.user.email, name: meta.name || authData.user.email, role, access_token: authData.access_token, refresh_token: authData.refresh_token });
+        if (role !== loginTab) {
+          setLoginError('Conta não encontrada para este perfil.');
+          return;
+        }
+        
+        setSession({
+          id: authData.user.id,
+          email: authData.user.email,
+          name: meta.name || authData.user.email,
+          role,
+          access_token: authData.access_token,
+          refresh_token: authData.refresh_token
+        });
       } else {
-        if (users[0].role !== loginTab) { setLoginError("Conta não encontrada para este perfil."); return; }
-        if (users[0].deleted_at) { setLoginError("Esta conta foi encerrada. Para voltar a aceder, solicite um novo convite à sua profissional."); return; }
+        if (users[0].role !== loginTab) {
+          setLoginError('Conta não encontrada para este perfil.');
+          return;
+        }
+        if (users[0].deleted_at) {
+          setLoginError('Esta conta foi encerrada. Para voltar a aceder, solicite um novo convite à sua profissional.');
+          return;
+        }
         setSession({ ...users[0], access_token: authData.access_token, refresh_token: authData.refresh_token });
+        setView(loginTab === 'patient' ? 'home' : 'dashboard');
       }
-      setView(loginTab === "patient" ? "home" : "dashboard");
     } catch (error) {
       setLoginError(error.message);
     }
   };
 
-  const handleRegister = async (form) => {
+  // ==========================================
+  // FUNÇÃO CORRIGIDA DE REGISTRO (REATIVAÇÃO DE CONTA DO PACIENTE)
+  // ==========================================
+     const handleRegister = async (form) => {
     if (!form.name || !form.email || !form.password) return "Preencha todos os campos.";
     if (form.password !== form.confirm) return "As senhas não coincidem.";
     if (form.password.length < 6) return "A senha deve ter pelo menos 6 caracteres.";
 
     let therapistId = null;
-    if (form.role === "patient") {
+
+    if (form.role === 'patient') {
       const code = form.inviteCode.trim().toUpperCase();
-      const invites = await db.query("invites", { filter: { code } });
+      const invites = await db.query('invites', { filter: { code } });
+      
       if (!Array.isArray(invites) || invites.length === 0) return "Código inválido.";
+      
       const invite = invites[0];
-      if (invite.status !== "pending") return "Este código já foi utilizado.";
-      therapistId = invite.therapist_id;
+      if (invite.status !== 'pending') return "Este código já foi utilizado.";
+      
+      therapistId = invite.therapist_id || invite.therapistid;
     }
 
     try {
       let userId;
+      let tokenToUse;
+      let isReactivation = false;
+      
       try {
         const authRes = await auth.signUp(form.email, form.password, { name: form.name, role: form.role });
-        userId = authRes?.user?.id;
+        
+        userId = authRes?.user?.id || authRes?.id;
+        tokenToUse = authRes?.access_token || authRes?.session?.access_token;
+
+        if (!userId) {
+          throw new Error("ID não retornado na criação");
+        }
       } catch (signUpErr) {
-        // E-mail já existe no Auth (conta encerrada anteriormente) — autentica para obter o id
-        if (signUpErr.message?.toLowerCase().includes("already registered") || signUpErr.message?.toLowerCase().includes("already been registered")) {
+        const errorMsg = signUpErr.message?.toLowerCase() || '';
+        if (errorMsg.includes('already registered') || errorMsg.includes('already been registered') || errorMsg.includes('id não retornado')) {
           try {
             const authRes = await auth.signIn(form.email, form.password);
             if (!authRes?.access_token) return "Erro ao autenticar. Tente novamente.";
             userId = authRes?.user?.id;
+            tokenToUse = authRes.access_token;
+            isReactivation = true;
           } catch {
-            return "Este e-mail já tem uma conta anterior. Use a mesma senha da conta anterior para se re-registar com o novo convite.";
+            // MENSAGEM ATUALIZADA EXPLICANDO O PASSO A PASSO:
+            return "Este e-mail já tem uma conta anterior. Se usou a senha antiga, verifique a digitação. Se não lembra da senha: volte para 'Entrar', clique em 'Esqueceu a senha?', redefina-a e volte aqui para usar a nova senha com o convite.";
           }
         } else {
           throw signUpErr;
         }
       }
-      if (!userId) return "Erro ao criar conta. Tente novamente.";
-      const newUser = { id: userId, name: form.name, email: form.email, role: form.role, therapist_id: therapistId };
-      await db.insert("users", newUser);
 
-      if (form.role === "patient") {
-        await db.update("invites", { code: form.inviteCode.trim().toUpperCase() }, { status: "used", used_by: userId, used_at: new Date().toISOString() });
+      if (!userId) return "Erro ao criar conta. O sistema não retornou um ID válido.";
+
+      if (isReactivation) {
+        try {
+          await db.update('users', { id: userId }, { 
+            name: form.name, 
+            role: form.role, 
+            therapist_id: therapistId, 
+            deleted_at: null 
+          }, tokenToUse);
+        } catch (e) {
+          await db.insert('users', {
+            id: userId,
+            name: form.name,
+            email: form.email,
+            role: form.role,
+            therapist_id: therapistId
+          }, tokenToUse);
+        }
+      } else {
+        await db.insert('users', {
+          id: userId,
+          name: form.name,
+          email: form.email,
+          role: form.role,
+          therapist_id: therapistId
+        }, tokenToUse);
       }
+
+      if (form.role === 'patient') {
+        const code = form.inviteCode.trim().toUpperCase();
+        await db.update('invites', { code }, { 
+            status: 'used', 
+            used_by: userId, 
+            used_at: new Date().toISOString() 
+        }, tokenToUse);
+      }
+
       return null;
     } catch (error) {
-      return error.message;
+      console.error("Erro completo no registro:", error);
+      return `Erro ao criar conta: ${error.message}`;
     }
   };
 
+
+
   let content;
   if (!ready) {
-    content = <div className="spinner"><div className="spin" /><span>Conectando ao Equilibre...</span></div>;
+    content = (
+      <div className="spinner"><div className="spin" /> <span>Conectando ao Equilibre...</span></div>
+    );
   } else if (dbError) {
-    content = <div className="spinner"><span>⚠️ Erro ao conectar ao banco de dados. Verifique as configurações.</span></div>;
+    content = (
+      <div className="spinner"><span style={{color: '#c0544a'}}>Erro ao conectar ao banco de dados. Verifique as configurações.</span></div>
+    );
   } else if (!session) {
-    content = <LoginPage tab={loginTab} setTab={setLoginTab} form={loginForm} setForm={setLoginForm} error={loginError} onLogin={handleLogin} onRegister={handleRegister} setLoginError={setLoginError} />;
+    content = (
+      <LoginPage 
+        tab={loginTab} setTab={setLoginTab}
+        form={loginForm} setForm={setLoginForm}
+        error={loginError} onLogin={handleLogin} onRegister={handleRegister}
+        setLoginError={setLoginError}
+      />
+    );
   } else {
-    content = session.role === "therapist" 
-      ? <TherapistLayout session={session} setSession={setSession} view={view} setView={setView} modal={modal} setModal={setModal} toggleTheme={toggleTheme} theme={theme} />
-      : <PatientLayout session={session} setSession={setSession} view={view} setView={setView} toggleTheme={toggleTheme} theme={theme} />;
+    content = session.role === 'therapist' ? (
+      <TherapistLayout 
+        session={session} setSession={setSession} 
+        view={view} setView={setView} modal={modal} setModal={setModal}
+        toggleTheme={toggleTheme} theme={theme}
+      />
+    ) : (
+      <PatientLayout 
+        session={session} setSession={setSession} 
+        view={view} setView={setView}
+        toggleTheme={toggleTheme} theme={theme}
+      />
+    );
   }
 
-  return <><style>{css}</style>{content}</>;
+  return <>{content}</>;
 }
 
-// ─── Login / Register ─────────────────────────────────────────────────────────
+// ==========================================
+// Login / Register
+// ==========================================
 function LoginPage({ tab, setTab, form, setForm, error, onLogin, onRegister, setLoginError }) {
   const [mode, setMode] = useState("login");
   const [reg, setReg] = useState({
@@ -1097,64 +1212,55 @@ function TherapistDashboard({ session, setView }) {
   );
 }
 
-// ─── Patients View ────────────────────────────────────────────────────────────
+// ==========================================
+// Patients View
+// ==========================================
 function PatientsView({ session, setModal }) {
   const [patients, setPatients] = useState([]);
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
-  
   const [generating, setGenerating] = useState(false);
-  
-  // Estado para controlar qual paciente está a ser desvinculado
   const [unlinkingPatient, setUnlinkingPatient] = useState(null);
+  const [deletingInvite, setDeletingInvite] = useState(null);
+  
+  // Novo estado para o feedback visual de cópia
+  const [copiedCode, setCopiedCode] = useState(null);
 
   useEffect(() => {
     let active = true;
     const fetch = async () => {
       try {
         const [pts, invs] = await Promise.all([
-          // FIX: Adicionado session.access_token
-          db.query("users", { filter: { therapist_id: session.id, role: "patient" } }, session.access_token),
-          db.query("invites", { filter: { therapist_id: session.id }, order: "created_at.desc" }, session.access_token)
+          db.query('users', { filter: { therapist_id: session.id, role: 'patient' } }, session.accesstoken),
+          db.query('invites', { filter: { therapist_id: session.id }, order: 'created_at.desc' }, session.accesstoken)
         ]);
         if (!active) return;
         setPatients(Array.isArray(pts) ? pts : []);
         setInvites(Array.isArray(invs) ? invs : []);
       } catch (e) {
-        console.error("Erro ao carregar pacientes:", e);
+        console.error('Erro ao carregar pacientes:', e);
       } finally {
         if (active) setLoading(false);
       }
     };
     fetch();
     return () => { active = false; };
-  }, [session.id, session.access_token]);
+  }, [session.id, session.accesstoken]);
 
   const generateInvite = async () => {
     setGenerating(true);
     try {
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const newInv = {
-        code,
-        therapist_id: session.id,
-        status: "pending",
-      };
-
-      const inserted = await db.insert("invites", newInv, session.access_token);
-      const savedInv = Array.isArray(inserted) && inserted[0]?.id
-        ? inserted[0]
-        : null;
-
-      if (savedInv) {
-        setInvites(prev => [savedInv, ...prev]);
-      } else {
-        // Recarrega do banco para garantir que temos o id real gerado pelo Supabase
-        const fresh = await db.query("invites", { filter: { therapist_id: session.id }, order: "created_at.desc" }, session.access_token);
-        setInvites(Array.isArray(fresh) ? fresh : []);
-      }
+      const newInv = { code, therapist_id: session.id, status: 'pending' };
+      
+      await db.insert('invites', newInv, session.accesstoken);
+      
+      const fresh = await db.query('invites', { filter: { therapist_id: session.id }, order: 'created_at.desc' }, session.accesstoken);
+      setInvites(Array.isArray(fresh) ? fresh : []);
+      
     } catch (e) {
-      console.error("Erro ao gerar convite:", e);
-      alert("Erro ao gerar convite:\n" + (e?.message || JSON.stringify(e)));
+      console.error('Erro ao gerar convite:', e);
+      alert(`Erro ao gerar convite: ${e?.message || JSON.stringify(e)}`);
     } finally {
       setGenerating(false);
     }
@@ -1162,64 +1268,65 @@ function PatientsView({ session, setModal }) {
 
   const copyCode = (code) => {
     navigator.clipboard.writeText(code);
-    alert("Código copiado: " + code);
+    setCopiedCode(code); // Define qual código foi copiado
+    
+    // Remove o aviso de "Copiado!" após 2 segundos
+    setTimeout(() => {
+      setCopiedCode(null);
+    }, 2000);
   };
 
-  const deleteInvite = async (inv) => {
-    if (!window.confirm(`Eliminar o convite ${inv.code}?`)) return;
+  const confirmDeleteInvite = async () => {
+    if (!deletingInvite || !deletingInvite.code) return;
+    
     try {
-        // ✅ Usando o seu utilitário db.remove com o token da sessão
-        await db.remove('invites', { code: inv.code }, session.accesstoken);
-        
-        setInvites(prev => prev.filter(i => i.code !== inv.code));
+      await db.remove('invites', { code: deletingInvite.code }, session.accesstoken);
+      setInvites(prev => prev.filter(i => i.code !== deletingInvite.code));
+      setDeletingInvite(null);
     } catch (e) {
-        alert(`Erro ao eliminar convite: ${e?.message || e}`);
+      console.error('Erro ao eliminar convite:', e);
+      alert(`Erro ao eliminar convite: ${e?.message || e}`);
     }
-};
+  };
 
-
-  // Função para Desvincular o paciente
   const confirmUnlink = async () => {
     if (!unlinkingPatient) return;
     try {
-      // FIX: Adicionado session.access_token na atualização
-      await db.update("users", { id: unlinkingPatient.id }, { therapist_id: null }, session.access_token);
-      
-      // Remove o paciente da lista no ecrã atual
+      await db.update('users', { id: unlinkingPatient.id }, { therapist_id: null }, session.accesstoken);
       setPatients(prev => prev.filter(p => p.id !== unlinkingPatient.id));
       setUnlinkingPatient(null);
     } catch (e) {
-      alert("Erro ao desvincular paciente. Tente novamente.");
+      alert('Erro ao desvincular paciente. Tente novamente.');
     }
   };
 
-  if (loading) return <div style={{ color: "var(--text-muted)", fontSize: 14 }}>A carregar pacientes...</div>;
+  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 14 }}>A carregar pacientes...</div>;
 
   return (
-    <div style={{ animation: "fadeUp .4s ease" }}>
+    <div style={{ animation: 'fadeUp .4s ease' }}>
       <div className="page-header">
-        <h2>👥 Os Meus Pacientes</h2>
+        <h2>Os Meus Pacientes</h2>
         <p>Faça a gestão dos seus pacientes e envie convites</p>
       </div>
 
       <div className="grid-2">
         <div className="card">
           <h3 style={{ fontSize: 16, marginBottom: 14 }}>Pacientes Ativos ({patients.length})</h3>
-          {patients.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Nenhum paciente registado.</p>}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {patients.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Nenhum paciente registado.</p>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {patients.map(p => (
-              <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", border: "1.5px solid var(--warm)", borderRadius: 12, background: "var(--cream)" }}>
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', border: '1.5px solid var(--warm)', borderRadius: 12, background: 'var(--cream)' }}>
                 <div>
-                  <div style={{ fontWeight: 600, color: "var(--blue-dark)", marginBottom: 2 }}>{p.name}</div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{p.email}</div>
+                  <div style={{ fontWeight: 600, color: 'var(--blue-dark)', marginBottom: 2 }}>{p.name}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{p.email}</div>
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button className="btn btn-sage btn-sm" onClick={() => setModal({ type: "assign", payload: { patient: p } })}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn-sage btn-sm" onClick={() => setModal({ type: 'assign', payload: { patient: p } })}>
                     Gerir
                   </button>
                   <button 
                     className="btn btn-outline btn-sm" 
-                    style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
+                    style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
                     onClick={() => setUnlinkingPatient(p)}
                     title="Desvincular Paciente"
                   >
@@ -1233,45 +1340,68 @@ function PatientsView({ session, setModal }) {
 
         <div className="card">
           <h3 style={{ fontSize: 16, marginBottom: 14 }}>Convidar Novo Paciente</h3>
-          <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.5 }}>
             Gere um código único e partilhe pelo WhatsApp com o seu paciente. Ao usá-lo no registo, ele ficará automaticamente vinculado à sua conta.
           </p>
           <button className="btn btn-sage" onClick={generateInvite} disabled={generating} style={{ marginBottom: 24 }}>
-            {generating ? "A gerar..." : "＋ Gerar Novo Código"}
+            {generating ? 'A gerar...' : 'Gerar Novo Código'}
           </button>
 
-          <h3 style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".05em" }}>Convites Gerados</h3>
-          {invites.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Nenhum convite gerado ainda.</p>}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <h3 style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '.05em' }}>Convites Gerados</h3>
+          
+          {invites.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Nenhum convite gerado ainda.</p>}
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {invites.map(inv => (
-              <div key={inv.id || inv.code} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", border: "1px solid var(--warm)", borderRadius: 8, background: "var(--white)", opacity: inv.status === "used" ? 0.6 : 1 }}>
-                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                  {inv.created_at ? new Date(inv.created_at).toLocaleDateString("pt-BR") : "—"}
+              <div key={inv.code} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', border: '1px solid var(--warm)', borderRadius: 8, background: 'var(--white)', opacity: inv.status === 'used' ? 0.6 : 1 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                  {inv.created_at ? new Date(inv.created_at).toLocaleDateString('pt-BR') : ''}
                 </div>
-                {inv.status === "used" ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 14, letterSpacing: "1px", color: "var(--text-muted)" }}>{inv.code}</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--sage-dark)", background: "var(--sage-light)", padding: "4px 8px", borderRadius: 6 }}>Utilizado</span>
-                    <button onClick={() => deleteInvite(inv)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 15, opacity: 0.5 }} title="Eliminar">🗑</button>
+                
+                {inv.status === 'used' ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 14, letterSpacing: '1px', color: 'var(--text-muted)' }}>{inv.code}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--sage-dark)', background: 'var(--sage-light)', padding: '4px 8px', borderRadius: 6 }}>Utilizado</span>
+                    <button disabled style={{ background: 'none', border: 'none', cursor: 'default', fontSize: 15, opacity: 0 }}>🗑️</button>
                   </div>
                 ) : (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 16, letterSpacing: "2px", color: "var(--blue-dark)" }}>{inv.code}</span>
-                    <button onClick={() => copyCode(inv.code)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16 }} title="Copiar código">📋</button>
-                    <button
-                      onClick={() => {
-                        const msg = encodeURIComponent(`Olá! 😊 Estou a usar o Equilibre para acompanhar o nosso trabalho juntos.\n\nPara criar a sua conta e ficarmos conectados, use o código de convite abaixo:\n\n🔑 *${inv.code}*\n\nAcesse: https://equilibreapp.vercel.app e clique em "Criar conta" → perfil Paciente → insira o código acima.`);
-                        window.open(`https://wa.me/?text=${msg}`, "_blank");
-                      }}
-                      style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: 0 }}
-                      title="Enviar pelo WhatsApp"
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 16, letterSpacing: '2px', color: 'var(--blue-dark)' }}>{inv.code}</span>
+                    
+                    {/* Botão de copiar com feedback visual dinâmico */}
+                    <button 
+                      onClick={() => copyCode(inv.code)} 
+                      style={{ 
+                        background: copiedCode === inv.code ? 'var(--sage-light)' : 'none', 
+                        border: 'none', 
+                        cursor: 'pointer', 
+                        fontSize: 14,
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        color: copiedCode === inv.code ? 'var(--sage-dark)' : 'inherit',
+                        transition: 'all 0.2s ease'
+                      }} 
+                      title="Copiar código"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="22" height="22">
-                        <circle cx="16" cy="16" r="16" fill="#25D366"/>
-                        <path d="M23.5 8.5A10.44 10.44 0 0 0 16 5.5a10.5 10.5 0 0 0-9.08 15.73L5.5 26.5l5.43-1.42A10.5 10.5 0 0 0 26.5 16a10.44 10.44 0 0 0-3-7.5zm-7.5 16.16a8.71 8.71 0 0 1-4.44-1.21l-.32-.19-3.22.84.86-3.14-.21-.33a8.75 8.75 0 1 1 7.33 4.03zm4.8-6.55c-.26-.13-1.55-.77-1.79-.85s-.41-.13-.59.13-.67.85-.83 1-.3.2-.56.07a7.13 7.13 0 0 1-2.1-1.3 7.9 7.9 0 0 1-1.45-1.81c-.15-.26 0-.4.11-.53s.26-.3.4-.46a1.8 1.8 0 0 0 .26-.43.48.48 0 0 0 0-.46c-.07-.13-.59-1.42-.81-1.94s-.43-.44-.59-.45h-.5a1 1 0 0 0-.7.33 2.93 2.93 0 0 0-.91 2.18 5.1 5.1 0 0 0 1.06 2.7 11.65 11.65 0 0 0 4.47 3.95c.62.27 1.1.43 1.48.55a3.56 3.56 0 0 0 1.63.1 2.69 2.69 0 0 0 1.76-1.24 2.18 2.18 0 0 0 .15-1.24c-.06-.11-.24-.17-.5-.3z" fill="#fff"/>
-                      </svg>
+                      {copiedCode === inv.code ? (
+                        <>
+                          <span>✅</span> <span style={{fontSize: 11, fontWeight: 600}}>Copiado</span>
+                        </>
+                      ) : (
+                        '📋'
+                      )}
                     </button>
-                    <button onClick={() => deleteInvite(inv)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 15, opacity: 0.6 }} title="Eliminar convite">🗑</button>
+
+                    <button onClick={() => {
+                      const msg = encodeURIComponent(`Olá! Estou a usar o Equilibre para acompanhar o nosso trabalho juntos.\n\nPara criar a sua conta e ficarmos conectados, use o código de convite abaixo:\n\n*${inv.code}*\n\nAceda a https://equilibreapp.vercel.app e clique em "Criar conta" > perfil "Paciente" > insira o código acima.`);
+                      window.open(`https://wa.me/?text=${msg}`, '_blank');
+                    }} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }} title="Enviar pelo WhatsApp">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="22" height="22"><circle cx="16" cy="16" r="16" fill="#25D366"/><path d="M23.5 8.5A10.44 10.44 0 0 0 16 5.5a10.5 10.5 0 0 0-9.08 15.73L5.5 26.5l5.43-1.42A10.5 10.5 0 0 0 26.5 16a10.44 10.44 0 0 0-3-7.5zm-7.5 16.16a8.71 8.71 0 0 1-4.44-1.21l-.32-.19-3.22.84.86-3.14-.21-.33a8.75 8.75 0 1 1 7.33 4.03zm4.8-6.55c-.26-.13-1.55-.77-1.79-.85s-.41-.13-.59.13-.67.85-.83 1-.3.2-.56.07a7.13 7.13 0 0 1-2.1-1.3 7.9 7.9 0 0 1-1.45-1.81c-.15-.26 0-.4.11-.53s.26-.3.4-.46a1.8 1.8 0 0 0 .26-.43.48.48 0 0 0 0-.46c-.07-.13-.59-1.42-.81-1.94s-.43-.44-.59-.45h-.5a1 1 0 0 0-.7.33 2.93 2.93 0 0 0-.91 2.18 5.1 5.1 0 0 0 1.06 2.7 11.65 11.65 0 0 0 4.47 3.95c.62.27 1.1.43 1.48.55a3.56 3.56 0 0 0 1.63.1 2.69 2.69 0 0 0 1.76-1.24 2.18 2.18 0 0 0 .15-1.24c-.06-.11-.24-.17-.5-.3z" fill="#fff"/></svg>
+                    </button>
+                    <button onClick={() => setDeletingInvite(inv)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, opacity: 0.6 }} title="Eliminar convite">🗑️</button>
                   </div>
                 )}
               </div>
@@ -1280,19 +1410,37 @@ function PatientsView({ session, setModal }) {
         </div>
       </div>
 
-      {/* MODAL DE CONFIRMAÇÃO DE DESVINCULAÇÃO */}
+      {/* MODAL: Confirmação de Desvinculação */}
       {unlinkingPatient && (
         <div className="delete-overlay" onClick={() => setUnlinkingPatient(null)}>
-          <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>⚠️</div>
+          <div className="delete-modal" onClick={e => e.stopPropagation()}>
+            <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>🔗</div>
             <div className="delete-title" style={{ fontSize: 20 }}>Desvincular Paciente?</div>
             <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>
               Tem a certeza de que deseja desvincular <strong>{unlinkingPatient.name}</strong> da sua conta? <br/><br/>
               O paciente perderá o acesso aos exercícios que lhe enviou, e deixará de poder ver o diário ou os dados dele. O registo do paciente em si <strong>não</strong> será apagado.
             </div>
-            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button className="btn btn-outline" onClick={() => setUnlinkingPatient(null)}>Cancelar</button>
               <button className="btn-danger" onClick={confirmUnlink}>Desvincular</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Confirmação de Exclusão de Convite */}
+      {deletingInvite && (
+        <div className="delete-overlay" onClick={() => setDeletingInvite(null)}>
+          <div className="delete-modal" onClick={e => e.stopPropagation()}>
+            <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>🗑️</div>
+            <div className="delete-title" style={{ fontSize: 20 }}>Eliminar Convite?</div>
+            <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>
+              Tem a certeza de que deseja eliminar o convite <strong>{deletingInvite.code}</strong>?<br/><br/>
+              Este código deixará de funcionar e não poderá ser usado por nenhum paciente para criar uma conta.
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button className="btn btn-outline" onClick={() => setDeletingInvite(null)}>Cancelar</button>
+              <button className="btn-danger" onClick={confirmDeleteInvite}>Eliminar</button>
             </div>
           </div>
         </div>
@@ -1300,6 +1448,7 @@ function PatientsView({ session, setModal }) {
     </div>
   );
 }
+
 
 // ─── Exercises View ───────────────────────────────────────────────────────────
 function ExercisesView({ session }) {
