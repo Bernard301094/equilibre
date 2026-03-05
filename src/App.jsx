@@ -1299,6 +1299,86 @@ function ResponsesView({ session }) {
   );
 }
 
+// ─── NotesTab ─────────────────────────────────────────────────────────────────
+function NotesTab({ notes, setNotes, notesId, saveNotes, savingNotes, notesSaved, onClose }) {
+  const [editing, setEditing] = useState(!notesId || !notes);
+
+  const handleSave = async () => {
+    await saveNotes();
+    setEditing(false);
+  };
+
+  return (
+    <div style={{ animation: "fadeIn .3s ease", display: "flex", flexDirection: "column", height: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#fff8e6", border: "1.5px solid #ffe0a0", borderRadius: 10, padding: "9px 14px", marginBottom: 18 }}>
+        <span style={{ fontSize: 16 }}>🔒</span>
+        <span style={{ fontSize: 12, color: "#7a5800" }}>Anotações privadas. <strong>O paciente não tem acesso a este campo.</strong></span>
+      </div>
+      {editing ? (
+        <>
+          <textarea
+            className="q-textarea"
+            placeholder="Ex: O paciente apresentou melhora na ansiedade. Discutimos a técnica de respiração na última sessão..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            style={{ flex: 1, minHeight: 240, resize: "none", marginBottom: 16, fontSize: 14, lineHeight: 1.7 }}
+            autoFocus
+          />
+          <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
+            {notesId && notes && (
+              <button className="btn btn-outline" onClick={() => setEditing(false)}>Cancelar</button>
+            )}
+            <button className="btn btn-outline" onClick={onClose}>Fechar</button>
+            <button
+              className="btn"
+              style={{ background: notesSaved ? "#2d7a3a" : "var(--sage-dark)", color: "white", transition: "all 0.3s ease" }}
+              onClick={handleSave}
+              disabled={savingNotes}
+            >
+              {savingNotes ? "Salvando..." : notesSaved ? "✓ Salvo!" : "💾 Salvar"}
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{
+            flex: 1,
+            minHeight: 240,
+            background: "var(--cream)",
+            border: "1.5px solid var(--warm)",
+            borderRadius: 12,
+            padding: "18px 20px",
+            marginBottom: 16,
+            overflowY: "auto",
+          }}>
+            {notes ? (
+              notes.split("\n").map((line, i) =>
+                line.trim() === ""
+                  ? <div key={i} style={{ height: 10 }} />
+                  : <p key={i} style={{ fontSize: 14, lineHeight: 1.8, color: "var(--text)", margin: 0 }}>{line}</p>
+              )
+            ) : (
+              <div style={{ color: "var(--text-muted)", fontSize: 13, fontStyle: "italic", textAlign: "center", paddingTop: 60 }}>
+                Nenhuma anotação ainda.
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
+            <button className="btn btn-outline" onClick={onClose}>Fechar</button>
+            <button
+              className="btn"
+              style={{ background: "var(--sage-dark)", color: "white" }}
+              onClick={() => setEditing(true)}
+            >
+              ✏️ Editar
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Modal (Atribuir Exercícios e Prontuário) ─────────────────────────────────
 function Modal({ modal, setModal, session }) {
   const [tab, setTab] = useState("assign"); // "assign" | "notes"
@@ -1403,12 +1483,15 @@ function Modal({ modal, setModal, session }) {
     setNotesSaved(false);
     try {
       if (notesId) {
+        // FIX: incluir therapist_id no filtro para satisfazer as políticas RLS do Supabase.
+        // Sem isso, o PATCH retorna 200 com array vazio e não salva nada.
         const result = await db.update(
           "clinical_notes",
           { id: notesId, therapist_id: session.id },
           { notes },
           session.access_token
         );
+        // Detectar falha silenciosa (RLS bloqueou sem lançar erro)
         if (!result || (Array.isArray(result) && result.length === 0)) {
           throw new Error("Nenhuma linha foi atualizada. Verifique as permissões da tabela clinical_notes.");
         }
@@ -1419,6 +1502,7 @@ function Modal({ modal, setModal, session }) {
           { id: newId, patient_id: patient.id, therapist_id: session.id, notes },
           session.access_token
         );
+        // Detectar falha silenciosa (RLS bloqueou sem lançar erro)
         if (!result || (Array.isArray(result) && result.length === 0)) {
           throw new Error("Registro não foi criado. Verifique as permissões da tabela clinical_notes no Supabase.");
         }
@@ -1510,35 +1594,15 @@ function Modal({ modal, setModal, session }) {
             </>
           ) : (
             /* CONTEÚDO: PRONTUÁRIO CLÍNICO */
-            <div style={{ animation: "fadeIn .3s ease", display: "flex", flexDirection: "column", height: "100%" }}>
-              <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.5 }}>
-                Anotações privadas e impressões clínicas sobre as sessões. <strong>O paciente não tem acesso a este campo.</strong>
-              </div>
-              <textarea 
-                className="q-textarea" 
-                placeholder="Ex: O paciente apresentou melhora na ansiedade. Discutimos a técnica de respiração na última sessão..." 
-                value={notes} 
-                onChange={(e) => setNotes(e.target.value)} 
-                style={{ flex: 1, minHeight: 250, resize: "none", marginBottom: 20 }} 
-              />
-              <div style={{ display: "flex", gap: 9, justifyContent: "flex-end", alignItems: "center" }}>
-                <button className="btn btn-outline" onClick={() => setModal(null)}>Fechar</button>
-                
-                {/* FIX: Botão inteligente que muda de cor e texto confirmando o salvamento */}
-                <button 
-                  className="btn" 
-                  style={{ 
-                    background: notesSaved ? "#2d7a3a" : "var(--sage-dark)", 
-                    color: "white",
-                    transition: "all 0.3s ease"
-                  }} 
-                  onClick={saveNotes} 
-                  disabled={savingNotes}
-                >
-                  {savingNotes ? "Salvando..." : notesSaved ? "✓ Salvo com sucesso!" : "💾 Salvar Prontuário"}
-                </button>
-              </div>
-            </div>
+            <NotesTab
+              notes={notes}
+              setNotes={setNotes}
+              notesId={notesId}
+              saveNotes={saveNotes}
+              savingNotes={savingNotes}
+              notesSaved={notesSaved}
+              onClose={() => setModal(null)}
+            />
           )}
         </div>
       </div>
