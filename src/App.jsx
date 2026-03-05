@@ -149,7 +149,7 @@ const SEED_EXERCISES = [
 ];
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
-const css = `@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+const css = `
   
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   
@@ -350,13 +350,24 @@ function parseAnswers(r) {
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
   useEffect(() => {
-    const link =
+    // Favicon
+    const favicon =
       document.querySelector("link[rel~='icon']") || document.createElement("link");
-    link.type = "image/jpeg";
-    link.rel = "shortcut icon";
-    link.href = LOGO;
-    document.head.appendChild(link);
+    favicon.type = "image/jpeg";
+    favicon.rel = "shortcut icon";
+    favicon.href = LOGO;
+    document.head.appendChild(favicon);
     document.title = "Equilibre";
+
+    // Google Fonts — must be a <link> tag, @import inside dynamic <style> is ignored
+    if (!document.querySelector("link[data-fonts='equilibre']")) {
+      const fonts = document.createElement("link");
+      fonts.rel = "stylesheet";
+      fonts.dataset.fonts = "equilibre";
+      fonts.href =
+        "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap";
+      document.head.appendChild(fonts);
+    }
   }, []);
 
   const [ready, setReady] = useState(false);
