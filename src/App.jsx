@@ -3023,118 +3023,130 @@ function PatientHome({ session, setSession, setView }) {
   );
 }
 
-// ─── Patient Exercises ────────────────────────────────────────────────────────
+// ==========================================
+// Patient Exercises View
+// ==========================================
 function ExCard({ assign, isDone, exercises, onStart }) {
-  const ex = exercises.find((e) => e.id === assign.exercise_id);
+  const ex = exercises.find((e) => e.id === assign.exerciseid);
   if (!ex) return null;
+
   const qs = parseQuestions(ex);
+  // Limpeza de nome para a classe CSS (remove espaços e acentos se necessário, ou usa como está)
+  const catClass = ex.category === 'Mindfulness' ? 'mindfulness' : 
+                   ex.category === 'Bem-estar' ? 'bem-estar' : 
+                   ex.category === 'Ansiedade' ? 'ansiedade' : 
+                   ex.category === 'Autoconhecimento' ? 'autoconhecimento' : 
+                   ex.category === 'Relacionamentos' ? 'relacionamentos' : 'outro';
 
   return (
-    <div className="ex-card" style={{ opacity: isDone ? 0.6 : 1 }} onClick={() => !isDone && onStart({ ...ex, questions: qs })}>
-      <span className="ex-cat">{ex.category}</span>
+    <div
+      className="ex-card"
+      style={{ opacity: isDone ? 0.6 : 1, cursor: isDone ? 'default' : 'pointer' }}
+      // SOLUÇÃO APLICADA: Passar o objeto `ex` original em vez de injetar o parseQuestions
+      onClick={() => !isDone && onStart(ex)}
+    >
+      <span className={`ex-cat ${catClass}`}>{ex.category}</span>
       <div className="ex-title">{ex.title}</div>
       <div className="ex-desc">{ex.description}</div>
-      <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
-        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>📝 {qs.length} perguntas</span>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {!isDone && assign.due_date && (() => {
-            const days = Math.ceil((new Date(assign.due_date) - new Date()) / 86400000);
-            if (days < 0) return <span className="due-chip due-late">Prazo vencido</span>;
+      
+      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+          {qs.length} {qs.length === 1 ? 'pergunta' : 'perguntas'}
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {!isDone && assign.duedate && (() => {
+            const days = Math.ceil((new Date(assign.duedate) - new Date()) / 86400000);
+            if (days < 0) return <span className="due-chip due-late">Atrasado</span>;
             if (days <= 2) return <span className="due-chip due-warn">Vence em {days}d</span>;
-            return <span className="due-chip due-ok">📅 {new Date(assign.due_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>;
+            return <span className="due-chip due-ok">{new Date(assign.duedate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>;
           })()}
-          {isDone
-            ? <span className="response-badge badge-done">✓ Concluído</span>
-            : <button className="btn btn-sage btn-sm">Começar →</button>}
+          {isDone ? (
+            <span className="response-badge badge-done">Concluído</span>
+          ) : (
+            <button className="btn btn-sage btn-sm">Começar</button>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function PatientExercises({ session, setActiveExercise }) {
+function PatientExercises({ session, onStart }) {
   const [assignments, setAssignments] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let active = true;
-    let firstLoad = true;
-
-    const fetchAssignments = async () => {
-      let assignments_raw = [];
-      let exercises_raw = [];
+    async function fetch() {
       try {
-        const nested = await db.query("assignments", {
-          select: "*,exercises(*)",
-          filter: { patient_id: session.id },
-        });
-        if (Array.isArray(nested) && nested.length > 0 && nested[0].exercises) {
-          assignments_raw = nested;
-          exercises_raw = nested.map((a) => a.exercises).filter(Boolean);
-        } else {
-          const [a, ex] = await Promise.all([
-            db.query("assignments", { filter: { patient_id: session.id } }),
-            db.query("exercises"),
-          ]);
-          assignments_raw = Array.isArray(a) ? a : [];
-          exercises_raw = Array.isArray(ex) ? ex : [];
-        }
-      } catch {
         const [a, ex] = await Promise.all([
-          db.query("assignments", { filter: { patient_id: session.id } }),
-          db.query("exercises"),
+          db.query('assignments', { filter: { patientid: session.id } }, session.accesstoken),
+          db.query('exercises', {}, session.accesstoken),
         ]);
-        assignments_raw = Array.isArray(a) ? a : [];
-        exercises_raw = Array.isArray(ex) ? ex : [];
+        setAssignments(Array.isArray(a) ? a : []);
+        setExercises(Array.isArray(ex) ? ex : []);
+      } catch (err) {
+        console.error('Erro ao buscar exercícios:', err);
+      } finally {
+        setLoading(false);
       }
-      if (!active) return;
-      setAssignments(assignments_raw);
-      const seen = new Set();
-      setExercises(exercises_raw.filter((e) => e && !seen.has(e.id) && seen.add(e.id)));
-      if (firstLoad) { setLoading(false); firstLoad = false; }
-    };
+    }
+    fetch();
+  }, [session.id, session.accesstoken]);
 
-    fetchAssignments();
-    // OPTIMIZAÇÃO: Polling ajustado para 30 segundos
-    const intId = setInterval(fetchAssignments, 30000);
-    return () => { active = false; clearInterval(intId); };
-  }, [session.id]);
+  if (loading) {
+    return <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando...</p>;
+  }
 
-  const pending = assignments.filter((a) => a.status === "pending");
-  const done = assignments.filter((a) => a.status === "done");
-
-  if (loading) return <div style={{ color: "var(--text-muted)", fontSize: 14 }}>Carregando...</div>;
+  const pending = assignments.filter((a) => a.status === 'pending');
+  const done = assignments.filter((a) => a.status === 'done');
 
   return (
-    <div style={{ animation: "fadeUp .4s ease" }}>
-      <div className="page-header"><h2>Meus Exercícios</h2></div>
+    <div style={{ animation: 'fadeUp .4s ease' }}>
+      <div className="page-header">
+        <h2>Meus Exercícios</h2>
+        <p>Complete as tarefas recomendadas pela sua profissional.</p>
+      </div>
+
       {pending.length > 0 && (
         <>
-          <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-muted)", marginBottom: 11 }}>Para fazer</div>
+          <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--text-muted)', marginBottom: 11 }}>
+            Para fazer
+          </div>
           <div className="grid-auto" style={{ marginBottom: 28 }}>
-            {pending.map((a) => <ExCard key={a.id} assign={a} isDone={false} exercises={exercises} onStart={setActiveExercise} />)}
+            {pending.map((a) => (
+              <ExCard key={a.id} assign={a} isDone={false} exercises={exercises} onStart={onStart} />
+            ))}
           </div>
         </>
       )}
+
       {done.length > 0 && (
         <>
-          <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-muted)", marginBottom: 11 }}>Concluídos</div>
+          <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--text-muted)', marginBottom: 11 }}>
+            Concluídos
+          </div>
           <div className="grid-auto">
-            {done.map((a) => <ExCard key={a.id} assign={a} isDone={true} exercises={exercises} onStart={setActiveExercise} />)}
+            {done.map((a) => (
+              <ExCard key={a.id} assign={a} isDone={true} exercises={exercises} onStart={onStart} />
+            ))}
           </div>
         </>
       )}
+
       {assignments.length === 0 && (
         <div className="empty-state">
-          <div className="empty-icon">📭</div>
+          <div className="empty-icon"></div>
           <p>Nenhum exercício atribuído ainda.</p>
-          <p style={{ fontSize: 13, marginTop: 6 }}>Aguarde sua psicóloga enviar exercícios para você.</p>
+          <p style={{ fontSize: 13, marginTop: 6 }}>
+            Aguarde a sua psicóloga enviar exercícios para você.
+          </p>
         </div>
       )}
     </div>
   );
 }
+
 
 // ─── Patient History ──────────────────────────────────────────────────────────
 function PatientHistory({ session }) {
