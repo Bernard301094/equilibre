@@ -1035,20 +1035,33 @@ function InviteCodeCard({ invite, onRevoke }) {
 // ─── Exercises View ───────────────────────────────────────────────────────────
 function ExercisesView({ session }) {
   const [exercises, setExercises] = useState([]);
-  const [editingEx, setEditingEx] = useState(null); // Controla si estamos editando
-  const [refresh, setRefresh] = useState(0); // Para forzar la recarga tras guardar
+  const [editingEx, setEditingEx] = useState(null); // Controla tela de edição
+  const [previewEx, setPreviewEx] = useState(null); // Controla a vista prévia
+  const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
     db.query("exercises").then((r) => {
       const all = Array.isArray(r) ? r : [];
+      // Traz os exercícios criados pelo psicólogo E os padrões do sistema (therapist_id nulo)
       setExercises(all.filter((ex) => !ex.therapist_id || ex.therapist_id === session.id));
     });
   }, [session.id, refresh]);
 
   const catClass = (c) => (c === "Mindfulness" ? "mindfulness" : c === "Bem-estar" ? "bem-estar" : "");
 
-  // Si estamos en modo edición, mostramos el componente de Crear/Editar
-  // directamente aquí, dentro de la Biblioteca.
+  const handleDelete = async (e, id) => {
+    e.stopPropagation(); // Evita abrir a vista prévia ao clicar no botão de apagar
+    if (window.confirm("⚠️ Tem certeza que deseja excluir este exercício?\n\nEle será apagado para sempre e removido da lista de tarefas dos pacientes.")) {
+      try {
+        await db.remove("exercises", { id }, session.access_token);
+        setRefresh(r => r + 1);
+      } catch (err) {
+        alert("Erro ao excluir exercício.");
+      }
+    }
+  };
+
+  // ─── TELA DE EDIÇÃO ───
   if (editingEx) {
     return (
       <CreateExerciseView 
@@ -1056,36 +1069,103 @@ function ExercisesView({ session }) {
         session={session} 
         initialExercise={editingEx} 
         onSaved={() => {
-          setEditingEx(null); // Cierra el editor
-          setRefresh(r => r + 1); // Recarga la lista de la base de datos
+          setEditingEx(null);
+          setPreviewEx(null);
+          setRefresh(r => r + 1);
         }} 
       />
     );
   }
 
+  // ─── TELA DE VISTA PRÉVIA ───
+  if (previewEx) {
+    const qs = parseQuestions(previewEx);
+    return (
+      <div style={{ animation: "fadeUp .3s ease", maxWidth: 720 }}>
+        <div className="page-header" style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 24 }}>
+          <button className="btn btn-outline btn-sm" onClick={() => setPreviewEx(null)}>← Voltar</button>
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontSize: 22 }}>Vista Prévia</h2>
+          </div>
+          <button className="btn btn-sage" onClick={() => { setEditingEx(previewEx); }}>
+            ✏️ Editar Exercício
+          </button>
+        </div>
+
+        <div className="card" style={{ marginBottom: 20, borderTop: "4px solid var(--sage-dark)" }}>
+          <span className={`ex-cat ${catClass(previewEx.category)}`} style={{ marginBottom: 12 }}>{previewEx.category}</span>
+          <h3 style={{ fontFamily: "Playfair Display, serif", fontSize: 24, color: "var(--blue-dark)", marginBottom: 8 }}>
+            {previewEx.title}
+          </h3>
+          <p style={{ color: "var(--text-muted)", fontSize: 14, lineHeight: 1.6 }}>{previewEx.description}</p>
+        </div>
+
+        <h4 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--text-muted)", marginBottom: 12 }}>
+          Perguntas cadastradas ({qs.length})
+        </h4>
+
+        {qs.map((q, i) => (
+          <div key={i} className="card" style={{ marginBottom: 12, padding: "16px 20px" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--sage)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 }}>
+              {i + 1}. {q.type === 'instruction' ? '📢 Instrução' : q.type === 'scale' ? '🔢 Escala de 0 a 10' : q.type === 'reflect' ? '💭 Reflexão' : '📝 Resposta Aberta'}
+            </div>
+            <div style={{ fontSize: 15, color: "var(--text)", lineHeight: 1.5 }}>
+              {q.text}
+            </div>
+            {q.type === 'scale' && (
+              <div style={{ display: "flex", gap: 5, marginTop: 12, opacity: 0.6 }}>
+                {[0,1,2,3,4,5,6,7,8,9,10].map(n => <div key={n} style={{ width: 28, height: 28, borderRadius: "50%", border: "1px solid var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>{n}</div>)}
+              </div>
+            )}
+            {(q.type === 'open' || q.type === 'reflect') && (
+              <div style={{ width: "100%", height: 60, border: "1px dashed var(--warm)", borderRadius: 8, marginTop: 12, background: "var(--cream)" }} />
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // ─── LISTA DE CARTÕES (BIBLIOTECA) ───
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
       <div className="page-header">
         <h2>Biblioteca de Exercícios</h2>
-        <p>Exercícios disponíveis para atribuir aos pacientes</p>
+        <p>Clique em um exercício para ver os detalhes, editar suas perguntas ou excluir.</p>
       </div>
       <div className="grid-auto">
         {exercises.map((ex) => {
-          const isOwner = ex.therapist_id === session.id;
           return (
-            <div key={ex.id} className="ex-card" style={{ position: "relative" }}>
-              {isOwner && (
+            <div 
+              key={ex.id} 
+              className="ex-card" 
+              style={{ position: "relative" }} 
+              onClick={() => setPreviewEx(ex)} // Abre a vista prévia ao clicar no card
+            >
+              {/* Botões de Ação Rápida */}
+              <div style={{ position: "absolute", top: 14, right: 14, display: "flex", gap: 6 }}>
                 <button
-                  onClick={() => setEditingEx(ex)}
-                  style={{ position: "absolute", top: 16, right: 16, background: "var(--cream)", border: "1px solid var(--warm)", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontWeight: 500, color: "var(--text-muted)", transition: "all .15s" }}
-                  onMouseEnter={(e) => e.target.style.borderColor = "var(--sage)"}
-                  onMouseLeave={(e) => e.target.style.borderColor = "var(--warm)"}
+                  title="Editar"
+                  onClick={(e) => { e.stopPropagation(); setEditingEx(ex); }}
+                  style={{ background: "var(--cream)", border: "1px solid var(--warm)", borderRadius: 8, padding: "6px", cursor: "pointer", color: "var(--text-muted)", transition: "all .15s" }}
+                  onMouseEnter={(e) => { e.target.style.borderColor = "var(--sage)"; e.target.style.color = "var(--sage-dark)"; }}
+                  onMouseLeave={(e) => { e.target.style.borderColor = "var(--warm)"; e.target.style.color = "var(--text-muted)"; }}
                 >
-                  ✏️ Editar
+                  ✏️
                 </button>
-              )}
+                <button
+                  title="Excluir"
+                  onClick={(e) => handleDelete(e, ex.id)}
+                  style={{ background: "var(--cream)", border: "1px solid var(--danger)", borderRadius: 8, padding: "6px", cursor: "pointer", color: "var(--danger)", transition: "all .15s", opacity: 0.7 }}
+                  onMouseEnter={(e) => e.target.style.opacity = "1"}
+                  onMouseLeave={(e) => e.target.style.opacity = "0.7"}
+                >
+                  🗑️
+                </button>
+              </div>
+
               <span className={`ex-cat ${catClass(ex.category)}`}>{ex.category}</span>
-              <div className="ex-title" style={{ paddingRight: isOwner ? 70 : 0 }}>{ex.title}</div>
+              <div className="ex-title" style={{ paddingRight: 60 }}>{ex.title}</div>
               <div className="ex-desc">{ex.description}</div>
               <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 12 }}>
                 📝 {parseQuestions(ex).length} perguntas
@@ -1093,6 +1173,13 @@ function ExercisesView({ session }) {
             </div>
           );
         })}
+        
+        {exercises.length === 0 && (
+          <div className="empty-state" style={{ gridColumn: "1 / -1" }}>
+            <div className="empty-icon">📭</div>
+            <p>Nenhum exercício na biblioteca.</p>
+          </div>
+        )}
       </div>
     </div>
   );
