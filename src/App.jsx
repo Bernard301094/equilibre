@@ -1168,22 +1168,15 @@ function PatientsView({ session, setModal }) {
   const deleteInvite = async (inv) => {
     if (!window.confirm(`Eliminar o convite ${inv.code}?`)) return;
     try {
-      const res = await fetch(`${SUPA_URL}/rest/v1/invites?code=eq.${inv.code}`, {
-        method: "DELETE",
-        headers: {
-          apikey: SUPA_KEY,
-          Authorization: `Bearer ${SUPA_KEY}`,
-        },
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || `HTTP ${res.status}`);
-      }
-      setInvites(prev => prev.filter(i => i.code !== inv.code));
+        // ✅ Usando o seu utilitário db.remove com o token da sessão
+        await db.remove('invites', { code: inv.code }, session.accesstoken);
+        
+        setInvites(prev => prev.filter(i => i.code !== inv.code));
     } catch (e) {
-      alert("Erro ao eliminar convite: " + (e?.message || e));
+        alert(`Erro ao eliminar convite: ${e?.message || e}`);
     }
-  };
+};
+
 
   // Função para Desvincular o paciente
   const confirmUnlink = async () => {
