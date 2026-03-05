@@ -1169,7 +1169,17 @@ function PatientsView({ session, setModal }) {
   const deleteInvite = async (inv) => {
     if (!window.confirm(`Eliminar o convite ${inv.code}?`)) return;
     try {
-      await db.remove("invites", { code: inv.code }, session.access_token);
+      const filtro = inv.id ? `id=eq.${inv.id}` : `code=eq.${inv.code}`;
+      const res = await fetch(`${SUPA_URL}/rest/v1/invites?${filtro}`, {
+        method: "DELETE",
+        headers: {
+          apikey: SUPA_KEY,
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const body = await res.text();
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${body}`);
       setInvites(prev => prev.filter(i => i.code !== inv.code));
     } catch (e) {
       alert("Erro ao eliminar convite: " + (e?.message || e));
@@ -1242,7 +1252,7 @@ function PatientsView({ session, setModal }) {
           {invites.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Nenhum convite gerado ainda.</p>}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {invites.map(inv => (
-              <div key={inv.code} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", border: "1px solid var(--warm)", borderRadius: 8, background: "var(--white)", opacity: inv.status === "used" ? 0.6 : 1 }}>
+              <div key={inv.id || inv.code} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", border: "1px solid var(--warm)", borderRadius: 8, background: "var(--white)", opacity: inv.status === "used" ? 0.6 : 1 }}>
                 <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
                   {inv.created_at ? new Date(inv.created_at).toLocaleDateString("pt-BR") : "—"}
                 </div>
