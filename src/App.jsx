@@ -725,26 +725,32 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
     setLoading(true);
     try {
       if (session.role === "patient") {
-        // Notifica a profissional antes de apagar as credenciais
+        // Notifica a profissional (best-effort — não bloqueia se falhar)
         if (session.therapist_id) {
-          await db.insert("notifications", {
-            therapist_id: session.therapist_id,
-            patient_id: session.id,
-            patient_name: session.name,
-            type: "account_deleted",
-            exercise_title: "Conta encerrada pelo paciente",
-            created_at: new Date().toISOString(),
-            read: false,
-          }, session.access_token);
+          try {
+            await db.insert("notifications", {
+              therapist_id: session.therapist_id,
+              patient_id: session.id,
+              patient_name: session.name,
+              exercise_title: "Conta encerrada pelo paciente",
+              created_at: new Date().toISOString(),
+              read: false,
+            }, session.access_token);
+          } catch (e) {
+            console.warn("Notificação não enviada (não crítico):", e);
+          }
         }
-        // Marca o utilizador como eliminado — preserva o histórico para a profissional
-        // mas bloqueia qualquer tentativa de login futura.
+        // Marca deleted_at para bloquear login futuro
         await db.update("users", { id: session.id }, { deleted_at: new Date().toISOString() }, session.access_token);
-        // Revoga a sessão Auth (best-effort — mesmo que falhe, o login fica bloqueado pelo deleted_at)
-        await fetch(`${SUPA_URL}/auth/v1/logout`, {
-          method: "POST",
-          headers: { apikey: SUPA_KEY, Authorization: `Bearer ${session.access_token}` },
-        });
+        // Invalida sessão Auth (best-effort)
+        try {
+          await fetch(`${SUPA_URL}/auth/v1/logout`, {
+            method: "POST",
+            headers: { apikey: SUPA_KEY, Authorization: `Bearer ${session.access_token}` },
+          });
+        } catch (e) {
+          console.warn("Logout auth não crítico:", e);
+        }
       } else {
         // Terapeuta: remove todos os dados vinculados
         for (const [table, field] of [
@@ -754,26 +760,30 @@ function DeleteAccountModal({ session, onClose, onDeleted }) {
           ["goals", "therapist_id"],
           ["clinical_notes", "therapist_id"],
         ]) {
-          const rows = await db.query(table, { filter: { [field]: session.id } }, session.access_token);
-          if (Array.isArray(rows)) {
-            for (const row of rows) await db.remove(table, { id: row.id }, session.access_token);
+          try {
+            const rows = await db.query(table, { filter: { [field]: session.id } }, session.access_token);
+            if (Array.isArray(rows)) {
+              for (const row of rows) await db.remove(table, { id: row.id }, session.access_token);
+            }
+          } catch (e) {
+            console.warn(`Erro ao limpar ${table} (não crítico):`, e);
           }
         }
         // Desvincular pacientes da terapeuta
-        const patients = await db.query("users", { filter: { therapist_id: session.id, role: "patient" } }, session.access_token);
-        if (Array.isArray(patients)) {
-          for (const p of patients) await db.update("users", { id: p.id }, { therapist_id: null }, session.access_token);
+        try {
+          const patients = await db.query("users", { filter: { therapist_id: session.id, role: "patient" } }, session.access_token);
+          if (Array.isArray(patients)) {
+            for (const p of patients) await db.update("users", { id: p.id }, { therapist_id: null }, session.access_token);
+          }
+        } catch (e) {
+          console.warn("Erro ao desvincular pacientes (não crítico):", e);
         }
         await db.remove("users", { id: session.id }, session.access_token);
-        await fetch(`${SUPA_URL}/auth/v1/user`, {
-          method: "DELETE",
-          headers: { apikey: SUPA_KEY, Authorization: `Bearer ${session.access_token}` },
-        });
       }
       onDeleted();
     } catch (e) {
-      console.error(e);
-      setError("Erro ao excluir conta. Tente novamente.");
+      console.error("Erro ao excluir conta:", e);
+      setError("Erro: " + (e?.message || JSON.stringify(e)));
       setLoading(false);
     }
   };
