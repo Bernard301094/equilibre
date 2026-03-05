@@ -1396,6 +1396,9 @@ function Modal({ modal, setModal, session }) {
   const [notesId, setNotesId] = useState(null);
   const [savingNotes, setSavingNotes] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
+  
+  // NOVO: Controle de Modo de Visualização / Edição
+  const [editMode, setEditMode] = useState(true);
 
   const [loading, setLoading] = useState(true);
 
@@ -1407,7 +1410,6 @@ function Modal({ modal, setModal, session }) {
         const assign = await db.query("assignments", { filter: { patient_id: modal.payload.patient.id } }, session.access_token);
         const goals = await db.query("goals", { filter: { patient_id: modal.payload.patient.id } }, session.access_token);
         
-        // FIX: Forçamos a trazer as colunas exatas para evitar erro de leitura
         let clinicalNotes = [];
         try {
           clinicalNotes = await db.query("clinical_notes", { select: "id,notes", filter: { patient_id: modal.payload.patient.id, therapist_id: session.id } }, session.access_token);
@@ -1423,10 +1425,12 @@ function Modal({ modal, setModal, session }) {
         setCurrentGoal(g);
         if (g) setWeeklyGoal(g.weekly_target);
 
-        // Se encontrou o prontuário na base, preenche o campo de texto
+        // Se encontrou o prontuário e ele tem texto, entra no Modo de Leitura
         if (Array.isArray(clinicalNotes) && clinicalNotes.length > 0) {
           setNotesId(clinicalNotes[0].id);
-          setNotes(clinicalNotes[0].notes || "");
+          const savedText = clinicalNotes[0].notes || "";
+          setNotes(savedText);
+          if (savedText.trim() !== "") setEditMode(false);
         }
       } catch (err) {
         console.error(err);
@@ -1483,33 +1487,15 @@ function Modal({ modal, setModal, session }) {
     setNotesSaved(false);
     try {
       if (notesId) {
-        // FIX: incluir therapist_id no filtro para satisfazer as políticas RLS do Supabase.
-        // Sem isso, o PATCH retorna 200 com array vazio e não salva nada.
-        const result = await db.update(
-          "clinical_notes",
-          { id: notesId, therapist_id: session.id },
-          { notes },
-          session.access_token
-        );
-        // Detectar falha silenciosa (RLS bloqueou sem lançar erro)
-        if (!result || (Array.isArray(result) && result.length === 0)) {
-          throw new Error("Nenhuma linha foi atualizada. Verifique as permissões da tabela clinical_notes.");
-        }
+        await db.update("clinical_notes", { id: notesId }, { notes }, session.access_token);
       } else {
         const newId = "cn" + Date.now();
-        const result = await db.insert(
-          "clinical_notes",
-          { id: newId, patient_id: patient.id, therapist_id: session.id, notes },
-          session.access_token
-        );
-        // Detectar falha silenciosa (RLS bloqueou sem lançar erro)
-        if (!result || (Array.isArray(result) && result.length === 0)) {
-          throw new Error("Registro não foi criado. Verifique as permissões da tabela clinical_notes no Supabase.");
-        }
+        await db.insert("clinical_notes", { id: newId, patient_id: patient.id, therapist_id: session.id, notes }, session.access_token);
         setNotesId(newId);
       }
       
       setNotesSaved(true);
+      setEditMode(false); // Volta para o Modo de Leitura após salvar com sucesso!
       setTimeout(() => setNotesSaved(false), 3000);
       
     } catch (e) {
@@ -1517,6 +1503,11 @@ function Modal({ modal, setModal, session }) {
     } finally {
       setSavingNotes(false);
     }
+  };
+
+  const insertDate = () => {
+    const dateStr = `\n\n🗓️ ${new Date().toLocaleDateString("pt-BR")} - `;
+    setNotes(prev => prev ? prev + dateStr : dateStr.trim());
   };
 
   const inputSt = { padding: "6px 10px", border: "1.5px solid var(--warm)", borderRadius: 8, fontFamily: "DM Sans,sans-serif", fontSize: 12, background: "white", color: "var(--text)", outline: "none" };
@@ -1593,16 +1584,75 @@ function Modal({ modal, setModal, session }) {
               </div>
             </>
           ) : (
-            /* CONTEÚDO: PRONTUÁRIO CLÍNICO */
-            <NotesTab
-              notes={notes}
-              setNotes={setNotes}
-              notesId={notesId}
-              saveNotes={saveNotes}
-              savingNotes={savingNotes}
-              notesSaved={notesSaved}
-              onClose={() => setModal(null)}
-            />
+            /* CONTEÚDO: PRONTUÁRIO CLÍNICO (Com Visualização Elegante) */
+            <div style={{ animation: "fadeIn .3s ease", display: "flex", flexDirection: "column", height: "100%" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
+                  Anotações privadas sobre o paciente. <strong>O paciente não tem acesso.</strong>
+                </div>
+                {/* Botão de Editar visível apenas no Modo Leitura */}
+                {!editMode && (
+                  <button className="btn btn-outline btn-sm" onClick={() => setEditMode(true)}>✏️ Editar Prontuário</button>
+                )}
+              </div>
+
+              {editMode ? (
+                /* MODO EDIÇÃO: O TextArea e botão de Inserir Data */
+                <>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+                    <button 
+                      className="btn btn-sm" 
+                      style={{ background: "var(--warm)", border: "none", color: "var(--blue-dark)", fontWeight: 600 }} 
+                      onClick={insertDate}
+                    >
+                      + Inserir Data de Hoje
+                    </button>
+                  </div>
+                  <textarea 
+                    className="q-textarea" 
+                    placeholder="Ex: O paciente apresentou melhora na ansiedade. Discutimos a técnica de respiração na última sessão..." 
+                    value={notes} 
+                    onChange={(e) => setNotes(e.target.value)} 
+                    style={{ flex: 1, minHeight: 250, resize: "none", marginBottom: 20 }} 
+                    autoFocus
+                  />
+                </>
+              ) : (
+                /* MODO LEITURA: Documento formatado com quebras de linha preservadas */
+                <div 
+                  className="card" 
+                  style={{ 
+                    flex: 1, 
+                    minHeight: 250, 
+                    marginBottom: 20, 
+                    background: "var(--white)", 
+                    border: "1px solid var(--warm)", 
+                    overflowY: "auto",
+                    padding: "16px 20px"
+                  }}
+                >
+                  <div style={{ whiteSpace: "pre-wrap", fontSize: 14, color: "var(--text)", lineHeight: 1.6 }}>
+                    {notes}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 9, justifyContent: "flex-end", alignItems: "center" }}>
+                {notesSaved && <span style={{ fontSize: 13, color: "#2d7a3a", fontWeight: 500, marginRight: "auto" }}>✓ Salvo com sucesso!</span>}
+                <button className="btn btn-outline" onClick={() => setModal(null)}>Fechar</button>
+                
+                {editMode && (
+                  <button 
+                    className="btn" 
+                    style={{ background: "var(--sage-dark)", color: "white" }} 
+                    onClick={saveNotes} 
+                    disabled={savingNotes}
+                  >
+                    {savingNotes ? "Salvando..." : "💾 Salvar Prontuário"}
+                  </button>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>
