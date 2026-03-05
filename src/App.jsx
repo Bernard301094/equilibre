@@ -1322,28 +1322,38 @@ function Modal({ modal, setModal, session }) {
   useEffect(() => {
     if (modal.type !== "assign") return;
     (async () => {
-      const ex = await db.query("exercises");
-      const assign = await db.query("assignments", { filter: { patient_id: modal.payload.patient.id } });
-      const goals = await db.query("goals", { filter: { patient_id: modal.payload.patient.id } });
-      const clinicalNotes = await db.query("clinical_notes", { filter: { patient_id: modal.payload.patient.id, therapist_id: session.id } });
-      
-      const filteredEx = (Array.isArray(ex) ? ex : []).filter((e) => !e.therapist_id || e.therapist_id === session.id);
-      setExercises(filteredEx);
-      setExisting(Array.isArray(assign) ? assign : []);
-      
-      const g = Array.isArray(goals) && goals.length > 0 ? goals[0] : null;
-      setCurrentGoal(g);
-      if (g) setWeeklyGoal(g.weekly_target);
+      try {
+        // FIX: Adicionado session.access_token para permissão de leitura/escrita
+        const ex = await db.query("exercises", {}, session.access_token);
+        const assign = await db.query("assignments", { filter: { patient_id: modal.payload.patient.id } }, session.access_token);
+        const goals = await db.query("goals", { filter: { patient_id: modal.payload.patient.id } }, session.access_token);
+        
+        let clinicalNotes = [];
+        try {
+          clinicalNotes = await db.query("clinical_notes", { filter: { patient_id: modal.payload.patient.id, therapist_id: session.id } }, session.access_token);
+        } catch (e) {
+          console.warn("Tabela clinical_notes não encontrada ou sem permissão.");
+        }
+        
+        const filteredEx = (Array.isArray(ex) ? ex : []).filter((e) => !e.therapist_id || e.therapist_id === session.id);
+        setExercises(filteredEx);
+        setExisting(Array.isArray(assign) ? assign : []);
+        
+        const g = Array.isArray(goals) && goals.length > 0 ? goals[0] : null;
+        setCurrentGoal(g);
+        if (g) setWeeklyGoal(g.weekly_target);
 
-      // Carrega anotações se existirem
-      if (Array.isArray(clinicalNotes) && clinicalNotes.length > 0) {
-        setNotesId(clinicalNotes[0].id);
-        setNotes(clinicalNotes[0].notes);
+        if (Array.isArray(clinicalNotes) && clinicalNotes.length > 0) {
+          setNotesId(clinicalNotes[0].id);
+          setNotes(clinicalNotes[0].notes);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     })();
-  }, [modal, session.id]);
+  }, [modal, session.id, session.access_token]);
 
   if (modal.type !== "assign") return null;
   const { patient } = modal.payload;
@@ -1368,13 +1378,13 @@ function Modal({ modal, setModal, session }) {
           assigned_at: new Date().toISOString(),
           status: "pending",
           due_date: dueDates[exId] || null,
-        });
+        }, session.access_token); // FIX: Passando token
       }
     }
     if (currentGoal) {
-      await db.update("goals", { id: currentGoal.id }, { weekly_target: weeklyGoal });
+      await db.update("goals", { id: currentGoal.id }, { weekly_target: weeklyGoal }, session.access_token); // FIX: Passando token
     } else {
-      await db.insert("goals", { id: "g" + Date.now(), patient_id: patient.id, therapist_id: session.id, weekly_target: weeklyGoal, created_at: new Date().toISOString() });
+      await db.insert("goals", { id: "g" + Date.now(), patient_id: patient.id, therapist_id: session.id, weekly_target: weeklyGoal, created_at: new Date().toISOString() }, session.access_token); // FIX: Passando token
     }
     setModal(null);
   };
@@ -1382,7 +1392,7 @@ function Modal({ modal, setModal, session }) {
   const removeAssign = async (exId) => {
     const a = existing.find((x) => x.exercise_id === exId);
     if (a) {
-      await db.remove("assignments", { id: a.id });
+      await db.remove("assignments", { id: a.id }, session.access_token); // FIX: Passando token
       setExisting((ex) => ex.filter((x) => x.exercise_id !== exId));
     }
   };
@@ -1392,10 +1402,12 @@ function Modal({ modal, setModal, session }) {
     setNotesSaved(false);
     try {
       if (notesId) {
-        await db.update("clinical_notes", { id: notesId }, { notes });
+        // FIX: Autenticando a requisição para salvar
+        await db.update("clinical_notes", { id: notesId }, { notes }, session.access_token);
       } else {
         const newId = "cn" + Date.now();
-        await db.insert("clinical_notes", { id: newId, patient_id: patient.id, therapist_id: session.id, notes });
+        // FIX: Autenticando a requisição para criar
+        await db.insert("clinical_notes", { id: newId, patient_id: patient.id, therapist_id: session.id, notes }, session.access_token);
         setNotesId(newId);
       }
       setNotesSaved(true);
@@ -1427,7 +1439,7 @@ function Modal({ modal, setModal, session }) {
           {loading ? (
             <p style={{ color: "var(--text-muted)" }}>Carregando dados do paciente...</p>
           ) : tab === "assign" ? (
-            /* CONTEÚDO: EXERCÍCIOS (Igual ao que já existia) */
+            /* CONTEÚDO: EXERCÍCIOS */
             <>
               <div style={{ background: "var(--cream)", borderRadius: 12, padding: "12px 14px", marginBottom: 18, border: "1.5px solid var(--warm)" }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: "var(--blue-dark)", marginBottom: 8 }}>🎯 Meta semanal de exercícios</div>
@@ -1481,7 +1493,7 @@ function Modal({ modal, setModal, session }) {
               </div>
             </>
           ) : (
-            /* CONTEÚDO: PRONTUÁRIO CLÍNICO (Novo) */
+            /* CONTEÚDO: PRONTUÁRIO CLÍNICO */
             <div style={{ animation: "fadeIn .3s ease", display: "flex", flexDirection: "column", height: "100%" }}>
               <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.5 }}>
                 Anotações privadas e impressões clínicas sobre as sessões. <strong>O paciente não tem acesso a este campo.</strong>
