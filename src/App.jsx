@@ -1323,16 +1323,16 @@ function Modal({ modal, setModal, session }) {
     if (modal.type !== "assign") return;
     (async () => {
       try {
-        // FIX: Adicionado session.access_token para permissão de leitura/escrita
         const ex = await db.query("exercises", {}, session.access_token);
         const assign = await db.query("assignments", { filter: { patient_id: modal.payload.patient.id } }, session.access_token);
         const goals = await db.query("goals", { filter: { patient_id: modal.payload.patient.id } }, session.access_token);
         
+        // FIX: Forçamos a trazer as colunas exatas para evitar erro de leitura
         let clinicalNotes = [];
         try {
-          clinicalNotes = await db.query("clinical_notes", { filter: { patient_id: modal.payload.patient.id, therapist_id: session.id } }, session.access_token);
+          clinicalNotes = await db.query("clinical_notes", { select: "id,notes", filter: { patient_id: modal.payload.patient.id, therapist_id: session.id } }, session.access_token);
         } catch (e) {
-          console.warn("Tabela clinical_notes não encontrada ou sem permissão.");
+          console.warn("Prontuário não encontrado.");
         }
         
         const filteredEx = (Array.isArray(ex) ? ex : []).filter((e) => !e.therapist_id || e.therapist_id === session.id);
@@ -1343,9 +1343,10 @@ function Modal({ modal, setModal, session }) {
         setCurrentGoal(g);
         if (g) setWeeklyGoal(g.weekly_target);
 
+        // Se encontrou o prontuário na base, preenche o campo de texto
         if (Array.isArray(clinicalNotes) && clinicalNotes.length > 0) {
           setNotesId(clinicalNotes[0].id);
-          setNotes(clinicalNotes[0].notes);
+          setNotes(clinicalNotes[0].notes || "");
         }
       } catch (err) {
         console.error(err);
@@ -1378,13 +1379,13 @@ function Modal({ modal, setModal, session }) {
           assigned_at: new Date().toISOString(),
           status: "pending",
           due_date: dueDates[exId] || null,
-        }, session.access_token); // FIX: Passando token
+        }, session.access_token);
       }
     }
     if (currentGoal) {
-      await db.update("goals", { id: currentGoal.id }, { weekly_target: weeklyGoal }, session.access_token); // FIX: Passando token
+      await db.update("goals", { id: currentGoal.id }, { weekly_target: weeklyGoal }, session.access_token);
     } else {
-      await db.insert("goals", { id: "g" + Date.now(), patient_id: patient.id, therapist_id: session.id, weekly_target: weeklyGoal, created_at: new Date().toISOString() }, session.access_token); // FIX: Passando token
+      await db.insert("goals", { id: "g" + Date.now(), patient_id: patient.id, therapist_id: session.id, weekly_target: weeklyGoal, created_at: new Date().toISOString() }, session.access_token);
     }
     setModal(null);
   };
@@ -1392,7 +1393,7 @@ function Modal({ modal, setModal, session }) {
   const removeAssign = async (exId) => {
     const a = existing.find((x) => x.exercise_id === exId);
     if (a) {
-      await db.remove("assignments", { id: a.id }, session.access_token); // FIX: Passando token
+      await db.remove("assignments", { id: a.id }, session.access_token);
       setExisting((ex) => ex.filter((x) => x.exercise_id !== exId));
     }
   };
@@ -1402,18 +1403,19 @@ function Modal({ modal, setModal, session }) {
     setNotesSaved(false);
     try {
       if (notesId) {
-        // FIX: Autenticando a requisição para salvar
         await db.update("clinical_notes", { id: notesId }, { notes }, session.access_token);
       } else {
         const newId = "cn" + Date.now();
-        // FIX: Autenticando a requisição para criar
         await db.insert("clinical_notes", { id: newId, patient_id: patient.id, therapist_id: session.id, notes }, session.access_token);
         setNotesId(newId);
       }
+      
+      // FIX: Feedback visual melhorado. O botão vai ficar verde por 3 segundos.
       setNotesSaved(true);
-      setTimeout(() => setNotesSaved(false), 2000);
+      setTimeout(() => setNotesSaved(false), 3000);
+      
     } catch (e) {
-      alert("Erro ao salvar prontuário.");
+      alert("Erro ao salvar prontuário: " + e.message);
     } finally {
       setSavingNotes(false);
     }
@@ -1437,7 +1439,7 @@ function Modal({ modal, setModal, session }) {
         {/* CORPO DO MODAL */}
         <div style={{ padding: "24px 30px", overflowY: "auto", flex: 1 }}>
           {loading ? (
-            <p style={{ color: "var(--text-muted)" }}>Carregando dados do paciente...</p>
+            <div style={{ padding: 20, textAlign: "center", color: "var(--text-muted)" }}>Carregando dados do paciente...</div>
           ) : tab === "assign" ? (
             /* CONTEÚDO: EXERCÍCIOS */
             <>
@@ -1505,14 +1507,22 @@ function Modal({ modal, setModal, session }) {
                 onChange={(e) => setNotes(e.target.value)} 
                 style={{ flex: 1, minHeight: 250, resize: "none", marginBottom: 20 }} 
               />
-              <div style={{ display: "flex", gap: 9, justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 13, color: "#2d7a3a", fontWeight: 500, opacity: notesSaved ? 1 : 0, transition: "opacity .3s" }}>✓ Salvo com sucesso</span>
-                <div style={{ display: "flex", gap: 9 }}>
-                  <button className="btn btn-outline" onClick={() => setModal(null)}>Fechar</button>
-                  <button className="btn btn-sage" onClick={saveNotes} disabled={savingNotes}>
-                    {savingNotes ? "Salvando..." : "💾 Salvar Prontuário"}
-                  </button>
-                </div>
+              <div style={{ display: "flex", gap: 9, justifyContent: "flex-end", alignItems: "center" }}>
+                <button className="btn btn-outline" onClick={() => setModal(null)}>Fechar</button>
+                
+                {/* FIX: Botão inteligente que muda de cor e texto confirmando o salvamento */}
+                <button 
+                  className="btn" 
+                  style={{ 
+                    background: notesSaved ? "#2d7a3a" : "var(--sage-dark)", 
+                    color: "white",
+                    transition: "all 0.3s ease"
+                  }} 
+                  onClick={saveNotes} 
+                  disabled={savingNotes}
+                >
+                  {savingNotes ? "Salvando..." : notesSaved ? "✓ Salvo com sucesso!" : "💾 Salvar Prontuário"}
+                </button>
               </div>
             </div>
           )}
