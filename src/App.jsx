@@ -453,19 +453,17 @@ export default function App() {
       if (!authData?.access_token) {
         throw new Error(authData?.error_description || authData?.msg || "Erro na autenticação.");
       }
-      // Use the user's JWT so RLS policies allow reading the row
+      // Use the user's JWT so RLS policies allow reading the row.
+      // Try by Supabase UUID first; if not found, fall back to email lookup.
+      // This handles the case where the user was stored with a "u"+timestamp ID
+      // (because authRes.user was null/undefined during signup) instead of the UUID.
       let users = await db.query("users", { filter: { id: authData.user.id } }, authData.access_token);
-
-      // Fallback: if UUID lookup returns nothing (user may have been stored with a
-      // legacy "u"+timestamp ID when authRes.user.id was unavailable at signup),
-      // search by email so session.id matches the stored patient_id in assignments.
       if (!Array.isArray(users) || users.length === 0) {
         const byEmail = await db.query("users", { filter: { email: loginForm.email } }, authData.access_token);
         if (Array.isArray(byEmail) && byEmail.length > 0) users = byEmail;
       }
-
       if (!Array.isArray(users) || users.length === 0) {
-        // Last-resort fallback: build session from auth metadata if users table row is missing
+        // Last resort: build session from auth metadata
         const meta = authData.user?.user_metadata || {};
         const role = meta.role || loginTab;
         if (role !== loginTab) {
@@ -513,8 +511,7 @@ export default function App() {
         name: form.name,
         role: form.role,
       });
-      // Supabase can return the user as authRes.user.id (v2) or authRes.id (v1)
-      const userId = authRes?.user?.id || authRes?.id || "u" + Date.now();
+      const userId = authRes?.user?.id || "u" + Date.now();
       const newUser = {
         id: userId,
         name: form.name,
@@ -1175,31 +1172,42 @@ function Modal({ modal, setModal, session }) {
     return <span className="due-chip due-ok">📅 {new Date(dueDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>;
   };
 
+  const [assignErr, setAssignErr] = useState("");
+  const [assigning, setAssigning] = useState(false);
+
   const assign = async () => {
-    for (const exId of selected) {
-      if (!existingIds.includes(exId)) {
-        await db.insert("assignments", {
-          id: "a" + Date.now() + Math.random().toString(36).slice(2, 6),
+    setAssignErr("");
+    setAssigning(true);
+    try {
+      for (const exId of selected) {
+        if (!existingIds.includes(exId)) {
+          await db.insert("assignments", {
+            id: "a" + Date.now() + Math.random().toString(36).slice(2, 6),
+            patient_id: patient.id,
+            exercise_id: exId,
+            assigned_at: new Date().toISOString(),
+            status: "pending",
+            due_date: dueDates[exId] || null,
+          });
+        }
+      }
+      if (currentGoal) {
+        await db.update("goals", { id: currentGoal.id }, { weekly_target: weeklyGoal });
+      } else {
+        await db.insert("goals", {
+          id: "g" + Date.now(),
           patient_id: patient.id,
-          exercise_id: exId,
-          assigned_at: new Date().toISOString(),
-          status: "pending",
-          due_date: dueDates[exId] || null,
+          therapist_id: session.id,
+          weekly_target: weeklyGoal,
+          created_at: new Date().toISOString(),
         });
       }
+      setModal(null);
+    } catch (err) {
+      setAssignErr("Erro ao atribuir: " + err.message);
+    } finally {
+      setAssigning(false);
     }
-    if (currentGoal) {
-      await db.update("goals", { id: currentGoal.id }, { weekly_target: weeklyGoal });
-    } else {
-      await db.insert("goals", {
-        id: "g" + Date.now(),
-        patient_id: patient.id,
-        therapist_id: session.id,
-        weekly_target: weeklyGoal,
-        created_at: new Date().toISOString(),
-      });
-    }
-    setModal(null);
   };
 
   const removeAssign = async (exId) => {
@@ -1271,10 +1279,11 @@ function Modal({ modal, setModal, session }) {
                 </div>
               ))}
 
+            {assignErr && <p className="error-msg" style={{ marginTop: 10 }}>{assignErr}</p>}
             <div style={{ display: "flex", gap: 9, marginTop: 20, justifyContent: "flex-end" }}>
               <button className="btn btn-outline" onClick={() => setModal(null)}>Fechar</button>
-              <button className="btn btn-sage" onClick={assign}>
-                {selected.length > 0 ? `Atribuir ${selected.length} + salvar meta` : "Salvar meta"}
+              <button className="btn btn-sage" onClick={assign} disabled={assigning}>
+                {assigning ? "Salvando..." : selected.length > 0 ? `Atribuir ${selected.length} + salvar meta` : "Salvar meta"}
               </button>
             </div>
           </>
@@ -1608,12 +1617,32 @@ function PatientLayout({ session, setSession, view, setView }) {
   const [activeExercise, setActiveExercise] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
 
-  // FIX: primeiro fetch imediato, polling sem chamar setLoading desnecessariamente
+  // Session self-heal: the session.id saved in localStorage may be a Supabase
+  // UUID that does NOT match the id stored in the users table (which can be a
+  // "u"+timestamp fallback from signup). Every assignment uses patient_id = the
+  // stored users.id, so a mismatch means queries always return empty and the
+  // patient never sees their exercises. Fix: re-fetch the real row by email on
+  // mount and patch session.id if needed.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await db.query("users", { filter: { email: session.email } });
+        if (!cancelled && Array.isArray(rows) && rows.length > 0 && rows[0].id !== session.id) {
+          setSession((prev) => ({ ...prev, ...rows[0] }));
+        }
+      } catch { /* non-critical */ }
+    })();
+    return () => { cancelled = true; };
+  }, [session.email]); // eslint-disable-line
+
   useEffect(() => {
     let active = true;
     const fetchPending = async () => {
-      const r = await db.query("assignments", { filter: { patient_id: session.id, status: "pending" } });
-      if (active) setPendingCount(Array.isArray(r) ? r.length : 0);
+      try {
+        const r = await db.query("assignments", { filter: { patient_id: session.id, status: "pending" } });
+        if (active) setPendingCount(Array.isArray(r) ? r.length : 0);
+      } catch { /* ignore */ }
     };
     fetchPending();
     const intId = setInterval(fetchPending, 5000);
@@ -1757,7 +1786,14 @@ function PatientHome({ session, setView }) {
 // FIX: ExCard definido FORA do componente pai, recebe props explícitas
 function ExCard({ assign, isDone, exercises, onStart }) {
   const ex = exercises.find((e) => e.id === assign.exercise_id);
-  if (!ex) return null;
+  // If the exercise data hasn't loaded yet (race) show a loading placeholder
+  // instead of silently returning null and hiding the assignment.
+  if (!ex) return (
+    <div className="ex-card" style={{ opacity: 0.5 }}>
+      <div className="ex-title" style={{ fontSize: 13, color: "var(--text-muted)" }}>Carregando exercício...</div>
+      <div className="ex-desc" style={{ fontSize: 12 }}>ID: {assign.exercise_id}</div>
+    </div>
+  );
   const qs = parseQuestions(ex);
 
   return (
@@ -1787,7 +1823,7 @@ function PatientExercises({ session, setActiveExercise }) {
   const [assignments, setAssignments] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState("");
+  const [fetchErr, setFetchErr] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -1802,9 +1838,9 @@ function PatientExercises({ session, setActiveExercise }) {
         if (!active) return;
         setAssignments(Array.isArray(a) ? a : []);
         setExercises(Array.isArray(ex) ? ex : []);
-        setFetchError("");
+        setFetchErr("");
       } catch (err) {
-        if (active) setFetchError("Erro ao carregar exercícios. Tentando novamente...");
+        if (active) setFetchErr("Erro ao carregar exercícios: " + err.message);
       } finally {
         if (active && firstLoad) { setLoading(false); firstLoad = false; }
       }
@@ -1823,7 +1859,7 @@ function PatientExercises({ session, setActiveExercise }) {
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
       <div className="page-header"><h2>Meus Exercícios</h2></div>
-      {fetchError && <p className="error-msg">{fetchError}</p>}
+      {fetchErr && <p className="error-msg">{fetchErr}</p>}
       {pending.length > 0 && (
         <>
           <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-muted)", marginBottom: 11 }}>Para fazer</div>
