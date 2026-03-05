@@ -1154,6 +1154,16 @@ function PatientsView({ session, setModal }) {
     alert("Código copiado: " + code);
   };
 
+  const deleteInvite = async (inv) => {
+    if (!window.confirm(`Eliminar o convite ${inv.code}?`)) return;
+    try {
+      await db.remove("invites", { id: inv.id }, session.access_token);
+      setInvites(prev => prev.filter(i => i.id !== inv.id));
+    } catch (e) {
+      alert("Erro ao eliminar convite: " + (e?.message || e));
+    }
+  };
+
   // Função para Desvincular o paciente
   const confirmUnlink = async () => {
     if (!unlinkingPatient) return;
@@ -1228,6 +1238,7 @@ function PatientsView({ session, setModal }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 14, letterSpacing: "1px", color: "var(--text-muted)" }}>{inv.code}</span>
                     <span style={{ fontSize: 12, fontWeight: 600, color: "var(--sage-dark)", background: "var(--sage-light)", padding: "4px 8px", borderRadius: 6 }}>Utilizado</span>
+                    <button onClick={() => deleteInvite(inv)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 15, opacity: 0.5 }} title="Eliminar">🗑</button>
                   </div>
                 ) : (
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1238,9 +1249,15 @@ function PatientsView({ session, setModal }) {
                         const msg = encodeURIComponent(`Olá! 😊 Estou a usar o Equilibre para acompanhar o nosso trabalho juntos.\n\nPara criar a sua conta e ficarmos conectados, use o código de convite abaixo:\n\n🔑 *${inv.code}*\n\nAcesse: https://equilibreapp.vercel.app e clique em "Criar conta" → perfil Paciente → insira o código acima.`);
                         window.open(`https://wa.me/?text=${msg}`, "_blank");
                       }}
-                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18 }}
+                      style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: 0 }}
                       title="Enviar pelo WhatsApp"
-                    >💬</button>
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="22" height="22">
+                        <circle cx="16" cy="16" r="16" fill="#25D366"/>
+                        <path d="M23.5 8.5A10.44 10.44 0 0 0 16 5.5a10.5 10.5 0 0 0-9.08 15.73L5.5 26.5l5.43-1.42A10.5 10.5 0 0 0 26.5 16a10.44 10.44 0 0 0-3-7.5zm-7.5 16.16a8.71 8.71 0 0 1-4.44-1.21l-.32-.19-3.22.84.86-3.14-.21-.33a8.75 8.75 0 1 1 7.33 4.03zm4.8-6.55c-.26-.13-1.55-.77-1.79-.85s-.41-.13-.59.13-.67.85-.83 1-.3.2-.56.07a7.13 7.13 0 0 1-2.1-1.3 7.9 7.9 0 0 1-1.45-1.81c-.15-.26 0-.4.11-.53s.26-.3.4-.46a1.8 1.8 0 0 0 .26-.43.48.48 0 0 0 0-.46c-.07-.13-.59-1.42-.81-1.94s-.43-.44-.59-.45h-.5a1 1 0 0 0-.7.33 2.93 2.93 0 0 0-.91 2.18 5.1 5.1 0 0 0 1.06 2.7 11.65 11.65 0 0 0 4.47 3.95c.62.27 1.1.43 1.48.55a3.56 3.56 0 0 0 1.63.1 2.69 2.69 0 0 0 1.76-1.24 2.18 2.18 0 0 0 .15-1.24c-.06-.11-.24-.17-.5-.3z" fill="#fff"/>
+                      </svg>
+                    </button>
+                    <button onClick={() => deleteInvite(inv)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 15, opacity: 0.6 }} title="Eliminar convite">🗑</button>
                   </div>
                 )}
               </div>
