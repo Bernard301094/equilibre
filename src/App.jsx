@@ -1142,11 +1142,17 @@ function PatientsView({ session, setModal }) {
       };
 
       const inserted = await db.insert("invites", newInv, session.access_token);
-      const savedInv = Array.isArray(inserted) && inserted[0]
+      const savedInv = Array.isArray(inserted) && inserted[0]?.id
         ? inserted[0]
-        : { ...newInv, created_at: new Date().toISOString() };
+        : null;
 
-      setInvites(prev => [savedInv, ...prev]);
+      if (savedInv) {
+        setInvites(prev => [savedInv, ...prev]);
+      } else {
+        // Recarrega do banco para garantir que temos o id real gerado pelo Supabase
+        const fresh = await db.query("invites", { filter: { therapist_id: session.id }, order: "created_at.desc" }, session.access_token);
+        setInvites(Array.isArray(fresh) ? fresh : []);
+      }
     } catch (e) {
       console.error("Erro ao gerar convite:", e);
       alert("Erro ao gerar convite:\n" + (e?.message || JSON.stringify(e)));
