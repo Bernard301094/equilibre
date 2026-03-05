@@ -4,6 +4,8 @@ const LOGO = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAYGBgYHBgc
 
 // ─── Supabase client ──────────────────────────────────────────────────────────
 const SUPA_URL = "https://tbaurubvmakhmbzhqnqh.supabase.co";
+// ⚠️  Reemplaza con tu anon key real desde:
+// Supabase Dashboard → Settings → API → "anon public"
 const SUPA_KEY = "sb_publishable_15_BDx6bY-VKAzJByuBajg_mpiGTNQh";
 
 const db = {
@@ -361,14 +363,15 @@ export default function App() {
       document.head.appendChild(styleEl);
     }
 
+    document.title = "Equilibre";
+
     // ── Favicon ────────────────────────────────────────────────────────────────
     const favicon =
       document.querySelector("link[rel~='icon']") || document.createElement("link");
+    favicon.rel = "icon";
     favicon.type = "image/jpeg";
-    favicon.rel = "shortcut icon";
-    favicon.href = LOGO;
+    favicon.href = "/equilibre-icon.jpeg";
     document.head.appendChild(favicon);
-    document.title = "Equilibre";
 
     // ── Google Fonts ───────────────────────────────────────────────────────────
     // @import inside a dynamic <style> tag is ignored by browsers — must use <link>
