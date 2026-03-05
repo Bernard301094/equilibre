@@ -3027,11 +3027,10 @@ function PatientHome({ session, setSession, setView }) {
 // Patient Exercises View
 // ==========================================
 function ExCard({ assign, isDone, exercises, onStart }) {
-  const ex = exercises.find((e) => e.id === assign.exerciseid);
+  const ex = exercises.find((e) => e.id === assign.exercise_id);
   if (!ex) return null;
 
   const qs = parseQuestions(ex);
-  // Limpeza de nome para a classe CSS (remove espaços e acentos se necessário, ou usa como está)
   const catClass = ex.category === 'Mindfulness' ? 'mindfulness' : 
                    ex.category === 'Bem-estar' ? 'bem-estar' : 
                    ex.category === 'Ansiedade' ? 'ansiedade' : 
@@ -3042,7 +3041,6 @@ function ExCard({ assign, isDone, exercises, onStart }) {
     <div
       className="ex-card"
       style={{ opacity: isDone ? 0.6 : 1, cursor: isDone ? 'default' : 'pointer' }}
-      // SOLUÇÃO APLICADA: Passar o objeto `ex` original em vez de injetar o parseQuestions
       onClick={() => !isDone && onStart(ex)}
     >
       <span className={`ex-cat ${catClass}`}>{ex.category}</span>
@@ -3054,11 +3052,11 @@ function ExCard({ assign, isDone, exercises, onStart }) {
           {qs.length} {qs.length === 1 ? 'pergunta' : 'perguntas'}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {!isDone && assign.duedate && (() => {
-            const days = Math.ceil((new Date(assign.duedate) - new Date()) / 86400000);
+          {!isDone && assign.due_date && (() => {
+            const days = Math.ceil((new Date(assign.due_date) - new Date()) / 86400000);
             if (days < 0) return <span className="due-chip due-late">Atrasado</span>;
             if (days <= 2) return <span className="due-chip due-warn">Vence em {days}d</span>;
-            return <span className="due-chip due-ok">{new Date(assign.duedate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>;
+            return <span className="due-chip due-ok">{new Date(assign.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>;
           })()}
           {isDone ? (
             <span className="response-badge badge-done">Concluído</span>
@@ -3072,34 +3070,44 @@ function ExCard({ assign, isDone, exercises, onStart }) {
 }
 
 function PatientExercises({ session, onStart }) {
-  const [assignments, setAssignments] = useState([]);
+  const [pending, setPending] = useState([]);
+  const [done, setDone] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
+
     async function fetch() {
       try {
-        const [a, ex] = await Promise.all([
-          db.query('assignments', { filter: { patientid: session.id } }, session.accesstoken),
-          db.query('exercises', {}, session.accesstoken),
+        const [pend, don, ex] = await Promise.all([
+          db.query('assignments', { filter: { patient_id: session.id, status: 'pending' } }, session.access_token),
+          db.query('assignments', { filter: { patient_id: session.id, status: 'done' } }, session.access_token),
+          db.query('exercises', {}, session.access_token),
         ]);
-        setAssignments(Array.isArray(a) ? a : []);
-        setExercises(Array.isArray(ex) ? ex : []);
+
+        if (active) {
+          setPending(Array.isArray(pend) ? pend : []);
+          setDone(Array.isArray(don) ? don : []);
+          setExercises(Array.isArray(ex) ? ex : []);
+          setLoading(false);
+        }
       } catch (err) {
-        console.error('Erro ao buscar exercícios:', err);
-      } finally {
-        setLoading(false);
+        console.error('Erro ao buscar exercícios do paciente:', err);
+        if (active) setLoading(false);
       }
     }
+
     fetch();
-  }, [session.id, session.accesstoken]);
+
+    return () => {
+      active = false;
+    };
+  }, [session.id, session.access_token]);
 
   if (loading) {
     return <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando...</p>;
   }
-
-  const pending = assignments.filter((a) => a.status === 'pending');
-  const done = assignments.filter((a) => a.status === 'done');
 
   return (
     <div style={{ animation: 'fadeUp .4s ease' }}>
@@ -3126,7 +3134,7 @@ function PatientExercises({ session, onStart }) {
           <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--text-muted)', marginBottom: 11 }}>
             Concluídos
           </div>
-          <div className="grid-auto">
+          <div className="grid-auto" style={{ marginBottom: 28 }}>
             {done.map((a) => (
               <ExCard key={a.id} assign={a} isDone={true} exercises={exercises} onStart={onStart} />
             ))}
@@ -3134,7 +3142,7 @@ function PatientExercises({ session, onStart }) {
         </>
       )}
 
-      {assignments.length === 0 && (
+      {pending.length === 0 && done.length === 0 && (
         <div className="empty-state">
           <div className="empty-icon"></div>
           <p>Nenhum exercício atribuído ainda.</p>
@@ -3146,7 +3154,6 @@ function PatientExercises({ session, onStart }) {
     </div>
   );
 }
-
 
 // ─── Patient History ──────────────────────────────────────────────────────────
 function PatientHistory({ session }) {
@@ -3488,7 +3495,9 @@ function PatientProgress({ session }) {
 
 // ─── Exercise Page ────────────────────────────────────────────────────────────
 function ExercisePage({ exercise, session, onBack }) {
-  const questions = exercise.questions;
+  // CORREÇÃO: Usar a função parseQuestions para converter o texto em lista
+  const questions = parseQuestions(exercise);
+  
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState(() => Array(questions.length).fill(""));
   const [done, setDone] = useState(false);
@@ -3539,6 +3548,9 @@ function ExercisePage({ exercise, session, onBack }) {
         </div>
       </div>
     );
+
+  // PREVENÇÃO DE ERRO: Se por algum motivo q for indefinido, não quebra a tela
+  if (!q) return null;
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--cream)", padding: "38px 22px" }}>
