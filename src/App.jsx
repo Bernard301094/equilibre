@@ -2558,12 +2558,21 @@ function PatientLayout({ session, setSession, view, setView, toggleTheme, theme 
 
 // ─── Patient Home ─────────────────────────────────────────────────────────────
 function PatientHome({ session, setSession, setView }) {
-  const [data, setData] = useState({ pending: 0, done: 0, streak: 0, goal: null, weekDone: 0, overdue: 0 });
+  const [data, setData] = useState({ 
+    pending: 0, 
+    done: 0, 
+    streak: 0, 
+    goal: null, 
+    weekDone: 0, 
+    overdue: 0,
+    hasActivityToday: false,
+    isLate: false
+  });
   
-  // Estados para vinculação de novo terapeuta
   const [inviteCode, setInviteCode] = useState("");
   const [linking, setLinking] = useState(false);
   const [linkMsg, setLinkMsg] = useState({ type: "", text: "" });
+  const [showWatering, setShowWatering] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -2578,42 +2587,53 @@ function PatientHome({ session, setSession, setView }) {
       if (!active) return;
 
       const now = new Date();
+      const hour = now.getHours();
       const startOfWeek = new Date(now);
       startOfWeek.setDate(now.getDate() - now.getDay());
+      
       const respList = Array.isArray(responses) ? responses : [];
       const dList = Array.isArray(diary) ? diary : [];
       const pendList = Array.isArray(pending) ? pending : [];
-      const weekDone = respList.filter((r) => new Date(r.completed_at) >= startOfWeek).length;
-      const od = pendList.filter((a) => a.due_date && new Date(a.due_date) < now).length;
-
+      
       const getLocalDayStr = (offsetDays = 0) => {
         const d = new Date();
         d.setDate(d.getDate() - offsetDays);
         return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
       };
 
-      const hasActivity = (ds) => {
-        return dList.some(e => e.date === ds) || respList.some(r => r.completed_at && r.completed_at.startsWith(ds));
-      };
+      const hasActivity = (ds) => dList.some(e => e.date === ds) || respList.some(r => r.completed_at?.startsWith(ds));
+      const todayDone = hasActivity(getLocalDayStr(0));
+
+      // 💧 Verifica se acabou de fazer uma ação para mostrar a animação da gota d'água
+      const lastAction = localStorage.getItem('last_action_timestamp');
+      if (lastAction && (Date.now() - parseInt(lastAction)) < 5000) {
+        setShowWatering(true);
+        localStorage.removeItem('last_action_timestamp');
+      }
 
       let streak = 0;
-      if (hasActivity(getLocalDayStr(0))) {
+      if (todayDone) {
         streak = 1;
-        for (let i = 1; i < 30; i++) {
-          if (hasActivity(getLocalDayStr(i))) streak++;
-          else break;
+        for (let i = 1; i < 60; i++) {
+          if (hasActivity(getLocalDayStr(i))) streak++; else break;
         }
       } else if (hasActivity(getLocalDayStr(1))) {
         streak = 1;
-        for (let i = 2; i < 30; i++) {
-          if (hasActivity(getLocalDayStr(i))) streak++;
-          else break;
+        for (let i = 2; i < 60; i++) {
+          if (hasActivity(getLocalDayStr(i))) streak++; else break;
         }
-      } else {
-        streak = 0;
       }
 
-      setData({ pending: pendList.length, done: Array.isArray(done) ? done.length : 0, streak, goal: Array.isArray(goals) && goals.length > 0 ? goals[0] : null, weekDone, overdue: od });
+      setData({ 
+        pending: pendList.length, 
+        done: Array.isArray(done) ? done.length : 0, 
+        streak, 
+        goal: Array.isArray(goals) && goals.length > 0 ? goals[0] : null, 
+        weekDone: respList.filter(r => new Date(r.completed_at) >= startOfWeek).length, 
+        overdue: pendList.filter(a => a.due_date && new Date(a.due_date) < now).length,
+        hasActivityToday: todayDone,
+        isLate: hour >= 19 // Fica em alerta se for 19h+ e não tiver regado
+      });
     };
     
     fetch();
@@ -2628,20 +2648,14 @@ function PatientHome({ session, setSession, setView }) {
     try {
       const code = inviteCode.trim().toUpperCase();
       const invites = await db.query("invites", { filter: { code } });
-      if (!Array.isArray(invites) || invites.length === 0) throw new Error("Código não encontrado. Verifique a digitação.");
-      
+      if (!Array.isArray(invites) || invites.length === 0) throw new Error("Código não encontrado.");
       const invite = invites[0];
       if (invite.status !== "pending") throw new Error("Este código já foi utilizado ou expirou.");
 
       const newTherapistId = invite.therapist_id;
-
-      // Atualiza o Paciente no banco
       await db.update("users", { id: session.id }, { therapist_id: newTherapistId }, session.access_token);
-      
-      // Queima o Convite no banco
       await db.update("invites", { code }, { status: "used", used_by: session.id, used_at: new Date().toISOString() }, session.access_token);
 
-      // Atualiza a sessão na tela (faz o card sumir instantaneamente)
       setSession(prev => ({ ...prev, therapist_id: newTherapistId }));
       setLinkMsg({ type: "success", text: "Profissional vinculado com sucesso!" });
       setInviteCode("");
@@ -2652,6 +2666,19 @@ function PatientHome({ session, setSession, setView }) {
     }
   };
 
+  // Lógica de evolução da planta (6 estágios)
+  const getPlantStage = () => {
+    const s = data.streak;
+    if (s >= 15) return { icon: "🌸", label: "Árvore Florida", color: "#e88fb4", desc: "Seu jardim está lindo!" };
+    if (s >= 10) return { icon: "🌳", label: "Árvore Firme", color: "#2d7a3a", desc: "Raízes profundas." };
+    if (s >= 6)  return { icon: "🪴", label: "Planta no Vaso", color: "#4a9c5d", desc: "Crescendo forte." };
+    if (s >= 3)  return { icon: "🌿", label: "Planta Jovem", color: "#7abd8c", desc: "Ganhando folhas." };
+    if (s >= 1)  return { icon: "🌱", label: "Brotinho", color: "#a8d5ba", desc: "Começando a brotar." };
+    return { icon: "🌰", label: "Semente", color: "#8b5a2b", desc: "Pronta para crescer." };
+  };
+
+  const stage = getPlantStage();
+
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
       <div className="page-header">
@@ -2659,7 +2686,7 @@ function PatientHome({ session, setSession, setView }) {
         <p>Como você está se sentindo hoje?</p>
       </div>
 
-      {/* NOVO: CARD DE VINCULAR PROFISSIONAL (Só aparece se o therapist_id for null) */}
+      {/* CARD DE VINCULAR PROFISSIONAL */}
       {!session.therapist_id && (
         <div className="card" style={{ marginBottom: 20, border: "2px solid var(--blue-mid)", background: "var(--white)" }}>
           <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
@@ -2667,14 +2694,12 @@ function PatientHome({ session, setSession, setView }) {
             <div style={{ flex: 1 }}>
               <h3 style={{ fontSize: 16, color: "var(--blue-dark)", marginBottom: 8 }}>Vincular novo profissional</h3>
               <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.5 }}>
-                Você não possui uma psicóloga vinculada no momento. Para receber novos exercícios personalizados, digite abaixo o código de convite enviado pela sua nova profissional:
+                Você não possui uma psicóloga vinculada no momento. Para receber novos exercícios personalizados, digite abaixo o código de convite:
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                 <input
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  placeholder="Ex: AB3X9K7"
-                  maxLength={8}
+                  value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                  placeholder="Ex: AB3X9K7" maxLength={8}
                   style={{ flex: 1, minWidth: 150, padding: "10px 14px", border: "1.5px solid var(--warm)", borderRadius: 10, fontFamily: "monospace", fontSize: 16, letterSpacing: ".1em", background: "var(--cream)", outline: "none", color: "var(--text)" }}
                 />
                 <button className="btn btn-sage" onClick={handleLinkTherapist} disabled={linking}>
@@ -2692,9 +2717,13 @@ function PatientHome({ session, setSession, setView }) {
       )}
       
       <div className="grid-3" style={{ marginBottom: 20 }}>
-        <div className="stat-card">
-          <div className="stat-icon">{data.streak >= 7 ? "🌳" : data.streak >= 3 ? "🌿" : "🌱"}</div>
-          <div className="stat-val">{data.streak}</div>
+        {/* 🌱 CARD GAMIFICADO DA PLANTA */}
+        <div className="stat-card" style={{ position: 'relative', overflow: 'hidden' }}>
+          {showWatering && <div className="water-drop">💧</div>}
+          <div className="plant-animation" style={{ fontSize: 44, marginBottom: 8, marginTop: 4 }}>
+            {stage.icon}
+          </div>
+          <div className="stat-val" style={{ color: stage.color }}>{data.streak}</div>
           <div className="stat-label">Dias seguidos</div>
         </div>
 
@@ -2704,35 +2733,53 @@ function PatientHome({ session, setSession, setView }) {
           : <div className="stat-card"><div className="stat-icon">✅</div><div className="stat-val">{data.done}</div><div className="stat-label">Concluídos</div></div>}
       </div>
 
-      <div className="card" style={{ marginBottom: 20, background: "var(--accent-soft)", border: "1px solid var(--accent)", padding: "16px 20px" }}>
-        <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-          <div style={{ fontSize: 26, marginTop: 2 }}>🪴</div>
-          <div>
-            <h3 style={{ fontSize: 15, color: "var(--accent)", marginBottom: 6 }}>Cultive seu bem-estar</h3>
-            <p style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6 }}>
-              Sua constância faz sua planta virtual crescer! Faça um exercício ou registre o seu diário todos os dias. <strong>Se você pular um dia inteiro, a contagem zera e ela volta a ser uma semente!</strong>
-              <br />
-              <span style={{ display: "inline-block", marginTop: 8 }}>
-                <strong>🌱 1 a 2 dias</strong> &nbsp;•&nbsp; <strong>🌿 3 a 6 dias</strong> &nbsp;•&nbsp; <strong>🌳 7+ dias</strong>
-              </span>
-            </p>
+      {/* 🚨 ALERTA DE SEDE / PREVENÇÃO DE QUEDA (Substitui o card fixo de explicação) */}
+      {!data.hasActivityToday && data.streak > 0 && (
+        <div className="card" style={{ 
+          marginBottom: 20, 
+          background: data.isLate ? "#fff0f0" : "var(--cream)", 
+          border: `1.5px solid ${data.isLate ? "#ff4d4d" : "var(--warm)"}`,
+          animation: data.isLate ? "pulse-border 2s infinite" : "none" 
+        }}>
+          <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+            <div style={{ fontSize: 28 }}>{data.isLate ? "⚠️" : "🪴"}</div>
+            <div>
+              <h3 style={{ fontSize: 15, color: data.isLate ? "#c0444a" : "var(--blue-dark)", marginBottom: 4 }}>
+                {data.isLate ? "Sua planta está com sede!" : "Não se esqueça de regar sua planta!"}
+              </h3>
+              <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.4 }}>
+                Sua constância faz sua planta evoluir. Se você não registrar nada até o fim do dia, a contagem de dias seguidos voltará a zero e ela será uma semente novamente.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {data.goal && <div className="card" style={{ marginBottom: 20 }}><WeekGoalBar done={data.weekDone} target={data.goal.weekly_target} /></div>}
 
-      {data.pending > 0
-        ? <div className="card" style={{ background: "linear-gradient(135deg,var(--blue-dark),var(--blue-mid))", color: "white", cursor: "pointer" }} onClick={() => setView("exercises")}>
-            <div style={{ fontSize: 22, marginBottom: 7 }}>📋</div>
-            <h3 style={{ fontSize: 17, marginBottom: 5 }}>Você tem {data.pending} exercício{data.pending > 1 ? "s" : ""} pendente{data.pending > 1 ? "s" : ""}!</h3>
-            <p style={{ opacity: 0.85, fontSize: 13 }}>Clique aqui para começar quando estiver pronto(a).</p>
+      {/* BOTÃO DE AÇÃO DIRETA */}
+      {!data.hasActivityToday ? (
+        <div className="card" style={{ background: "linear-gradient(135deg, var(--sage-dark), var(--sage))", color: "white", cursor: "pointer" }} onClick={() => setView("diary")}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h3 style={{ fontSize: 17, marginBottom: 5 }}>Vamos regar agora?</h3>
+              <p style={{ opacity: 0.9, fontSize: 13 }}>Registre como você está hoje no diário e mantenha seu jardim vivo.</p>
+            </div>
+            <div style={{ fontSize: 32 }}>🚿</div>
           </div>
-        : <div className="card"><div className="empty-state"><div className="empty-icon">🎉</div><p>Você está em dia com seus exercícios!</p></div></div>}
+        </div>
+      ) : data.pending > 0 ? (
+        <div className="card" style={{ background: "linear-gradient(135deg,var(--blue-dark),var(--blue-mid))", color: "white", cursor: "pointer" }} onClick={() => setView("exercises")}>
+          <div style={{ fontSize: 22, marginBottom: 7 }}>📋</div>
+          <h3 style={{ fontSize: 17, marginBottom: 5 }}>Você tem {data.pending} exercício{data.pending > 1 ? "s" : ""} pendente{data.pending > 1 ? "s" : ""}!</h3>
+          <p style={{ opacity: 0.85, fontSize: 13 }}>Clique aqui para começar quando estiver pronto(a).</p>
+        </div>
+      ) : (
+        <div className="card"><div className="empty-state"><div className="empty-icon">🎉</div><p>Você está em dia com seu cuidado hoje!</p></div></div>
+      )}
     </div>
   );
 }
-
 // ==========================================
 // Patient Exercises View
 // ==========================================
@@ -3000,6 +3047,7 @@ function PatientDiary({ session }) {
       alert("Erro ao salvar diário. Tente novamente.");
     } finally {
       setSaving(false);
+      localStorage.setItem('last_action_timestamp', Date.now().toString());
     }
   };
 
@@ -3260,6 +3308,7 @@ function PatientRoutine({ session }) {
       await db.update("activities", { id: executing.id }, updateData, session.access_token);
       setExecuting(null);
       showSuccess("🌟 Registro salvo com sucesso!"); // FEEDBACK AQUI
+      localStorage.setItem('last_action_timestamp', Date.now().toString());
       fetchActivities();
     } catch (e) { 
       setDialog({ type: 'alert', title: 'Erro', message: 'Erro ao registrar atividade.' }); 
@@ -3669,6 +3718,7 @@ function ExercisePage({ exercise, session, onBack }) {
     }
     setSaving(false);
     setDone(true);
+    localStorage.setItem('last_action_timestamp', Date.now().toString());
   };
 
   if (done)
