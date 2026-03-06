@@ -3152,6 +3152,9 @@ function PatientRoutine({ session }) {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [executing, setExecuting] = useState(null);
+  
+  // NOVO: Estado para saber se estamos a editar uma atividade existente
+  const [editingId, setEditingId] = useState(null);
 
   const [form, setForm] = useState({ title: "", category: "Autocuidado", difficulty: "Fácil", date: "", time: "" });
   const [execForm, setExecForm] = useState({ did_it: true, mood_before: 5, mood_after: 5, energy_after: 5, avoidance_reason: "Falta de energia" });
@@ -3169,28 +3172,66 @@ function PatientRoutine({ session }) {
 
   useEffect(() => { fetchActivities(); }, [session.id]);
 
+  // Clicar num pilar para CRIAR nova atividade
   const handlePillarClick = (category) => {
     setForm({ title: "", category, difficulty: "Fácil", date: "", time: "" });
+    setEditingId(null);
     setShowAdd(true);
   };
 
-  const handleAdd = async () => {
-    if (!form.title || !form.date || !form.time) return alert("Preencha o que vai fazer, o dia e o horário.");
+  // NOVO: Clicar para EDITAR uma atividade existente
+  const handleEditClick = (act) => {
+    const d = new Date(act.planned_date);
+    // Extrai a data no formato YYYY-MM-DD e a hora no formato HH:MM
+    const date = d.toISOString().split("T")[0];
+    const time = d.toTimeString().substring(0, 5); 
+    
+    setForm({ title: act.title, category: act.category, difficulty: act.difficulty, date, time });
+    setEditingId(act.id);
+    setShowAdd(true);
+  };
+
+  // NOVO: Clicar para ELIMINAR uma atividade
+  const handleDeleteClick = async (id) => {
+    if (!window.confirm("Tens a certeza que queres eliminar esta atividade?")) return;
+    setLoading(true);
+    try {
+      await db.delete("activities", { id }, session.access_token);
+      fetchActivities();
+    } catch (e) {
+      alert("Erro ao eliminar a atividade.");
+      setLoading(false);
+    }
+  };
+
+  // Salvar a atividade (Serve tanto para Criar como para Editar)
+  const handleSave = async () => {
+    if (!form.title || !form.date || !form.time) return alert("Preenche o que vais fazer, o dia e o horário.");
     setLoading(true);
     try {
       const planned_date = new Date(`${form.date}T${form.time}`).toISOString();
-      const newAct = {
-        patient_id: session.id,
+      
+      const actData = {
         title: form.title,
         category: form.category,
         difficulty: form.difficulty,
-        planned_date: planned_date,
-        status: "pendente"
+        planned_date: planned_date
       };
-      await db.insert("activities", newAct, session.access_token);
+
+      if (editingId) {
+        // Se tem ID de edição, atualiza
+        await db.update("activities", { id: editingId }, actData, session.access_token);
+      } else {
+        // Se não, cria uma nova
+        actData.patient_id = session.id;
+        actData.status = "pendente";
+        await db.insert("activities", actData, session.access_token);
+      }
+      
       setShowAdd(false);
+      setEditingId(null);
       fetchActivities();
-    } catch (e) { alert("Erro ao salvar atividade."); setLoading(false); }
+    } catch (e) { alert("Erro ao guardar atividade."); setLoading(false); }
   };
 
   const handleExecute = async () => {
@@ -3203,7 +3244,7 @@ function PatientRoutine({ session }) {
       await db.update("activities", { id: executing.id }, updateData, session.access_token);
       setExecuting(null);
       fetchActivities();
-    } catch (e) { alert("Erro ao registrar."); setLoading(false); }
+    } catch (e) { alert("Erro ao registar."); setLoading(false); }
   };
 
   if (loading) return <div style={{ color: "var(--text-muted)", padding: 20 }}>A carregar a rotina...</div>;
@@ -3218,7 +3259,6 @@ function PatientRoutine({ session }) {
         <p>Planeia pequenas ações nos teus 5 pilares. A ação traz a motivação!</p>
       </div>
 
-      {/* GRELHA DOS 5 PILARES */}
       <div className="pillars-container">
         {BA_PILLARS.map(p => (
           <div key={p.name} onClick={() => handlePillarClick(p.name)} className={`pillar-card cat-${p.name}`}>
@@ -3229,7 +3269,6 @@ function PatientRoutine({ session }) {
         ))}
       </div>
 
-      {/* LISTA PARA FAZER */}
       {pending.length === 0 ? (
         <div className="empty-state card"><div className="empty-icon">🗓️</div><p>Nenhuma atividade planeada. Clica num pilar acima para começar!</p></div>
       ) : (
@@ -3237,15 +3276,36 @@ function PatientRoutine({ session }) {
           <h3 style={{ fontSize: 14, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 12 }}>Para Fazer</h3>
           {pending.map(act => (
             <div key={act.id} className="activity-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <span className={`cat-badge cat-${act.category}`}>{act.category}</span>
-                  <h4 style={{ fontSize: 16, color: "var(--blue-dark)", marginTop: 8, marginBottom: 4 }}>{act.title}</h4>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                    ⏰ {new Date(act.planned_date).toLocaleString('pt-PT', { weekday: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })} | Desafio: {act.difficulty}
-                  </div>
+              <div>
+                <span className={`cat-badge cat-${act.category}`}>{act.category}</span>
+                <h4 style={{ fontSize: 16, color: "var(--blue-dark)", marginTop: 8, marginBottom: 4 }}>{act.title}</h4>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                  ⏰ {new Date(act.planned_date).toLocaleString('pt-PT', { weekday: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })} | Desafio: {act.difficulty}
                 </div>
-                <button className="btn btn-outline btn-sm" style={{ borderColor: 'var(--blue-mid)', color: 'var(--blue-dark)' }} onClick={() => setExecuting(act)}>
+              </div>
+              
+              {/* NOVO: Botões de Ação na base do cartão */}
+              <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end', borderTop: '1px solid var(--warm)', paddingTop: 12 }}>
+                <button 
+                  className="btn btn-sm" 
+                  style={{ background: 'transparent', color: 'var(--danger)', fontSize: 16, padding: '0 8px' }} 
+                  onClick={() => handleDeleteClick(act.id)}
+                  title="Eliminar"
+                >
+                  🗑️
+                </button>
+                <button 
+                  className="btn btn-sm" 
+                  style={{ background: 'var(--warm)', color: 'var(--blue-dark)' }} 
+                  onClick={() => handleEditClick(act)}
+                >
+                  ✏️ Editar
+                </button>
+                <button 
+                  className="btn btn-sm" 
+                  style={{ background: 'var(--blue-mid)', color: 'white' }} 
+                  onClick={() => setExecuting(act)}
+                >
                   Fiz isto! ✓
                 </button>
               </div>
@@ -3254,7 +3314,6 @@ function PatientRoutine({ session }) {
         </div>
       )}
 
-      {/* HISTÓRICO COM FEEDBACK POSITIVO */}
       {past.length > 0 && (
         <div style={{ marginTop: 40 }}>
           <h3 style={{ fontSize: 14, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 12 }}>O Teu Histórico</h3>
@@ -3262,10 +3321,14 @@ function PatientRoutine({ session }) {
             {past.reverse().map(act => (
               <div key={act.id} className="activity-card done" style={{ background: "var(--cream)", borderLeft: `4px solid ${act.status === 'concluido' ? '#2d7a3a' : '#c0444a'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span className={`cat-badge cat-${act.category}`} style={{ fontSize: 10 }}>{act.category}</span>
-                  <span style={{ fontWeight: "bold", fontSize: 12, color: act.status === 'concluido' ? '#2d7a3a' : '#c0444a' }}>
-                    {act.status === 'concluido' ? '✅ Concluído' : '❌ Não feito'}
-                  </span>
+                  <div>
+                    <span className={`cat-badge cat-${act.category}`} style={{ fontSize: 10 }}>{act.category}</span>
+                    <span style={{ fontWeight: "bold", fontSize: 12, color: act.status === 'concluido' ? '#2d7a3a' : '#c0444a', marginLeft: 10 }}>
+                      {act.status === 'concluido' ? '✅ Concluído' : '❌ Não feito'}
+                    </span>
+                  </div>
+                  {/* NOVO: Ícone para apagar também no histórico */}
+                  <button onClick={() => handleDeleteClick(act.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, opacity: 0.6 }}>🗑️</button>
                 </div>
                 
                 <h4 style={{ fontSize: 15, textDecoration: act.status === 'nao_realizado' ? 'line-through' : 'none', color: "var(--text)" }}>{act.title}</h4>
@@ -3290,12 +3353,14 @@ function PatientRoutine({ session }) {
         </div>
       )}
 
-      {/* MODAL: ADICIONAR ATIVIDADE */}
+      {/* MODAL: ADICIONAR / EDITAR ATIVIDADE */}
       {showAdd && (
-        <div className="overlay" onClick={() => setShowAdd(false)}>
+        <div className="overlay" onClick={() => { setShowAdd(false); setEditingId(null); }}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <h3 style={{ marginBottom: 4 }}>Planear: {form.category}</h3>
-            <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>Adicionar uma ação para o pilar de <strong>{form.category}</strong>.</p>
+            <h3 style={{ marginBottom: 4 }}>{editingId ? "Editar" : "Planear"}: {form.category}</h3>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
+              {editingId ? "A ajustar a tua ação planeada." : `Adicionar uma ação para o pilar de ${form.category}.`}
+            </p>
             
             <div className="field"><label>O que vais fazer?</label><input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Ex: Tomar um chá na varanda" /></div>
             <div className="field">
@@ -3306,19 +3371,19 @@ function PatientRoutine({ session }) {
             </div>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <div className="field"><label>Qual dia?</label><input type="date" value={form.date} min={new Date().toISOString().split("T")[0]} onChange={e => setForm({...form, date: e.target.value})} /></div>
+              <div className="field"><label>Qual dia?</label><input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div>
               <div className="field"><label>A que horas?</label><input type="time" value={form.time} onChange={e => setForm({...form, time: e.target.value})} /></div>
             </div>
 
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-              <button className="btn btn-outline" onClick={() => setShowAdd(false)}>Cancelar</button>
-              <button className="btn btn-sage" onClick={handleAdd}>Agendar Ação</button>
+              <button className="btn btn-outline" onClick={() => { setShowAdd(false); setEditingId(null); }}>Cancelar</button>
+              <button className="btn btn-sage" onClick={handleSave}>{editingId ? "Guardar Alterações" : "Agendar Ação"}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL: REGISTAR EXECUÇÃO */}
+      {/* MODAL: REGISTAR EXECUÇÃO (Permanece igual) */}
       {executing && (
         <div className="overlay" onClick={() => setExecuting(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
