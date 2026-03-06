@@ -3153,10 +3153,7 @@ function PatientRoutine({ session }) {
   const [showAdd, setShowAdd] = useState(false);
   const [executing, setExecuting] = useState(null);
 
-  // Form de Adição (Data e hora separados)
   const [form, setForm] = useState({ title: "", category: "Autocuidado", difficulty: "Fácil", date: "", time: "" });
-  
-  // Form de Execução
   const [execForm, setExecForm] = useState({ did_it: true, mood_before: 5, mood_after: 5, energy_after: 5, avoidance_reason: "Falta de energia" });
 
   const fetchActivities = async () => {
@@ -3182,7 +3179,6 @@ function PatientRoutine({ session }) {
     setLoading(true);
     try {
       const planned_date = new Date(`${form.date}T${form.time}`).toISOString();
-      
       const newAct = {
         patient_id: session.id,
         title: form.title,
@@ -3193,7 +3189,6 @@ function PatientRoutine({ session }) {
       };
       await db.insert("activities", newAct, session.access_token);
       setShowAdd(false);
-      setForm({ title: "", category: "Autocuidado", difficulty: "Fácil", date: "", time: "" });
       fetchActivities();
     } catch (e) { alert("Erro ao salvar atividade."); setLoading(false); }
   };
@@ -3211,7 +3206,7 @@ function PatientRoutine({ session }) {
     } catch (e) { alert("Erro ao registrar."); setLoading(false); }
   };
 
-  if (loading) return <div style={{ color: "var(--text-muted)", padding: 20 }}>Carregando sua rotina...</div>;
+  if (loading) return <div style={{ color: "var(--text-muted)", padding: 20 }}>A carregar a rotina...</div>;
 
   const pending = activities.filter(a => a.status === 'pendente');
   const past = activities.filter(a => a.status !== 'pendente');
@@ -3220,17 +3215,13 @@ function PatientRoutine({ session }) {
     <div style={{ animation: "fadeUp .4s ease", maxWidth: 640 }}>
       <div className="page-header">
         <h2>Minha Rotina (Ativação)</h2>
-        <p>Planeje pequenas ações nos seus 5 pilares. A ação traz a motivação!</p>
+        <p>Planeia pequenas ações nos teus 5 pilares. A ação traz a motivação!</p>
       </div>
 
-      {/* Grid bien distribuido y limpio de estilos en línea */}
+      {/* GRELHA DOS 5 PILARES */}
       <div className="pillars-container">
         {BA_PILLARS.map(p => (
-          <div
-            key={p.name}
-            onClick={() => handlePillarClick(p.name)}
-            className={`pillar-card cat-${p.name}`}
-          >
+          <div key={p.name} onClick={() => handlePillarClick(p.name)} className={`pillar-card cat-${p.name}`}>
             <div style={{ fontSize: 32, marginBottom: 8 }}>{p.icon}</div>
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', marginBottom: 4, letterSpacing: '.05em' }}>{p.name}</div>
             <div style={{ fontSize: 10, opacity: 0.85, lineHeight: 1.3 }}>{p.desc}</div>
@@ -3238,8 +3229,9 @@ function PatientRoutine({ session }) {
         ))}
       </div>
 
+      {/* LISTA PARA FAZER */}
       {pending.length === 0 ? (
-        <div className="empty-state card"><div className="empty-icon">🗓️</div><p>Nenhuma atividade planejada. Clique em um pilar acima para começar!</p></div>
+        <div className="empty-state card"><div className="empty-icon">🗓️</div><p>Nenhuma atividade planeada. Clica num pilar acima para começar!</p></div>
       ) : (
         <div style={{ marginBottom: 30 }}>
           <h3 style={{ fontSize: 14, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 12 }}>Para Fazer</h3>
@@ -3250,11 +3242,11 @@ function PatientRoutine({ session }) {
                   <span className={`cat-badge cat-${act.category}`}>{act.category}</span>
                   <h4 style={{ fontSize: 16, color: "var(--blue-dark)", marginTop: 8, marginBottom: 4 }}>{act.title}</h4>
                   <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                    ⏰ {new Date(act.planned_date).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })} | Desafio: {act.difficulty}
+                    ⏰ {new Date(act.planned_date).toLocaleString('pt-PT', { weekday: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })} | Desafio: {act.difficulty}
                   </div>
                 </div>
                 <button className="btn btn-outline btn-sm" style={{ borderColor: 'var(--blue-mid)', color: 'var(--blue-dark)' }} onClick={() => setExecuting(act)}>
-                  Fiz isso! ✓
+                  Fiz isto! ✓
                 </button>
               </div>
             </div>
@@ -3262,24 +3254,39 @@ function PatientRoutine({ session }) {
         </div>
       )}
 
+      {/* HISTÓRICO COM FEEDBACK POSITIVO */}
       {past.length > 0 && (
-        <div>
-          <h3 style={{ fontSize: 14, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 12 }}>Histórico</h3>
-          {past.reverse().map(act => (
-            <div key={act.id} className="activity-card done" style={{ background: "var(--cream)" }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <div>
-                  <h4 style={{ fontSize: 15, textDecoration: act.status === 'nao_realizado' ? 'line-through' : 'none' }}>{act.title}</h4>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                    {act.status === 'concluido' ? `Humor antes: ${act.mood_before} → depois: ${act.mood_after} 📈` : `Evitado: ${act.avoidance_reason}`}
-                  </div>
+        <div style={{ marginTop: 40 }}>
+          <h3 style={{ fontSize: 14, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 12 }}>O Teu Histórico</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {past.reverse().map(act => (
+              <div key={act.id} className="activity-card done" style={{ background: "var(--cream)", borderLeft: `4px solid ${act.status === 'concluido' ? '#2d7a3a' : '#c0444a'}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span className={`cat-badge cat-${act.category}`} style={{ fontSize: 10 }}>{act.category}</span>
+                  <span style={{ fontWeight: "bold", fontSize: 12, color: act.status === 'concluido' ? '#2d7a3a' : '#c0444a' }}>
+                    {act.status === 'concluido' ? '✅ Concluído' : '❌ Não feito'}
+                  </span>
                 </div>
-                <span className="cat-badge" style={{ background: act.status === 'concluido' ? '#d4edd9' : '#fce8e8', color: act.status === 'concluido' ? '#2d7a3a' : '#c0444a' }}>
-                  {act.status === 'concluido' ? 'Concluído' : 'Não feito'}
-                </span>
+                
+                <h4 style={{ fontSize: 15, textDecoration: act.status === 'nao_realizado' ? 'line-through' : 'none', color: "var(--text)" }}>{act.title}</h4>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8 }}>
+                  Planeado para: {new Date(act.planned_date).toLocaleString('pt-PT', { weekday: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                </div>
+
+                {act.status === 'concluido' && (
+                  <div style={{ background: "var(--white)", padding: "8px 12px", borderRadius: 8, fontSize: 13, display: "flex", gap: 16, boxShadow: "0 2px 4px rgba(0,0,0,0.03)", marginTop: 10 }}>
+                    <div>Humor: <strong>{act.mood_before} ➔ {act.mood_after}</strong> {act.mood_after > act.mood_before ? '📈' : act.mood_after < act.mood_before ? '📉' : '➖'}</div>
+                    <div>Energia: <strong>{act.energy_after}/10</strong> ⚡</div>
+                  </div>
+                )}
+                {act.status === 'nao_realizado' && (
+                  <div style={{ background: "#fce8e8", color: "#c0444a", padding: "8px 12px", borderRadius: 8, fontSize: 12, marginTop: 10 }}>
+                    <strong>Motivo:</strong> {act.avoidance_reason}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
@@ -3287,16 +3294,10 @@ function PatientRoutine({ session }) {
       {showAdd && (
         <div className="overlay" onClick={() => setShowAdd(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <h3 style={{ marginBottom: 4 }}>Planejar: {form.category}</h3>
-            <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
-              Adicionando uma ação para o seu pilar de <strong>{form.category}</strong>.
-            </p>
+            <h3 style={{ marginBottom: 4 }}>Planear: {form.category}</h3>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>Adicionar uma ação para o pilar de <strong>{form.category}</strong>.</p>
             
-            <div className="field">
-              <label>O que você vai fazer?</label>
-              <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Ex: Tomar um chá na varanda" />
-            </div>
-            
+            <div className="field"><label>O que vais fazer?</label><input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Ex: Tomar um chá na varanda" /></div>
             <div className="field">
               <label>Nível de desafio</label>
               <select className="q-textarea" style={{minHeight:40}} value={form.difficulty} onChange={e => setForm({...form, difficulty: e.target.value})}>
@@ -3305,14 +3306,8 @@ function PatientRoutine({ session }) {
             </div>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <div className="field">
-                <label>Qual dia?</label>
-                <input type="date" value={form.date} min={new Date().toISOString().split("T")[0]} onChange={e => setForm({...form, date: e.target.value})} />
-              </div>
-              <div className="field">
-                <label>Que horas?</label>
-                <input type="time" value={form.time} onChange={e => setForm({...form, time: e.target.value})} />
-              </div>
+              <div className="field"><label>Qual dia?</label><input type="date" value={form.date} min={new Date().toISOString().split("T")[0]} onChange={e => setForm({...form, date: e.target.value})} /></div>
+              <div className="field"><label>A que horas?</label><input type="time" value={form.time} onChange={e => setForm({...form, time: e.target.value})} /></div>
             </div>
 
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
@@ -3323,7 +3318,7 @@ function PatientRoutine({ session }) {
         </div>
       )}
 
-      {/* MODAL: REGISTRO DE EXECUÇÃO (O CHECK-IN) */}
+      {/* MODAL: REGISTAR EXECUÇÃO */}
       {executing && (
         <div className="overlay" onClick={() => setExecuting(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
@@ -3331,7 +3326,7 @@ function PatientRoutine({ session }) {
             <p style={{fontSize:13, color:"var(--text-muted)", marginBottom:20}}>Atividade: <strong>{executing.title}</strong></p>
             
             <div className="field" style={{marginBottom: 20}}>
-              <label>Você conseguiu realizar esta actividad?</label>
+              <label>Conseguiste realizar esta atividade?</label>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button className={`btn ${execForm.did_it ? 'btn-sage' : 'btn-outline'}`} style={{flex:1}} onClick={() => setExecForm({...execForm, did_it: true})}>Sim, eu fiz!</button>
                 <button className={`btn ${!execForm.did_it ? 'btn-accent' : 'btn-outline'}`} style={{flex:1}} onClick={() => setExecForm({...execForm, did_it: false})}>Não consegui</button>
@@ -3340,22 +3335,22 @@ function PatientRoutine({ session }) {
 
             {execForm.did_it ? (
               <div style={{ animation: "fadeIn .3s ease" }}>
-                <div className="field"><label>Seu humor ANTES da atividade (0 a 10)</label><input type="range" min="0" max="10" value={execForm.mood_before} onChange={e => setExecForm({...execForm, mood_before: e.target.value})} /><div style={{textAlign:'center', fontWeight:'bold'}}>{execForm.mood_before}</div></div>
-                <div className="field"><label>Seu humor DEPOIS da atividade (0 a 10)</label><input type="range" min="0" max="10" value={execForm.mood_after} onChange={e => setExecForm({...execForm, mood_after: e.target.value})} /><div style={{textAlign:'center', fontWeight:'bold', color:'var(--blue-dark)'}}>{execForm.mood_after}</div></div>
-                <div className="field"><label>Nível de energia / disposição final (0 a 10)</label><input type="range" min="0" max="10" value={execForm.energy_after} onChange={e => setExecForm({...execForm, energy_after: e.target.value})} /><div style={{textAlign:'center', fontWeight:'bold'}}>{execForm.energy_after}</div></div>
+                <div className="field"><label>Humor ANTES da atividade (0 a 10)</label><input type="range" min="0" max="10" value={execForm.mood_before} onChange={e => setExecForm({...execForm, mood_before: e.target.value})} /><div style={{textAlign:'center', fontWeight:'bold'}}>{execForm.mood_before}</div></div>
+                <div className="field"><label>Humor DEPOIS da atividade (0 a 10)</label><input type="range" min="0" max="10" value={execForm.mood_after} onChange={e => setExecForm({...execForm, mood_after: e.target.value})} /><div style={{textAlign:'center', fontWeight:'bold', color:'var(--blue-dark)'}}>{execForm.mood_after}</div></div>
+                <div className="field"><label>Nível de energia final (0 a 10)</label><input type="range" min="0" max="10" value={execForm.energy_after} onChange={e => setExecForm({...execForm, energy_after: e.target.value})} /><div style={{textAlign:'center', fontWeight:'bold'}}>{execForm.energy_after}</div></div>
               </div>
             ) : (
               <div className="field" style={{ animation: "fadeIn .3s ease" }}>
                 <label>Qual foi o principal motivo?</label>
                 <select className="q-textarea" style={{minHeight:40}} value={execForm.avoidance_reason} onChange={e => setExecForm({...execForm, avoidance_reason: e.target.value})}>
-                  <option>Falta de energia</option><option>Esqueci</option><option>Falta de tempo</option><option>Evitei / Ansiedade</option><option>Outro imprevisto</option>
+                  <option>Falta de energia</option><option>Esqueci-me</option><option>Falta de tempo</option><option>Evitei / Ansiedade</option><option>Outro imprevisto</option>
                 </select>
               </div>
             )}
             
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
               <button className="btn btn-outline" onClick={() => setExecuting(null)}>Cancelar</button>
-              <button className="btn btn-sage" onClick={handleExecute}>Salvar Registro</button>
+              <button className="btn btn-sage" onClick={handleExecute}>Guardar Registo</button>
             </div>
           </div>
         </div>
@@ -3363,6 +3358,82 @@ function PatientRoutine({ session }) {
     </div>
   );
 }
+
+// ─── Visão do Psicólogo: Rotina e Ativação Comportamental do Paciente ────────
+function TherapistPatientActivities({ patientId, session }) {
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const res = await db.query(
+          "activities", 
+          { filter: { patient_id: patientId }, order: "planned_date.desc" }, 
+          session.access_token
+        );
+        setActivities(Array.isArray(res) ? res : []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (patientId) fetchActivities();
+  }, [patientId, session]);
+
+  if (loading) return <div style={{ padding: 20, color: "var(--text-muted)" }}>A carregar a ativação comportamental...</div>;
+  if (activities.length === 0) return <div className="card empty-state"><p>O paciente ainda não planeou nenhuma atividade.</p></div>;
+
+  return (
+    <div style={{ marginTop: 30, animation: "fadeIn 0.4s ease" }}>
+      <h3 style={{ borderBottom: "2px solid var(--warm)", paddingBottom: 10, marginBottom: 20, color: "var(--blue-dark)" }}>
+        📊 Ativação Comportamental (Rotina)
+      </h3>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {activities.map(act => {
+          const dateStr = new Date(act.planned_date).toLocaleString('pt-PT', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+          
+          return (
+            <div key={act.id} className="card" style={{ padding: 16, borderLeft: `4px solid ${act.status === 'concluido' ? '#2d7a3a' : act.status === 'nao_realizado' ? '#c0444a' : 'var(--blue-mid)'}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <div>
+                  <span className={`cat-badge cat-${act.category}`} style={{ fontSize: 10, padding: "2px 6px" }}>{act.category}</span>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)", marginLeft: 10 }}>📅 {dateStr}</span>
+                </div>
+                <div style={{ fontWeight: "bold", fontSize: 12, textTransform: "uppercase", color: act.status === 'concluido' ? '#2d7a3a' : act.status === 'nao_realizado' ? '#c0444a' : 'var(--blue-mid)' }}>
+                  {act.status === 'pendente' ? '⏳ Pendente' : act.status === 'concluido' ? '✅ Realizado' : '❌ Não feito'}
+                </div>
+              </div>
+
+              <h4 style={{ fontSize: 16, marginBottom: 4, textDecoration: act.status === 'nao_realizado' ? 'line-through' : 'none', color: "var(--text)" }}>
+                {act.title}
+              </h4>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
+                Nível de desafio esperado: <strong>{act.difficulty}</strong>
+              </div>
+
+              {act.status === 'concluido' && (
+                <div style={{ background: "var(--warm)", padding: 10, borderRadius: 8, fontSize: 13, display: "flex", gap: 16 }}>
+                  <div>Humor: <strong>{act.mood_before} ➔ {act.mood_after}</strong> {act.mood_after > act.mood_before ? '📈' : act.mood_after < act.mood_before ? '📉' : '➖'}</div>
+                  <div>Energia Final: <strong>{act.energy_after}/10</strong> ⚡</div>
+                </div>
+              )}
+
+              {act.status === 'nao_realizado' && (
+                <div style={{ background: "#fce8e8", color: "#c0444a", padding: 10, borderRadius: 8, fontSize: 13 }}>
+                  <strong>Motivo reportado:</strong> {act.avoidance_reason}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 
 // ─── Patient Progress ─────────────────────────────────────────────────────────
 function PatientProgress({ session }) {
