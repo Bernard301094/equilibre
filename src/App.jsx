@@ -3160,8 +3160,9 @@ function PatientRoutine({ session }) {
   const [executing, setExecuting] = useState(null);
   const [editingId, setEditingId] = useState(null);
 
-  // Estado para controlar os alertas e confirmações com o design do site
+  // Estados para feedbacks visuais
   const [dialog, setDialog] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(""); // NOVO: Controla a mensagem de sucesso
 
   const [form, setForm] = useState({ title: "", category: "Autocuidado", difficulty: "Fácil", date: "", time: "" });
   const [execForm, setExecForm] = useState({ did_it: true, mood_before: 5, mood_after: 5, energy_after: 5, avoidance_reason: "Falta de energia" });
@@ -3179,6 +3180,12 @@ function PatientRoutine({ session }) {
 
   useEffect(() => { fetchActivities(); }, [session.id]);
 
+  // Função auxiliar para mostrar sucesso e apagar após 3s
+  const showSuccess = (msg) => {
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(""), 3000);
+  };
+
   const handlePillarClick = (category) => {
     setForm({ title: "", category, difficulty: "Fácil", date: "", time: "" });
     setEditingId(null);
@@ -3195,24 +3202,21 @@ function PatientRoutine({ session }) {
     setShowAdd(true);
   };
 
-  // EXCLUSÃO OTIMIZADA COM DIÁLOGO CUSTOMIZADO
   const handleDeleteClick = (id) => {
     setDialog({
       type: 'confirm',
       title: 'Excluir Atividade',
       message: 'Tem certeza que deseja excluir esta atividade?',
       onConfirm: async () => {
-        setDialog(null); // Fecha o modal
+        setDialog(null); 
         
-        // Remove da tela instantaneamente (Optimistic Update)
         const prevActivities = [...activities];
         setActivities(prev => prev.filter(act => act.id !== id));
         
         try {
-          // Apaga no banco de forma silenciosa
           await db.delete("activities", { id }, session.access_token);
+          showSuccess("🗑️ Atividade excluída com sucesso!"); // FEEDBACK AQUI
         } catch (e) {
-          // Se falhar, devolve o item à tela e avisa
           setActivities(prevActivities);
           setDialog({ type: 'alert', title: 'Erro', message: "Erro ao excluir: " + e.message });
         }
@@ -3231,15 +3235,17 @@ function PatientRoutine({ session }) {
 
       if (editingId) {
         await db.update("activities", { id: editingId }, actData, session.access_token);
+        showSuccess("✏️ Alterações salvas!"); // FEEDBACK AQUI
       } else {
         actData.patient_id = session.id;
         actData.status = "pendente";
         await db.insert("activities", actData, session.access_token);
+        showSuccess("✅ Atividade agendada!"); // FEEDBACK AQUI
       }
       
       setShowAdd(false);
       setEditingId(null);
-      fetchActivities(); // Atualiza sem "piscar" a tela
+      fetchActivities(); 
     } catch (e) { 
       setDialog({ type: 'alert', title: 'Erro', message: 'Erro ao salvar atividade.' }); 
     }
@@ -3253,6 +3259,7 @@ function PatientRoutine({ session }) {
       
       await db.update("activities", { id: executing.id }, updateData, session.access_token);
       setExecuting(null);
+      showSuccess("🌟 Registro salvo com sucesso!"); // FEEDBACK AQUI
       fetchActivities();
     } catch (e) { 
       setDialog({ type: 'alert', title: 'Erro', message: 'Erro ao registrar atividade.' }); 
@@ -3270,6 +3277,13 @@ function PatientRoutine({ session }) {
         <h2>Minha Rotina (Ativação)</h2>
         <p>Planeje pequenas ações nos seus 5 pilares. A ação traz a motivação!</p>
       </div>
+
+      {/* NOVO: BANNER DE SUCESSO TEMPORÁRIO */}
+      {successMsg && (
+        <div className="success-banner" style={{ marginBottom: 20, animation: "fadeIn .3s ease" }}>
+          {successMsg}
+        </div>
+      )}
 
       <div className="pillars-container">
         {BA_PILLARS.map(p => (
@@ -3344,11 +3358,7 @@ function PatientRoutine({ session }) {
         </div>
       )}
 
-      {/* =========================================
-          MODAIS CUSTOMIZADOS DA APLICAÇÃO
-          ========================================= */}
-
-      {/* 1. MODAL: ALERTAS E CONFIRMAÇÕES (Substitui window.confirm e alert) */}
+      {/* 1. MODAL: ALERTAS E CONFIRMAÇÕES */}
       {dialog && (
         <div className="overlay" style={{ zIndex: 9999 }} onClick={() => setDialog(null)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ textAlign: 'center', padding: '32px 24px', maxWidth: 360 }}>
