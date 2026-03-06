@@ -23,6 +23,7 @@ const db = {
       });
     }
     if (options.order) url += `order=${options.order}&`;
+    
     const res = await fetch(url, {
       cache: "no-store",
       headers: {
@@ -31,6 +32,8 @@ const db = {
         "Content-Type": "application/json",
       },
     });
+    
+    if (res.status === 401) window.dispatchEvent(new Event("equilibre-unauthorized"));
     if (!res.ok) throw new Error("Erro na query");
     return res.json();
   },
@@ -46,7 +49,14 @@ const db = {
       },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Erro no insert");
+    
+    if (res.status === 401) window.dispatchEvent(new Event("equilibre-unauthorized"));
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const detail = [err.message || err.msg, err.hint, err.details].filter(Boolean).join(" | ");
+      throw new Error(detail || `Erro ao inserir em ${table} (HTTP ${res.status})`);
+    }
+    
     const json = await res.json();
     return json[0];
   },
@@ -58,6 +68,7 @@ const db = {
         url += `${k}=eq.${encodeURIComponent(v)}&`;
       });
     }
+    
     const res = await fetch(url, {
       method: "PATCH",
       headers: {
@@ -68,12 +79,17 @@ const db = {
       },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Erro no update");
+    
+    if (res.status === 401) window.dispatchEvent(new Event("equilibre-unauthorized"));
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || err.msg || `Erro ao atualizar ${table}`);
+    }
+    
     const json = await res.json();
     return json[0];
   },
 
-  // 👇 ESTA É A FUNÇÃO QUE FALTAVA PARA APAGAR AS ROTINAS 👇
   async delete(table, filter, token = null) {
     let url = `${SUPA_URL}/rest/v1/${table}?`;
     if (filter) {
@@ -81,6 +97,7 @@ const db = {
         url += `${k}=eq.${encodeURIComponent(v)}&`;
       });
     }
+    
     const res = await fetch(url, {
       method: "DELETE",
       headers: {
@@ -89,77 +106,14 @@ const db = {
       },
     });
     
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("Erro detalhado do Supabase ao apagar:", errorText);
-      throw new Error("Não foi possível eliminar.");
-    }
-    return true;
-  }
-};
-  
-  async insert(table, data, token = null) {
-    const res = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
-      method: "POST",
-      headers: {
-        apikey: SUPA_KEY,
-        Authorization: `Bearer ${token || SUPA_KEY}`,
-        "Content-Type": "application/json",
-        Prefer: "return=representation",
-      },
-      body: JSON.stringify(data),
-    });
-    if (res.status === 401) window.dispatchEvent(new Event("equilibre-unauthorized"));
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      const detail = [err.message || err.msg, err.hint, err.details].filter(Boolean).join(" | ");
-      throw new Error(detail || `Erro ao inserir em ${table} (HTTP ${res.status})`);
-    }
-    return res.json();
-  },
-  
-  async update(table, filter, data, token = null) {
-    let url = `${SUPA_URL}/rest/v1/${table}?`;
-    Object.entries(filter).forEach(([k, v]) => {
-      url += `${k}=eq.${encodeURIComponent(v)}&`;
-    });
-    const res = await fetch(url, {
-      method: "PATCH",
-      headers: {
-        apikey: SUPA_KEY,
-        Authorization: `Bearer ${token || SUPA_KEY}`,
-        "Content-Type": "application/json",
-        Prefer: "return=representation",
-      },
-      body: JSON.stringify(data),
-    });
-    if (res.status === 401) window.dispatchEvent(new Event("equilibre-unauthorized"));
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || err.msg || `Erro ao atualizar ${table}`);
-    }
-    return res.json();
-  },
-  
-  async remove(table, filter, token = null) {
-    let url = `${SUPA_URL}/rest/v1/${table}?`;
-    Object.entries(filter).forEach(([k, v]) => {
-      url += `${k}=eq.${encodeURIComponent(v)}&`;
-    });
-    const res = await fetch(url, {
-      method: "DELETE",
-      headers: {
-        apikey: SUPA_KEY,
-        Authorization: `Bearer ${token || SUPA_KEY}`,
-      },
-    });
     if (res.status === 401) window.dispatchEvent(new Event("equilibre-unauthorized"));
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       const detail = [err.message || err.msg, err.hint, err.details].filter(Boolean).join(" | ");
       throw new Error(detail || `Erro ao eliminar em ${table} (HTTP ${res.status})`);
     }
-  },
+    return true;
+  }
 };
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -3209,7 +3163,6 @@ function PatientRoutine({ session }) {
   const [showAdd, setShowAdd] = useState(false);
   const [executing, setExecuting] = useState(null);
   
-  // NOVO: Estado para saber se estamos a editar uma atividade existente
   const [editingId, setEditingId] = useState(null);
 
   const [form, setForm] = useState({ title: "", category: "Autocuidado", difficulty: "Fácil", date: "", time: "" });
@@ -3228,17 +3181,14 @@ function PatientRoutine({ session }) {
 
   useEffect(() => { fetchActivities(); }, [session.id]);
 
-  // Clicar num pilar para CRIAR nova atividade
   const handlePillarClick = (category) => {
     setForm({ title: "", category, difficulty: "Fácil", date: "", time: "" });
     setEditingId(null);
     setShowAdd(true);
   };
 
-  // NOVO: Clicar para EDITAR uma atividade existente
   const handleEditClick = (act) => {
     const d = new Date(act.planned_date);
-    // Extrai a data no formato YYYY-MM-DD e a hora no formato HH:MM
     const date = d.toISOString().split("T")[0];
     const time = d.toTimeString().substring(0, 5); 
     
@@ -3247,7 +3197,7 @@ function PatientRoutine({ session }) {
     setShowAdd(true);
   };
 
-  // NOVO: Clicar para ELIMINAR uma atividade
+  // 👇 FUNÇÃO DE EXCLUIR COM ALERTA NA TELA 👇
   const handleDeleteClick = async (id) => {
     if (!window.confirm("Tens a certeza que queres eliminar esta atividade?")) return;
     setLoading(true);
@@ -3255,12 +3205,11 @@ function PatientRoutine({ session }) {
       await db.delete("activities", { id }, session.access_token);
       fetchActivities();
     } catch (e) {
-      alert("Erro ao eliminar a atividade.");
+      alert("Erro ao eliminar: " + e.message); // Vai mostrar exatamente o motivo!
       setLoading(false);
     }
   };
 
-  // Salvar a atividade (Serve tanto para Criar como para Editar)
   const handleSave = async () => {
     if (!form.title || !form.date || !form.time) return alert("Preenche o que vais fazer, o dia e o horário.");
     setLoading(true);
@@ -3275,10 +3224,8 @@ function PatientRoutine({ session }) {
       };
 
       if (editingId) {
-        // Se tem ID de edição, atualiza
         await db.update("activities", { id: editingId }, actData, session.access_token);
       } else {
-        // Se não, cria uma nova
         actData.patient_id = session.id;
         actData.status = "pendente";
         await db.insert("activities", actData, session.access_token);
@@ -3340,7 +3287,6 @@ function PatientRoutine({ session }) {
                 </div>
               </div>
               
-              {/* NOVO: Botões de Ação na base do cartão */}
               <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end', borderTop: '1px solid var(--warm)', paddingTop: 12 }}>
                 <button 
                   className="btn btn-sm" 
@@ -3383,7 +3329,6 @@ function PatientRoutine({ session }) {
                       {act.status === 'concluido' ? '✅ Concluído' : '❌ Não feito'}
                     </span>
                   </div>
-                  {/* NOVO: Ícone para apagar também no histórico */}
                   <button onClick={() => handleDeleteClick(act.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, opacity: 0.6 }}>🗑️</button>
                 </div>
                 
@@ -3439,7 +3384,7 @@ function PatientRoutine({ session }) {
         </div>
       )}
 
-      {/* MODAL: REGISTAR EXECUÇÃO (Permanece igual) */}
+      {/* MODAL: REGISTAR EXECUÇÃO */}
       {executing && (
         <div className="overlay" onClick={() => setExecuting(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
