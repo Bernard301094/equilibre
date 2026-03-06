@@ -3162,8 +3162,10 @@ function PatientRoutine({ session }) {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [executing, setExecuting] = useState(null);
-  
   const [editingId, setEditingId] = useState(null);
+
+  // NOVO: Estado para controlar os alertas e confirmações com o design do site
+  const [dialog, setDialog] = useState(null);
 
   const [form, setForm] = useState({ title: "", category: "Autocuidado", difficulty: "Fácil", date: "", time: "" });
   const [execForm, setExecForm] = useState({ did_it: true, mood_before: 5, mood_after: 5, energy_after: 5, avoidance_reason: "Falta de energia" });
@@ -3197,31 +3199,39 @@ function PatientRoutine({ session }) {
     setShowAdd(true);
   };
 
-  // 👇 FUNÇÃO DE EXCLUIR COM ALERTA NA TELA 👇
-  const handleDeleteClick = async (id) => {
-    if (!window.confirm("Tens a certeza que queres eliminar esta atividade?")) return;
-    setLoading(true);
-    try {
-      await db.delete("activities", { id }, session.access_token);
-      fetchActivities();
-    } catch (e) {
-      alert("Erro ao eliminar: " + e.message); // Vai mostrar exatamente o motivo!
-      setLoading(false);
-    }
+  // EXCLUSÃO OTIMIZADA COM DIÁLOGO CUSTOMIZADO
+  const handleDeleteClick = (id) => {
+    setDialog({
+      type: 'confirm',
+      title: 'Eliminar Atividade',
+      message: 'Tens a certeza que queres eliminar esta atividade?',
+      onConfirm: async () => {
+        setDialog(null); // Fecha o modal
+        
+        // Remove da tela instantaneamente (Optimistic Update)
+        const prevActivities = [...activities];
+        setActivities(prev => prev.filter(act => act.id !== id));
+        
+        try {
+          // Apaga no banco de forma silenciosa
+          await db.delete("activities", { id }, session.access_token);
+        } catch (e) {
+          // Se falhar, devolve o item à tela e avisa
+          setActivities(prevActivities);
+          setDialog({ type: 'alert', title: 'Erro', message: "Erro ao eliminar: " + e.message });
+        }
+      }
+    });
   };
 
   const handleSave = async () => {
-    if (!form.title || !form.date || !form.time) return alert("Preenche o que vais fazer, o dia e o horário.");
-    setLoading(true);
+    if (!form.title || !form.date || !form.time) {
+      return setDialog({ type: 'alert', title: 'Atenção', message: 'Preenche o que vais fazer, o dia e o horário.' });
+    }
+    
     try {
       const planned_date = new Date(`${form.date}T${form.time}`).toISOString();
-      
-      const actData = {
-        title: form.title,
-        category: form.category,
-        difficulty: form.difficulty,
-        planned_date: planned_date
-      };
+      const actData = { title: form.title, category: form.category, difficulty: form.difficulty, planned_date: planned_date };
 
       if (editingId) {
         await db.update("activities", { id: editingId }, actData, session.access_token);
@@ -3233,12 +3243,13 @@ function PatientRoutine({ session }) {
       
       setShowAdd(false);
       setEditingId(null);
-      fetchActivities();
-    } catch (e) { alert("Erro ao guardar atividade."); setLoading(false); }
+      fetchActivities(); // Atualiza sem "piscar" a tela
+    } catch (e) { 
+      setDialog({ type: 'alert', title: 'Erro', message: 'Erro ao guardar atividade.' }); 
+    }
   };
 
   const handleExecute = async () => {
-    setLoading(true);
     try {
       const updateData = execForm.did_it 
         ? { status: "concluido", mood_before: execForm.mood_before, mood_after: execForm.mood_after, energy_after: execForm.energy_after }
@@ -3247,7 +3258,9 @@ function PatientRoutine({ session }) {
       await db.update("activities", { id: executing.id }, updateData, session.access_token);
       setExecuting(null);
       fetchActivities();
-    } catch (e) { alert("Erro ao registar."); setLoading(false); }
+    } catch (e) { 
+      setDialog({ type: 'alert', title: 'Erro', message: 'Erro ao registar atividade.' }); 
+    }
   };
 
   if (loading) return <div style={{ color: "var(--text-muted)", padding: 20 }}>A carregar a rotina...</div>;
@@ -3288,28 +3301,9 @@ function PatientRoutine({ session }) {
               </div>
               
               <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end', borderTop: '1px solid var(--warm)', paddingTop: 12 }}>
-                <button 
-                  className="btn btn-sm" 
-                  style={{ background: 'transparent', color: 'var(--danger)', fontSize: 16, padding: '0 8px' }} 
-                  onClick={() => handleDeleteClick(act.id)}
-                  title="Eliminar"
-                >
-                  🗑️
-                </button>
-                <button 
-                  className="btn btn-sm" 
-                  style={{ background: 'var(--warm)', color: 'var(--blue-dark)' }} 
-                  onClick={() => handleEditClick(act)}
-                >
-                  ✏️ Editar
-                </button>
-                <button 
-                  className="btn btn-sm" 
-                  style={{ background: 'var(--blue-mid)', color: 'white' }} 
-                  onClick={() => setExecuting(act)}
-                >
-                  Fiz isto! ✓
-                </button>
+                <button className="btn btn-sm" style={{ background: 'transparent', color: 'var(--danger)', fontSize: 16, padding: '0 8px' }} onClick={() => handleDeleteClick(act.id)} title="Eliminar">🗑️</button>
+                <button className="btn btn-sm" style={{ background: 'var(--warm)', color: 'var(--blue-dark)' }} onClick={() => handleEditClick(act)}>✏️ Editar</button>
+                <button className="btn btn-sm" style={{ background: 'var(--blue-mid)', color: 'white' }} onClick={() => setExecuting(act)}>Fiz isto! ✓</button>
               </div>
             </div>
           ))}
@@ -3354,7 +3348,42 @@ function PatientRoutine({ session }) {
         </div>
       )}
 
-      {/* MODAL: ADICIONAR / EDITAR ATIVIDADE */}
+      {/* =========================================
+          MODAIS CUSTOMIZADOS DA APLICAÇÃO
+          ========================================= */}
+
+      {/* 1. MODAL: ALERTAS E CONFIRMAÇÕES (Substitui window.confirm e alert) */}
+      {dialog && (
+        <div className="overlay" style={{ zIndex: 9999 }} onClick={() => setDialog(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ textAlign: 'center', padding: '32px 24px', maxWidth: 360 }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>
+              {dialog.type === 'confirm' ? '🗑️' : '⚠️'}
+            </div>
+            <h3 style={{ marginBottom: 8, color: 'var(--blue-dark)' }}>{dialog.title}</h3>
+            <p style={{ color: "var(--text-muted)", fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>
+              {dialog.message}
+            </p>
+            
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+              {dialog.type === 'confirm' && (
+                <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setDialog(null)}>Cancelar</button>
+              )}
+              <button 
+                className={`btn ${dialog.type === 'confirm' ? 'btn-accent' : 'btn-sage'}`} 
+                style={{ flex: 1, backgroundColor: dialog.type === 'confirm' ? 'var(--danger)' : '' }}
+                onClick={() => {
+                  if (dialog.onConfirm) dialog.onConfirm();
+                  else setDialog(null);
+                }}
+              >
+                {dialog.type === 'confirm' ? 'Eliminar' : 'Entendi'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. MODAL: ADICIONAR / EDITAR ATIVIDADE */}
       {showAdd && (
         <div className="overlay" onClick={() => { setShowAdd(false); setEditingId(null); }}>
           <div className="modal" onClick={e => e.stopPropagation()}>
@@ -3384,7 +3413,7 @@ function PatientRoutine({ session }) {
         </div>
       )}
 
-      {/* MODAL: REGISTAR EXECUÇÃO */}
+      {/* 3. MODAL: REGISTAR EXECUÇÃO */}
       {executing && (
         <div className="overlay" onClick={() => setExecuting(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
