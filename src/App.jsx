@@ -24,23 +24,79 @@ const db = {
     }
     if (options.order) url += `order=${options.order}&`;
     const res = await fetch(url, {
-      cache: "no-store", // 👈 IMPEDE CACHE DE DADOS ANTIGOS
+      cache: "no-store",
       headers: {
         apikey: SUPA_KEY,
         Authorization: `Bearer ${token || SUPA_KEY}`,
         "Content-Type": "application/json",
       },
     });
-    
-    // 👈 SE O TOKEN EXPIROU, AVISA O APP PARA DESLOGAR OU RENOVAR
-    if (res.status === 401) window.dispatchEvent(new Event("equilibre-unauthorized"));
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || err.msg || `Erro ao consultar ${table}`);
-    }
+    if (!res.ok) throw new Error("Erro na query");
     return res.json();
   },
+
+  async insert(table, data, token = null) {
+    const res = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
+      method: "POST",
+      headers: {
+        apikey: SUPA_KEY,
+        Authorization: `Bearer ${token || SUPA_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Erro no insert");
+    const json = await res.json();
+    return json[0];
+  },
+
+  async update(table, filter, data, token = null) {
+    let url = `${SUPA_URL}/rest/v1/${table}?`;
+    if (filter) {
+      Object.entries(filter).forEach(([k, v]) => {
+        url += `${k}=eq.${encodeURIComponent(v)}&`;
+      });
+    }
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: {
+        apikey: SUPA_KEY,
+        Authorization: `Bearer ${token || SUPA_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Erro no update");
+    const json = await res.json();
+    return json[0];
+  },
+
+  // 👇 ESTA É A FUNÇÃO QUE FALTAVA PARA APAGAR AS ROTINAS 👇
+  async delete(table, filter, token = null) {
+    let url = `${SUPA_URL}/rest/v1/${table}?`;
+    if (filter) {
+      Object.entries(filter).forEach(([k, v]) => {
+        url += `${k}=eq.${encodeURIComponent(v)}&`;
+      });
+    }
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: {
+        apikey: SUPA_KEY,
+        Authorization: `Bearer ${token || SUPA_KEY}`,
+      },
+    });
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("Erro detalhado do Supabase ao apagar:", errorText);
+      throw new Error("Não foi possível eliminar.");
+    }
+    return true;
+  }
+};
   
   async insert(table, data, token = null) {
     const res = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
