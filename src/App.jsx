@@ -1176,10 +1176,8 @@ function PatientsView({ session, setModal }) {
     const fetch = async () => {
       try {
         const [pts, invs] = await Promise.all([
-          // Adicionado 'avatar_url' no select (se a sua função db.query puxar tudo, não precisa do select, 
-          // mas deixo aqui por segurança caso esteja usando select explícito)
-          db.query('users', { filter: { therapist_id: session.id, role: 'patient' } }, session.accesstoken),
-          db.query('invites', { filter: { therapist_id: session.id }, order: 'created_at.desc' }, session.accesstoken)
+          db.query('users', { filter: { therapist_id: session.id, role: 'patient' } }, session.access_token),
+          db.query('invites', { filter: { therapist_id: session.id }, order: 'created_at.desc' }, session.access_token)
         ]);
         if (!active) return;
         setPatients(Array.isArray(pts) ? pts : []);
@@ -1192,7 +1190,7 @@ function PatientsView({ session, setModal }) {
     };
     fetch();
     return () => { active = false; };
-  }, [session.id, session.accesstoken]);
+  }, [session.id, session.access_token]);
 
   const generateInvite = async () => {
     setGenerating(true);
@@ -1200,9 +1198,9 @@ function PatientsView({ session, setModal }) {
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       const newInv = { code, therapist_id: session.id, status: 'pending' };
       
-      await db.insert('invites', newInv, session.accesstoken);
+      await db.insert('invites', newInv, session.access_token);
       
-      const fresh = await db.query('invites', { filter: { therapist_id: session.id }, order: 'created_at.desc' }, session.accesstoken);
+      const fresh = await db.query('invites', { filter: { therapist_id: session.id }, order: 'created_at.desc' }, session.access_token);
       setInvites(Array.isArray(fresh) ? fresh : []);
       
     } catch (e) {
@@ -1227,19 +1225,19 @@ function PatientsView({ session, setModal }) {
     if (!deletingInvite || !deletingInvite.code) return;
     
     try {
-      await db.remove('invites', { code: deletingInvite.code }, session.accesstoken);
+      await db.delete('invites', { code: deletingInvite.code }, session.access_token);
       setInvites(prev => prev.filter(i => i.code !== deletingInvite.code));
       setDeletingInvite(null);
     } catch (e) {
-      console.error('Erro ao eliminar convite:', e);
-      alert(`Erro ao eliminar convite: ${e?.message || e}`);
+      console.error('Erro ao excluir convite:', e);
+      alert(`Erro ao excluir convite: ${e?.message || e}`);
     }
   };
 
   const confirmUnlink = async () => {
     if (!unlinkingPatient) return;
     try {
-      await db.update('users', { id: unlinkingPatient.id }, { therapist_id: null }, session.accesstoken);
+      await db.update('users', { id: unlinkingPatient.id }, { therapist_id: null }, session.access_token);
       setPatients(prev => prev.filter(p => p.id !== unlinkingPatient.id));
       setUnlinkingPatient(null);
     } catch (e) {
@@ -1247,24 +1245,23 @@ function PatientsView({ session, setModal }) {
     }
   };
 
-  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 14 }}>A carregar pacientes...</div>;
+  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 14 }}>Carregando pacientes...</div>;
 
   return (
     <div style={{ animation: 'fadeUp .4s ease' }}>
       <div className="page-header">
-        <h2>Os Meus Pacientes</h2>
-        <p>Faça a gestão dos seus pacientes e envie convites</p>
+        <h2>Meus Pacientes</h2>
+        <p>Gerencie seus pacientes e envie convites</p>
       </div>
 
       <div className="grid-2">
         <div className="card">
           <h3 style={{ fontSize: 16, marginBottom: 14 }}>Pacientes Ativos ({patients.length})</h3>
-          {patients.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Nenhum paciente registado.</p>}
+          {patients.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Nenhum paciente registrado.</p>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {patients.map(p => (
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', border: '1.5px solid var(--warm)', borderRadius: 12, background: 'var(--cream)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  {/* SOLUÇÃO DE FOTO DE PERFIL AQUI */}
                   {p.avatar_url ? (
                     <img src={p.avatar_url} className="p-avatar" alt={p.name} />
                   ) : (
@@ -1277,7 +1274,7 @@ function PatientsView({ session, setModal }) {
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="btn btn-sage btn-sm" onClick={() => setModal({ type: 'assign', payload: { patient: p } })}>
-                    Gerir
+                    Gerenciar
                   </button>
                   <button 
                     className="btn btn-outline btn-sm" 
@@ -1296,10 +1293,10 @@ function PatientsView({ session, setModal }) {
         <div className="card">
           <h3 style={{ fontSize: 16, marginBottom: 14 }}>Convidar Novo Paciente</h3>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.5 }}>
-            Gere um código único e partilhe pelo WhatsApp com o seu paciente. Ao usá-lo no registo, ele ficará automaticamente vinculado à sua conta.
+            Gere um código único e compartilhe pelo WhatsApp com o seu paciente. Ao usá-lo no registro, ele ficará automaticamente vinculado à sua conta.
           </p>
           <button className="btn btn-sage" onClick={generateInvite} disabled={generating} style={{ marginBottom: 24 }}>
-            {generating ? 'A gerar...' : 'Gerar Novo Código'}
+            {generating ? 'Gerando...' : 'Gerar Novo Código'}
           </button>
 
           <h3 style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '.05em' }}>Convites Gerados</h3>
@@ -1350,13 +1347,14 @@ function PatientsView({ session, setModal }) {
                       )}
                     </button>
 
+                    {/* BOTÃO DO WHATSAPP CORRIGIDO (Texto BR e link limpo) */}
                     <button onClick={() => {
-                      const msg = encodeURIComponent(`Olá! Estou a usar o Equilibre para acompanhar o nosso trabalho juntos.\n\nPara criar a sua conta e ficarmos conectados, use o código de convite abaixo:\n\n*${inv.code}*\n\nAceda a [https://equilibreapp.vercel.app](https://equilibreapp.vercel.app) e clique em "Criar conta" > perfil "Paciente" > insira o código acima.`);
+                      const msg = encodeURIComponent(`Olá! Estou usando o Equilibre para acompanhar o nosso trabalho juntos.\n\nPara criar a sua conta e ficarmos conectados, use o código de convite abaixo:\n\n*${inv.code}*\n\nAcesse https://equilibreapp.vercel.app e clique em "Criar conta" > perfil "Paciente" > insira o código acima.`);
                       window.open(`https://wa.me/?text=${msg}`, '_blank');
                     }} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }} title="Enviar pelo WhatsApp">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="22" height="22"><circle cx="16" cy="16" r="16" fill="#25D366"/><path d="M23.5 8.5A10.44 10.44 0 0 0 16 5.5a10.5 10.5 0 0 0-9.08 15.73L5.5 26.5l5.43-1.42A10.5 10.5 0 0 0 26.5 16a10.44 10.44 0 0 0-3-7.5zm-7.5 16.16a8.71 8.71 0 0 1-4.44-1.21l-.32-.19-3.22.84.86-3.14-.21-.33a8.75 8.75 0 1 1 7.33 4.03zm4.8-6.55c-.26-.13-1.55-.77-1.79-.85s-.41-.13-.59.13-.67.85-.83 1-.3.2-.56.07a7.13 7.13 0 0 1-2.1-1.3 7.9 7.9 0 0 1-1.45-1.81c-.15-.26 0-.4.11-.53s.26-.3.4-.46a1.8 1.8 0 0 0 .26-.43.48.48 0 0 0 0-.46c-.07-.13-.59-1.42-.81-1.94s-.43-.44-.59-.45h-.5a1 1 0 0 0-.7.33 2.93 2.93 0 0 0-.91 2.18 5.1 5.1 0 0 0 1.06 2.7 11.65 11.65 0 0 0 4.47 3.95c.62.27 1.1.43 1.48.55a3.56 3.56 0 0 0 1.63.1 2.69 2.69 0 0 0 1.76-1.24 2.18 2.18 0 0 0 .15-1.24c-.06-.11-.24-.17-.5-.3z" fill="#fff"/></svg>
                     </button>
-                    <button onClick={() => setDeletingInvite(inv)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, opacity: 0.6 }} title="Eliminar convite">🗑️</button>
+                    <button onClick={() => setDeletingInvite(inv)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, opacity: 0.6 }} title="Excluir convite">🗑️</button>
                   </div>
                 )}
               </div>
@@ -1372,8 +1370,8 @@ function PatientsView({ session, setModal }) {
             <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>🔗</div>
             <div className="delete-title" style={{ fontSize: 20 }}>Desvincular Paciente?</div>
             <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>
-              Tem a certeza de que deseja desvincular <strong>{unlinkingPatient.name}</strong> da sua conta? <br/><br/>
-              O paciente perderá o acesso aos exercícios que lhe enviou, e deixará de poder ver o diário ou os dados dele. O registo do paciente em si <strong>não</strong> será apagado.
+              Tem certeza que deseja desvincular <strong>{unlinkingPatient.name}</strong> da sua conta? <br/><br/>
+              O paciente perderá o acesso aos exercícios que você enviou, e você deixará de poder ver o diário ou os dados dele. O registro do paciente em si <strong>não</strong> será apagado.
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button className="btn btn-outline" onClick={() => setUnlinkingPatient(null)}>Cancelar</button>
@@ -1388,14 +1386,14 @@ function PatientsView({ session, setModal }) {
         <div className="delete-overlay" onClick={() => setDeletingInvite(null)}>
           <div className="delete-modal" onClick={e => e.stopPropagation()}>
             <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>🗑️</div>
-            <div className="delete-title" style={{ fontSize: 20 }}>Eliminar Convite?</div>
+            <div className="delete-title" style={{ fontSize: 20 }}>Excluir Convite?</div>
             <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>
-              Tem a certeza de que deseja eliminar o convite <strong>{deletingInvite.code}</strong>?<br/><br/>
+              Tem certeza que deseja excluir o convite <strong>{deletingInvite.code}</strong>?<br/><br/>
               Este código deixará de funcionar e não poderá ser usado por nenhum paciente para criar uma conta.
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button className="btn btn-outline" onClick={() => setDeletingInvite(null)}>Cancelar</button>
-              <button className="btn-danger" onClick={confirmDeleteInvite}>Eliminar</button>
+              <button className="btn-danger" onClick={confirmDeleteInvite}>Excluir</button>
             </div>
           </div>
         </div>
@@ -1403,8 +1401,6 @@ function PatientsView({ session, setModal }) {
     </div>
   );
 }
-
-
 
 // ─── Exercises View ───────────────────────────────────────────────────────────
 function ExercisesView({ session }) {
@@ -3164,7 +3160,7 @@ function PatientRoutine({ session }) {
   const [executing, setExecuting] = useState(null);
   const [editingId, setEditingId] = useState(null);
 
-  // NOVO: Estado para controlar os alertas e confirmações com o design do site
+  // Estado para controlar os alertas e confirmações com o design do site
   const [dialog, setDialog] = useState(null);
 
   const [form, setForm] = useState({ title: "", category: "Autocuidado", difficulty: "Fácil", date: "", time: "" });
@@ -3203,8 +3199,8 @@ function PatientRoutine({ session }) {
   const handleDeleteClick = (id) => {
     setDialog({
       type: 'confirm',
-      title: 'Eliminar Atividade',
-      message: 'Tens a certeza que queres eliminar esta atividade?',
+      title: 'Excluir Atividade',
+      message: 'Tem certeza que deseja excluir esta atividade?',
       onConfirm: async () => {
         setDialog(null); // Fecha o modal
         
@@ -3218,7 +3214,7 @@ function PatientRoutine({ session }) {
         } catch (e) {
           // Se falhar, devolve o item à tela e avisa
           setActivities(prevActivities);
-          setDialog({ type: 'alert', title: 'Erro', message: "Erro ao eliminar: " + e.message });
+          setDialog({ type: 'alert', title: 'Erro', message: "Erro ao excluir: " + e.message });
         }
       }
     });
@@ -3226,7 +3222,7 @@ function PatientRoutine({ session }) {
 
   const handleSave = async () => {
     if (!form.title || !form.date || !form.time) {
-      return setDialog({ type: 'alert', title: 'Atenção', message: 'Preenche o que vais fazer, o dia e o horário.' });
+      return setDialog({ type: 'alert', title: 'Atenção', message: 'Preencha o que você vai fazer, o dia e o horário.' });
     }
     
     try {
@@ -3245,7 +3241,7 @@ function PatientRoutine({ session }) {
       setEditingId(null);
       fetchActivities(); // Atualiza sem "piscar" a tela
     } catch (e) { 
-      setDialog({ type: 'alert', title: 'Erro', message: 'Erro ao guardar atividade.' }); 
+      setDialog({ type: 'alert', title: 'Erro', message: 'Erro ao salvar atividade.' }); 
     }
   };
 
@@ -3259,11 +3255,11 @@ function PatientRoutine({ session }) {
       setExecuting(null);
       fetchActivities();
     } catch (e) { 
-      setDialog({ type: 'alert', title: 'Erro', message: 'Erro ao registar atividade.' }); 
+      setDialog({ type: 'alert', title: 'Erro', message: 'Erro ao registrar atividade.' }); 
     }
   };
 
-  if (loading) return <div style={{ color: "var(--text-muted)", padding: 20 }}>A carregar a rotina...</div>;
+  if (loading) return <div style={{ color: "var(--text-muted)", padding: 20 }}>Carregando a rotina...</div>;
 
   const pending = activities.filter(a => a.status === 'pendente');
   const past = activities.filter(a => a.status !== 'pendente');
@@ -3272,7 +3268,7 @@ function PatientRoutine({ session }) {
     <div style={{ animation: "fadeUp .4s ease", maxWidth: 640 }}>
       <div className="page-header">
         <h2>Minha Rotina (Ativação)</h2>
-        <p>Planeia pequenas ações nos teus 5 pilares. A ação traz a motivação!</p>
+        <p>Planeje pequenas ações nos seus 5 pilares. A ação traz a motivação!</p>
       </div>
 
       <div className="pillars-container">
@@ -3286,7 +3282,7 @@ function PatientRoutine({ session }) {
       </div>
 
       {pending.length === 0 ? (
-        <div className="empty-state card"><div className="empty-icon">🗓️</div><p>Nenhuma atividade planeada. Clica num pilar acima para começar!</p></div>
+        <div className="empty-state card"><div className="empty-icon">🗓️</div><p>Nenhuma atividade planejada. Clique em um pilar acima para começar!</p></div>
       ) : (
         <div style={{ marginBottom: 30 }}>
           <h3 style={{ fontSize: 14, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 12 }}>Para Fazer</h3>
@@ -3296,14 +3292,14 @@ function PatientRoutine({ session }) {
                 <span className={`cat-badge cat-${act.category}`}>{act.category}</span>
                 <h4 style={{ fontSize: 16, color: "var(--blue-dark)", marginTop: 8, marginBottom: 4 }}>{act.title}</h4>
                 <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                  ⏰ {new Date(act.planned_date).toLocaleString('pt-PT', { weekday: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })} | Desafio: {act.difficulty}
+                  ⏰ {new Date(act.planned_date).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })} | Desafio: {act.difficulty}
                 </div>
               </div>
               
               <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end', borderTop: '1px solid var(--warm)', paddingTop: 12 }}>
-                <button className="btn btn-sm" style={{ background: 'transparent', color: 'var(--danger)', fontSize: 16, padding: '0 8px' }} onClick={() => handleDeleteClick(act.id)} title="Eliminar">🗑️</button>
+                <button className="btn btn-sm" style={{ background: 'transparent', color: 'var(--danger)', fontSize: 16, padding: '0 8px' }} onClick={() => handleDeleteClick(act.id)} title="Excluir">🗑️</button>
                 <button className="btn btn-sm" style={{ background: 'var(--warm)', color: 'var(--blue-dark)' }} onClick={() => handleEditClick(act)}>✏️ Editar</button>
-                <button className="btn btn-sm" style={{ background: 'var(--blue-mid)', color: 'white' }} onClick={() => setExecuting(act)}>Fiz isto! ✓</button>
+                <button className="btn btn-sm" style={{ background: 'var(--blue-mid)', color: 'white' }} onClick={() => setExecuting(act)}>Fiz isso! ✓</button>
               </div>
             </div>
           ))}
@@ -3312,7 +3308,7 @@ function PatientRoutine({ session }) {
 
       {past.length > 0 && (
         <div style={{ marginTop: 40 }}>
-          <h3 style={{ fontSize: 14, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 12 }}>O Teu Histórico</h3>
+          <h3 style={{ fontSize: 14, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 12 }}>Seu Histórico</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {past.reverse().map(act => (
               <div key={act.id} className="activity-card done" style={{ background: "var(--cream)", borderLeft: `4px solid ${act.status === 'concluido' ? '#2d7a3a' : '#c0444a'}` }}>
@@ -3328,7 +3324,7 @@ function PatientRoutine({ session }) {
                 
                 <h4 style={{ fontSize: 15, textDecoration: act.status === 'nao_realizado' ? 'line-through' : 'none', color: "var(--text)" }}>{act.title}</h4>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8 }}>
-                  Planeado para: {new Date(act.planned_date).toLocaleString('pt-PT', { weekday: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  Planejado para: {new Date(act.planned_date).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                 </div>
 
                 {act.status === 'concluido' && (
@@ -3376,7 +3372,7 @@ function PatientRoutine({ session }) {
                   else setDialog(null);
                 }}
               >
-                {dialog.type === 'confirm' ? 'Eliminar' : 'Entendi'}
+                {dialog.type === 'confirm' ? 'Excluir' : 'Entendi'}
               </button>
             </div>
           </div>
@@ -3387,12 +3383,12 @@ function PatientRoutine({ session }) {
       {showAdd && (
         <div className="overlay" onClick={() => { setShowAdd(false); setEditingId(null); }}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <h3 style={{ marginBottom: 4 }}>{editingId ? "Editar" : "Planear"}: {form.category}</h3>
+            <h3 style={{ marginBottom: 4 }}>{editingId ? "Editar" : "Planejar"}: {form.category}</h3>
             <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
-              {editingId ? "A ajustar a tua ação planeada." : `Adicionar uma ação para o pilar de ${form.category}.`}
+              {editingId ? "Ajustando sua ação planejada." : `Adicionando uma ação para o pilar de ${form.category}.`}
             </p>
             
-            <div className="field"><label>O que vais fazer?</label><input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Ex: Tomar um chá na varanda" /></div>
+            <div className="field"><label>O que você vai fazer?</label><input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Ex: Tomar um chá na varanda" /></div>
             <div className="field">
               <label>Nível de desafio</label>
               <select className="q-textarea" style={{minHeight:40}} value={form.difficulty} onChange={e => setForm({...form, difficulty: e.target.value})}>
@@ -3402,18 +3398,18 @@ function PatientRoutine({ session }) {
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div className="field"><label>Qual dia?</label><input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div>
-              <div className="field"><label>A que horas?</label><input type="time" value={form.time} onChange={e => setForm({...form, time: e.target.value})} /></div>
+              <div className="field"><label>Que horas?</label><input type="time" value={form.time} onChange={e => setForm({...form, time: e.target.value})} /></div>
             </div>
 
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
               <button className="btn btn-outline" onClick={() => { setShowAdd(false); setEditingId(null); }}>Cancelar</button>
-              <button className="btn btn-sage" onClick={handleSave}>{editingId ? "Guardar Alterações" : "Agendar Ação"}</button>
+              <button className="btn btn-sage" onClick={handleSave}>{editingId ? "Salvar Alterações" : "Agendar Ação"}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 3. MODAL: REGISTAR EXECUÇÃO */}
+      {/* 3. MODAL: REGISTRAR EXECUÇÃO */}
       {executing && (
         <div className="overlay" onClick={() => setExecuting(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
@@ -3421,7 +3417,7 @@ function PatientRoutine({ session }) {
             <p style={{fontSize:13, color:"var(--text-muted)", marginBottom:20}}>Atividade: <strong>{executing.title}</strong></p>
             
             <div className="field" style={{marginBottom: 20}}>
-              <label>Conseguiste realizar esta atividade?</label>
+              <label>Você conseguiu realizar esta atividade?</label>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button className={`btn ${execForm.did_it ? 'btn-sage' : 'btn-outline'}`} style={{flex:1}} onClick={() => setExecForm({...execForm, did_it: true})}>Sim, eu fiz!</button>
                 <button className={`btn ${!execForm.did_it ? 'btn-accent' : 'btn-outline'}`} style={{flex:1}} onClick={() => setExecForm({...execForm, did_it: false})}>Não consegui</button>
@@ -3438,14 +3434,14 @@ function PatientRoutine({ session }) {
               <div className="field" style={{ animation: "fadeIn .3s ease" }}>
                 <label>Qual foi o principal motivo?</label>
                 <select className="q-textarea" style={{minHeight:40}} value={execForm.avoidance_reason} onChange={e => setExecForm({...execForm, avoidance_reason: e.target.value})}>
-                  <option>Falta de energia</option><option>Esqueci-me</option><option>Falta de tempo</option><option>Evitei / Ansiedade</option><option>Outro imprevisto</option>
+                  <option>Falta de energia</option><option>Esqueci</option><option>Falta de tempo</option><option>Evitei / Ansiedade</option><option>Outro imprevisto</option>
                 </select>
               </div>
             )}
             
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
               <button className="btn btn-outline" onClick={() => setExecuting(null)}>Cancelar</button>
-              <button className="btn btn-sage" onClick={handleExecute}>Guardar Registo</button>
+              <button className="btn btn-sage" onClick={handleExecute}>Salvar Registro</button>
             </div>
           </div>
         </div>
@@ -3453,7 +3449,6 @@ function PatientRoutine({ session }) {
     </div>
   );
 }
-
 // ─── Visão do Psicólogo: Rotina e Ativação Comportamental do Paciente ────────
 function TherapistPatientActivities({ patientId, session }) {
   const [activities, setActivities] = useState([]);
