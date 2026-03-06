@@ -7,7 +7,6 @@ const LOGO = "/equilibre-icon.png";
 const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPA_KEY = import.meta.env.VITE_SUPABASE_KEY;
 
-console.log("A URL É:", import.meta.env.VITE_SUPABASE_URL);
 const db = {
   async query(table, options = {}, token = null) {
     let url = `${SUPA_URL}/rest/v1/${table}?`;
