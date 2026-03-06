@@ -3136,17 +3136,25 @@ function PatientDiary({ session }) {
 }
 
 // ─── Patient Routine (Ativação Comportamental) ────────────────────────────────
-const BA_CATEGORIES = ['Autocuidado', 'Responsabilidades', 'Lazer', 'Movimento', 'Socialização'];
-const BA_DIFFICULTIES = ['Muito fácil', 'Fácil', 'Moderado', 'Difícil'];
+const BA_PILLARS = [
+  { name: 'Autocuidado', icon: '🧘', desc: 'Cuidar de si' },
+  { name: 'Responsabilidades', icon: '📋', desc: 'Deveres diários' },
+  { name: 'Lazer', icon: '🎨', desc: 'Diversão e hobbies' },
+  { name: 'Movimento', icon: '🏃', desc: 'Corpo ativo' },
+  { name: 'Socialização', icon: '🗣️', desc: 'Conexão com outros' }
+];
+
+const BA_CATEGORIES = BA_PILLARS.map(p => p.name);
+const BA_DIFFICULTIES = ['Muito fácil', 'Fácil', 'Moderado', 'Desafiador'];
 
 function PatientRoutine({ session }) {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [executing, setExecuting] = useState(null); // Atividade sendo avaliada
+  const [executing, setExecuting] = useState(null);
 
-  // Form de Adição
-  const [form, setForm] = useState({ title: "", category: "Autocuidado", difficulty: "Fácil", planned_date: "" });
+  // Form de Adição (Data e hora separados)
+  const [form, setForm] = useState({ title: "", category: "Autocuidado", difficulty: "Fácil", date: "", time: "" });
   
   // Form de Execução
   const [execForm, setExecForm] = useState({ did_it: true, mood_before: 5, mood_after: 5, energy_after: 5, avoidance_reason: "Falta de energia" });
@@ -3164,21 +3172,28 @@ function PatientRoutine({ session }) {
 
   useEffect(() => { fetchActivities(); }, [session.id]);
 
+  const handlePillarClick = (category) => {
+    setForm({ title: "", category, difficulty: "Fácil", date: "", time: "" });
+    setShowAdd(true);
+  };
+
   const handleAdd = async () => {
-    if (!form.title || !form.planned_date) return alert("Preencha o título e a data.");
+    if (!form.title || !form.date || !form.time) return alert("Preencha o que vai fazer, o dia e o horário.");
     setLoading(true);
     try {
+      const planned_date = new Date(`${form.date}T${form.time}`).toISOString();
+      
       const newAct = {
         patient_id: session.id,
         title: form.title,
         category: form.category,
         difficulty: form.difficulty,
-        planned_date: new Date(form.planned_date).toISOString(),
+        planned_date: planned_date,
         status: "pendente"
       };
       await db.insert("activities", newAct, session.access_token);
       setShowAdd(false);
-      setForm({ title: "", category: "Autocuidado", difficulty: "Fácil", planned_date: "" });
+      setForm({ title: "", category: "Autocuidado", difficulty: "Fácil", date: "", time: "" });
       fetchActivities();
     } catch (e) { alert("Erro ao salvar atividade."); setLoading(false); }
   };
@@ -3203,16 +3218,28 @@ function PatientRoutine({ session }) {
 
   return (
     <div style={{ animation: "fadeUp .4s ease", maxWidth: 640 }}>
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <h2>Minha Rotina (Ativação)</h2>
-          <p>Planeie pequenas ações. A ação traz a motivação!</p>
-        </div>
-        <button className="btn btn-sage" onClick={() => setShowAdd(true)}>+ Nova Atividade</button>
+      <div className="page-header">
+        <h2>Minha Rotina (Ativação)</h2>
+        <p>Planeje pequenas ações nos seus 5 pilares. A ação traz a motivação!</p>
+      </div>
+
+      {/* Grid bien distribuido y limpio de estilos en línea */}
+      <div className="pillars-container">
+        {BA_PILLARS.map(p => (
+          <div
+            key={p.name}
+            onClick={() => handlePillarClick(p.name)}
+            className={`pillar-card cat-${p.name}`}
+          >
+            <div style={{ fontSize: 32, marginBottom: 8 }}>{p.icon}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', marginBottom: 4, letterSpacing: '.05em' }}>{p.name}</div>
+            <div style={{ fontSize: 10, opacity: 0.85, lineHeight: 1.3 }}>{p.desc}</div>
+          </div>
+        ))}
       </div>
 
       {pending.length === 0 ? (
-        <div className="empty-state card"><div className="empty-icon">🗓️</div><p>Nenhuma atividade planeada. Que tal marcar um momento de Autocuidado?</p></div>
+        <div className="empty-state card"><div className="empty-icon">🗓️</div><p>Nenhuma atividade planejada. Clique em um pilar acima para começar!</p></div>
       ) : (
         <div style={{ marginBottom: 30 }}>
           <h3 style={{ fontSize: 14, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 12 }}>Para Fazer</h3>
@@ -3223,7 +3250,7 @@ function PatientRoutine({ session }) {
                   <span className={`cat-badge cat-${act.category}`}>{act.category}</span>
                   <h4 style={{ fontSize: 16, color: "var(--blue-dark)", marginTop: 8, marginBottom: 4 }}>{act.title}</h4>
                   <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                    ⏰ {new Date(act.planned_date).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })} | Nível: {act.difficulty}
+                    ⏰ {new Date(act.planned_date).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })} | Desafio: {act.difficulty}
                   </div>
                 </div>
                 <button className="btn btn-outline btn-sm" style={{ borderColor: 'var(--blue-mid)', color: 'var(--blue-dark)' }} onClick={() => setExecuting(act)}>
@@ -3260,22 +3287,37 @@ function PatientRoutine({ session }) {
       {showAdd && (
         <div className="overlay" onClick={() => setShowAdd(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <h3>Planear Atividade</h3>
-            <div className="field"><label>O que você vai fazer?</label><input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Ex: Tomar um chá na varanda" /></div>
-            <div className="field"><label>Categoria</label>
-              <select className="q-textarea" style={{minHeight:40}} value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
-                {BA_CATEGORIES.map(c => <option key={c}>{c}</option>)}
-              </select>
+            <h3 style={{ marginBottom: 4 }}>Planejar: {form.category}</h3>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
+              Adicionando uma ação para o seu pilar de <strong>{form.category}</strong>.
+            </p>
+            
+            <div className="field">
+              <label>O que você vai fazer?</label>
+              <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Ex: Tomar um chá na varanda" />
             </div>
-            <div className="field"><label>Dificuldade esperada</label>
+            
+            <div className="field">
+              <label>Nível de desafio</label>
               <select className="q-textarea" style={{minHeight:40}} value={form.difficulty} onChange={e => setForm({...form, difficulty: e.target.value})}>
                 {BA_DIFFICULTIES.map(d => <option key={d}>{d}</option>)}
               </select>
             </div>
-            <div className="field"><label>Data e Hora</label><input type="datetime-local" value={form.planned_date} onChange={e => setForm({...form, planned_date: e.target.value})} /></div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div className="field">
+                <label>Qual dia?</label>
+                <input type="date" value={form.date} min={new Date().toISOString().split("T")[0]} onChange={e => setForm({...form, date: e.target.value})} />
+              </div>
+              <div className="field">
+                <label>Que horas?</label>
+                <input type="time" value={form.time} onChange={e => setForm({...form, time: e.target.value})} />
+              </div>
+            </div>
+
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
               <button className="btn btn-outline" onClick={() => setShowAdd(false)}>Cancelar</button>
-              <button className="btn btn-sage" onClick={handleAdd}>Agendar</button>
+              <button className="btn btn-sage" onClick={handleAdd}>Agendar Ação</button>
             </div>
           </div>
         </div>
@@ -3289,7 +3331,7 @@ function PatientRoutine({ session }) {
             <p style={{fontSize:13, color:"var(--text-muted)", marginBottom:20}}>Atividade: <strong>{executing.title}</strong></p>
             
             <div className="field" style={{marginBottom: 20}}>
-              <label>Você conseguiu realizar esta atividade?</label>
+              <label>Você conseguiu realizar esta actividad?</label>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button className={`btn ${execForm.did_it ? 'btn-sage' : 'btn-outline'}`} style={{flex:1}} onClick={() => setExecForm({...execForm, did_it: true})}>Sim, eu fiz!</button>
                 <button className={`btn ${!execForm.did_it ? 'btn-accent' : 'btn-outline'}`} style={{flex:1}} onClick={() => setExecForm({...execForm, did_it: false})}>Não consegui</button>

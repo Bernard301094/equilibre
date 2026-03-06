@@ -205,6 +205,55 @@
   .activity-card:hover { border-color: var(--blue-mid); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
   .activity-card.done { opacity: 0.7; border-style: dashed; }
 
+  .pillars-container {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.pillar-card {
+  padding: 16px 10px;
+  border-radius: 16px;
+  text-align: center;
+  cursor: pointer;
+  
+  /* 🔥 La magia del rebote ("brinco"): usamos cubic-bezier para que pase de largo un poco y regrese */
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Estado Hover: sube 6px con el efecto elástico de arriba */
+.pillar-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+  z-index: 2;
+}
+
+/* Estado al hacer clic: se hunde un poco */
+.pillar-card:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.1s ease; /* Quitamos el rebote para que el click sea instantáneo */
+}
+
+/* Versión Mobile: Grid 2 columnas y el 5º elemento centrado abajo */
+@media(max-width: 768px) {
+  .pillars-container {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .pillar-card:nth-child(5) {
+    grid-column: span 2;
+  }
+}
+
+  
+
   /* Media Queries Mobile Geral */
   @media(max-width:768px) {
     .layout { flex-direction: column; }
