@@ -2573,67 +2573,77 @@ function PatientHome({ session, setSession, setView }) {
   const [linking, setLinking] = useState(false);
   const [linkMsg, setLinkMsg] = useState({ type: "", text: "" });
   const [showWatering, setShowWatering] = useState(false);
+  
+  // Estado de carregamento inicial
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     const fetch = async () => {
-      const [pending, done, goals, responses, diary] = await Promise.all([
-        db.query("assignments", { filter: { patient_id: session.id, status: "pending" } }),
-        db.query("assignments", { filter: { patient_id: session.id, status: "done" } }),
-        db.query("goals", { filter: { patient_id: session.id } }),
-        db.query("responses", { filter: { patient_id: session.id }, order: "completed_at.desc" }),
-        db.query("diary_entries", { filter: { patient_id: session.id }, order: "date.desc" })
-      ]);
-      if (!active) return;
+      try {
+        const [pending, done, goals, responses, diary] = await Promise.all([
+          db.query("assignments", { filter: { patient_id: session.id, status: "pending" } }),
+          db.query("assignments", { filter: { patient_id: session.id, status: "done" } }),
+          db.query("goals", { filter: { patient_id: session.id } }),
+          db.query("responses", { filter: { patient_id: session.id }, order: "completed_at.desc" }),
+          db.query("diary_entries", { filter: { patient_id: session.id }, order: "date.desc" })
+        ]);
+        
+        if (!active) return;
 
-      const now = new Date();
-      const hour = now.getHours();
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay());
-      
-      const respList = Array.isArray(responses) ? responses : [];
-      const dList = Array.isArray(diary) ? diary : [];
-      const pendList = Array.isArray(pending) ? pending : [];
-      
-      const getLocalDayStr = (offsetDays = 0) => {
-        const d = new Date();
-        d.setDate(d.getDate() - offsetDays);
-        return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
-      };
+        const now = new Date();
+        const hour = now.getHours();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        
+        const respList = Array.isArray(responses) ? responses : [];
+        const dList = Array.isArray(diary) ? diary : [];
+        const pendList = Array.isArray(pending) ? pending : [];
+        
+        const getLocalDayStr = (offsetDays = 0) => {
+          const d = new Date();
+          d.setDate(d.getDate() - offsetDays);
+          return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
+        };
 
-      const hasActivity = (ds) => dList.some(e => e.date === ds) || respList.some(r => r.completed_at?.startsWith(ds));
-      const todayDone = hasActivity(getLocalDayStr(0));
+        const hasActivity = (ds) => dList.some(e => e.date === ds) || respList.some(r => r.completed_at?.startsWith(ds));
+        const todayDone = hasActivity(getLocalDayStr(0));
 
-      // 💧 Verifica se acabou de fazer uma ação para mostrar a animação da gota d'água
-      const lastAction = localStorage.getItem('last_action_timestamp');
-      if (lastAction && (Date.now() - parseInt(lastAction)) < 5000) {
-        setShowWatering(true);
-        localStorage.removeItem('last_action_timestamp');
-      }
-
-      let streak = 0;
-      if (todayDone) {
-        streak = 1;
-        for (let i = 1; i < 60; i++) {
-          if (hasActivity(getLocalDayStr(i))) streak++; else break;
+        // 💧 Verifica se acabou de fazer uma ação para mostrar a animação da gota d'água
+        const lastAction = localStorage.getItem('last_action_timestamp');
+        if (lastAction && (Date.now() - parseInt(lastAction)) < 5000) {
+          setShowWatering(true);
+          localStorage.removeItem('last_action_timestamp');
         }
-      } else if (hasActivity(getLocalDayStr(1))) {
-        streak = 1;
-        for (let i = 2; i < 60; i++) {
-          if (hasActivity(getLocalDayStr(i))) streak++; else break;
-        }
-      }
 
-      setData({ 
-        pending: pendList.length, 
-        done: Array.isArray(done) ? done.length : 0, 
-        streak, 
-        goal: Array.isArray(goals) && goals.length > 0 ? goals[0] : null, 
-        weekDone: respList.filter(r => new Date(r.completed_at) >= startOfWeek).length, 
-        overdue: pendList.filter(a => a.due_date && new Date(a.due_date) < now).length,
-        hasActivityToday: todayDone,
-        isLate: hour >= 19 // Fica em alerta se for 19h+ e não tiver regado
-      });
+        let streak = 0;
+        if (todayDone) {
+          streak = 1;
+          for (let i = 1; i < 60; i++) {
+            if (hasActivity(getLocalDayStr(i))) streak++; else break;
+          }
+        } else if (hasActivity(getLocalDayStr(1))) {
+          streak = 1;
+          for (let i = 2; i < 60; i++) {
+            if (hasActivity(getLocalDayStr(i))) streak++; else break;
+          }
+        }
+
+        setData({ 
+          pending: pendList.length, 
+          done: Array.isArray(done) ? done.length : 0, 
+          streak, 
+          goal: Array.isArray(goals) && goals.length > 0 ? goals[0] : null, 
+          weekDone: respList.filter(r => new Date(r.completed_at) >= startOfWeek).length, 
+          overdue: pendList.filter(a => a.due_date && new Date(a.due_date) < now).length,
+          hasActivityToday: todayDone,
+          isLate: hour >= 19
+        });
+      } catch (error) {
+        console.error("Erro ao carregar dados da Home", error);
+      } finally {
+        if (active) setLoading(false); // Remove a tela de carregamento
+      }
     };
     
     fetch();
@@ -2676,6 +2686,17 @@ function PatientHome({ session, setSession, setView }) {
     if (s >= 1)  return { icon: "🌱", label: "Brotinho", color: "#a8d5ba", desc: "Começando a brotar." };
     return { icon: "🌰", label: "Semente", color: "#8b5a2b", desc: "Pronta para crescer." };
   };
+
+  // TELA DE CARREGAMENTO TERAPÊUTICA
+  if (loading) {
+    return (
+      <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--text-muted)", animation: "pulse 2s infinite ease-in-out" }}>
+        <div style={{ fontSize: 36, marginBottom: 12 }}>✨</div>
+        <div style={{ fontSize: 16, fontWeight: 500, color: "var(--blue-dark)", marginBottom: 4 }}>Respire fundo...</div>
+        <div style={{ fontSize: 14 }}>Preparando o seu espaço de cuidado.</div>
+      </div>
+    );
+  }
 
   const stage = getPlantStage();
 
@@ -2733,7 +2754,7 @@ function PatientHome({ session, setSession, setView }) {
           : <div className="stat-card"><div className="stat-icon">✅</div><div className="stat-val">{data.done}</div><div className="stat-label">Concluídos</div></div>}
       </div>
 
-      {/* 🚨 ALERTA DE SEDE / PREVENÇÃO DE QUEDA (Substitui o card fixo de explicação) */}
+      {/* 🚨 ALERTA DE SEDE / PREVENÇÃO DE QUEDA */}
       {!data.hasActivityToday && data.streak > 0 && (
         <div className="card" style={{ 
           marginBottom: 20, 
@@ -2780,6 +2801,7 @@ function PatientHome({ session, setSession, setView }) {
     </div>
   );
 }
+
 // ==========================================
 // Patient Exercises View
 // ==========================================
