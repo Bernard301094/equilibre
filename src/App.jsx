@@ -4,8 +4,8 @@ import "./App.css";
 const LOGO = "/equilibre-icon.png";
 
 // ─── Supabase client ──────────────────────────────────────────────────────────
-const SUPA_URL = process.env.REACT_APP_SUPABASE_URL;
-const SUPA_KEY = process.env.REACT_APP_SUPABASE_KEY;
+const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPA_KEY = import.meta.env.VITE_SUPABASE_KEY;
 
 const db = {
   async query(table, options = {}, token = null) {
