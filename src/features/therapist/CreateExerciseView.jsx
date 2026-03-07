@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import db from "../../services/db";
 import { parseQuestions } from "../../utils/parsing";
 import { validateExerciseForm } from "../../utils/validation";
@@ -41,6 +41,15 @@ export default function CreateExerciseView({
   const [success,     setSuccess]     = useState("");
   const [error,       setError]       = useState("");
   const [activeQIdx,  setActiveQIdx]  = useState(0);
+  const [isMobile,    setIsMobile]    = useState(window.innerWidth < 768);
+
+  const editorRef = useRef(null);
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   const addQ    = () => { setQuestions((qs) => [...qs, makeQuestion()]); setActiveQIdx(questions.length); };
   const removeQ = (i) => { setQuestions((qs) => qs.filter((_, idx) => idx !== i)); setActiveQIdx((p) => Math.max(0, p - 1)); };
@@ -51,6 +60,16 @@ export default function CreateExerciseView({
     [arr[i], arr[j]] = [arr[j], arr[i]];
     return arr;
   });
+
+  // No mobile, ao selecionar uma pergunta rola suavemente para o editor
+  const selectQuestion = (i) => {
+    setActiveQIdx(i);
+    if (isMobile && editorRef.current) {
+      setTimeout(() => {
+        editorRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    }
+  };
 
   const save = async () => {
     setError("");
@@ -79,41 +98,78 @@ export default function CreateExerciseView({
   };
 
   const inputSt = {
-    width: "100%", padding: "11px 14px",
-    border: "1.5px solid var(--warm)", borderRadius: 10,
-    fontFamily: "'DM Sans', sans-serif", fontSize: 14,
-    background: "var(--cream)", color: "var(--text)",
-    outline: "none", boxSizing: "border-box",
+    width:      "100%",
+    padding:    isMobile ? "13px 14px" : "11px 14px",
+    minHeight:  isMobile ? 44 : "auto",
+    border:     "1.5px solid var(--warm)",
+    borderRadius: 10,
+    fontFamily: "'DM Sans', sans-serif",
+    fontSize:   14,
+    background: "var(--cream)",
+    color:      "var(--text)",
+    outline:    "none",
+    boxSizing:  "border-box",
     transition: "border .2s, box-shadow .2s",
   };
+
+  const labelSt = {
+    display:       "block",
+    fontSize:      11,
+    fontWeight:    700,
+    color:         "var(--text-muted)",
+    marginBottom:  6,
+    textTransform: "uppercase",
+    letterSpacing: ".06em",
+  };
+
+  const fieldSt = { marginBottom: isMobile ? 18 : 14 };
 
   const activeQ = questions[activeQIdx] ?? null;
 
   return (
-    <div style={{ animation: "fadeUp .4s ease", height: "100%" }}>
+    <div style={{ animation: "fadeUp .4s ease", height: "100%", paddingBottom: isMobile ? 80 : 0 }}>
 
       {/* ── Top bar ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
-        {onCancel && (
-          <button className="btn btn-outline btn-sm" onClick={onCancel}>← Voltar</button>
-        )}
-        <div style={{ flex: 1 }}>
-          <h2 style={{ fontSize: 22, letterSpacing: "-.3px" }}>
-            {isEditing ? "Editar Exercício" : "Criar Exercício"}
-          </h2>
-          <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>
-            {isEditing ? "Modifique as informações abaixo" : "Monte um exercício personalizado para seus pacientes"}
-          </p>
+      <div style={{
+        display:       "flex",
+        flexDirection: isMobile ? "column" : "row",
+        alignItems:    isMobile ? "flex-start" : "center",
+        gap:           isMobile ? 12 : 14,
+        marginBottom:  24,
+      }}>
+        {/* Linha superior no mobile: botão voltar + título */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
+          {onCancel && (
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={onCancel}
+              style={{ minHeight: 44, padding: "0 16px", flexShrink: 0 }}
+            >
+              ← Voltar
+            </button>
+          )}
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontSize: isMobile ? 18 : 22, letterSpacing: "-.3px" }}>
+              {isEditing ? "Editar Exercício" : "Criar Exercício"}
+            </h2>
+            <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+              {isEditing ? "Modifique as informações abaixo" : "Monte um exercício personalizado para seus pacientes"}
+            </p>
+          </div>
         </div>
-        <button
-          className="btn btn-sage"
-          style={{ padding: "11px 28px", fontSize: 14 }}
-          onClick={save}
-          disabled={saving}
-          aria-busy={saving}
-        >
-          {saving ? "Salvando..." : isEditing ? "💾 Atualizar" : "💾 Publicar exercício"}
-        </button>
+
+        {/* Botão salvar: inline no desktop, fixo no rodapé no mobile */}
+        {!isMobile && (
+          <button
+            className="btn btn-sage"
+            style={{ padding: "11px 28px", fontSize: 14, minHeight: 44, flexShrink: 0 }}
+            onClick={save}
+            disabled={saving}
+            aria-busy={saving}
+          >
+            {saving ? "Salvando..." : isEditing ? "💾 Atualizar" : "💾 Publicar exercício"}
+          </button>
+        )}
       </div>
 
       {success && <div className="success-banner" role="status" style={{ marginBottom: 16 }}>{success}</div>}
@@ -125,22 +181,25 @@ export default function CreateExerciseView({
         </div>
       )}
 
-      {/* ── Two-column layout ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 20, alignItems: "start" }}>
+      {/* ── Layout: duas colunas no desktop, coluna única no mobile ── */}
+      <div style={{
+        display:             "grid",
+        gridTemplateColumns: isMobile ? "1fr" : "1fr 1.4fr",
+        gap:                 isMobile ? 16 : 20,
+        alignItems:          "start",
+      }}>
 
-        {/* ══ LEFT — Info + Question list ══ */}
+        {/* ══ ESQUERDA — Info geral + lista de perguntas ══ */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-          {/* General info card */}
+          {/* Card de informações gerais */}
           <div className="card">
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--text-muted)", marginBottom: 16 }}>
               Informações gerais
             </div>
 
-            <div style={{ marginBottom: 14 }}>
-              <label htmlFor="ex-title" style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 5, textTransform: "uppercase", letterSpacing: ".06em" }}>
-                Título
-              </label>
+            <div style={fieldSt}>
+              <label htmlFor="ex-title" style={labelSt}>Título</label>
               <input
                 id="ex-title"
                 style={inputSt}
@@ -152,10 +211,8 @@ export default function CreateExerciseView({
               />
             </div>
 
-            <div style={{ marginBottom: 14 }}>
-              <label htmlFor="ex-category" style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 5, textTransform: "uppercase", letterSpacing: ".06em" }}>
-                Categoria
-              </label>
+            <div style={fieldSt}>
+              <label htmlFor="ex-category" style={labelSt}>Categoria</label>
               <select
                 id="ex-category"
                 style={{ ...inputSt, cursor: "pointer" }}
@@ -167,12 +224,10 @@ export default function CreateExerciseView({
             </div>
 
             <div>
-              <label htmlFor="ex-desc" style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 5, textTransform: "uppercase", letterSpacing: ".06em" }}>
-                Descrição breve
-              </label>
+              <label htmlFor="ex-desc" style={labelSt}>Descrição breve</label>
               <textarea
                 id="ex-desc"
-                style={{ ...inputSt, minHeight: 72, resize: "vertical" }}
+                style={{ ...inputSt, minHeight: isMobile ? 80 : 72, resize: "vertical" }}
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 placeholder="O que este exercício trabalha?"
@@ -182,7 +237,7 @@ export default function CreateExerciseView({
             </div>
           </div>
 
-          {/* Question list */}
+          {/* Lista de perguntas */}
           <div className="card" style={{ padding: "18px 20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--text-muted)" }}>
@@ -191,40 +246,45 @@ export default function CreateExerciseView({
               <button
                 className="btn btn-sage btn-sm"
                 onClick={addQ}
-                style={{ fontSize: 12 }}
+                style={{ fontSize: 12, minHeight: 44, padding: "0 16px" }}
               >
                 + Adicionar
               </button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {questions.map((q, i) => {
-                const meta = TYPE_META[q.type] ?? TYPE_META.open;
+                const meta     = TYPE_META[q.type] ?? TYPE_META.open;
                 const isActive = activeQIdx === i;
                 return (
                   <div
                     key={q.id}
-                    onClick={() => setActiveQIdx(i)}
+                    onClick={() => selectQuestion(i)}
                     style={{
-                      display: "flex", alignItems: "center", gap: 10,
-                      padding: "10px 12px", borderRadius: 10, cursor: "pointer",
-                      border: `1.5px solid ${isActive ? "var(--blue-dark)" : "var(--warm)"}`,
+                      display:    "flex",
+                      alignItems: "center",
+                      gap:        10,
+                      padding:    isMobile ? "13px 12px" : "10px 12px",
+                      minHeight:  isMobile ? 56 : "auto",
+                      borderRadius: 10,
+                      cursor:     "pointer",
+                      border:     `1.5px solid ${isActive ? "var(--blue-dark)" : "var(--warm)"}`,
                       background: isActive ? "rgba(23,82,124,0.06)" : "var(--cream)",
                       transition: "all .15s",
                     }}
                   >
-                    {/* Number */}
+                    {/* Número */}
                     <div style={{
-                      width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
+                      width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
                       background: isActive ? "var(--blue-dark)" : "var(--warm)",
-                      color: isActive ? "white" : "var(--text-muted)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 11, fontWeight: 700, transition: "all .15s",
+                      color:      isActive ? "white" : "var(--text-muted)",
+                      display:    "flex", alignItems: "center", justifyContent: "center",
+                      fontSize:   11, fontWeight: 700, transition: "all .15s",
                     }}>
                       {i + 1}
                     </div>
 
-                    {/* Type icon + preview text */}
+                    {/* Tipo + preview */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
                         <span style={{ fontSize: 11 }}>{meta.icon}</span>
@@ -237,25 +297,50 @@ export default function CreateExerciseView({
                       </div>
                     </div>
 
-                    {/* Move + delete */}
-                    <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                    {/* Mover + remover — botões maiores no mobile */}
+                    <div style={{ display: "flex", gap: isMobile ? 6 : 2, flexShrink: 0 }}>
                       <button
                         aria-label="Mover para cima"
                         onClick={(e) => { e.stopPropagation(); moveQ(i, -1); }}
                         disabled={i === 0}
-                        style={{ background: "none", border: "none", cursor: i === 0 ? "not-allowed" : "pointer", opacity: i === 0 ? .3 : .6, fontSize: 13, padding: "2px 3px" }}
+                        style={{
+                          background: "none", border: "none",
+                          cursor:     i === 0 ? "not-allowed" : "pointer",
+                          opacity:    i === 0 ? .3 : .6,
+                          fontSize:   isMobile ? 16 : 13,
+                          padding:    isMobile ? "6px 8px" : "2px 3px",
+                          minWidth:   isMobile ? 36 : "auto",
+                          minHeight:  isMobile ? 36 : "auto",
+                        }}
                       >↑</button>
                       <button
                         aria-label="Mover para baixo"
                         onClick={(e) => { e.stopPropagation(); moveQ(i, 1); }}
                         disabled={i === questions.length - 1}
-                        style={{ background: "none", border: "none", cursor: i === questions.length - 1 ? "not-allowed" : "pointer", opacity: i === questions.length - 1 ? .3 : .6, fontSize: 13, padding: "2px 3px" }}
+                        style={{
+                          background: "none", border: "none",
+                          cursor:     i === questions.length - 1 ? "not-allowed" : "pointer",
+                          opacity:    i === questions.length - 1 ? .3 : .6,
+                          fontSize:   isMobile ? 16 : 13,
+                          padding:    isMobile ? "6px 8px" : "2px 3px",
+                          minWidth:   isMobile ? 36 : "auto",
+                          minHeight:  isMobile ? 36 : "auto",
+                        }}
                       >↓</button>
                       <button
                         aria-label={`Remover pergunta ${i + 1}`}
                         onClick={(e) => { e.stopPropagation(); removeQ(i); }}
                         disabled={questions.length === 1}
-                        style={{ background: "none", border: "none", cursor: questions.length === 1 ? "not-allowed" : "pointer", color: "var(--danger)", fontSize: 13, opacity: questions.length === 1 ? .3 : .7, padding: "2px 4px" }}
+                        style={{
+                          background: "none", border: "none",
+                          cursor:     questions.length === 1 ? "not-allowed" : "pointer",
+                          color:      "var(--danger)",
+                          fontSize:   isMobile ? 16 : 13,
+                          opacity:    questions.length === 1 ? .3 : .7,
+                          padding:    isMobile ? "6px 8px" : "2px 4px",
+                          minWidth:   isMobile ? 36 : "auto",
+                          minHeight:  isMobile ? 36 : "auto",
+                        }}
                       >✕</button>
                     </div>
                   </div>
@@ -265,12 +350,22 @@ export default function CreateExerciseView({
           </div>
         </div>
 
-        {/* ══ RIGHT — Question editor ══ */}
-        <div style={{ position: "sticky", top: 20 }}>
+        {/* ══ DIREITA — Editor da pergunta ══ */}
+        <div
+          ref={editorRef}
+          style={{ position: isMobile ? "static" : "sticky", top: 20 }}
+        >
+          {/* Título de seção visível apenas no mobile */}
+          {isMobile && (
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--text-muted)", marginBottom: 10 }}>
+              Editor da pergunta selecionada
+            </div>
+          )}
+
           {activeQ ? (
             <div className="card" style={{ animation: "fadeUp .25s ease" }} key={activeQ.id}>
 
-              {/* Editor header */}
+              {/* Cabeçalho do editor */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: "1.5px solid var(--warm)" }}>
                 <div style={{
                   width: 36, height: 36, borderRadius: "50%",
@@ -290,7 +385,7 @@ export default function CreateExerciseView({
                 </div>
               </div>
 
-              {/* Type selector */}
+              {/* Seletor de tipo */}
               <div style={{ marginBottom: 18 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-muted)", marginBottom: 10 }}>
                   Tipo de pergunta
@@ -304,20 +399,23 @@ export default function CreateExerciseView({
                         key={t.value}
                         onClick={() => updateQ(activeQIdx, "type", t.value)}
                         style={{
-                          padding: "10px 12px",
-                          border: `1.5px solid ${isSel ? "var(--blue-dark)" : "var(--warm)"}`,
-                          borderRadius: 10, cursor: "pointer",
+                          padding:    isMobile ? "13px 12px" : "10px 12px",
+                          minHeight:  44,
+                          border:     `1.5px solid ${isSel ? "var(--blue-dark)" : "var(--warm)"}`,
+                          borderRadius: 10,
+                          cursor:     "pointer",
                           background: isSel ? "rgba(23,82,124,0.07)" : "var(--cream)",
                           fontFamily: "'DM Sans', sans-serif",
-                          display: "flex", alignItems: "center", gap: 8,
-                          transition: "all .15s", textAlign: "left",
+                          display:    "flex",
+                          alignItems: "center",
+                          gap:        8,
+                          transition: "all .15s",
+                          textAlign:  "left",
                         }}
                       >
                         <span style={{ fontSize: 18 }}>{meta.icon}</span>
-                        <div>
-                          <div style={{ fontSize: 12, fontWeight: isSel ? 700 : 500, color: isSel ? "var(--blue-dark)" : "var(--text)" }}>
-                            {meta.label}
-                          </div>
+                        <div style={{ fontSize: 12, fontWeight: isSel ? 700 : 500, color: isSel ? "var(--blue-dark)" : "var(--text)" }}>
+                          {meta.label}
                         </div>
                       </button>
                     );
@@ -325,17 +423,17 @@ export default function CreateExerciseView({
                 </div>
               </div>
 
-              {/* Text input */}
+              {/* Campo de texto */}
               <div style={{ marginBottom: 18 }}>
                 <label
                   htmlFor={`q-text-${activeQ.id}`}
-                  style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-muted)", marginBottom: 8 }}
+                  style={{ ...labelSt, marginBottom: 8 }}
                 >
                   {activeQ.type === "instruction" ? "Texto da instrução" : "Texto da pergunta"}
                 </label>
                 <textarea
                   id={`q-text-${activeQ.id}`}
-                  style={{ ...inputSt, minHeight: 100, resize: "vertical" }}
+                  style={{ ...inputSt, minHeight: isMobile ? 110 : 100, resize: "vertical" }}
                   placeholder={
                     activeQ.type === "instruction"
                       ? "Escreva a instrução para o paciente..."
@@ -348,7 +446,7 @@ export default function CreateExerciseView({
                 />
               </div>
 
-              {/* Type hint */}
+              {/* Dica do tipo */}
               <div style={{
                 padding: "10px 14px", borderRadius: 10,
                 background: "var(--cream)", border: "1px solid var(--warm)",
@@ -360,7 +458,7 @@ export default function CreateExerciseView({
                 {activeQ.type === "instruction" && "📢 O paciente verá esta mensagem, mas não precisa responder."}
               </div>
 
-              {/* Preview */}
+              {/* Pré-visualização */}
               {activeQ.text && (
                 <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1.5px solid var(--warm)" }}>
                   <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-muted)", marginBottom: 10 }}>
@@ -410,12 +508,48 @@ export default function CreateExerciseView({
             </div>
           ) : (
             <div className="card" style={{ textAlign: "center", padding: "50px 24px", color: "var(--text-muted)" }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>👈</div>
-              <p style={{ fontSize: 14 }}>Seleciona uma pergunta à esquerda para editá-la.</p>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>👆</div>
+              <p style={{ fontSize: 14 }}>Seleciona uma pergunta acima para editá-la.</p>
             </div>
           )}
         </div>
       </div>
+
+      {/* ── Barra de ação fixa no rodapé — apenas mobile ── */}
+      {isMobile && (
+        <div style={{
+          position:   "fixed",
+          bottom:     64,           /* acima do BottomNav */
+          left:       0,
+          right:      0,
+          zIndex:     90,
+          background: "var(--white)",
+          borderTop:  "1px solid var(--warm)",
+          padding:    "12px 16px",
+          display:    "flex",
+          gap:        10,
+          boxShadow:  "0 -4px 20px rgba(15,30,42,0.10)",
+        }}>
+          {onCancel && (
+            <button
+              className="btn btn-outline"
+              onClick={onCancel}
+              style={{ flex: 1, minHeight: 48, fontSize: 14 }}
+            >
+              ← Voltar
+            </button>
+          )}
+          <button
+            className="btn btn-sage"
+            onClick={save}
+            disabled={saving}
+            aria-busy={saving}
+            style={{ flex: 2, minHeight: 48, fontSize: 14, fontWeight: 700 }}
+          >
+            {saving ? "Salvando..." : isEditing ? "💾 Atualizar" : "💾 Publicar"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

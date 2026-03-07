@@ -22,11 +22,14 @@ const NAV_ITEMS = (pendingCount) => [
   { id: "history",   icon: "🕰️", label: "Histórico" },
 ];
 
+// Mobile recebe todos os itens — o BottomNav cuida da divisão fixos + drawer "Mais"
 const BOTTOM_ITEMS = (pendingCount) => [
   { id: "home",      icon: "🏠", label: "Início"    },
   { id: "exercises", icon: "📋", label: "Exercícios", badge: pendingCount },
   { id: "diary",     icon: "📓", label: "Diário"    },
   { id: "routine",   icon: "🗓️", label: "Rotina"    },
+  { id: "progress",  icon: "📈", label: "Progresso" },
+  { id: "history",   icon: "🕰️", label: "Histórico" },
 ];
 
 function LogoutDialog({ onConfirm, onCancel }) {
@@ -54,8 +57,8 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
   const [showDelete,     setShowDelete]     = useState(false);
   const [isMobile,       setIsMobile]       = useState(window.innerWidth < 768);
 
-  // Sync session if therapist linked
   const prevTherapistRef = useRef(session.therapist_id);
+
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handler);
