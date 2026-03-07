@@ -31,11 +31,11 @@ export default function PatientModal({ patient, session, onClose }) {
         ]);
         if (!active) return;
         setData({
-          exercises:     (Array.isArray(ex)     ? ex     : []).filter((e) => !e.therapist_id || e.therapist_id === session.id),
-          assignments:   Array.isArray(assign)  ? assign  : [],
-          goal:          Array.isArray(goals) && goals.length > 0 ? goals[0] : null,
-          notes:         Array.isArray(notes)   ? notes   : [],
-          activities:    Array.isArray(acts)    ? acts     : [],
+          exercises:   (Array.isArray(ex)    ? ex    : []).filter((e) => !e.therapist_id || e.therapist_id === session.id),
+          assignments: Array.isArray(assign) ? assign : [],
+          goal:        Array.isArray(goals) && goals.length > 0 ? goals[0] : null,
+          notes:       Array.isArray(notes)  ? notes  : [],
+          activities:  Array.isArray(acts)   ? acts   : [],
         });
       } catch (e) {
         console.error("[PatientModal]", e);
@@ -49,20 +49,25 @@ export default function PatientModal({ patient, session, onClose }) {
   return (
     <div className="overlay" onClick={onClose}>
       <div
-        className="modal"
+        className="modal patient-modal"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelId}
-        style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column", maxHeight: "90vh", maxWidth: 600, width: "100%" }}
       >
         {/* Header */}
-        <div style={{ padding: "24px 30px 0", borderBottom: "1.5px solid var(--warm)", background: "var(--cream)" }}>
-          <h3 id={labelId} style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="patient-modal-header">
+          <h3 id={labelId}>
             <AvatarDisplay name={patient.name} avatarUrl={patient.avatar_url} size={32} className="p-avatar" />
             {patient.name}
           </h3>
-          <div style={{ display: "flex", gap: 20, overflowX: "auto", paddingBottom: 2 }} role="tablist" aria-label="Abas do paciente">
+
+          {/* Abas com scroll horizontal no mobile */}
+          <div
+            className="patient-modal-tabs"
+            role="tablist"
+            aria-label="Abas do paciente"
+          >
             {TABS.map((t) => (
               <button
                 key={t.id}
@@ -70,18 +75,7 @@ export default function PatientModal({ patient, session, onClose }) {
                 aria-selected={tab === t.id}
                 aria-controls={`tabpanel-${t.id}`}
                 onClick={() => setTab(t.id)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  borderBottom: tab === t.id ? "3px solid var(--blue-dark)" : "3px solid transparent",
-                  paddingBottom: 10,
-                  fontSize: 14,
-                  fontWeight: tab === t.id ? 700 : 500,
-                  color: tab === t.id ? "var(--blue-dark)" : "var(--text-muted)",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  transition: "all .2s",
-                }}
+                className={`patient-modal-tab${tab === t.id ? " active" : ""}`}
               >
                 {t.label}
               </button>
@@ -90,9 +84,11 @@ export default function PatientModal({ patient, session, onClose }) {
         </div>
 
         {/* Body */}
-        <div style={{ padding: "24px 30px", overflowY: "auto", flex: 1 }}>
+        <div className="patient-modal-body">
           {loading ? (
-            <p style={{ color: "var(--text-muted)", textAlign: "center" }}>A carregar dados...</p>
+            <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "24px 0" }}>
+              A carregar dados...
+            </p>
           ) : (
             <>
               <div role="tabpanel" id="tabpanel-assign" hidden={tab !== "assign"}>

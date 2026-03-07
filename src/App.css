@@ -50,7 +50,7 @@
    TOKENS — MODO ESCURO
 ══════════════════════════════════════════════════════════ */
 body.dark-mode {
-  --blue-dark:    #7fc4e8;   /* claro o suficiente sobre fundos escuros */
+  --blue-dark:    #7fc4e8;
   --blue-mid:     #5aaad4;
   --blue-light:   #3a7fa8;
   --yellow:       #ffd27a;
@@ -65,8 +65,8 @@ body.dark-mode {
   --white:        #142030;
   --card:         rgba(20,32,48,0.98);
 
-  --text:         #e8f3fa;   /* alto contraste */
-  --text-muted:   #8ab4cc;   /* 5.5:1 sobre --white */
+  --text:         #e8f3fa;
+  --text-muted:   #8ab4cc;
   --text-on-dark: #e8f3fa;
   --text-on-accent: #0b1520;
 
@@ -147,7 +147,7 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; color: var(--text); }
   box-shadow: 0 2px 8px rgba(23,82,124,0.12);
 }
 
-/* ── Fields ──────────────────────────────────────────────────────────────── */
+/* ── Fields ── */
 .field { margin-bottom: 14px; }
 .field label {
   display: block; font-size: 11px; font-weight: 700;
@@ -167,7 +167,6 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; color: var(--text); }
   border-color: var(--blue-mid);
   box-shadow: 0 0 0 3px rgba(46,127,171,0.15);
 }
-/* dark-mode: garantir fundo e texto dos inputs */
 body.dark-mode .field input,
 body.dark-mode .field select,
 body.dark-mode .field textarea {
@@ -227,7 +226,6 @@ body.dark-mode .field textarea {
   width: 3px; border-radius: 2px; background: var(--yellow);
 }
 .nav-item .icon { font-size: 17px; }
-/* Badge no nav */
 .nav-badge {
   background: var(--accent); color: #ffffff;
   font-size: 10px; font-weight: 700;
@@ -247,7 +245,7 @@ body.dark-mode .field textarea {
   background: rgba(255,255,255,0.15);
   display: flex; align-items: center; justify-content: center;
   font-size: 14px; font-weight: 700;
-  color: #ffffff;                  /* sempre branco — fundo sempre escuro */
+  color: #ffffff;
   flex-shrink: 0; object-fit: cover; cursor: pointer;
   border: 2px solid rgba(255,255,255,0.25);
   transition: border-color .2s;
@@ -263,7 +261,6 @@ body.dark-mode .field textarea {
   flex-shrink: 0; object-fit: cover;
   border: 2px solid rgba(255,255,255,0.2);
 }
-/* Em contexto claro, o p-avatar precisa de texto escuro */
 .card .p-avatar, .modal .p-avatar {
   background: var(--blue-dark);
   color: #ffffff;
@@ -320,7 +317,7 @@ body.dark-mode .card { border-color: #1e3347; }
 .grid-3    { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
 .grid-auto { display: grid; grid-template-columns: repeat(auto-fill,minmax(270px,1fr)); gap: 18px; }
 
-/* ── Stat cards ─────────────────────────────────────────────────────────── */
+/* ── Stat cards ── */
 .stat-card {
   background: var(--card);
   border-radius: var(--radius-lg); padding: 24px 22px;
@@ -334,7 +331,7 @@ body.dark-mode .stat-card { border-color: #1e3347; }
 .stat-card .stat-val   { font-family: 'Playfair Display',serif; font-size: 36px; color: var(--blue-dark); line-height: 1; }
 .stat-card .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
 
-/* ── Exercise cards ─────────────────────────────────────────────────────── */
+/* ── Exercise cards ── */
 .ex-card {
   background: var(--card); border-radius: var(--radius-lg);
   padding: 20px; border: 1.5px solid var(--warm);
@@ -351,17 +348,15 @@ body.dark-mode .ex-card { border-color: #1e3347; }
   background: var(--accent-soft); color: var(--orange);
   margin-bottom: 9px;
 }
-/* dark: garantir legibilidade da categoria */
 body.dark-mode .ex-cat            { background: rgba(245,162,74,0.18); color: #f5c07a; }
 body.dark-mode .ex-cat.mindfulness{ background: rgba(127,196,232,0.15); color: #7fc4e8; }
 body.dark-mode .ex-cat.bem-estar  { background: rgba(245,162,74,0.15); color: #f5c07a; }
-
 .ex-cat.mindfulness { background: #ddf0fb; color: #17527c; }
 .ex-cat.bem-estar   { background: #fff3dd; color: #7a4800; }
 .ex-title { font-family: 'Playfair Display',serif; font-size: 16px; margin-bottom: 5px; color: var(--text); }
 .ex-desc  { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
 
-/* ── Patient rows ───────────────────────────────────────────────────────── */
+/* ── Patient rows ── */
 .patient-row {
   display: flex; align-items: center; gap: 12px;
   padding: 12px; border-radius: 10px;
@@ -371,6 +366,152 @@ body.dark-mode .ex-cat.bem-estar  { background: rgba(245,162,74,0.15); color: #f
 body.dark-mode .patient-row:hover { background: rgba(127,196,232,0.1); }
 .p-name  { font-weight: 700; font-size: 14px; color: var(--text); }
 .p-email { font-size: 11px; color: var(--text-muted); }
+
+/* ══════════════════════════════════════════════════════════
+   PATIENTS VIEW
+══════════════════════════════════════════════════════════ */
+
+/* Grid: 2 colunas no desktop, 1 no mobile */
+.patients-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+/* Linha de cada paciente */
+.patient-card-row {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             12px;
+  padding:         12px 16px;
+  border:          1.5px solid var(--warm);
+  border-radius:   12px;
+  background:      var(--cream);
+  transition:      border-color .2s;
+}
+.patient-card-row:hover { border-color: var(--blue-mid); }
+body.dark-mode .patient-card-row { border-color: #1e3347; }
+
+.patient-card-actions {
+  display:    flex;
+  gap:        8px;
+  flex-shrink: 0;
+}
+
+/* Linha de convite */
+.invite-row {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             8px;
+  padding:         10px 14px;
+  border:          1px solid var(--warm);
+  border-radius:   8px;
+  background:      var(--white);
+  flex-wrap:       wrap;
+}
+body.dark-mode .invite-row { border-color: #1e3347; }
+
+.invite-actions {
+  display:     flex;
+  align-items: center;
+  gap:         6px;
+  margin-left: auto;
+  flex-wrap:   nowrap;
+}
+
+/* Botões de ação do convite (copiar / whatsapp / excluir) */
+.invite-action-btn {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             4px;
+  min-width:       40px;
+  min-height:      40px;
+  padding:         6px 8px;
+  border:          none;
+  border-radius:   8px;
+  cursor:          pointer;
+  font-size:       15px;
+  transition:      all .2s;
+  flex-shrink:     0;
+}
+.invite-action-btn:hover { background: var(--warm) !important; }
+
+/* ══════════════════════════════════════════════════════════
+   PATIENT MODAL
+══════════════════════════════════════════════════════════ */
+.patient-modal {
+  padding:        0;
+  overflow:       hidden;
+  display:        flex;
+  flex-direction: column;
+  max-height:     90vh;
+  max-width:      600px;
+  width:          100%;
+}
+
+.patient-modal-header {
+  padding:       20px 24px 0;
+  border-bottom: 1.5px solid var(--warm);
+  background:    var(--cream);
+  flex-shrink:   0;
+}
+body.dark-mode .patient-modal-header { background: var(--warm); }
+
+.patient-modal-header h3 {
+  margin-bottom: 14px;
+  display:       flex;
+  align-items:   center;
+  gap:           10px;
+  font-size:     18px;
+}
+
+/* Abas: scroll horizontal suave, sem quebra de texto */
+.patient-modal-tabs {
+  display:                    flex;
+  gap:                        4px;
+  overflow-x:                 auto;
+  overflow-y:                 hidden;
+  scrollbar-width:            none;
+  -ms-overflow-style:         none;
+  padding-bottom:             2px;
+  -webkit-overflow-scrolling: touch;
+}
+.patient-modal-tabs::-webkit-scrollbar { display: none; }
+
+.patient-modal-tab {
+  flex-shrink:   0;
+  background:    none;
+  border:        none;
+  border-bottom: 3px solid transparent;
+  padding:       10px 14px;
+  font-size:     14px;
+  font-weight:   500;
+  color:         var(--text-muted);
+  cursor:        pointer;
+  white-space:   nowrap;
+  transition:    all .2s;
+  font-family:   'DM Sans', sans-serif;
+}
+.patient-modal-tab.active {
+  border-bottom-color: var(--blue-dark);
+  color:               var(--blue-dark);
+  font-weight:         700;
+}
+.patient-modal-tab:hover:not(.active) {
+  color:         var(--text);
+  background:    rgba(46,127,171,0.05);
+  border-radius: 8px 8px 0 0;
+}
+
+.patient-modal-body {
+  padding:    20px 24px;
+  overflow-y: auto;
+  flex:       1;
+}
 
 /* ══════════════════════════════════════════════════════════
    MODAIS
@@ -428,7 +569,7 @@ body.dark-mode .btn-sage:hover { filter: brightness(1.1); }
 }
 .btn-accent:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(224,120,32,0.38); }
 
-/* ── Exercise picker ────────────────────────────────────────────────────── */
+/* ── Exercise picker ── */
 .ex-pick {
   display: flex; align-items: center; gap: 11px;
   padding: 12px; border-radius: var(--radius-md);
@@ -540,7 +681,7 @@ body.dark-mode .response-item { background: var(--warm); border-color: #1e3347; 
 body.dark-mode .badge-done    { background: rgba(40,160,80,0.2); color: #5de88a; }
 body.dark-mode .badge-pending { background: rgba(138,180,204,0.12); color: #8ab4cc; }
 
-/* ── Due chips ───────────────────────────────────────────────────────────── */
+/* ── Due chips ── */
 .due-chip {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 10px; padding: 2px 9px;
@@ -553,12 +694,12 @@ body.dark-mode .due-ok   { background: rgba(127,196,232,0.18); color: #7fc4e8; }
 body.dark-mode .due-warn { background: rgba(245,162,74,0.18);  color: #f5c07a; }
 body.dark-mode .due-late { background: rgba(224,96,96,0.18);   color: #e88888; }
 
-/* ── Empty state ─────────────────────────────────────────────────────────── */
+/* ── Empty state ── */
 .empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); }
 .empty-state .empty-icon { font-size: 44px; margin-bottom: 14px; }
 .empty-state p { font-size: 14px; line-height: 1.5; }
 
-/* ── Banners ─────────────────────────────────────────────────────────────── */
+/* ── Banners ── */
 .success-banner {
   background: #c8ead0; color: #1a5c28;
   border-radius: var(--radius-sm);
@@ -569,7 +710,7 @@ body.dark-mode .due-late { background: rgba(224,96,96,0.18);   color: #e88888; }
 body.dark-mode .success-banner { background: rgba(40,160,80,0.15); color: #5de88a; border-color: rgba(40,160,80,0.25); }
 .error-msg { color: var(--danger); font-size: 13px; margin-bottom: 8px; font-weight: 600; }
 
-/* ── Spinner ─────────────────────────────────────────────────────────────── */
+/* ── Spinner ── */
 .spinner {
   display: flex; align-items: center; justify-content: center;
   height: 100vh; font-family: 'DM Sans',sans-serif;
@@ -657,7 +798,7 @@ body.dark-mode .delete-confirm-input { background: var(--warm); border-color: #2
 }
 body.dark-mode .mood-btn.sel { background: rgba(127,196,232,0.18); border-color: var(--blue-mid); }
 
-/* ── Goal bar ────────────────────────────────────────────────────────────── */
+/* ── Goal bar ── */
 .goal-bar-bg {
   height: 12px; background: var(--warm);
   border-radius: 6px; overflow: hidden; margin: 8px 0 4px;
@@ -669,7 +810,7 @@ body.dark-mode .mood-btn.sel { background: rgba(127,196,232,0.18); border-color:
 }
 body.dark-mode .goal-bar-fill { background: linear-gradient(90deg,var(--blue-mid),var(--blue-light)); }
 
-/* ── Toggle ──────────────────────────────────────────────────────────────── */
+/* ── Toggle ── */
 .toggle {
   width: 42px; height: 24px; border-radius: 12px;
   cursor: pointer; border: none; position: relative;
@@ -695,13 +836,11 @@ body.dark-mode .toggle.off { background: #2a4460; }
   border-radius: 12px; font-size: 10px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .05em;
 }
-/* Claro */
 .cat-Autocuidado       { background: #ddf0fb; color: #0e4060; border: 1px solid #b3d7ed; }
 .cat-Responsabilidades { background: #fff3dd; color: #7a4800; border: 1px solid #ffe0a0; }
 .cat-Lazer             { background: #fde8e8; color: #8b1c1c; border: 1px solid #f9caca; }
 .cat-Movimento         { background: #e0f5e3; color: #1a5c28; border: 1px solid #b0ddb8; }
 .cat-Socialização      { background: #f3e5f5; color: #5b1080; border: 1px solid #d4aae4; }
-/* Escuro */
 body.dark-mode .cat-Autocuidado       { background: rgba(127,196,232,0.15); color: #7fc4e8; border-color: rgba(127,196,232,0.25); }
 body.dark-mode .cat-Responsabilidades { background: rgba(245,162,74,0.15);  color: #f5c07a; border-color: rgba(245,162,74,0.25); }
 body.dark-mode .cat-Lazer             { background: rgba(224,96,96,0.15);   color: #e88888; border-color: rgba(224,96,96,0.25); }
@@ -731,14 +870,103 @@ body.dark-mode .activity-card { border-color: #1e3347; }
   box-shadow: var(--shadow-sm);
 }
 body.dark-mode .pillar-card { border-color: #1e3347; }
-.pillar-card:hover {
-  transform: translateY(-7px); box-shadow: var(--shadow-lg);
-  border-color: var(--blue-mid);
-}
+.pillar-card:hover { transform: translateY(-7px); box-shadow: var(--shadow-lg); border-color: var(--blue-mid); }
 .pillar-card:active { transform: translateY(1px); transition: transform .1s ease; }
-/* Texto dentro dos pillar cards */
 .pillar-card > div { color: var(--text); }
 .pillar-card > div:last-child { color: var(--text-muted); }
+
+/* ══════════════════════════════════════════════════════════
+   QUOTE CARD — mensagens motivacionais diárias
+══════════════════════════════════════════════════════════ */
+.quote-card {
+  display:       flex;
+  align-items:   flex-start;
+  gap:           12px;
+  padding:       16px 20px;
+  border-radius: var(--radius-md);
+  border:        1px solid transparent;
+  margin-bottom: 24px;
+  animation:     fadeUp .45s cubic-bezier(0.22,1,0.36,1) both;
+  position:      relative;
+  overflow:      hidden;
+}
+.quote-card::before {
+  content:      '';
+  position:     absolute;
+  left:         0; top: 16%; bottom: 16%;
+  width:        3px;
+  border-radius: 2px;
+}
+
+.quote-card--therapist {
+  background:   rgba(23,82,124,0.06);
+  border-color: rgba(23,82,124,0.14);
+}
+.quote-card--therapist::before {
+  background: linear-gradient(180deg, var(--blue-dark), var(--blue-mid));
+}
+body.dark-mode .quote-card--therapist {
+  background:   rgba(127,196,232,0.08);
+  border-color: rgba(127,196,232,0.18);
+}
+
+.quote-card--patient {
+  background:   rgba(224,120,32,0.05);
+  border-color: rgba(224,120,32,0.16);
+}
+.quote-card--patient::before {
+  background: linear-gradient(180deg, var(--accent), var(--yellow));
+}
+body.dark-mode .quote-card--patient {
+  background:   rgba(245,162,74,0.08);
+  border-color: rgba(245,162,74,0.20);
+}
+
+.quote-card__icon {
+  font-size:   20px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top:  1px;
+  filter:      drop-shadow(0 1px 3px rgba(0,0,0,0.1));
+}
+
+.quote-card__text {
+  font-family: 'Playfair Display', serif;
+  font-size:   15px;
+  font-weight: 400;
+  line-height: 1.65;
+  font-style:  italic;
+  color:       var(--text);
+  margin:      0;
+}
+
+/* ══════════════════════════════════════════════════════════
+   CTA BANNERS
+══════════════════════════════════════════════════════════ */
+.cta-banner { transition: transform .2s, box-shadow .2s; }
+.cta-banner:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+
+.cta-blue {
+  background:   linear-gradient(135deg, #0d3d5e, #175d8e) !important;
+  border-color: #1e6fa6 !important;
+  color:        #ffffff !important;
+}
+body.dark-mode .cta-blue {
+  background:   linear-gradient(135deg, #0a2a42, #123f60) !important;
+  border-color: #1e5278 !important;
+  color:        #e8f3fa !important;
+}
+.cta-green {
+  background:   linear-gradient(135deg, #1a5c34, #237a46) !important;
+  border-color: #2a9055 !important;
+  color:        #ffffff !important;
+}
+body.dark-mode .cta-green {
+  background:   linear-gradient(135deg, #0f3d22, #1a5c34) !important;
+  border-color: #237a46 !important;
+  color:        #e8f3fa !important;
+}
+.cta-banner h3, .cta-banner p { color: inherit !important; }
 
 /* ══════════════════════════════════════════════════════════
    PLANT & ANIMATIONS
@@ -748,6 +976,10 @@ body.dark-mode .pillar-card { border-color: #1e3347; }
 @keyframes spin    { to{transform:rotate(360deg)} }
 @keyframes fadeUp  { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+@keyframes skeleton-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
 
 .plant-animation {
   display: inline-block; animation: sway 4s ease-in-out infinite;
@@ -760,52 +992,50 @@ body.dark-mode .pillar-card { border-color: #1e3347; }
   animation: drop 1.5s ease-out forwards; z-index: 10;
 }
 
-/* ── CTA Banners (Home do paciente) ─────────────────────────────────────── */
-.cta-banner {
-  transition: transform .2s, box-shadow .2s;
-}
-.cta-banner:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-}
+/* ══════════════════════════════════════════════════════════
+   SCROLLBAR
+══════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--warm); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--blue-mid); }
 
-/* Azul — sempre fundo escuro fixo, texto sempre branco */
-.cta-blue {
-  background: linear-gradient(135deg, #0d3d5e, #175d8e) !important;
-  border-color: #1e6fa6 !important;
-  color: #ffffff !important;
-}
-body.dark-mode .cta-blue {
-  background: linear-gradient(135deg, #0a2a42, #123f60) !important;
-  border-color: #1e5278 !important;
-  color: #e8f3fa !important;
-}
-
-/* Verde — sempre fundo escuro fixo, texto sempre branco */
-.cta-green {
-  background: linear-gradient(135deg, #1a5c34, #237a46) !important;
-  border-color: #2a9055 !important;
-  color: #ffffff !important;
-}
-body.dark-mode .cta-green {
-  background: linear-gradient(135deg, #0f3d22, #1a5c34) !important;
-  border-color: #237a46 !important;
-  color: #e8f3fa !important;
-}
-
-/* Garantir que títulos e parágrafos dentro herdam a cor */
-.cta-banner h3,
-.cta-banner p {
-  color: inherit !important;
-}
-
-/* ── Mobile bottom nav adjustments ─────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   MEDIA QUERIES — MOBILE (max-width: 768px)
+══════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
+  /* Layout base */
+  .layout { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; position: relative; }
+  .sidebar-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 20px; }
+  .sidebar nav    { display: flex; overflow-x: auto; padding: 10px 20px; white-space: nowrap; gap: 10px; }
+  .nav-item       { width: auto; flex-shrink: 0; padding: 10px 14px; margin-bottom: 0; }
+  .nav-item.active::before { display: none; }
+  .sidebar-footer { padding: 15px 20px; }
+  .user-pill      { width: 100%; justify-content: space-between; }
+  .pill-actions   { margin-left: 0; }
+
+  /* Main content */
   .main {
-    padding: 20px 16px;
-    /* Garante que o conteúdo não fica escondido atrás do bottom nav */
+    margin-left:    0;
+    padding:        20px 16px;
     padding-bottom: calc(80px + env(safe-area-inset-bottom));
   }
+
+  /* Grids */
+  .grid-3, .grid-2 { grid-template-columns: 1fr; }
+
+  /* Cards */
+  .stat-card     { padding: 18px; }
+  .login-card    { padding: 32px 22px; margin: 15px; width: calc(100% - 30px); }
+  .modal         { padding: 24px 20px; width: 95%; max-height: 88vh; overflow-y: auto; }
+  .page-header h2 { font-size: 22px; }
+  .scale-btn     { width: 38px; height: 38px; font-size: 13px; }
+  .question-card { padding: 22px 18px; }
+
+  /* Pilares */
+  .pillars-container { grid-template-columns: 1fr 1fr; }
+  .pillar-card:nth-child(5) { grid-column: span 2; }
 
   /* Modais sobem acima do bottom nav */
   .overlay, .delete-overlay {
@@ -816,43 +1046,41 @@ body.dark-mode .cta-green {
   .toast-container {
     bottom: calc(80px + env(safe-area-inset-bottom)) !important;
   }
-}
 
-/* ── Skeleton shimmer ────────────────────────────────────────────────────── */
-@keyframes skeleton-shimmer {
-  0%   { background-position: -400px 0; }
-  100% { background-position:  400px 0; }
-}
+  /* Quote card */
+  .quote-card        { padding: 13px 15px; margin-bottom: 18px; }
+  .quote-card__text  { font-size: 14px; }
 
-/* ══════════════════════════════════════════════════════════
-   SCROLLBAR
-══════════════════════════════════════════════════════════ */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--warm); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--blue-mid); }
+  /* Patients grid: coluna única */
+  .patients-grid { grid-template-columns: 1fr; }
 
-/* ══════════════════════════════════════════════════════════
-   MEDIA QUERIES
-══════════════════════════════════════════════════════════ */
-@media (max-width: 768px) {
-  .layout { flex-direction: column; }
-  .sidebar { width: 100%; height: auto; position: relative; }
-  .sidebar-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 20px; }
-  .sidebar nav    { display: flex; overflow-x: auto; padding: 10px 20px; white-space: nowrap; gap: 10px; }
-  .nav-item       { width: auto; flex-shrink: 0; padding: 10px 14px; margin-bottom: 0; }
-  .nav-item.active::before { display: none; }
-  .sidebar-footer { padding: 15px 20px; }
-  .user-pill      { width: 100%; justify-content: space-between; }
-  .pill-actions   { margin-left: 0; }
-  .main           { margin-left: 0; padding: 22px 16px; }
-  .grid-3, .grid-2 { grid-template-columns: 1fr; }
-  .stat-card       { padding: 18px; }
-  .login-card      { padding: 32px 22px; margin: 15px; width: calc(100% - 30px); }
-  .modal           { padding: 24px 20px; width: 95%; max-height: 88vh; overflow-y: auto; }
-  .page-header h2  { font-size: 22px; }
-  .scale-btn       { width: 38px; height: 38px; font-size: 13px; }
-  .pillars-container { grid-template-columns: 1fr 1fr; }
-  .pillar-card:nth-child(5) { grid-column: span 2; }
-  .question-card   { padding: 22px 18px; }
+  /* Linha de paciente: empilha verticalmente */
+  .patient-card-row {
+    flex-direction: column;
+    align-items:    stretch;
+    gap:            12px;
+    padding:        14px;
+  }
+  .patient-card-actions { width: 100%; }
+  .patient-card-actions .btn {
+    flex:            1;
+    min-height:      44px;
+    justify-content: center;
+  }
+
+  /* Convites: área de toque mínima de 44px */
+  .invite-row     { padding: 12px; gap: 10px; }
+  .invite-actions { gap: 10px; }
+  .invite-action-btn {
+    min-width:  44px;
+    min-height: 44px;
+    font-size:  17px;
+  }
+
+  /* Patient modal */
+  .patient-modal      { max-width: 95vw; max-height: 92vh; }
+  .patient-modal-header { padding: 16px 18px 0; }
+  .patient-modal-header h3 { font-size: 16px; }
+  .patient-modal-tab  { padding: 10px 16px; font-size: 13px; }
+  .patient-modal-body { padding: 16px 18px; }
 }
