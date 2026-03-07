@@ -799,6 +799,31 @@ body.dark-mode .cta-green {
   color: inherit !important;
 }
 
+/* ── Mobile bottom nav adjustments ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .main {
+    padding: 20px 16px;
+    /* Garante que o conteúdo não fica escondido atrás do bottom nav */
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+
+  /* Modais sobem acima do bottom nav */
+  .overlay, .delete-overlay {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+
+  /* Toasts sobem acima do bottom nav */
+  .toast-container {
+    bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* ── Skeleton shimmer ────────────────────────────────────────────────────── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
 /* ══════════════════════════════════════════════════════════
    SCROLLBAR
 ══════════════════════════════════════════════════════════ */

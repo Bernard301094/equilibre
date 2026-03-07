@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import db from "../../services/db";
+import toast from "../../utils/toast";
 import AvatarDisplay from "../../components/shared/AvatarDisplay";
 import EmptyState from "../../components/ui/EmptyState";
 import PatientModal from "./PatientModal/PatientModal";
+import { SkeletonList, SkeletonCard } from "../../components/ui/Skeleton";
 
 export default function PatientsView({ session }) {
   const [patients,        setPatients]        = useState([]);
@@ -13,7 +15,6 @@ export default function PatientsView({ session }) {
   const [deleteInvTarget, setDeleteInvTarget] = useState(null);
   const [copiedCode,      setCopiedCode]      = useState(null);
   const [managingPatient, setManagingPatient] = useState(null);
-  const [error,           setError]           = useState("");
   const inflightRef = useRef(false);
 
   useEffect(() => {
@@ -21,22 +22,14 @@ export default function PatientsView({ session }) {
     (async () => {
       try {
         const [pts, invs] = await Promise.all([
-          db.query(
-            "users",
-            { filter: { therapist_id: session.id, role: "patient" } },
-            session.access_token
-          ),
-          db.query(
-            "invites",
-            { filter: { therapist_id: session.id }, order: "created_at.desc" },
-            session.access_token
-          ),
+          db.query("users",   { filter: { therapist_id: session.id, role: "patient" } }, session.access_token),
+          db.query("invites", { filter: { therapist_id: session.id }, order: "created_at.desc" }, session.access_token),
         ]);
         if (!active) return;
-        setPatients(Array.isArray(pts) ? pts : []);
+        setPatients(Array.isArray(pts)  ? pts  : []);
         setInvites(Array.isArray(invs) ? invs : []);
       } catch (e) {
-        if (active) setError("Erro ao carregar dados: " + e.message);
+        toast.error("Erro ao carregar dados: " + e.message);
       } finally {
         if (active) setLoading(false);
       }
@@ -49,7 +42,6 @@ export default function PatientsView({ session }) {
     if (inflightRef.current || generating) return;
     inflightRef.current = true;
     setGenerating(true);
-    setError("");
     try {
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
       await db.insert(
@@ -63,8 +55,9 @@ export default function PatientsView({ session }) {
         session.access_token
       );
       setInvites(Array.isArray(fresh) ? fresh : []);
+      toast.success("Código de convite gerado!");
     } catch (e) {
-      setError("Erro ao gerar convite: " + e.message);
+      toast.error("Erro ao gerar convite: " + e.message);
     } finally {
       setGenerating(false);
       inflightRef.current = false;
@@ -76,6 +69,7 @@ export default function PatientsView({ session }) {
     navigator.clipboard.writeText(code).catch(() => {});
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2000);
+    toast.info(`Código ${code} copiado!`);
   };
 
   // ── Unlink patient ────────────────────────────────────────────────────────
@@ -89,9 +83,11 @@ export default function PatientsView({ session }) {
         session.access_token
       );
       setPatients((prev) => prev.filter((p) => p.id !== unlinkTarget.id));
+      toast.success(`${unlinkTarget.name} desvinculado com sucesso.`);
       setUnlinkTarget(null);
     } catch (e) {
-      setError("Erro ao desvincular: " + e.message);
+      toast.error("Erro ao desvincular: " + e.message);
+      setUnlinkTarget(null);
     }
   };
 
@@ -105,17 +101,27 @@ export default function PatientsView({ session }) {
         session.access_token
       );
       setInvites((prev) => prev.filter((i) => i.code !== deleteInvTarget.code));
+      toast.success("Convite excluído.");
       setDeleteInvTarget(null);
     } catch (e) {
-      setError("Erro ao excluir convite: " + e.message);
+      toast.error("Erro ao excluir convite: " + e.message);
+      setDeleteInvTarget(null);
     }
   };
 
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
-        Carregando pacientes...
-      </p>
+      <div style={{ animation: "fadeUp .4s ease" }}>
+        <div className="page-header">
+          <h2>Meus Pacientes</h2>
+          <p>Gerencie seus pacientes e envie convites</p>
+        </div>
+        <div className="grid-2">
+          <div className="card"><SkeletonList rows={3} /></div>
+          <SkeletonCard lines={4} />
+        </div>
+      </div>
     );
   }
 
@@ -126,42 +132,32 @@ export default function PatientsView({ session }) {
         <p>Gerencie seus pacientes e envie convites</p>
       </div>
 
-      {error && (
-        <p className="error-msg" role="alert" style={{ marginBottom: 16 }}>
-          {error}
-        </p>
-      )}
-
       <div className="grid-2">
-        {/* ── Active patients ── */}
+        {/* ── Pacientes ativos ── */}
         <div className="card">
           <h3 style={{ fontSize: 16, marginBottom: 14 }}>
             Pacientes Ativos ({patients.length})
           </h3>
 
           {patients.length === 0 ? (
-            <EmptyState message="Nenhum paciente registrado." />
+            <EmptyState message="Nenhum paciente registado." />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {patients.map((p) => (
                 <div
                   key={p.id}
                   style={{
-                    display: "flex",
-                    alignItems: "center",
+                    display: "flex", alignItems: "center",
                     justifyContent: "space-between",
                     padding: "12px 16px",
                     border: "1.5px solid var(--warm)",
-                    borderRadius: 12,
-                    background: "var(--cream)",
+                    borderRadius: 12, background: "var(--cream)",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <AvatarDisplay
-                      name={p.name}
-                      avatarUrl={p.avatar_url}
-                      size={38}
-                      className="p-avatar"
+                      name={p.name} avatarUrl={p.avatar_url}
+                      size={38} className="p-avatar"
                     />
                     <div>
                       <div style={{ fontWeight: 600, color: "var(--blue-dark)", marginBottom: 2 }}>
@@ -195,14 +191,14 @@ export default function PatientsView({ session }) {
           )}
         </div>
 
-        {/* ── Invites ── */}
+        {/* ── Convites ── */}
         <div className="card">
           <h3 style={{ fontSize: 16, marginBottom: 14 }}>
             Convidar Novo Paciente
           </h3>
           <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.5 }}>
-            Gere um código único e partilhe com o seu paciente. Ao usá-lo no
-            registo, ele ficará automaticamente vinculado à sua conta.
+            Gere um código único e partilhe com o seu paciente. Ao usá-lo no registo,
+            ele ficará automaticamente vinculado à sua conta.
           </p>
 
           <button
@@ -215,15 +211,7 @@ export default function PatientsView({ session }) {
             {generating ? "Gerando..." : "Gerar Novo Código"}
           </button>
 
-          <h4
-            style={{
-              fontSize: 13,
-              color: "var(--text-muted)",
-              marginBottom: 10,
-              textTransform: "uppercase",
-              letterSpacing: ".05em",
-            }}
-          >
+          <h4 style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".05em" }}>
             Convites Gerados
           </h4>
 
@@ -238,12 +226,10 @@ export default function PatientsView({ session }) {
               <div
                 key={inv.code}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
+                  display: "flex", alignItems: "center",
                   justifyContent: "space-between",
                   padding: "10px 14px",
-                  border: "1px solid var(--warm)",
-                  borderRadius: 8,
+                  border: "1px solid var(--warm)", borderRadius: 8,
                   background: "var(--white)",
                   opacity: inv.status === "used" ? 0.6 : 1,
                 }}
@@ -269,40 +255,32 @@ export default function PatientsView({ session }) {
                       {inv.code}
                     </span>
 
-                    {/* Copy button */}
+                    {/* Copiar */}
                     <button
                       onClick={() => copyCode(inv.code)}
                       aria-label={`Copiar código ${inv.code}`}
                       style={{
                         background: copiedCode === inv.code ? "var(--sage-light)" : "none",
-                        border: "none",
-                        cursor: "pointer",
-                        fontSize: 14,
-                        padding: "4px 8px",
-                        borderRadius: 6,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 4,
+                        border: "none", cursor: "pointer", fontSize: 14,
+                        padding: "4px 8px", borderRadius: 6,
+                        display: "flex", alignItems: "center", gap: 4,
                         color: copiedCode === inv.code ? "var(--sage-dark)" : "inherit",
-                        transition: "all 0.2s ease",
+                        transition: "all 0.2s",
                       }}
                     >
                       {copiedCode === inv.code ? (
-                        <>
-                          <span aria-hidden="true">✅</span>
-                          <span style={{ fontSize: 11, fontWeight: 600 }}>Copiado</span>
-                        </>
+                        <><span aria-hidden="true">✅</span><span style={{ fontSize: 11, fontWeight: 600 }}>Copiado</span></>
                       ) : (
                         <span aria-hidden="true">📋</span>
                       )}
                     </button>
 
-                    {/* WhatsApp button */}
+                    {/* WhatsApp */}
                     <button
-                      aria-label="Enviar convite pelo WhatsApp"
+                      aria-label="Enviar pelo WhatsApp"
                       onClick={() => {
                         const msg = encodeURIComponent(
-                          `Olá! Estou usando o Equilibre para acompanhar o nosso trabalho.\n\nCrie a sua conta em https://equilibreapp.vercel.app e use o código de convite:\n\n*${inv.code}*\n\nClique em "Criar conta" > perfil "Paciente" > insira o código.`
+                          `Olá! Estou usando o Equilibre para acompanhar o nosso trabalho.\n\nCrie a sua conta e use o código de convite:\n\n*${inv.code}*`
                         );
                         window.open(`https://wa.me/?text=${msg}`, "_blank");
                       }}
@@ -310,11 +288,11 @@ export default function PatientsView({ session }) {
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true">
                         <circle cx="16" cy="16" r="16" fill="#25D366" />
-                        <path d="M23.5 8.5A10.44 10.44 0 0 0 16 5.5a10.5 10.5 0 0 0-9.08 15.73L5.5 26.5l5.43-1.42A10.5 10.5 0 0 0 26.5 16a10.44 10.44 0 0 0-3-7.5zm-7.5 16.16a8.71 8.71 0 0 1-4.44-1.21l-.32-.19-3.22.84.86-3.14-.21-.33a8.75 8.75 0 1 1 7.33 4.03zm4.8-6.55c-.26-.13-1.55-.77-1.79-.85s-.41-.13-.59.13-.67.85-.83 1-.3.2-.56.07a7.13 7.13 0 0 1-2.1-1.3 7.9 7.9 0 0 1-1.45-1.81c-.15-.26 0-.4.11-.53s.26-.3.4-.46a1.8 1.8 0 0 0 .26-.43.48.48 0 0 0 0-.46c-.07-.13-.59-1.42-.81-1.94s-.43-.44-.59-.45h-.5a1 1 0 0 0-.7.33 2.93 2.93 0 0 0-.91 2.18 5.1 5.1 0 0 0 1.06 2.7 11.65 11.65 0 0 0 4.47 3.95c.62.27 1.1.43 1.48.55a3.56 3.56 0 0 0 1.63.1 2.69 2.69 0 0 0 1.76-1.24 2.18 2.18 0 0 0 .15-1.24c-.06-.11-.24-.17-.5-.3z" fill="#fff" />
+                        <path d="M23.5 8.5A10.44 10.44 0 0 0 16 5.5a10.5 10.5 0 0 0-9.08 15.73L5.5 26.5l5.43-1.42A10.5 10.5 0 0 0 26.5 16a10.44 10.44 0 0 0-3-7.5zm-7.5 16.16a8.71 8.71 0 0 1-4.44-1.21l-.32-.19-3.22.84.86-3.14-.21-.33a8.75 8.75 0 1 1 7.33 4.03zm4.8-6.55c-.26-.13-1.55-.77-1.79-.85s-.41-.13-.59.13-.67.85-.83 1-.3.2-.56.07a7.13 7.13 0 0 1-2.1-1.3 7.9 7.9 0 0 1-1.45-1.81c-.15-.26 0-.4.11-.53s.26-.3.4-.46a1.8 1.8 0 0 0 .26-.43.48.48 0 0 0 0-.46c-.07-.13-.59-1.42-.81-1.94s-.43-.44-.59-.45h-.5a1 1 0 0 0-.7.33 2.93 2.93 0 0 0-.91 2.18 5.1 5.1 0 0 0 1.06 2.7 11.65 11.65 0 0 0 4.47 3.95c.62.27 1.1.43 1.48.55a3.56 3.56 0 0 0 1.63.1 2.69 2.69 0 0 0 1.76-1.24 2.18 2.18 0 0 0 .15-1.24c-.06-.11-.24-.17-.5-.3z" fill="#fff"/>
                       </svg>
                     </button>
 
-                    {/* Delete invite */}
+                    {/* Excluir */}
                     <button
                       aria-label={`Excluir convite ${inv.code}`}
                       onClick={() => setDeleteInvTarget(inv)}
@@ -330,7 +308,7 @@ export default function PatientsView({ session }) {
         </div>
       </div>
 
-      {/* ── Patient modal ── */}
+      {/* ── PatientModal ── */}
       {managingPatient && (
         <PatientModal
           patient={managingPatient}
@@ -339,16 +317,20 @@ export default function PatientsView({ session }) {
         />
       )}
 
-      {/* ── Unlink confirmation ── */}
+      {/* ── Confirmar desvincular ── */}
       {unlinkTarget && (
         <div className="delete-overlay" onClick={() => setUnlinkTarget(null)}>
-          <div className="delete-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="unlink-title">
-            <div className="delete-icon" aria-hidden="true" style={{ fontSize: 42, marginBottom: 16 }}>🔗</div>
-            <div id="unlink-title" className="delete-title" style={{ fontSize: 20 }}>Desvincular Paciente?</div>
-            <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>
+          <div
+            className="delete-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog" aria-modal="true" aria-labelledby="unlink-title"
+          >
+            <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>🔗</div>
+            <div id="unlink-title" className="delete-title">Desvincular Paciente?</div>
+            <div className="delete-desc">
               Tem certeza que deseja desvincular <strong>{unlinkTarget.name}</strong>?
               <br /><br />
-              O paciente perderá acesso aos exercícios e você deixará de ver os dados dele. O registo do paciente <strong>não</strong> será apagado.
+              O paciente perderá acesso aos exercícios. O registo <strong>não</strong> será apagado.
             </div>
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
               <button className="btn btn-outline" onClick={() => setUnlinkTarget(null)}>Cancelar</button>
@@ -358,13 +340,17 @@ export default function PatientsView({ session }) {
         </div>
       )}
 
-      {/* ── Delete invite confirmation ── */}
+      {/* ── Confirmar excluir convite ── */}
       {deleteInvTarget && (
         <div className="delete-overlay" onClick={() => setDeleteInvTarget(null)}>
-          <div className="delete-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="delinv-title">
-            <div className="delete-icon" aria-hidden="true" style={{ fontSize: 42, marginBottom: 16 }}>🗑️</div>
-            <div id="delinv-title" className="delete-title" style={{ fontSize: 20 }}>Excluir Convite?</div>
-            <div className="delete-desc" style={{ marginBottom: 24, fontSize: 14 }}>
+          <div
+            className="delete-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog" aria-modal="true" aria-labelledby="delinv-title"
+          >
+            <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>🗑️</div>
+            <div id="delinv-title" className="delete-title">Excluir Convite?</div>
+            <div className="delete-desc">
               O código <strong>{deleteInvTarget.code}</strong> deixará de funcionar.
             </div>
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>

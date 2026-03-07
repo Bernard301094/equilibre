@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import db from "../../services/db";
+import { SkeletonDashboard } from "../../components/ui/Skeleton";
 import StatCard from "../../components/ui/StatCard";
 import AvatarDisplay from "../../components/shared/AvatarDisplay";
 import EmptyState from "../../components/ui/EmptyState";
@@ -21,12 +22,7 @@ const getGreetingSub = () => {
 };
 
 export default function TherapistDashboard({ session, setView }) {
-  const [stats, setStats] = useState({
-    patients: 0,
-    done:     0,
-    pending:  0,
-    recent:   [],
-  });
+  const [stats,   setStats]   = useState({ patients: 0, done: 0, pending: 0, recent: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,10 +31,7 @@ export default function TherapistDashboard({ session, setView }) {
       try {
         const patients = await db.query(
           "users",
-          {
-            select: "id,name,email,avatar_url",
-            filter: { therapist_id: session.id, role: "patient" },
-          },
+          { select: "id,name,email,avatar_url", filter: { therapist_id: session.id, role: "patient" } },
           session.access_token
         );
         const pList = Array.isArray(patients) ? patients : [];
@@ -69,33 +62,27 @@ export default function TherapistDashboard({ session, setView }) {
     return () => { active = false; };
   }, [session.id, session.access_token]);
 
+  if (loading) return <SkeletonDashboard />;
+
   const firstName = session.name.split(" ")[0];
 
   return (
     <div style={{ animation: "fadeUp .4s ease" }}>
-
-      {/* ── Header ── */}
       <div className="page-header">
         <h2>{getGreeting(firstName)}</h2>
         <p>{getGreetingSub()}</p>
       </div>
 
-      {/* ── Stats ── */}
       <div className="grid-3" style={{ marginBottom: 28 }}>
-        <StatCard icon="👥" value={stats.patients} label="Pacientes ativos"        />
-        <StatCard icon="✅" value={stats.done}     label="Exercícios concluídos"   />
-        <StatCard icon="⏳" value={stats.pending}  label="Pendentes"               />
+        <StatCard icon="👥" value={stats.patients} label="Pacientes ativos"      />
+        <StatCard icon="✅" value={stats.done}     label="Exercícios concluídos" />
+        <StatCard icon="⏳" value={stats.pending}  label="Pendentes"             />
       </div>
 
-      {/* ── Recent patients ── */}
       <div className="card">
         <h3 style={{ fontSize: 17, marginBottom: 14 }}>Pacientes recentes</h3>
 
-        {loading && (
-          <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Carregando...</p>
-        )}
-
-        {!loading && stats.recent.length === 0 && (
+        {stats.recent.length === 0 && (
           <EmptyState
             icon="👥"
             message="Nenhum paciente ainda."
@@ -105,12 +92,7 @@ export default function TherapistDashboard({ session, setView }) {
 
         {stats.recent.map((p) => (
           <div key={p.id} className="patient-row">
-            <AvatarDisplay
-              name={p.name}
-              avatarUrl={p.avatar_url}
-              size={38}
-              className="p-avatar"
-            />
+            <AvatarDisplay name={p.name} avatarUrl={p.avatar_url} size={38} className="p-avatar" />
             <div>
               <div className="p-name">{p.name}</div>
               <div className="p-email">{p.email}</div>
@@ -118,7 +100,7 @@ export default function TherapistDashboard({ session, setView }) {
           </div>
         ))}
 
-        {!loading && stats.recent.length > 0 && (
+        {stats.recent.length > 0 && (
           <button
             className="btn btn-outline btn-sm"
             style={{ marginTop: 14 }}

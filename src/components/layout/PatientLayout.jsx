@@ -1,149 +1,162 @@
-import { useState, useEffect, useCallback } from "react";
-import Sidebar from "./Sidebar";
-import ProfileModal from "../shared/ProfileModal";
+import { useState, useEffect, useRef } from "react";
+import Sidebar    from "./Sidebar";
+import BottomNav  from "./BottomNav";
+import ToastContainer from "../ui/Toast";
+import PatientHome     from "../../features/patient/Home";
+import PatientExercises from "../../features/patient/ExercisesView";
+import ExercisePage    from "../../features/patient/ExercisePage";
+import PatientDiary    from "../../features/patient/DiaryView";
+import PatientRoutine  from "../../features/patient/RoutineView";
+import PatientProgress from "../../features/patient/ProgressView";
+import PatientHistory  from "../../features/patient/HistoryView";
+import ProfileModal    from "../shared/ProfileModal";
 import DeleteAccountModal from "../shared/DeleteAccountModal";
 import db from "../../services/db";
 
-// ── Feature views ─────────────────────────────────────────────────────────────
-import PatientHome from "../../features/patient/Home";
-import PatientExercises from "../../features/patient/ExercisesView";
-import ExercisePage from "../../features/patient/ExercisePage";
-import PatientDiary from "../../features/patient/DiaryView";
-import PatientRoutine from "../../features/patient/RoutineView";
-import PatientProgress from "../../features/patient/ProgressView";
-import PatientHistory from "../../features/patient/HistoryView";
-
-const NAV_ITEMS = [
-  { id: "home",      icon: "🏠", label: "Início" },
-  { id: "routine",   icon: "🗓️", label: "Minha Rotina" },
-  { id: "exercises", icon: "📝", label: "Meus Exercícios" },
-  { id: "diary",     icon: "📖", label: "Diário" },
-  { id: "progress",  icon: "📈", label: "Meu Progresso" },
-  { id: "history",   icon: "🕰️", label: "Histórico" },
+const NAV_ITEMS = (pendingCount) => [
+  { view: "home",      icon: "🏠", label: "Início"    },
+  { view: "exercises", icon: "📋", label: "Exercícios", badge: pendingCount },
+  { view: "diary",     icon: "📓", label: "Diário"    },
+  { view: "routine",   icon: "🗓️", label: "Rotina"    },
+  { view: "progress",  icon: "📈", label: "Progresso" },
+  { view: "history",   icon: "🕰️", label: "Histórico" },
 ];
 
-/**
- * Props:
- *   session, setSession, updateSession, logout
- *   view, setView
- *   toggleTheme, theme
- */
-export default function PatientLayout({
-  session,
-  setSession,
-  updateSession,
-  logout,
-  view,
-  setView,
-  toggleTheme,
-  theme,
-}) {
-  const [showProfile,     setShowProfile]     = useState(false);
-  const [showDelete,      setShowDelete]      = useState(false);
-  const [showLogout,      setShowLogout]      = useState(false);
-  const [activeExercise,  setActiveExercise]  = useState(null);
-  const [pendingCount,    setPendingCount]    = useState(0);
+const BOTTOM_ITEMS = (pendingCount) => [
+  { view: "home",      icon: "🏠", label: "Início"    },
+  { view: "exercises", icon: "📋", label: "Exercícios", badge: pendingCount },
+  { view: "diary",     icon: "📓", label: "Diário"    },
+  { view: "routine",   icon: "🗓️", label: "Rotina"    },
+];
 
-  // ── Keep session in sync if the user row changed (e.g. therapist linked) ──
+function LogoutDialog({ onConfirm, onCancel }) {
+  return (
+    <div className="delete-overlay" onClick={onCancel}>
+      <div className="delete-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="delete-icon">👋</div>
+        <div className="delete-title">Sair da conta?</div>
+        <div className="delete-desc">Você precisará fazer login novamente para aceder à plataforma.</div>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+          <button className="btn btn-outline" onClick={onCancel}>Cancelar</button>
+          <button className="btn-danger" onClick={onConfirm}>Sair</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function PatientLayout({ session, setSession, logout, theme, toggleTheme }) {
+  const [view,           setView]           = useState("home");
+  const [activeExercise, setActiveExercise] = useState(null);
+  const [pendingCount,   setPendingCount]   = useState(0);
+  const [showProfile,    setShowProfile]    = useState(false);
+  const [showLogout,     setShowLogout]     = useState(false);
+  const [showDelete,     setShowDelete]     = useState(false);
+  const [isMobile,       setIsMobile]       = useState(window.innerWidth < 768);
+
+  // Sync session if therapist linked
+  const prevTherapistRef = useRef(session.therapist_id);
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const rows = await db.query("users", {
-          filter: { email: session.email },
-        });
-        if (!cancelled && Array.isArray(rows) && rows.length > 0) {
-          const fresh = rows[0];
-          if (fresh.id !== session.id || fresh.therapist_id !== session.therapist_id) {
-            updateSession(fresh);
-          }
-        }
-      } catch (_) {}
-    })();
-    return () => { cancelled = true; };
-  }, [session.email]); // eslint-disable-line react-hooks/exhaustive-deps
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
-  // ── Poll pending exercise count for sidebar badge ─────────────────────────
+  // Poll pending assignments for badge
   useEffect(() => {
     let active = true;
     const fetch = async () => {
       try {
-        const rows = await db.query("assignments", {
-          filter: { patient_id: session.id, status: "pending" },
-          select: "id",
-        });
-        if (active) setPendingCount(Array.isArray(rows) ? rows.length : 0);
+        const r = await db.query(
+          "assignments",
+          { filter: { patient_id: session.id, status: "pending" }, select: "id" },
+          session.access_token
+        );
+        if (active) setPendingCount(Array.isArray(r) ? r.length : 0);
       } catch (_) {}
     };
     fetch();
     const id = setInterval(fetch, 30_000);
     return () => { active = false; clearInterval(id); };
-  }, [session.id]);
+  }, [session.id, session.access_token]);
 
-  const handleNav = useCallback(
-    (id) => {
-      setActiveExercise(null);
-      setView(id);
-    },
-    [setView]
-  );
+  // Sync session if therapist linked
+  useEffect(() => {
+    if (session.therapist_id === prevTherapistRef.current) return;
+    prevTherapistRef.current = session.therapist_id;
+    db.query("users", { filter: { id: session.id }, select: "therapist_id,name,avatar_url" }, session.access_token)
+      .then((r) => {
+        if (Array.isArray(r) && r.length > 0) setSession((s) => ({ ...s, ...r[0] }));
+      })
+      .catch(() => {});
+  }, [session.therapist_id, session.id, session.access_token, setSession]);
 
-  // Build nav items with badge
-  const navItems = NAV_ITEMS.map((n) =>
-    n.id === "exercises" ? { ...n, badge: pendingCount } : n
-  );
+  const navItems    = NAV_ITEMS(pendingCount);
+  const bottomItems = BOTTOM_ITEMS(pendingCount);
 
-  // ── If an exercise is open, render the full-screen exercise page ──────────
+  // Full-screen exercise page
   if (activeExercise) {
     return (
       <ExercisePage
         exercise={activeExercise}
         session={session}
-        onBack={() => {
-          setActiveExercise(null);
-          setView("exercises");
-        }}
+        onBack={() => { setActiveExercise(null); setView("exercises"); }}
       />
     );
   }
 
+  const renderView = () => {
+    switch (view) {
+      case "home":      return <PatientHome      session={session} setSession={setSession} setView={setView} />;
+      case "exercises": return <PatientExercises session={session} onStart={setActiveExercise} />;
+      case "diary":     return <PatientDiary     session={session} />;
+      case "routine":   return <PatientRoutine   session={session} />;
+      case "progress":  return <PatientProgress  session={session} />;
+      case "history":   return <PatientHistory   session={session} />;
+      default:          return <PatientHome      session={session} setSession={setSession} setView={setView} />;
+    }
+  };
+
   return (
     <div className="layout">
-      <Sidebar
-        brand="Equilibre"
-        roleLabel="Área do Paciente"
-        navItems={navItems}
-        activeView={view}
-        onNav={handleNav}
-        session={session}
-        theme={theme}
-        toggleTheme={toggleTheme}
-        onAvatarClick={() => setShowProfile(true)}
-        onLogout={() => setShowLogout(true)}
-        onDeleteAccount={() => setShowDelete(true)}
-      />
+      {/* Sidebar — apenas desktop */}
+      {!isMobile && (
+        <Sidebar
+          brand="Equilibre"
+          roleLabel="Paciente"
+          navItems={navItems}
+          activeView={view}
+          onNav={setView}
+          session={session}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          onAvatarClick={() => setShowProfile(true)}
+          onLogout={() => setShowLogout(true)}
+          onDeleteAccount={() => setShowDelete(true)}
+          className="patient-sidebar"
+        />
+      )}
 
-      <main className="main" id="main-content">
-        {view === "home" && (
-          <PatientHome
-            session={session}
-            setSession={setSession}
-            setView={setView}
-          />
-        )}
-        {view === "routine" && <PatientRoutine session={session} />}
-        {view === "exercises" && (
-          <PatientExercises
-            session={session}
-            onStart={setActiveExercise}
-          />
-        )}
-        {view === "diary" && <PatientDiary session={session} />}
-        {view === "progress" && <PatientProgress session={session} />}
-        {view === "history" && <PatientHistory session={session} />}
+      {/* Main content */}
+      <main
+        className="main"
+        style={{ marginLeft: isMobile ? 0 : 256 }}
+      >
+        {renderView()}
       </main>
 
-      {/* ── Modals ── */}
+      {/* Bottom nav — apenas mobile */}
+      {isMobile && (
+        <BottomNav
+          items={bottomItems}
+          activeView={view}
+          onNav={setView}
+          session={session}
+          onAvatarClick={() => setShowProfile(true)}
+        />
+      )}
+
+      {/* Modais globais */}
       {showProfile && (
         <ProfileModal
           session={session}
@@ -151,72 +164,21 @@ export default function PatientLayout({
           onClose={() => setShowProfile(false)}
         />
       )}
-
+      {showLogout && (
+        <LogoutDialog
+          onConfirm={logout}
+          onCancel={() => setShowLogout(false)}
+        />
+      )}
       {showDelete && (
         <DeleteAccountModal
           session={session}
           onClose={() => setShowDelete(false)}
-          onDeleted={() => {
-            localStorage.clear();
-            setSession(null);
-          }}
+          onDeleted={logout}
         />
       )}
 
-      {showLogout && (
-        <LogoutDialog
-          onConfirm={logout}
-          onClose={() => setShowLogout(false)}
-        />
-      )}
-    </div>
-  );
-}
-
-// ── Inline logout confirmation ────────────────────────────────────────────────
-function LogoutDialog({ onConfirm, onClose }) {
-  return (
-    <div
-      className="delete-overlay"
-      onClick={onClose}
-      role="presentation"
-    >
-      <div
-        className="delete-modal"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="logout-title"
-      >
-        <div
-          className="delete-icon"
-          style={{ fontSize: 42, marginBottom: 16 }}
-          aria-hidden="true"
-        >
-          👋
-        </div>
-        <div
-          id="logout-title"
-          className="delete-title"
-          style={{ fontSize: 20 }}
-        >
-          Encerrar sessão?
-        </div>
-        <div
-          className="delete-desc"
-          style={{ marginBottom: 24, fontSize: 14 }}
-        >
-          Tem certeza que deseja sair da sua conta?
-        </div>
-        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-          <button className="btn btn-outline" onClick={onClose}>
-            Cancelar
-          </button>
-          <button className="btn btn-sage" onClick={onConfirm}>
-            Sair
-          </button>
-        </div>
-      </div>
+      <ToastContainer />
     </div>
   );
 }
