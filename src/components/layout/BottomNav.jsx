@@ -1,6 +1,6 @@
 import AvatarDisplay from "../shared/AvatarDisplay";
 
-export default function BottomNav({ items, activeView, onNav, session, onAvatarClick }) {
+export default function BottomNav({ items, activeView, onNav, session, onAvatarClick, theme, toggleTheme }) {
   // Show max 5 items in bottom nav
   const visibleItems = items.slice(0, 4);
 
@@ -28,11 +28,11 @@ export default function BottomNav({ items, activeView, onNav, session, onAvatarC
         }}
       >
         {visibleItems.map((item) => {
-          const isActive = activeView === item.view;
+          const isActive = activeView === item.id;
           return (
             <button
-              key={item.view}
-              onClick={() => onNav(item.view)}
+              key={item.id}
+              onClick={() => onNav(item.id)}
               aria-label={item.label}
               aria-current={isActive ? "page" : undefined}
               style={{
@@ -103,10 +103,8 @@ export default function BottomNav({ items, activeView, onNav, session, onAvatarC
           );
         })}
 
-        {/* Avatar button — abre perfil */}
-        <button
-          onClick={onAvatarClick}
-          aria-label="Perfil"
+        {/* Slot de perfil + tema — celda compartida */}
+        <div
           style={{
             flex:           1,
             display:        "flex",
@@ -114,17 +112,54 @@ export default function BottomNav({ items, activeView, onNav, session, onAvatarC
             alignItems:     "center",
             justifyContent: "center",
             gap:            3,
-            background:     "transparent",
-            border:         "none",
-            cursor:         "pointer",
             padding:        "8px 4px",
           }}
         >
-          <AvatarDisplay
-            name={session.name}
-            avatarUrl={session.avatar_url}
-            size={26}
-          />
+          {/* Fila con avatar y toggle de tema */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button
+              onClick={onAvatarClick}
+              aria-label="Perfil"
+              style={{
+                background: "transparent",
+                border:     "none",
+                cursor:     "pointer",
+                padding:    0,
+                lineHeight: 0,
+              }}
+            >
+              <AvatarDisplay
+                name={session.name}
+                avatarUrl={session.avatar_url}
+                size={30}
+              />
+            </button>
+
+            {toggleTheme && (
+              <button
+                onClick={toggleTheme}
+                aria-label={theme === "dark" ? "Mudar para modo claro" : "Mudar para modo escuro"}
+                title={theme === "dark" ? "Modo claro" : "Modo escuro"}
+                style={{
+                  background:   "var(--warm)",
+                  border:       "none",
+                  borderRadius: "50%",
+                  width:        24,
+                  height:       24,
+                  cursor:       "pointer",
+                  display:      "flex",
+                  alignItems:   "center",
+                  justifyContent: "center",
+                  fontSize:     13,
+                  lineHeight:   1,
+                  flexShrink:   0,
+                }}
+              >
+                <span aria-hidden="true">{theme === "dark" ? "☀️" : "🌙"}</span>
+              </button>
+            )}
+          </div>
+
           <span style={{
             fontSize:   10,
             fontWeight: 500,
@@ -134,7 +169,7 @@ export default function BottomNav({ items, activeView, onNav, session, onAvatarC
           }}>
             Perfil
           </span>
-        </button>
+        </div>
       </nav>
     </>
   );

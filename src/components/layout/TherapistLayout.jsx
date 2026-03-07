@@ -14,21 +14,21 @@ import DeleteAccountModal  from "../shared/DeleteAccountModal";
 import { useNotifications } from "../../hooks/useNotifications";
 
 const NAV_ITEMS = (unread) => [
-  { view: "dashboard",     icon: "🏠", label: "Início"     },
-  { view: "patients",      icon: "👥", label: "Pacientes"  },
-  { view: "exercises",     icon: "📚", label: "Exercícios" },
-  { view: "create",        icon: "✏️",  label: "Criar"      },
-  { view: "progress",      icon: "📈", label: "Progresso"  },
-  { view: "responses",     icon: "💬", label: "Respostas"  },
-  { view: "notifications", icon: "🔔", label: "Alertas", badge: unread },
+  { id: "dashboard",     icon: "🏠", label: "Início"     },
+  { id: "patients",      icon: "👥", label: "Pacientes"  },
+  { id: "exercises",     icon: "📚", label: "Exercícios" },
+  { id: "create",        icon: "✏️",  label: "Criar"      },
+  { id: "progress",      icon: "📈", label: "Progresso"  },
+  { id: "responses",     icon: "💬", label: "Respostas"  },
+  { id: "notifications", icon: "🔔", label: "Alertas", badge: unread },
 ];
 
 // Bottom nav shows only the most important 4 + profile
 const BOTTOM_ITEMS = (unread) => [
-  { view: "dashboard", icon: "🏠", label: "Início"     },
-  { view: "patients",  icon: "👥", label: "Pacientes"  },
-  { view: "responses", icon: "💬", label: "Respostas"  },
-  { view: "notifications", icon: "🔔", label: "Alertas", badge: unread },
+  { id: "dashboard",     icon: "🏠", label: "Início"     },
+  { id: "patients",      icon: "👥", label: "Pacientes"  },
+  { id: "responses",     icon: "💬", label: "Respostas"  },
+  { id: "notifications", icon: "🔔", label: "Alertas", badge: unread },
 ];
 
 function LogoutDialog({ onConfirm, onCancel }) {
@@ -136,6 +136,12 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
           session={session}
           setSession={setSession}
           onClose={() => setShowProfile(false)}
+          {...(isMobile && {
+            theme,
+            toggleTheme,
+            onLogout:        () => { setShowProfile(false); setShowLogout(true); },
+            onDeleteAccount: () => { setShowProfile(false); setShowDelete(true); },
+          })}
         />
       )}
       {showLogout && (

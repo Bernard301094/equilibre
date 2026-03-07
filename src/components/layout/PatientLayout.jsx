@@ -14,19 +14,19 @@ import DeleteAccountModal from "../shared/DeleteAccountModal";
 import db from "../../services/db";
 
 const NAV_ITEMS = (pendingCount) => [
-  { view: "home",      icon: "🏠", label: "Início"    },
-  { view: "exercises", icon: "📋", label: "Exercícios", badge: pendingCount },
-  { view: "diary",     icon: "📓", label: "Diário"    },
-  { view: "routine",   icon: "🗓️", label: "Rotina"    },
-  { view: "progress",  icon: "📈", label: "Progresso" },
-  { view: "history",   icon: "🕰️", label: "Histórico" },
+  { id: "home",      icon: "🏠", label: "Início"    },
+  { id: "exercises", icon: "📋", label: "Exercícios", badge: pendingCount },
+  { id: "diary",     icon: "📓", label: "Diário"    },
+  { id: "routine",   icon: "🗓️", label: "Rotina"    },
+  { id: "progress",  icon: "📈", label: "Progresso" },
+  { id: "history",   icon: "🕰️", label: "Histórico" },
 ];
 
 const BOTTOM_ITEMS = (pendingCount) => [
-  { view: "home",      icon: "🏠", label: "Início"    },
-  { view: "exercises", icon: "📋", label: "Exercícios", badge: pendingCount },
-  { view: "diary",     icon: "📓", label: "Diário"    },
-  { view: "routine",   icon: "🗓️", label: "Rotina"    },
+  { id: "home",      icon: "🏠", label: "Início"    },
+  { id: "exercises", icon: "📋", label: "Exercícios", badge: pendingCount },
+  { id: "diary",     icon: "📓", label: "Diário"    },
+  { id: "routine",   icon: "🗓️", label: "Rotina"    },
 ];
 
 function LogoutDialog({ onConfirm, onCancel }) {
@@ -162,6 +162,12 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
           session={session}
           setSession={setSession}
           onClose={() => setShowProfile(false)}
+          {...(isMobile && {
+            theme,
+            toggleTheme,
+            onLogout:        () => { setShowProfile(false); setShowLogout(true); },
+            onDeleteAccount: () => { setShowProfile(false); setShowDelete(true); },
+          })}
         />
       )}
       {showLogout && (
