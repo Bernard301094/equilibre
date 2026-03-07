@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import db from "../../services/db";
+import { calcStreak, localDateOffset } from "../../utils/dates";
+import { getPlantStage } from "../../utils/constants";
 import toast from "../../utils/toast";
 import AvatarDisplay from "../../components/shared/AvatarDisplay";
 import EmptyState from "../../components/ui/EmptyState";
@@ -9,6 +11,7 @@ import { SkeletonList, SkeletonCard } from "../../components/ui/Skeleton";
 export default function PatientsView({ session }) {
   const [patients,        setPatients]        = useState([]);
   const [invites,         setInvites]         = useState([]);
+  const [streakMap,       setStreakMap]        = useState({});
   const [loading,         setLoading]         = useState(true);
   const [generating,      setGenerating]      = useState(false);
   const [unlinkTarget,    setUnlinkTarget]    = useState(null);
@@ -33,8 +36,46 @@ export default function PatientsView({ session }) {
           db.query("invites", { filter: { therapist_id: session.id }, order: "created_at.desc" }, session.access_token),
         ]);
         if (!active) return;
-        setPatients(Array.isArray(pts)  ? pts  : []);
+
+        const pList = Array.isArray(pts)  ? pts  : [];
+        const pIds  = pList.map((p) => p.id);
+
+        // Fetch diary and response dates for streak calculation (no private data)
+        const [diaryRows, respRows] = await Promise.all([
+          pIds.length > 0
+            ? db.query(
+                "diary_entries",
+                { filterIn: { patient_id: pIds }, select: "patient_id,date" },
+                session.access_token
+              ).catch(() => [])
+            : [],
+          pIds.length > 0
+            ? db.query(
+                "responses",
+                { filterIn: { patient_id: pIds }, select: "patient_id,completed_at" },
+                session.access_token
+              ).catch(() => [])
+            : [],
+        ]);
+
+        if (!active) return;
+
+        // Build streak per patient
+        const sMap = {};
+        for (const p of pList) {
+          const diaryDates = (Array.isArray(diaryRows) ? diaryRows : [])
+            .filter((d) => d.patient_id === p.id)
+            .map((d) => d.date);
+          const respDates = (Array.isArray(respRows) ? respRows : [])
+            .filter((r) => r.patient_id === p.id)
+            .map((r) => r.completed_at?.slice(0, 10))
+            .filter(Boolean);
+          sMap[p.id] = calcStreak([...diaryDates, ...respDates]);
+        }
+
+        setPatients(pList);
         setInvites(Array.isArray(invs) ? invs : []);
+        setStreakMap(sMap);
       } catch (e) {
         toast.error("Erro ao carregar dados: " + e.message);
       } finally {
@@ -117,7 +158,6 @@ export default function PatientsView({ session }) {
         <p>Gerencie seus pacientes e envie convites</p>
       </div>
 
-      {/* grid-2 no desktop, coluna única no mobile via CSS */}
       <div className="patients-grid">
 
         {/* ── Pacientes ativos ── */}
@@ -130,61 +170,108 @@ export default function PatientsView({ session }) {
             <EmptyState message="Nenhum paciente registado." />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {patients.map((p) => (
-                <div
-                  key={p.id}
-                  className="patient-card-row"
-                >
-                  {/* Avatar + info */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-                    <AvatarDisplay
-                      name={p.name} avatarUrl={p.avatar_url}
-                      size={38} className="p-avatar"
-                    />
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, color: "var(--blue-dark)", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {p.name}
-                      </div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {p.email}
+              {patients.map((p) => {
+                const streak = streakMap[p.id] ?? 0;
+                const stage  = getPlantStage(streak);
+                return (
+                  <div key={p.id} className="patient-card-row">
+                    {/* Avatar + info */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                      <AvatarDisplay
+                        name={p.name}
+                        avatarUrl={p.avatar_url}
+                        size={38}
+                        className="p-avatar"
+                      />
+                      <div style={{ minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            color: "var(--blue-dark)",
+                            marginBottom: 2,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {p.name}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "var(--text-muted)",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {p.email}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Botões — ficam na mesma linha no desktop, ocupam largura total no mobile */}
-                  <div className="patient-card-actions">
-                    <button
-                      className="btn btn-sage btn-sm"
-                      style={{ flex: isMobile ? 1 : "none", minHeight: isMobile ? 44 : "auto" }}
-                      onClick={() => setManagingPatient(p)}
-                    >
-                      Gerenciar
-                    </button>
-                    <button
-                      className="btn btn-outline btn-sm"
+                    {/* ── Streak / Plant indicator ── */}
+                    <div
+                      title={`${stage.label} — ${streak} dia${streak !== 1 ? "s" : ""} seguido${streak !== 1 ? "s" : ""}`}
                       style={{
-                        flex: isMobile ? 1 : "none",
-                        minHeight: isMobile ? 44 : "auto",
-                        borderColor: "var(--danger)",
-                        color: "var(--danger)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        background: streak === 0 ? "var(--warm)" : "rgba(122,158,135,0.12)",
+                        border: `1px solid ${streak === 0 ? "var(--warm)" : "rgba(122,158,135,0.3)"}`,
+                        borderRadius: 20,
+                        padding: "4px 10px",
+                        flexShrink: 0,
+                        cursor: "default",
                       }}
-                      onClick={() => setUnlinkTarget(p)}
-                      aria-label={`Desvincular ${p.name}`}
                     >
-                      Desvincular
-                    </button>
+                      <span style={{ fontSize: 16, lineHeight: 1 }} aria-hidden="true">
+                        {stage.icon}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: streak === 0 ? "var(--text-muted)" : stage.color,
+                        }}
+                      >
+                        {streak}d
+                      </span>
+                    </div>
+
+                    {/* Botões */}
+                    <div className="patient-card-actions">
+                      <button
+                        className="btn btn-sage btn-sm"
+                        style={{ flex: isMobile ? 1 : "none", minHeight: isMobile ? 44 : "auto" }}
+                        onClick={() => setManagingPatient(p)}
+                      >
+                        Gerenciar
+                      </button>
+                      <button
+                        className="btn btn-outline btn-sm"
+                        style={{
+                          flex: isMobile ? 1 : "none",
+                          minHeight: isMobile ? 44 : "auto",
+                          borderColor: "var(--danger)",
+                          color: "var(--danger)",
+                        }}
+                        onClick={() => setUnlinkTarget(p)}
+                        aria-label={`Desvincular ${p.name}`}
+                      >
+                        Desvincular
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
         {/* ── Convites ── */}
         <div className="card">
-          <h3 style={{ fontSize: 16, marginBottom: 14 }}>
-            Convidar Novo Paciente
-          </h3>
+          <h3 style={{ fontSize: 16, marginBottom: 14 }}>Convidar Novo Paciente</h3>
           <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.5 }}>
             Gere um código único e partilhe com o seu paciente. Ao usá-lo no registo,
             ele ficará automaticamente vinculado à sua conta.
@@ -217,7 +304,6 @@ export default function PatientsView({ session }) {
                 className="invite-row"
                 style={{ opacity: inv.status === "used" ? 0.6 : 1 }}
               >
-                {/* Data */}
                 <div style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>
                   {inv.created_at ? new Date(inv.created_at).toLocaleDateString("pt-BR") : ""}
                 </div>
@@ -233,12 +319,10 @@ export default function PatientsView({ session }) {
                   </div>
                 ) : (
                   <div className="invite-actions">
-                    {/* Código */}
                     <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: isMobile ? 18 : 16, letterSpacing: 2, color: "var(--blue-dark)" }}>
                       {inv.code}
                     </span>
 
-                    {/* Copiar */}
                     <button
                       onClick={() => copyCode(inv.code)}
                       aria-label={`Copiar código ${inv.code}`}
@@ -255,7 +339,6 @@ export default function PatientsView({ session }) {
                       )}
                     </button>
 
-                    {/* WhatsApp */}
                     <button
                       aria-label="Enviar pelo WhatsApp"
                       className="invite-action-btn"
@@ -273,7 +356,6 @@ export default function PatientsView({ session }) {
                       </svg>
                     </button>
 
-                    {/* Excluir */}
                     <button
                       aria-label={`Excluir convite ${inv.code}`}
                       className="invite-action-btn"
@@ -302,7 +384,13 @@ export default function PatientsView({ session }) {
       {/* ── Confirmar desvincular ── */}
       {unlinkTarget && (
         <div className="delete-overlay" onClick={() => setUnlinkTarget(null)}>
-          <div className="delete-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="unlink-title">
+          <div
+            className="delete-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="unlink-title"
+          >
             <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>🔗</div>
             <div id="unlink-title" className="delete-title">Desvincular Paciente?</div>
             <div className="delete-desc">
@@ -321,7 +409,13 @@ export default function PatientsView({ session }) {
       {/* ── Confirmar excluir convite ── */}
       {deleteInvTarget && (
         <div className="delete-overlay" onClick={() => setDeleteInvTarget(null)}>
-          <div className="delete-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="delinv-title">
+          <div
+            className="delete-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delinv-title"
+          >
             <div className="delete-icon" style={{ fontSize: 42, marginBottom: 16 }}>🗑️</div>
             <div id="delinv-title" className="delete-title">Excluir Convite?</div>
             <div className="delete-desc">
