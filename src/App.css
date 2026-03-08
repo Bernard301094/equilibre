@@ -443,78 +443,154 @@ body.dark-mode .invite-row { border-color: #1e3347; }
 /* ══════════════════════════════════════════════════════════
    PATIENT MODAL
 ══════════════════════════════════════════════════════════ */
+
+/* ── Modal shell ──────────────────────────────────────────
+   Desktop: centred card, capped at 860 × 92 vh
+   Mobile:  bottom sheet / full-screen (overridden below)
+─────────────────────────────────────────────────────────── */
 .patient-modal {
-  padding:        0;
-  overflow:       hidden;
+  /* geometry */
+  max-width:      860px;
+  width:          95vw;
+  max-height:     92vh;
+
+  /* layout */
   display:        flex;
   flex-direction: column;
-  max-height:     90vh;
-  max-width:      600px;
-  width:          100%;
-}
+  overflow:       hidden;
 
+  /* cosmetics */
+  padding:        0;
+  border-radius:  var(--radius-xl);
+  background:     var(--white);
+  box-shadow:     var(--shadow-lg);
+  border:         1px solid var(--warm);
+}
+body.dark-mode .patient-modal { border-color: #1e3347; }
+
+/* ── Header ─────────────────────────────────────────────── */
 .patient-modal-header {
-  padding:       20px 24px 0;
-  border-bottom: 1.5px solid var(--warm);
-  background:    var(--cream);
   flex-shrink:   0;
+  padding:       22px 28px 0;
+  background:    var(--cream);
+  border-bottom: 1.5px solid var(--warm);
 }
-body.dark-mode .patient-modal-header { background: var(--warm); }
+body.dark-mode .patient-modal-header {
+  background:   var(--warm);
+  border-color: #2a4460;
+}
 
-.patient-modal-header h3 {
-  margin-bottom: 14px;
+/* Patient name + avatar row */
+.patient-title {
   display:       flex;
   align-items:   center;
   gap:           10px;
-  font-size:     18px;
-}
-
-/* Abas: scroll horizontal suave, sem quebra de texto */
-.patient-modal-tabs {
-  display:                    flex;
-  gap:                        4px;
-  overflow-x:                 auto;
-  overflow-y:                 hidden;
-  scrollbar-width:            none;
-  -ms-overflow-style:         none;
-  padding-bottom:             2px;
-  -webkit-overflow-scrolling: touch;
-}
-.patient-modal-tabs::-webkit-scrollbar { display: none; }
-
-.patient-modal-tab {
-  flex-shrink:   0;
-  background:    none;
-  border:        none;
-  border-bottom: 3px solid transparent;
-  padding:       10px 14px;
-  font-size:     14px;
-  font-weight:   500;
-  color:         var(--text-muted);
-  cursor:        pointer;
-  white-space:   nowrap;
-  transition:    all .2s;
-  font-family:   'DM Sans', sans-serif;
-}
-.patient-modal-tab.active {
-  border-bottom-color: var(--blue-dark);
-  color:               var(--blue-dark);
-  font-weight:         700;
-}
-.patient-modal-tab:hover:not(.active) {
+  font-size:     19px;
+  font-family:   'Playfair Display', serif;
   color:         var(--text);
-  background:    rgba(46,127,171,0.05);
-  border-radius: 8px 8px 0 0;
+  margin-bottom: 16px;
+  line-height:   1.3;
 }
 
+/* ── Tab bar container ───────────────────────────────────
+   Desktop: all 4 tabs visible, equal width (flex: 1 1 0)
+   Mobile:  scrollable, finger-swipeable (flex: 0 0 auto)
+─────────────────────────────────────────────────────────── */
+.patient-modal-tabs-bar {
+  display:            flex;
+  flex-wrap:          nowrap;
+  gap:                4px;
+  width:              100%;
+  box-sizing:         border-box;
+  padding:            4px 6px;
+
+  /* scroll — only active on small screens */
+  overflow-x:         auto;
+  overflow-y:         hidden;
+  scrollbar-width:    none;       /* Firefox */
+  -ms-overflow-style: none;       /* IE 11 */
+  -webkit-overflow-scrolling: touch;
+
+  /* cosmetics */
+  background:    var(--cream);
+  border:        1.5px solid var(--warm);
+  border-radius: 12px;
+}
+.patient-modal-tabs-bar::-webkit-scrollbar { display: none; }
+body.dark-mode .patient-modal-tabs-bar {
+  background:   var(--warm);
+  border-color: #2a4460;
+}
+
+/* ── Individual tab button ───────────────────────────────
+   Each button fills equal space on desktop (flex: 1 1 0).
+   Text never wraps — bar scrolls instead on overflow.
+─────────────────────────────────────────────────────────── */
+.patient-modal-tab-btn {
+  /* reset */
+  all:         unset;
+  box-sizing:  border-box;
+
+  /* fill row equally on desktop */
+  flex:        1 1 0;
+  min-width:   0;
+
+  /* layout */
+  display:     inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding:     9px 10px;
+  text-align:  center;
+
+  /* typography */
+  font-family: 'DM Sans', sans-serif;
+  font-size:   13px;
+  font-weight: 600;
+  white-space: nowrap;
+  color:       var(--text-muted);
+
+  /* cosmetics */
+  border-radius: 8px;
+  cursor:        pointer;
+  transition:    background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.patient-modal-tab-btn:hover:not(.active) {
+  background: rgba(46,127,171,0.07);
+  color:      var(--text);
+}
+body.dark-mode .patient-modal-tab-btn:hover:not(.active) {
+  background: rgba(127,196,232,0.1);
+}
+.patient-modal-tab-btn.active {
+  background: var(--white);
+  color:      var(--blue-dark);
+  box-shadow: 0 2px 8px rgba(23,82,124,0.12);
+}
+body.dark-mode .patient-modal-tab-btn.active {
+  background: rgba(127,196,232,0.14);
+  color:      var(--blue-dark);
+}
+
+/* ── Scrollable body ─────────────────────────────────────
+   Takes remaining height; content scrolls inside.
+─────────────────────────────────────────────────────────── */
 .patient-modal-body {
-  padding:    20px 24px;
-  overflow-y: auto;
   flex:       1;
+  overflow-y: auto;
+  padding:    22px 28px;
+}
+
+/* ── Loading state ───────────────────────────────────── */
+.patient-modal-loading {
+  color:       var(--text-muted);
+  text-align:  center;
+  padding:     28px 0;
+  font-size:   14px;
+  font-family: 'DM Sans', sans-serif;
 }
 
 /* ══════════════════════════════════════════════════════════
-   MODAIS
+   MODAIS (genéricos)
 ══════════════════════════════════════════════════════════ */
 .overlay {
   position: fixed; inset: 0;
@@ -1001,7 +1077,7 @@ body.dark-mode .cta-green {
 ::-webkit-scrollbar-thumb:hover { background: var(--blue-mid); }
 
 /* ══════════════════════════════════════════════════════════
-   MEDIA QUERIES — MOBILE (max-width: 768px)
+   MEDIA QUERIES — TABLET (max-width: 768px)
 ══════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
   /* Layout base */
@@ -1026,15 +1102,15 @@ body.dark-mode .cta-green {
   .grid-3, .grid-2 { grid-template-columns: 1fr; }
 
   /* Cards */
-  .stat-card     { padding: 18px; }
-  .login-card    { padding: 32px 22px; margin: 15px; width: calc(100% - 30px); }
-  .modal         { padding: 24px 20px; width: 95%; max-height: 88vh; overflow-y: auto; }
+  .stat-card      { padding: 18px; }
+  .login-card     { padding: 32px 22px; margin: 15px; width: calc(100% - 30px); }
+  .modal          { padding: 24px 20px; width: 95%; max-height: 88vh; overflow-y: auto; }
   .page-header h2 { font-size: 22px; }
-  .scale-btn     { width: 38px; height: 38px; font-size: 13px; }
-  .question-card { padding: 22px 18px; }
+  .scale-btn      { width: 38px; height: 38px; font-size: 13px; }
+  .question-card  { padding: 22px 18px; }
 
   /* Pilares */
-  .pillars-container { grid-template-columns: 1fr 1fr; }
+  .pillars-container        { grid-template-columns: 1fr 1fr; }
   .pillar-card:nth-child(5) { grid-column: span 2; }
 
   /* Modais sobem acima do bottom nav */
@@ -1048,8 +1124,8 @@ body.dark-mode .cta-green {
   }
 
   /* Quote card */
-  .quote-card        { padding: 13px 15px; margin-bottom: 18px; }
-  .quote-card__text  { font-size: 14px; }
+  .quote-card       { padding: 13px 15px; margin-bottom: 18px; }
+  .quote-card__text { font-size: 14px; }
 
   /* Patients grid: coluna única */
   .patients-grid { grid-template-columns: 1fr; }
@@ -1077,10 +1153,671 @@ body.dark-mode .cta-green {
     font-size:  17px;
   }
 
-  /* Patient modal */
-  .patient-modal      { max-width: 95vw; max-height: 92vh; }
-  .patient-modal-header { padding: 16px 18px 0; }
-  .patient-modal-header h3 { font-size: 16px; }
-  .patient-modal-tab  { padding: 10px 16px; font-size: 13px; }
-  .patient-modal-body { padding: 16px 18px; }
+  /* ── Patient modal — tablet ──────────────────────────── */
+  /* Overlay: modal alinhado ao fundo como bottom sheet    */
+  .overlay {
+    align-items:    flex-end;
+    padding:        0;
+    padding-bottom: 0;
+  }
+
+  .patient-modal {
+    width:         100vw;
+    max-width:     100vw;
+    max-height:    92vh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    margin-top:    auto;
+    margin-bottom: 0;
+  }
+
+  .patient-modal-header {
+    padding: 16px 18px 0;
+  }
+
+  .patient-title {
+    font-size:     16px;
+    margin-bottom: 12px;
+    gap:           8px;
+  }
+
+  /* Tabs: deixar largura natural para activar scroll */
+  .patient-modal-tabs-bar {
+    justify-content: flex-start;
+    padding:         3px 5px;
+    gap:             3px;
+    border-radius:   10px;
+  }
+
+  .patient-modal-tab-btn {
+    flex:      0 0 auto;   /* largura pelo conteúdo → scroll horizontal */
+    font-size: 12px;
+    padding:   8px 12px;
+  }
+
+  .patient-modal-body {
+    padding: 16px 18px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   MEDIA QUERIES — MOBILE (max-width: 480px)
+══════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  /* Modal ocupa ecrã inteiro */
+  .patient-modal {
+    height:        100dvh;
+    max-height:    100dvh;
+    border-radius: 0;
+    margin:        0;
+  }
+
+  /* Overlay também estica full-screen */
+  .overlay {
+    padding:     0;
+    align-items: stretch;
+  }
+
+  .patient-modal-header {
+    padding: 12px 14px 0;
+  }
+
+  .patient-title {
+    font-size:     15px;
+    margin-bottom: 10px;
+    gap:           7px;
+  }
+
+  .patient-modal-tabs-bar {
+    padding:       3px 4px;
+    gap:           2px;
+    border-radius: 8px;
+  }
+
+  .patient-modal-tab-btn {
+    font-size:     11px;
+    padding:       7px 10px;
+    border-radius: 6px;
+  }
+
+  .patient-modal-body {
+    padding: 12px 14px;
+  }
+
+  .patient-modal-loading {
+    font-size: 13px;
+    padding:   20px 0;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   MEDIA QUERIES — GALAXY A55 y similares (max-width: 430px)
+   Viewport CSS del Galaxy A55: 412 × 915 px (portrait)
+   Corrige tres conflictos acumulados desde los breakpoints
+   superiores:
+     1. .modal { max-height:88vh; overflow-y:auto } se aplica
+        también a .patient-modal (comparte la clase) y lo
+        encuadra mal + genera doble scroll.
+     2. .overlay { padding-bottom: calc(72px+…) } del bloque
+        768px no queda completamente anulado en pantallas muy
+        pequeñas cuando el overlay pasa a align-items:stretch.
+     3. La barra de pestañas con emoji (📋 🗓️ 🌱 🔒) ocupa
+        más espacio del esperado en Android y no activa el
+        scroll horizontal de forma fiable.
+══════════════════════════════════════════════════════════ */
+@media (max-width: 430px) {
+
+  /* 1 ── Romper el conflicto .modal vs .patient-modal ────
+     Selector de mayor especificidad (.modal.patient-modal)
+     para ganar sin !important al max-height de 88vh y al
+     overflow-y:auto que hereda de la regla genérica .modal  */
+  .modal.patient-modal {
+    height:        100dvh;
+    max-height:    100dvh;
+    overflow:      hidden;   /* el scroll lo hace .patient-modal-body */
+    border-radius: 0;
+    margin:        0;
+    width:         100vw;
+    max-width:     100vw;
+  }
+
+  /* 2 ── Overlay limpio, sin padding residual ──────────────
+     Reiniciamos todas las propiedades que el bloque 768px
+     pudo haber dejado en cascade antes de llegar aquí.       */
+  .overlay {
+    align-items:    stretch;
+    justify-content: stretch;
+    padding:        0;
+    padding-bottom: 0;
+    overflow-y:     hidden;  /* evita scroll doble con el body interno */
+  }
+
+  /* 3 ── Header más compacto para 412 px ─────────────────── */
+  .patient-modal-header {
+    padding: 10px 12px 0;
+  }
+
+  .patient-title {
+    font-size:     14px;
+    margin-bottom: 8px;
+    gap:           6px;
+    /* evitar que el nombre largo empuje el layout */
+    overflow:      hidden;
+    white-space:   nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* 4 ── Tab bar: scroll horizontal fiable con emoji ───────
+     En Android Chrome los emoji tienen métricas de fuente
+     más anchas; bajamos el padding y el font-size para que
+     los 4 tabs quepan en ~330 px antes de hacer scroll.      */
+  .patient-modal-tabs-bar {
+    padding:       2px 3px;
+    gap:           1px;
+    border-radius: 7px;
+    /* reforzar que el scroll horizontal está activo */
+    overflow-x:    auto;
+    scroll-snap-type: x proximity;
+  }
+
+  .patient-modal-tab-btn {
+    flex:          0 0 auto;
+    font-size:     10.5px;
+    padding:       6px 9px;
+    border-radius: 5px;
+    scroll-snap-align: start;
+    /* mínimo de área táctil recomendado por Google: 48 dp  */
+    min-height:    40px;
+  }
+
+  /* 5 ── Body: más espacio útil para el contenido ──────── */
+  .patient-modal-body {
+    padding:    10px 12px;
+    /* reforzar scroll interno sin interferir con el overlay */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .patient-modal-loading {
+    font-size: 13px;
+    padding:   18px 0;
+  }
+
+  /* ══ RESTO DE ELEMENTOS — Galaxy A55 (412 px) ══════════
+     El bloque ≤768 px es demasiado holgado para 412 px.
+     Afinamos aquí todo lo que no sea el patient modal.
+  ════════════════════════════════════════════════════════ */
+
+  /* ── Layout principal ─────────────────────────────────── */
+  .main {
+    padding:        14px 12px;
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+
+  .page-header {
+    margin-bottom: 18px;
+  }
+  .page-header h2 {
+    font-size:      19px;
+    letter-spacing: -.2px;
+  }
+  .page-header p {
+    font-size: 13px;
+    margin-top: 3px;
+  }
+
+  /* ── Sidebar / nav ────────────────────────────────────── */
+  .sidebar-header {
+    padding: 14px 14px;
+  }
+  .sidebar nav {
+    padding: 8px 12px;
+    gap:     6px;
+  }
+  .nav-item {
+    padding:   9px 11px;
+    font-size: 13px;
+    gap:       8px;
+  }
+  .nav-item .icon {
+    font-size: 15px;
+  }
+  .sidebar-footer {
+    padding: 10px 12px;
+  }
+  .user-pill {
+    padding: 6px 8px;
+    gap:     6px;
+  }
+  .user-info .name  { font-size: 12px; }
+  .user-info .email { font-size: 10px; }
+
+  /* ── Stat cards ───────────────────────────────────────── */
+  .stat-card {
+    padding: 14px 14px;
+  }
+  .stat-card .stat-val {
+    font-size: 28px;
+  }
+  .stat-card .stat-label {
+    font-size: 11px;
+  }
+  .stat-card .stat-icon {
+    font-size:     20px;
+    margin-bottom: 7px;
+  }
+
+  /* ── Exercise cards ───────────────────────────────────── */
+  .ex-card {
+    padding: 14px;
+  }
+  .ex-title {
+    font-size: 14px;
+  }
+  .ex-desc {
+    font-size: 12px;
+  }
+
+  /* ── Login card ───────────────────────────────────────── */
+  .login-card {
+    padding: 26px 16px;
+    margin:  12px;
+    width:   calc(100% - 24px);
+  }
+  .login-logo h1 { font-size: 24px; }
+  .login-logo p  { font-size: 12px; }
+
+  /* ── Campos de formulario ─────────────────────────────── */
+  .field {
+    margin-bottom: 11px;
+  }
+  .field label {
+    font-size: 10px;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    padding:   9px 11px;
+    font-size: 14px;
+  }
+
+  /* ── Botones ──────────────────────────────────────────── */
+  .btn {
+    padding:   8px 14px;
+    font-size: 12px;
+  }
+  .btn-sm {
+    padding:   5px 10px;
+    font-size: 11px;
+  }
+  .btn-primary {
+    padding:   11px;
+    font-size: 14px;
+  }
+
+  /* ── Modales genéricos ────────────────────────────────── */
+  .modal {
+    padding:    18px 14px;
+    width:      100%;
+    max-height: 88vh;
+  }
+  .modal h3 {
+    font-size:     17px;
+    margin-bottom: 14px;
+  }
+
+  /* ── Modal de confirmación / delete ──────────────────── */
+  .delete-modal {
+    padding:    26px 18px;
+    max-width:  95vw;
+    width:      95vw;
+  }
+  .delete-icon  { font-size: 38px; margin-bottom: 9px; }
+  .delete-title { font-size: 17px; }
+  .delete-desc  { font-size: 12px; }
+
+  /* ── Question card (ejercicios paciente) ──────────────── */
+  .question-card {
+    padding: 16px 14px;
+  }
+  .q-text {
+    font-size:     16px;
+    margin-bottom: 16px;
+  }
+  .q-instruction {
+    padding:   16px;
+    font-size: 13px;
+  }
+  .q-reflect {
+    padding:   10px 13px;
+    font-size: 12.5px;
+  }
+  .q-textarea {
+    font-size:  14px;
+    min-height: 90px;
+    padding:    11px;
+  }
+  .scale-btn {
+    width:     36px;
+    height:    36px;
+    font-size: 12px;
+  }
+  .scale-row {
+    gap: 4px;
+  }
+
+  /* ── Pilares (BA) ─────────────────────────────────────── */
+  .pillars-container {
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .pillar-card {
+    padding: 12px 6px;
+  }
+
+  /* ── Activity cards ───────────────────────────────────── */
+  .activity-card {
+    padding:       13px;
+    margin-bottom: 9px;
+    gap:           7px;
+  }
+
+  /* ── Patient card row (lista de pacientes) ────────────── */
+  .patient-card-row {
+    padding: 11px 12px;
+    gap:     10px;
+  }
+  .p-name  { font-size: 13px; }
+  .p-email { font-size: 10px; }
+
+  /* ── Invite row ───────────────────────────────────────── */
+  .invite-row {
+    padding: 10px 11px;
+    gap:     8px;
+  }
+  .invite-action-btn {
+    min-width:  42px;
+    min-height: 42px;
+    font-size:  15px;
+  }
+
+  /* ── Quote card ───────────────────────────────────────── */
+  .quote-card {
+    padding:       10px 13px;
+    margin-bottom: 14px;
+    gap:           9px;
+  }
+  .quote-card__text {
+    font-size: 13px;
+  }
+  .quote-card__icon {
+    font-size: 17px;
+  }
+
+  /* ── Mood buttons (diario) ────────────────────────────── */
+  .mood-btn {
+    width:     40px;
+    height:    40px;
+    font-size: 19px;
+  }
+
+  /* ── Ex-pick (selector de ejercicios) ────────────────── */
+  .ex-pick {
+    padding: 10px;
+    gap:     8px;
+  }
+
+  /* ── Badges y chips ───────────────────────────────────── */
+  .due-chip,
+  .response-badge,
+  .cat-badge,
+  .ex-cat {
+    font-size: 9px;
+    padding:   2px 7px;
+  }
+
+  /* ── Empty state ──────────────────────────────────────── */
+  .empty-state {
+    padding: 32px 14px;
+  }
+  .empty-state .empty-icon {
+    font-size: 34px;
+  }
+  .empty-state p {
+    font-size: 13px;
+  }
+
+  /* ── Response items ───────────────────────────────────── */
+  .response-item {
+    padding: 10px 11px;
+  }
+  .response-item .q-answer {
+    font-size: 13px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   PATIENT MODAL — RANGOS ADICIONALES
+   Los bloques existentes cubren ≤768 px, ≤480 px y ≤430 px.
+   Los siguientes bloques cubren los rangos que faltaban sin
+   alterar ni sobreescribir ninguna regla ya definida.
+══════════════════════════════════════════════════════════ */
+
+/* ── 0–359 px — móviles muy pequeños ─────────────────────
+   Más compacto que el bloque ≤430 px: reducimos aún más
+   paddings y fuentes para que el modal quepa sin cortes
+   en pantallas de 320–359 px (iPhone SE 1ª gen, Galaxy A03).
+─────────────────────────────────────────────────────────── */
+@media (max-width: 359px) {
+  .modal.patient-modal {
+    height:        100dvh;
+    max-height:    100dvh;
+    overflow:      hidden;
+    border-radius: 0;
+    margin:        0;
+    width:         100vw;
+    max-width:     100vw;
+  }
+
+  .overlay {
+    padding:     0;
+    align-items: stretch;
+    overflow-y:  hidden;
+  }
+
+  .patient-modal-header {
+    padding: 7px 9px 0;
+  }
+
+  .patient-title {
+    font-size:     12.5px;
+    margin-bottom: 6px;
+    gap:           5px;
+    overflow:      hidden;
+    white-space:   nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .patient-modal-tabs-bar {
+    padding:          2px;
+    gap:              1px;
+    border-radius:    5px;
+    overflow-x:       auto;
+    scroll-snap-type: x proximity;
+  }
+
+  .patient-modal-tab-btn {
+    flex:              0 0 auto;
+    font-size:         9px;
+    padding:           5px 7px;
+    border-radius:     4px;
+    min-height:        36px;    /* área táctil mínima aceptable */
+    scroll-snap-align: start;
+  }
+
+  .patient-modal-body {
+    padding:    7px 9px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .patient-modal-loading {
+    font-size: 12px;
+    padding:   14px 0;
+  }
+}
+
+/* ── 600–767 px — tablets pequeñas / foldables abiertos ──
+   Entre los bloques ≤480 px y ≤768 px ya existentes.
+   En este rango el modal puede comportarse como un sheet
+   ancho con mejor distribución; los 4 tabs caben en fila
+   completa sin scroll (flex: 1 1 0 recuperado).
+─────────────────────────────────────────────────────────── */
+@media (min-width: 600px) and (max-width: 767px) {
+  .patient-modal {
+    width:         96vw;
+    max-width:     96vw;
+    max-height:    88vh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    margin-top:    auto;
+    margin-bottom: 0;
+  }
+
+  .overlay {
+    align-items:    flex-end;
+    padding:        0;
+    padding-bottom: 0;
+  }
+
+  .patient-modal-header {
+    padding: 18px 22px 0;
+  }
+
+  .patient-title {
+    font-size:     17px;
+    margin-bottom: 14px;
+    overflow:      visible;
+    white-space:   normal;
+  }
+
+  /* Los 4 tabs caben de forma equilibrada */
+  .patient-modal-tabs-bar {
+    justify-content:  space-between;
+    padding:          4px 5px;
+    gap:              3px;
+    border-radius:    10px;
+    overflow-x:       visible;
+    scroll-snap-type: none;
+  }
+
+  .patient-modal-tab-btn {
+    flex:              1 1 0;
+    font-size:         12.5px;
+    padding:           8px 10px;
+    border-radius:     7px;
+    min-height:        38px;
+    scroll-snap-align: none;
+  }
+
+  .patient-modal-body {
+    padding: 18px 22px;
+  }
+
+  .patient-modal-loading {
+    font-size: 14px;
+    padding:   24px 0;
+  }
+}
+
+/* ── 1024–1279 px — tablet horizontal / laptop pequeña ───
+   El modal puede ser más ancho y respirar mejor.
+   No hay overlay redefinido: en desktop queda centrado.
+─────────────────────────────────────────────────────────── */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .patient-modal {
+    max-width:  800px;
+    max-height: 88vh;
+  }
+
+  .patient-modal-header {
+    padding: 24px 30px 0;
+  }
+
+  .patient-title {
+    font-size:     19px;
+    margin-bottom: 16px;
+  }
+
+  .patient-modal-tabs-bar {
+    padding: 4px 6px;
+    gap:     4px;
+  }
+
+  .patient-modal-tab-btn {
+    font-size: 13px;
+    padding:   9px 11px;
+  }
+
+  .patient-modal-body {
+    padding: 24px 30px;
+  }
+}
+
+/* ── 1280–1439 px — desktop estándar ─────────────────────
+   Rango base del diseño; los valores por defecto ya lo
+   cubren bien. Solo se afina el max-height para no dejar
+   el modal exageradamente alto en monitores 1080p.
+─────────────────────────────────────────────────────────── */
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .patient-modal {
+    max-width:  860px;
+    max-height: 90vh;
+  }
+
+  .patient-modal-header {
+    padding: 24px 28px 0;
+  }
+
+  .patient-modal-body {
+    padding: 24px 28px;
+  }
+}
+
+/* ── 1440 px en adelante — desktop grande / ultrawide ─────
+   Limitamos el crecimiento para que el modal no se convierta
+   en un banner ancho y vacío en pantallas 2K/4K o TVs.
+─────────────────────────────────────────────────────────── */
+@media (min-width: 1440px) {
+  .patient-modal {
+    max-width:  900px;   /* techo elegante; no crece más */
+    max-height: 86vh;    /* más espacio de contexto visible fuera */
+  }
+
+  .patient-modal-header {
+    padding: 28px 34px 0;
+  }
+
+  .patient-title {
+    font-size:     20px;
+    margin-bottom: 18px;
+  }
+
+  .patient-modal-tabs-bar {
+    padding:       5px 7px;
+    gap:           5px;
+    border-radius: 13px;
+  }
+
+  .patient-modal-tab-btn {
+    font-size: 13.5px;
+    padding:   10px 12px;
+  }
+
+  .patient-modal-body {
+    padding: 28px 34px;
+  }
+
+  .patient-modal-loading {
+    font-size: 15px;
+    padding:   32px 0;
+  }
 }

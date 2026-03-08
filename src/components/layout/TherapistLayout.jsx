@@ -123,9 +123,20 @@ function FloatingBell({ unreadCount, isActive, onClick }) {
           color: rgba(255,255,255,0.90) !important;
           font-size: 22px !important;
           padding: 0 !important;
+          transition: transform .3s cubic-bezier(.4,0,.2,1), color .2s !important;
         }
-        .floating-bell-wrap .notif-bell:hover {
+        /* Activo: icono rotado mientras el panel está abierto.
+           Al cerrar, la transición de arriba lo devuelve suavemente. */
+        .floating-bell-wrap.is-active .notif-bell {
+          transform: rotate(-12deg) scale(1.1) !important;
           color: #ffffff !important;
+        }
+        /* Hover solo en dispositivos con puntero real (mouse).
+           En táctil se desactiva para no interferir con el toggle. */
+        @media (hover: hover) {
+          .floating-bell-wrap .notif-bell:hover {
+            color: #ffffff !important;
+          }
         }
         /* Shake dispara via classe adicional */
         .floating-bell-wrap.is-shaking .notif-bell {

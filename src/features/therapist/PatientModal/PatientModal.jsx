@@ -68,11 +68,10 @@ export default function PatientModal({ patient, session, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelId}
-        style={{ maxWidth: 860, width: "95vw", maxHeight: "92vh" }}
       >
         {/* Header */}
         <div className="patient-modal-header">
-          <h3 id={labelId}>
+          <h3 id={labelId} className="patient-title">
             <AvatarDisplay
               name={patient.name}
               avatarUrl={patient.avatar_url}
@@ -86,23 +85,7 @@ export default function PatientModal({ patient, session, onClose }) {
           <div
             role="tablist"
             aria-label="Abas do paciente"
-            style={{
-              display: "flex",
-              flexWrap: "nowrap",
-              justifyContent: "space-between",
-              gap: 4,
-              overflowX: "auto",
-              overflowY: "hidden",
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-              background: "var(--cream)",
-              border: "1.5px solid var(--warm)",
-              borderRadius: 12,
-              padding: "4px 6px",
-              marginTop: 12,
-              width: "100%",
-              boxSizing: "border-box",
-            }}
+            className="patient-modal-tabs-bar"
           >
             {TABS.map((t) => (
               <button
@@ -111,25 +94,7 @@ export default function PatientModal({ patient, session, onClose }) {
                 aria-selected={tab === t.id}
                 aria-controls={`tabpanel-${t.id}`}
                 onClick={() => setTab(t.id)}
-                style={{
-                  all: "unset",
-                  flex: "1 1 0",
-                  minWidth: 0,
-                  boxSizing: "border-box",
-                  padding: "9px 10px",
-                  textAlign: "center",
-                  borderRadius: 8,
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
-                  transition: "background .2s, color .2s, box-shadow .2s",
-                  background: tab === t.id ? "var(--white)" : "transparent",
-                  color: tab === t.id ? "var(--blue-dark)" : "var(--text-muted)",
-                  boxShadow: tab === t.id ? "0 2px 8px rgba(23,82,124,0.12)" : "none",
-                }}
+                className={`patient-modal-tab-btn${tab === t.id ? " active" : ""}`}
               >
                 {t.label}
               </button>
@@ -140,7 +105,7 @@ export default function PatientModal({ patient, session, onClose }) {
         {/* Body */}
         <div className="patient-modal-body">
           {loading ? (
-            <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "24px 0" }}>
+            <p className="patient-modal-loading">
               A carregar dados...
             </p>
           ) : (
