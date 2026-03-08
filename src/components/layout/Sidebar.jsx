@@ -16,6 +16,7 @@ import AvatarDisplay from "../shared/AvatarDisplay";
  *   onLogout       — () => void
  *   onDeleteAccount — () => void
  *   extraHeader    — optional JSX rendered inside the header (e.g. notification bell)
+ *   className      — optional extra class for the <aside> (e.g. "patient-sidebar")
  */
 export default function Sidebar({
   brand,
@@ -30,28 +31,19 @@ export default function Sidebar({
   onLogout,
   onDeleteAccount,
   extraHeader,
+  className = "",
 }) {
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${className}`.trim()}>
       {/* ── Header ── */}
       <div className="sidebar-header">
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            width: "100%",
-          }}
-        >
-          <div
-            className="brand"
-            style={{ display: "flex", alignItems: "center", gap: 8 }}
-          >
+        <div className="sidebar-header-row">
+          <div className="sidebar-brand">
             <img
               src="/equilibre-icon.png"
               alt=""
               aria-hidden="true"
-              style={{ width: 32, height: 32, objectFit: "contain" }}
+              className="sidebar-logo"
             />
             {brand}
           </div>
@@ -75,15 +67,7 @@ export default function Sidebar({
             {n.label}
             {n.badge > 0 && (
               <span
-                style={{
-                  marginLeft: "auto",
-                  background: "var(--accent)",
-                  color: "white",
-                  padding: "2px 8px",
-                  borderRadius: 12,
-                  fontSize: 11,
-                  fontWeight: 700,
-                }}
+                className="nav-badge"
                 aria-label={`${n.badge} pendentes`}
               >
                 {n.badge > 9 ? "9+" : n.badge}

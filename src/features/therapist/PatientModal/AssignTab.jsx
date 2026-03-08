@@ -7,29 +7,27 @@ function DueChip({ dueDate }) {
   if (days === null) return null;
   if (days < 0)  return <span className="due-chip due-late">Atrasado</span>;
   if (days <= 2) return <span className="due-chip due-warn">Vence em {days}d</span>;
-  return <span className="due-chip due-ok">📅 {new Date(dueDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>;
+  return (
+    <span className="due-chip due-ok">
+      📅 {new Date(dueDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+    </span>
+  );
 }
 
 export default function AssignTab({
   patient, session, exercises, assignments, goal, onClose, onDataChange,
 }) {
-  const [localAssign,  setLocalAssign]  = useState(assignments);
-  const [selected,     setSelected]     = useState([]);
-  const [dueDates,     setDueDates]     = useState({});
-  const [weeklyGoal,   setWeeklyGoal]   = useState(goal?.weekly_target ?? 3);
-  const [saving,       setSaving]       = useState(false);
-  const [error,        setError]        = useState("");
+  const [localAssign, setLocalAssign] = useState(assignments);
+  const [selected,    setSelected]    = useState([]);
+  const [dueDates,    setDueDates]    = useState({});
+  const [weeklyGoal,  setWeeklyGoal]  = useState(goal?.weekly_target ?? 3);
+  const [saving,      setSaving]      = useState(false);
+  const [error,       setError]       = useState("");
   const inflightRef = useRef(false);
 
   const existingIds = localAssign.map((a) => a.exercise_id);
   const toggle = (id) =>
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
-
-  const inputSt = {
-    padding: "6px 10px", border: "1.5px solid var(--warm)", borderRadius: 8,
-    fontFamily: "DM Sans,sans-serif", fontSize: 12, background: "var(--cream)",
-    color: "var(--text)", outline: "none",
-  };
 
   const removeAssign = async (exId) => {
     const a = localAssign.find((x) => x.exercise_id === exId);
@@ -75,7 +73,11 @@ export default function AssignTab({
       } else {
         await db.insert(
           "goals",
-          { id: "g" + Date.now(), patient_id: patient.id, therapist_id: session.id, weekly_target: weeklyGoal, created_at: new Date().toISOString() },
+          {
+            id: "g" + Date.now(), patient_id: patient.id,
+            therapist_id: session.id, weekly_target: weeklyGoal,
+            created_at: new Date().toISOString(),
+          },
           session.access_token
         );
       }
@@ -95,37 +97,37 @@ export default function AssignTab({
 
   return (
     <>
-      {/* Weekly goal slider */}
-      <div style={{ background: "var(--cream)", borderRadius: 12, padding: "12px 14px", marginBottom: 18, border: "1.5px solid var(--warm)" }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--blue-dark)", marginBottom: 8 }}>🎯 Meta semanal de exercícios</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      {/* ── Weekly goal slider ── */}
+      <div className="at-goal-box">
+        <div className="at-goal-label">🎯 Meta semanal de exercícios</div>
+        <div className="at-goal-row">
           <label htmlFor="weekly-goal-range" className="sr-only">Meta semanal</label>
           <input
             id="weekly-goal-range"
-            type="range" min="1" max="10"
+            type="range"
+            min="1"
+            max="10"
             value={weeklyGoal}
             onChange={(e) => setWeeklyGoal(Number(e.target.value))}
-            style={{ flex: 1, accentColor: "var(--blue-dark)" }}
+            className="at-goal-range"
           />
-          <span style={{ fontWeight: 700, fontSize: 18, color: "var(--blue-dark)", minWidth: 22 }}>{weeklyGoal}</span>
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>por semana</span>
+          <span className="at-goal-val">{weeklyGoal}</span>
+          <span className="at-goal-unit">por semana</span>
         </div>
       </div>
 
       {error && <p className="error-msg" role="alert">{error}</p>}
 
-      {/* Assigned exercises */}
+      {/* ── Assigned exercises ── */}
       {localAssign.length > 0 && (
-        <div style={{ marginBottom: 18 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>
-            Atribuídos
-          </div>
+        <div className="at-section">
+          <div className="at-section-label">Atribuídos</div>
           {localAssign.map((a) => {
             const ex = exercises.find((e) => e.id === a.exercise_id);
             if (!ex) return null;
             return (
-              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "var(--cream)", borderRadius: 10, marginBottom: 5, flexWrap: "wrap" }}>
-                <span style={{ flex: 1, fontSize: 13 }}>{ex.title}</span>
+              <div key={a.id} className="at-assigned-row">
+                <span className="at-assigned-title">{ex.title}</span>
                 <DueChip dueDate={a.due_date} />
                 <span className={`response-badge ${a.status === "done" ? "badge-done" : "badge-pending"}`}>
                   {a.status === "done" ? "✓ Feito" : "⏳ Pendente"}
@@ -133,22 +135,22 @@ export default function AssignTab({
                 <button
                   onClick={() => removeAssign(a.exercise_id)}
                   aria-label={`Remover ${ex.title}`}
-                  style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer", fontSize: 15 }}
-                >✕</button>
+                  className="at-remove-btn"
+                >
+                  ✕
+                </button>
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Available to add */}
-      <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>
-        Adicionar à lista
-      </div>
+      {/* ── Available to add ── */}
+      <div className="at-section-label">Adicionar à lista</div>
       {exercises.filter((ex) => !existingIds.includes(ex.id)).map((ex) => (
         <div key={ex.id}>
           <div
-            className={`ex-pick ${selected.includes(ex.id) ? "selected" : ""}`}
+            className={`ex-pick${selected.includes(ex.id) ? " selected" : ""} at-ex-pick`}
             onClick={() => toggle(ex.id)}
             role="checkbox"
             aria-checked={selected.includes(ex.id)}
@@ -157,18 +159,16 @@ export default function AssignTab({
             style={{ marginBottom: selected.includes(ex.id) ? 4 : 7 }}
           >
             <div className="check" aria-hidden="true">{selected.includes(ex.id) ? "✓" : ""}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 500 }}>{ex.title}</div>
-            </div>
+            <div className="at-ex-title">{ex.title}</div>
           </div>
 
           {selected.includes(ex.id) && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7, paddingLeft: 8 }}>
-              <label htmlFor={`due-${ex.id}`} style={{ fontSize: 11, color: "var(--text-muted)" }}>📅 Prazo:</label>
+            <div className="at-due-row">
+              <label htmlFor={`due-${ex.id}`} className="at-due-label">📅 Prazo:</label>
               <input
                 id={`due-${ex.id}`}
                 type="date"
-                style={inputSt}
+                className="at-due-input"
                 value={dueDates[ex.id] || ""}
                 min={new Date().toISOString().split("T")[0]}
                 onChange={(e) => setDueDates((d) => ({ ...d, [ex.id]: e.target.value }))}
@@ -178,7 +178,8 @@ export default function AssignTab({
         </div>
       ))}
 
-      <div style={{ display: "flex", gap: 9, marginTop: 20, justifyContent: "flex-end" }}>
+      {/* ── Footer actions ── */}
+      <div className="at-footer">
         <button className="btn btn-outline" onClick={onClose}>Fechar</button>
         <button
           className="btn btn-sage"

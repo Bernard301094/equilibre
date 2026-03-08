@@ -23,13 +23,12 @@ const getGreetingSub = () => {
   return "Trabalhando tarde? Lembre-se de cuidar de si também.";
 };
 
-/** Returns YYYY-MM-DD string for `n` days ago (local time) */
 const daysAgoStr = (n) => localDateOffset(n);
 
 export default function TherapistDashboard({ session, setView }) {
-  const [stats,     setStats]     = useState({ patients: 0, done: 0, pending: 0, recent: [] });
-  const [redFlags,  setRedFlags]  = useState([]);
-  const [loading,   setLoading]   = useState(true);
+  const [stats,   setStats]   = useState({ patients: 0, done: 0, pending: 0, recent: [] });
+  const [redFlags, setRedFlags] = useState([]);
+  const [loading,  setLoading]  = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -83,7 +82,7 @@ export default function TherapistDashboard({ session, setView }) {
 
         if (!active) return;
 
-        // ── Red Flags ──────────────────────────────────────────────────────
+        // ── Red Flags ──────────────────────────────────────────────────────────────
         const threeDaysAgo = daysAgoStr(3);
         const flags = [];
 
@@ -96,30 +95,20 @@ export default function TherapistDashboard({ session, setView }) {
             .map((r) => r.completed_at?.slice(0, 10))
             .filter(Boolean);
 
-          const allDates = [...diaryDates, ...respDates];
-
-          // Most recent activity date
-          const lastDate = allDates.sort().reverse()[0] ?? null;
-
-          // Inactive flag: no activity in the last 3 days
+          const allDates  = [...diaryDates, ...respDates];
+          const lastDate  = allDates.sort().reverse()[0] ?? null;
           const isInactive = !lastDate || lastDate < threeDaysAgo;
 
-          // Overdue flag: 3+ pending assignments with past due_date
           const patientPending = allAssign.filter((a) => a.patient_id === p.id && a.status === "pending");
-          const overdueCount = patientPending.filter((a) => isOverdue(a.due_date)).length;
+          const overdueCount   = patientPending.filter((a) => isOverdue(a.due_date)).length;
           const hasHighOverdue = overdueCount >= 3;
 
           if (isInactive || hasHighOverdue) {
             const streak = calcStreak(allDates);
             const stage  = getPlantStage(streak);
             flags.push({
-              patient: p,
-              isInactive,
-              hasHighOverdue,
-              overdueCount,
-              lastDate,
-              streak,
-              stage,
+              patient: p, isInactive, hasHighOverdue, overdueCount, lastDate,
+              streak, stage,
               daysSinceActivity: lastDate
                 ? Math.floor((new Date() - new Date(lastDate + "T12:00:00")) / 86_400_000)
                 : null,
@@ -149,49 +138,35 @@ export default function TherapistDashboard({ session, setView }) {
   const firstName = session.name.split(" ")[0];
 
   return (
-    <div style={{ animation: "fadeUp .4s ease" }}>
+    <div className="page-fade-in">
       <div className="page-header">
         <h2>{getGreeting(firstName)}</h2>
         <p>{getGreetingSub()}</p>
       </div>
 
       {/* ── Stats ── */}
-      <div className="grid-3" style={{ marginBottom: 28 }}>
+      <div className="grid-3 td-stats-grid">
         <StatCard icon="👥" value={stats.patients} label="Pacientes ativos"      />
         <StatCard icon="✅" value={stats.done}     label="Exercícios concluídos" />
         <StatCard icon="⏳" value={stats.pending}  label="Pendentes"             />
       </div>
 
-      {/* ── Red Flags / Alertas de Atenção ── */}
+      {/* ── Red Flags ── */}
       {redFlags.length > 0 && (
-        <div className="card" style={{ marginBottom: 24, borderLeft: "4px solid var(--danger)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-            <span style={{ fontSize: 22 }} aria-hidden="true">🚨</span>
+        <div className="card td-flags-card">
+          <div className="td-flags-header">
+            <span className="td-flags-icon" aria-hidden="true">🚨</span>
             <div>
-              <h3 style={{ fontSize: 16, color: "var(--danger)", marginBottom: 2 }}>
-                Alertas de Atenção
-              </h3>
-              <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
+              <h3 className="td-flags-title">Alertas de Atenção</h3>
+              <p className="td-flags-sub">
                 {redFlags.length} paciente{redFlags.length > 1 ? "s" : ""} precisam da sua atenção
               </p>
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="td-flags-list">
             {redFlags.map(({ patient, isInactive, hasHighOverdue, overdueCount, daysSinceActivity, streak, stage }) => (
-              <div
-                key={patient.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "12px 14px",
-                  borderRadius: 12,
-                  background: "var(--danger-soft, rgba(239,68,68,0.06))",
-                  border: "1px solid rgba(239,68,68,0.18)",
-                  flexWrap: "wrap",
-                }}
-              >
+              <div key={patient.id} className="td-flag-row">
                 {/* Avatar */}
                 <AvatarDisplay
                   name={patient.name}
@@ -201,38 +176,18 @@ export default function TherapistDashboard({ session, setView }) {
                 />
 
                 {/* Info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: "var(--blue-dark)", marginBottom: 2 }}>
-                    {patient.name}
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                <div className="td-flag-info">
+                  <div className="td-flag-name">{patient.name}</div>
+                  <div className="td-flag-tags">
                     {isInactive && (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          background: "rgba(239,68,68,0.12)",
-                          color: "var(--danger)",
-                          borderRadius: 6,
-                          padding: "2px 8px",
-                        }}
-                      >
+                      <span className="td-flag-tag td-flag-tag--inactive">
                         {daysSinceActivity != null
                           ? `😴 Sem atividade há ${daysSinceActivity} dia${daysSinceActivity !== 1 ? "s" : ""}`
                           : "😴 Nunca acessou"}
                       </span>
                     )}
                     {hasHighOverdue && (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          background: "rgba(245,158,11,0.12)",
-                          color: "#b45309",
-                          borderRadius: 6,
-                          padding: "2px 8px",
-                        }}
-                      >
+                      <span className="td-flag-tag td-flag-tag--overdue">
                         ⚠️ {overdueCount} exercício{overdueCount > 1 ? "s" : ""} vencido{overdueCount > 1 ? "s" : ""}
                       </span>
                     )}
@@ -241,28 +196,21 @@ export default function TherapistDashboard({ session, setView }) {
 
                 {/* Plant indicator */}
                 <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    background: "rgba(255,255,255,0.7)",
-                    border: "1px solid var(--warm)",
-                    borderRadius: 20,
-                    padding: "4px 10px",
-                    flexShrink: 0,
-                  }}
+                  className="td-flag-plant"
                   title={`${stage.label} — ${streak} dias seguidos`}
                 >
-                  <span style={{ fontSize: 15 }} aria-hidden="true">{stage.icon}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: streak === 0 ? "var(--text-muted)" : stage.color }}>
+                  <span className="td-flag-plant-icon" aria-hidden="true">{stage.icon}</span>
+                  <span
+                    className="td-flag-plant-streak"
+                    style={{ color: streak === 0 ? "var(--text-muted)" : stage.color }}
+                  >
                     {streak}d
                   </span>
                 </div>
 
-                {/* Action button */}
+                {/* Action */}
                 <button
-                  className="btn btn-outline btn-sm"
-                  style={{ borderColor: "var(--danger)", color: "var(--danger)", flexShrink: 0 }}
+                  className="btn btn-outline btn-sm td-flag-btn"
                   onClick={() => setView("patients")}
                 >
                   Ver paciente
@@ -275,7 +223,7 @@ export default function TherapistDashboard({ session, setView }) {
 
       {/* ── Pacientes recentes ── */}
       <div className="card">
-        <h3 style={{ fontSize: 17, marginBottom: 14 }}>Pacientes recentes</h3>
+        <h3 className="td-recent-title">Pacientes recentes</h3>
 
         {stats.recent.length === 0 && (
           <EmptyState
@@ -297,8 +245,7 @@ export default function TherapistDashboard({ session, setView }) {
 
         {stats.recent.length > 0 && (
           <button
-            className="btn btn-outline btn-sm"
-            style={{ marginTop: 14 }}
+            className="btn btn-outline btn-sm td-see-all-btn"
             onClick={() => setView("patients")}
           >
             Ver todos →
@@ -308,3 +255,4 @@ export default function TherapistDashboard({ session, setView }) {
     </div>
   );
 }
+

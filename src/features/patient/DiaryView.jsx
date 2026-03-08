@@ -17,7 +17,7 @@ export default function PatientDiary({ session }) {
   const [reminder,      setReminder]      = useState(false);
   const [saving,        setSaving]        = useState(false);
   const [formError,     setFormError]     = useState("");
-  const [activeTab,     setActiveTab]     = useState("hoje"); // "hoje" | "historico" | "grafico"
+  const [activeTab,     setActiveTab]     = useState("hoje");
   const inflightRef = useRef(false);
 
   const [mood,       setMood]       = useState(null);
@@ -137,7 +137,7 @@ export default function PatientDiary({ session }) {
     db.update("users", { id: session.id }, { reminder_email: next }, session.access_token).catch(() => {});
   };
 
-  if (loading) return <p style={{ color: "var(--text-muted)", padding: 20 }}>Carregando diário...</p>;
+  if (loading) return <p className="dv-loading">Carregando diário...</p>;
 
   const chartData  = [...entries].slice(0, 14).reverse();
   const moodPoints = chartData.map((e) => e.mood);
@@ -153,46 +153,46 @@ export default function PatientDiary({ session }) {
     { id: "grafico",   label: "📈 Evolução" },
   ];
 
+  const SLIDERS = [
+    { id: "energy",     label: "⚡ Energia",   val: energy,     set: setEnergy,     color: "#f59e0b" },
+    { id: "anxiety",    label: "🌪️ Ansiedade", val: anxiety,    set: setAnxiety,    color: "#ef4444" },
+    { id: "motivation", label: "🎯 Motivação", val: motivation, set: setMotivation, color: "var(--blue-dark)" },
+  ];
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", animation: "fadeUp .4s ease" }}>
+    <div className="dv-wrapper page-fade-in">
 
       {/* ── Header ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+      <div className="dv-header">
         <div>
-          <h2 style={{ fontFamily: "Playfair Display, serif", fontSize: 26, color: "var(--text)", letterSpacing: "-.3px" }}>
-            📓 Diário Emocional
-          </h2>
-          <p style={{ color: "var(--text-muted)", fontSize: 14, marginTop: 3 }}>
+          <h2 className="dv-title">📓 Diário Emocional</h2>
+          <p className="dv-date">
             {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
           </p>
         </div>
 
         {/* Reminder toggle */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--card)", border: "1px solid rgba(134,188,222,0.2)", borderRadius: 12, padding: "10px 14px", boxShadow: "var(--shadow-sm)" }}>
-          <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>⏰ Lembrete</span>
+        <div className="dv-reminder-wrap">
+          <span className="dv-reminder-label">⏰ Lembrete</span>
           <button
             className={`toggle ${reminder ? "on" : "off"}`}
             onClick={toggleReminder}
-            role="switch" aria-checked={reminder}
+            role="switch"
+            aria-checked={reminder}
             aria-label="Lembrete diário por e-mail"
           />
         </div>
       </div>
 
       {/* ── Tab bar ── */}
-      <div style={{ display: "flex", gap: 4, background: "var(--cream)", border: "1.5px solid var(--warm)", borderRadius: 14, padding: 4, marginBottom: 22 }}>
+      <div className="dv-tabs" role="tablist">
         {TABS.map((t) => (
           <button
             key={t.id}
+            role="tab"
+            aria-selected={activeTab === t.id}
+            className={`dv-tab-btn${activeTab === t.id ? " active" : ""}`}
             onClick={() => setActiveTab(t.id)}
-            style={{
-              flex: 1, padding: "10px 8px", border: "none", borderRadius: 10,
-              fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 600,
-              cursor: "pointer", transition: "all .2s cubic-bezier(0.34,1.2,0.64,1)",
-              background: activeTab === t.id ? "var(--white)" : "transparent",
-              color: activeTab === t.id ? "var(--blue-dark)" : "var(--text-muted)",
-              boxShadow: activeTab === t.id ? "0 2px 10px rgba(23,82,124,0.1)" : "none",
-            }}
           >
             {t.label}
           </button>
@@ -203,20 +203,18 @@ export default function PatientDiary({ session }) {
           TAB: HOJE / REGISTRAR
       ══════════════════════════════════ */}
       {activeTab === "hoje" && (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 18 }}>
+        <div className="dv-tab-content">
 
           {/* Already registered today */}
           {todayEntry && !editingEntry && (
-            <div style={{ background: "linear-gradient(135deg,rgba(23,82,124,0.06),rgba(134,188,222,0.08))", border: "1.5px solid rgba(134,188,222,0.3)", borderRadius: 16, padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <span style={{ fontSize: 40 }}>
+            <div className="dv-today-banner">
+              <div className="dv-today-inner">
+                <span className="dv-today-emoji" aria-hidden="true">
                   {MOODS.find((m) => m.val === todayEntry.mood)?.emoji ?? "😐"}
                 </span>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 15, color: "var(--blue-dark)" }}>
-                    Já registraste hoje!
-                  </div>
-                  <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>
+                  <div className="dv-today-name">Já registraste hoje!</div>
+                  <div className="dv-today-sub">
                     {MOODS.find((m) => m.val === todayEntry.mood)?.label} · ⚡{todayEntry.energy}/10 · 🎯{todayEntry.motivation}/10
                   </div>
                 </div>
@@ -229,58 +227,60 @@ export default function PatientDiary({ session }) {
 
           {/* Form */}
           {showForm && (
-            <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+            <div className="dv-form-grid">
 
               {/* Left — mood + sliders */}
-              <div className="card" style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+              <div className="card dv-form-left">
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-muted)", marginBottom: 14 }}>
-                    Como você está?
-                  </div>
-                  <fieldset style={{ border: "none", padding: 0, margin: 0 }}>
+                  <div className="dv-section-label">Como você está?</div>
+                  <fieldset className="dv-mood-fieldset">
                     <legend className="sr-only">Selecione seu humor</legend>
-                    <div style={{ display: "flex", gap: 10, justifyContent: "space-between" }}>
+                    <div className="dv-mood-row">
                       {MOODS.map((m) => (
-                        <div key={m.val} style={{ textAlign: "center", flex: 1 }}>
+                        <div key={m.val} className="dv-mood-item">
                           <button
                             type="button"
-                            className={`mood-btn ${mood === m.val ? "sel" : ""}`}
-                            style={{ width: "100%", fontSize: 26 }}
+                            className={`mood-btn dv-mood-btn${mood === m.val ? " sel" : ""}`}
                             onClick={() => setMood(m.val)}
                             aria-pressed={mood === m.val}
                             aria-label={m.label}
                           >
                             {m.emoji}
                           </button>
-                          <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 5, fontWeight: 500 }}>
-                            {m.label}
-                          </div>
+                          <div className="dv-mood-label">{m.label}</div>
                         </div>
                       ))}
                     </div>
                   </fieldset>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  {[
-                    { id: "energy",     label: "⚡ Energia",    val: energy,     set: setEnergy,     color: "#f59e0b" },
-                    { id: "anxiety",    label: "🌪️ Ansiedade",  val: anxiety,    set: setAnxiety,    color: "#ef4444" },
-                    { id: "motivation", label: "🎯 Motivação",  val: motivation, set: setMotivation, color: "var(--blue-dark)" },
-                  ].map(({ id, label, val, set, color }) => (
-                    <div key={id}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 6, fontWeight: 500 }}>
-                        <label htmlFor={`slider-${id}`} style={{ color: "var(--text-muted)" }}>{label}</label>
-                        <span style={{ fontWeight: 700, color, fontSize: 15 }}>{val}</span>
+                <div className="dv-sliders">
+                  {SLIDERS.map(({ id, label, val, set, color }) => (
+                    <div key={id} className="dv-slider-row">
+                      <div className="dv-slider-header">
+                        <label htmlFor={`slider-${id}`} className="dv-slider-label">
+                          {label}
+                        </label>
+                        <span className="dv-slider-val" style={{ color }}>{val}</span>
                       </div>
-                      <div style={{ position: "relative", height: 6, background: "var(--warm)", borderRadius: 4, overflow: "hidden" }}>
-                        <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${val * 10}%`, background: color, borderRadius: 4, transition: "width .2s" }} />
+                      <div className="dv-slider-track">
+                        <div
+                          className="dv-slider-fill"
+                          style={{ width: `${val * 10}%`, background: color }}
+                        />
                       </div>
                       <input
                         id={`slider-${id}`}
-                        type="range" min="0" max="10" value={val}
+                        type="range"
+                        min="0"
+                        max="10"
+                        value={val}
                         onChange={(e) => set(Number(e.target.value))}
-                        style={{ width: "100%", marginTop: 4, accentColor: color, opacity: 0, height: 6, cursor: "pointer", position: "relative", zIndex: 1, marginTop: -10 }}
-                        aria-valuenow={val} aria-valuemin={0} aria-valuemax={10}
+                        className="dv-slider-input"
+                        style={{ accentColor: color }}
+                        aria-valuenow={val}
+                        aria-valuemin={0}
+                        aria-valuemax={10}
                       />
                     </div>
                   ))}
@@ -288,32 +288,32 @@ export default function PatientDiary({ session }) {
               </div>
 
               {/* Right — text + save */}
-              <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-muted)" }}>
-                  {editingEntry ? `Editando: ${new Date(editingEntry.date + "T12:00:00").toLocaleDateString("pt-BR")}` : "Como foi o seu dia?"}
+              <div className="card dv-form-right">
+                <div className="dv-section-label">
+                  {editingEntry
+                    ? `Editando: ${new Date(editingEntry.date + "T12:00:00").toLocaleDateString("pt-BR")}`
+                    : "Como foi o seu dia?"}
                 </div>
 
                 <label htmlFor="diary-text" className="sr-only">Comentário livre</label>
                 <textarea
                   id="diary-text"
-                  className="q-textarea"
+                  className="q-textarea dv-diary-textarea"
                   placeholder="Escreva livremente sobre o seu dia, sentimentos, pensamentos... (opcional)"
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  style={{ flex: 1, minHeight: 160, resize: "none" }}
                 />
 
                 {formError && <p className="error-msg" role="alert">{formError}</p>}
 
-                <div style={{ display: "flex", gap: 10 }}>
+                <div className="dv-save-row">
                   {editingEntry && (
-                    <button className="btn btn-outline" style={{ flex: 1 }} onClick={resetForm}>
+                    <button className="btn btn-outline dv-cancel-btn" onClick={resetForm}>
                       Cancelar
                     </button>
                   )}
                   <button
-                    className="btn btn-sage"
-                    style={{ flex: 2, padding: 14, fontSize: 15 }}
+                    className="btn btn-sage dv-save-btn"
                     onClick={save}
                     disabled={mood === null || saving}
                     aria-busy={saving}
@@ -331,68 +331,71 @@ export default function PatientDiary({ session }) {
           TAB: HISTÓRICO
       ══════════════════════════════════ */}
       {activeTab === "historico" && (
-        <div style={{ flex: 1 }}>
+        <div className="dv-tab-content">
           {entries.length === 0 ? (
-            <div className="card" style={{ height: "100%" }}>
+            <div className="card dv-empty-card">
               <EmptyState icon="📖" message="Nenhum registo ainda. Começa hoje!" />
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 }}>
+            <div className="dv-history-grid">
               {entries.map((e) => {
                 const m       = MOODS.find((x) => x.val === e.mood);
                 const isToday = e.date === today;
                 return (
                   <div
                     key={e.id}
-                    className="card"
-                    style={{ borderTop: `3px solid ${isToday ? "var(--blue-dark)" : "var(--warm)"}`, transition: "all .2s" }}
+                    className={`card dv-entry-card${isToday ? " dv-entry-card--today" : ""}`}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 32 }} aria-hidden="true">{m?.emoji ?? "😐"}</span>
+                    <div className="dv-card-header">
+                      <div className="dv-card-info">
+                        <span className="dv-entry-emoji" aria-hidden="true">
+                          {m?.emoji ?? "😐"}
+                        </span>
                         <div>
-                          <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text)" }}>{m?.label}</div>
-                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
-                            {new Date(e.date + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" })}
+                          <div className="dv-entry-name">{m?.label}</div>
+                          <div className="dv-entry-date">
+                            {new Date(e.date + "T12:00:00").toLocaleDateString("pt-BR", {
+                              weekday: "short", day: "2-digit", month: "short",
+                            })}
                             {isToday && (
-                              <span style={{ marginLeft: 6, background: "var(--blue-dark)", color: "white", fontSize: 9, padding: "2px 6px", borderRadius: 8, fontWeight: 700 }}>
-                                HOJE
-                              </span>
+                              <span className="dv-today-badge">HOJE</span>
                             )}
                           </div>
                         </div>
                       </div>
-                      <div style={{ display: "flex", gap: 6 }}>
+                      <div className="dv-entry-actions">
                         <button
                           onClick={() => startEdit(e)}
                           aria-label="Editar"
-                          style={{ background: "var(--cream)", border: "1px solid var(--warm)", borderRadius: 8, width: 30, height: 30, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}
+                          className="dv-entry-btn dv-entry-btn--edit"
                         >✏️</button>
                         <button
                           onClick={() => setDeletingEntry(e)}
                           aria-label="Excluir"
-                          style={{ background: "#fde8e8", border: "1px solid #f9caca", borderRadius: 8, width: 30, height: 30, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}
+                          className="dv-entry-btn dv-entry-btn--delete"
                         >🗑️</button>
                       </div>
                     </div>
 
                     {/* Mini metrics */}
-                    <div style={{ display: "flex", gap: 8, marginBottom: e.text ? 10 : 0 }}>
+                    <div className={`dv-metrics-row${e.text ? " dv-metrics-row--mb" : ""}`}>
                       {[
-                        { icon: "⚡", val: e.energy,     color: "#f59e0b", label: "Energia" },
-                        { icon: "🌪️", val: e.anxiety,    color: "#ef4444", label: "Ansiedade" },
-                        { icon: "🎯", val: e.motivation, color: "var(--blue-dark)", label: "Motivação" },
+                        { icon: "⚡", val: e.energy,     color: "#f59e0b",          label: "Energia"    },
+                        { icon: "🌪️", val: e.anxiety,    color: "#ef4444",          label: "Ansiedade"  },
+                        { icon: "🎯", val: e.motivation, color: "var(--blue-dark)", label: "Motivação"  },
                       ].map(({ icon, val, color, label }) => (
-                        <div key={label} style={{ flex: 1, background: "var(--cream)", borderRadius: 10, padding: "7px 8px", textAlign: "center", border: "1px solid var(--warm)" }}>
-                          <div style={{ fontSize: 11 }}>{icon}</div>
-                          <div style={{ fontSize: 15, fontWeight: 700, color, lineHeight: 1.2, marginTop: 2 }}>{val ?? "—"}</div>
-                          <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 1 }}>{label}</div>
+                        <div key={label} className="dv-metric-item">
+                          <div className="dv-metric-icon">{icon}</div>
+                          <div className="dv-metric-val" style={{ color }}>
+                            {val ?? "—"}
+                          </div>
+                          <div className="dv-metric-label">{label}</div>
                         </div>
                       ))}
                     </div>
 
                     {e.text && (
-                      <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.55, fontStyle: "italic", borderTop: "1px solid var(--warm)", paddingTop: 10, marginTop: 2 }}>
+                      <p className="dv-entry-text">
                         "{e.text.length > 120 ? e.text.slice(0, 120) + "…" : e.text}"
                       </p>
                     )}
@@ -408,53 +411,56 @@ export default function PatientDiary({ session }) {
           TAB: GRÁFICO
       ══════════════════════════════════ */}
       {activeTab === "grafico" && (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 18 }}>
-
+        <div className="dv-tab-content dv-chart-tab">
           {moodPoints.length < 2 ? (
-            <div className="card" style={{ flex: 1 }}>
+            <div className="card dv-empty-card">
               <EmptyState icon="📊" message="Precisa de pelo menos 2 registos para ver o gráfico." />
             </div>
           ) : (
             <>
               {/* Summary strip */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+              <div className="dv-stats-strip">
                 {[
-                  { label: "Registos", val: entries.length, icon: "📓" },
-                  { label: "Humor médio", val: (entries.reduce((a, e) => a + (e.mood ?? 0), 0) / entries.length).toFixed(1), icon: "😊" },
-                  { label: "Energia média", val: (entries.reduce((a, e) => a + (e.energy ?? 0), 0) / entries.length).toFixed(1), icon: "⚡" },
-                  { label: "Motivação média", val: (entries.reduce((a, e) => a + (e.motivation ?? 0), 0) / entries.length).toFixed(1), icon: "🎯" },
+                  { label: "Registos",        val: entries.length, icon: "📓" },
+                  { label: "Humor médio",      val: (entries.reduce((a, e) => a + (e.mood ?? 0), 0) / entries.length).toFixed(1), icon: "😊" },
+                  { label: "Energia média",    val: (entries.reduce((a, e) => a + (e.energy ?? 0), 0) / entries.length).toFixed(1), icon: "⚡" },
+                  { label: "Motivação média",  val: (entries.reduce((a, e) => a + (e.motivation ?? 0), 0) / entries.length).toFixed(1), icon: "🎯" },
                 ].map(({ label, val, icon }) => (
-                  <div key={label} className="card" style={{ textAlign: "center", padding: "16px 12px" }}>
-                    <div style={{ fontSize: 24, marginBottom: 6 }}>{icon}</div>
-                    <div style={{ fontFamily: "Playfair Display, serif", fontSize: 28, color: "var(--blue-dark)", lineHeight: 1 }}>{val}</div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, fontWeight: 500 }}>{label}</div>
+                  <div key={label} className="card dv-stat-card">
+                    <div className="dv-stat-icon">{icon}</div>
+                    <div className="dv-stat-val">{val}</div>
+                    <div className="dv-stat-label">{label}</div>
                   </div>
                 ))}
               </div>
 
               {/* Mood chart */}
-              <div className="card" style={{ flex: 1 }}>
-                <h3 style={{ fontSize: 16, marginBottom: 4, color: "var(--blue-dark)" }}>Evolução do Humor</h3>
-                <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 16 }}>1 = Muito difícil · 5 = Ótimo</p>
+              <div className="card dv-chart-card">
+                <h3 className="dv-chart-title">Evolução do Humor</h3>
+                <p className="dv-chart-desc">1 = Muito difícil · 5 = Ótimo</p>
                 <MiniLineChart points={moodPoints} labels={moodLabels} height={160} color="var(--orange)" />
               </div>
 
               {/* Energy + Motivation charts side by side */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+              <div className="dv-chart-grid">
                 <div className="card">
-                  <h3 style={{ fontSize: 14, marginBottom: 4, color: "#f59e0b" }}>⚡ Energia</h3>
+                  <h3 className="dv-chart-title dv-chart-title--energy">⚡ Energia</h3>
                   <MiniLineChart
                     points={[...entries].slice(0, 14).reverse().map((e) => e.energy ?? 0)}
-                    labels={[...entries].slice(0, 14).reverse().map((e) => new Date(e.date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }))}
+                    labels={[...entries].slice(0, 14).reverse().map((e) =>
+                      new Date(e.date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
+                    )}
                     height={110}
                     color="#f59e0b"
                   />
                 </div>
                 <div className="card">
-                  <h3 style={{ fontSize: 14, marginBottom: 4, color: "var(--blue-dark)" }}>🎯 Motivação</h3>
+                  <h3 className="dv-chart-title">🎯 Motivação</h3>
                   <MiniLineChart
                     points={[...entries].slice(0, 14).reverse().map((e) => e.motivation ?? 0)}
-                    labels={[...entries].slice(0, 14).reverse().map((e) => new Date(e.date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }))}
+                    labels={[...entries].slice(0, 14).reverse().map((e) =>
+                      new Date(e.date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
+                    )}
                     height={110}
                     color="var(--blue-dark)"
                   />
@@ -468,11 +474,17 @@ export default function PatientDiary({ session }) {
       {/* ── Delete confirmation ── */}
       {deletingEntry && (
         <div className="delete-overlay" onClick={() => setDeletingEntry(null)}>
-          <div className="delete-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="del-diary-title">
-            <div className="delete-icon" aria-hidden="true" style={{ fontSize: 42, marginBottom: 16 }}>🗑️</div>
+          <div
+            className="delete-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="del-diary-title"
+          >
+            <div className="delete-icon dv-del-icon" aria-hidden="true">🗑️</div>
             <div id="del-diary-title" className="delete-title">Excluir registo?</div>
             <div className="delete-desc">Esta ação não pode ser desfeita.</div>
-            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <div className="logout-dialog-actions">
               <button className="btn btn-outline" onClick={() => setDeletingEntry(null)}>Cancelar</button>
               <button className="btn-danger" onClick={confirmDelete}>Excluir</button>
             </div>

@@ -24,14 +24,8 @@ const getGreetingSub = () => {
 
 export default function PatientHome({ session, setSession, setView }) {
   const [data, setData] = useState({
-    pending:          0,
-    done:             0,
-    streak:           0,
-    goal:             null,
-    weekDone:         0,
-    overdue:          0,
-    hasActivityToday: false,
-    isLate:           false,
+    pending: 0, done: 0, streak: 0, goal: null,
+    weekDone: 0, overdue: 0, hasActivityToday: false, isLate: false,
   });
   const [loading,    setLoading]    = useState(true);
   const [showWater,  setShowWater]  = useState(false);
@@ -42,7 +36,6 @@ export default function PatientHome({ session, setSession, setView }) {
 
   useEffect(() => {
     let active = true;
-
     const fetchData = async () => {
       try {
         const [pendRows, doneRows, goals, responses, diary] = await Promise.all([
@@ -52,7 +45,6 @@ export default function PatientHome({ session, setSession, setView }) {
           db.query("responses",     { filter: { patient_id: session.id }, order: "completed_at.desc", select: "id,completed_at" }, session.access_token),
           db.query("diary_entries", { filter: { patient_id: session.id }, order: "date.desc", select: "id,date"    }, session.access_token),
         ]);
-
         if (!active) return;
 
         const now      = new Date();
@@ -65,7 +57,6 @@ export default function PatientHome({ session, setSession, setView }) {
           ...dList.map((e) => e.date),
           ...respList.map((r) => r.completed_at?.slice(0, 10)).filter(Boolean),
         ];
-
         const streak   = calcStreak(activeDates);
         const today    = localDateOffset(0);
         const hasToday = activeDates.includes(today);
@@ -83,14 +74,9 @@ export default function PatientHome({ session, setSession, setView }) {
         }
 
         setData({
-          pending:          pendList.length,
-          done:             Array.isArray(doneRows) ? doneRows.length : 0,
-          streak,
-          goal:             Array.isArray(goals) && goals.length > 0 ? goals[0] : null,
-          weekDone,
-          overdue,
-          hasActivityToday: hasToday,
-          isLate:           hour >= 19,
+          pending: pendList.length, done: Array.isArray(doneRows) ? doneRows.length : 0,
+          streak, goal: Array.isArray(goals) && goals.length > 0 ? goals[0] : null,
+          weekDone, overdue, hasActivityToday: hasToday, isLate: hour >= 19,
         });
       } catch (e) {
         console.error("[PatientHome]", e);
@@ -98,35 +84,28 @@ export default function PatientHome({ session, setSession, setView }) {
         if (active) setLoading(false);
       }
     };
-
     fetchData();
     const id = setInterval(fetchData, 30_000);
     return () => { active = false; clearInterval(id); };
   }, [session.id, session.access_token]);
 
-  // ── Link therapist ────────────────────────────────────────────────────────
   const handleLink = async () => {
     if (inflightRef.current || linking) return;
     const codeErr = validateInviteCode(inviteCode);
     if (codeErr) { setLinkMsg({ type: "error", text: codeErr }); return; }
-
     inflightRef.current = true;
     setLinking(true);
     setLinkMsg({ type: "", text: "" });
-
     try {
       const code    = inviteCode.trim().toUpperCase();
       const invites = await db.query("invites", { filter: { code } });
-
       if (!Array.isArray(invites) || invites.length === 0)
         throw new Error("Código não encontrado.");
       const invite = invites[0];
       if (invite.status !== "pending")
         throw new Error("Este código já foi utilizado ou expirou.");
-
       await db.update("users",   { id: session.id }, { therapist_id: invite.therapist_id }, session.access_token);
       await db.update("invites", { code }, { status: "used", used_by: session.id, used_at: new Date().toISOString() }, session.access_token);
-
       setSession((prev) => ({ ...prev, therapist_id: invite.therapist_id }));
       setLinkMsg({ type: "success", text: "Profissional vinculado com sucesso! ✅" });
       setInviteCode("");
@@ -140,12 +119,10 @@ export default function PatientHome({ session, setSession, setView }) {
 
   if (loading) {
     return (
-      <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--text-muted)" }}>
-        <div style={{ fontSize: 36, marginBottom: 12 }} aria-hidden="true">✨</div>
-        <div style={{ fontSize: 16, fontWeight: 600, color: "var(--blue-dark)", marginBottom: 4 }}>
-          Respire fundo...
-        </div>
-        <div style={{ fontSize: 14 }}>Preparando o seu espaço de cuidado.</div>
+      <div className="ph-loading">
+        <div className="ph-loading__icon" aria-hidden="true">✨</div>
+        <div className="ph-loading__title">Respire fundo...</div>
+        <div className="ph-loading__sub">Preparando o seu espaço de cuidado.</div>
       </div>
     );
   }
@@ -154,7 +131,7 @@ export default function PatientHome({ session, setSession, setView }) {
   const firstName = session.name.split(" ")[0];
 
   return (
-    <div style={{ animation: "fadeUp .4s ease" }}>
+    <div className="page-fade-in">
 
       {/* ── Header ── */}
       <div className="page-header">
@@ -164,35 +141,28 @@ export default function PatientHome({ session, setSession, setView }) {
 
       {/* ── Link therapist ── */}
       {!session.therapist_id && (
-        <div className="card" style={{ marginBottom: 20, borderLeft: "4px solid var(--blue-mid)" }}>
-          <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-            <div style={{ fontSize: 26, marginTop: 2 }} aria-hidden="true">🤝</div>
-            <div style={{ flex: 1 }}>
-              <h3 style={{ fontSize: 16, marginBottom: 6 }}>Vincular profissional</h3>
-              <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.5 }}>
+        <div className="card ph-link-card">
+          <div className="ph-link-inner">
+            <div className="ph-link-icon" aria-hidden="true">🤝</div>
+            <div className="ph-link-body">
+              <h3 className="ph-link-title">Vincular profissional</h3>
+              <p className="ph-link-desc">
                 Digite o código de convite enviado pela sua psicóloga:
               </p>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <div className="ph-link-row">
                 <label htmlFor="link-invite-input" className="sr-only">Código de convite</label>
                 <input
                   id="link-invite-input"
+                  className="ph-invite-input"
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                   placeholder="Ex: AB3X9K"
                   maxLength={10}
                   autoComplete="off"
-                  style={{
-                    flex: 1, minWidth: 140,
-                    padding: "10px 14px",
-                    border: "1.5px solid var(--warm)",
-                    borderRadius: 10,
-                    fontFamily: "monospace", fontSize: 16, letterSpacing: ".1em",
-                    background: "var(--cream)", outline: "none", color: "var(--text)",
-                  }}
                   onKeyDown={(e) => e.key === "Enter" && handleLink()}
                 />
                 <button
-                  className="btn btn-sage"
+                  className="btn btn-sage ph-link-btn"
                   onClick={handleLink}
                   disabled={linking}
                   aria-busy={linking}
@@ -203,10 +173,7 @@ export default function PatientHome({ session, setSession, setView }) {
               {linkMsg.text && (
                 <p
                   role="alert"
-                  style={{
-                    marginTop: 10, fontSize: 13, fontWeight: 600,
-                    color: linkMsg.type === "error" ? "var(--danger)" : "#1a5c28",
-                  }}
+                  className={`ph-link-msg ph-link-msg--${linkMsg.type}`}
                 >
                   {linkMsg.text}
                 </p>
@@ -217,14 +184,11 @@ export default function PatientHome({ session, setSession, setView }) {
       )}
 
       {/* ── Stats ── */}
-      <div className="grid-3" style={{ marginBottom: 20 }}>
-        <div className="stat-card" style={{ position: "relative", overflow: "hidden" }}>
-          {showWater && (
-            <div className="water-drop" aria-hidden="true">💧</div>
-          )}
+      <div className="grid-3 ph-stats-grid">
+        <div className="stat-card ph-plant-card">
+          {showWater && <div className="water-drop" aria-hidden="true">💧</div>}
           <div
-            className="plant-animation"
-            style={{ fontSize: 44, marginBottom: 8, marginTop: 4 }}
+            className="plant-animation ph-plant-emoji"
             aria-label={`Planta: ${stage.label}`}
           >
             {stage.icon}
@@ -251,28 +215,20 @@ export default function PatientHome({ session, setSession, setView }) {
       {/* ── Streak warning ── */}
       {!data.hasActivityToday && data.streak > 0 && (
         <div
-          className="card"
+          className={`card ph-streak-warn${data.isLate ? " ph-streak-warn--late" : ""}`}
           role="alert"
-          style={{
-            marginBottom: 20,
-            borderLeft: `4px solid ${data.isLate ? "var(--danger)" : "var(--accent)"}`,
-            background: data.isLate ? "var(--danger-soft)" : "var(--accent-soft)",
-          }}
         >
-          <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-            <div style={{ fontSize: 28 }} aria-hidden="true">
+          <div className="ph-streak-inner">
+            <div className="ph-streak-icon" aria-hidden="true">
               {data.isLate ? "⚠️" : "🪴"}
             </div>
             <div>
-              <h3 style={{
-                fontSize: 15, marginBottom: 4,
-                color: data.isLate ? "var(--danger)" : "var(--orange)",
-              }}>
+              <h3 className={`ph-streak-title${data.isLate ? " ph-streak-title--late" : ""}`}>
                 {data.isLate ? "Sua planta está com sede!" : "Não se esqueça de regar!"}
               </h3>
-              <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.4 }}>
+              <p className="ph-streak-desc">
                 Registe algo hoje para manter a sequência de{" "}
-                <strong style={{ color: "var(--text)" }}>
+                <strong className="ph-streak-strong">
                   {data.streak} dia{data.streak > 1 ? "s" : ""}
                 </strong>.
               </p>
@@ -283,7 +239,7 @@ export default function PatientHome({ session, setSession, setView }) {
 
       {/* ── Weekly goal ── */}
       {data.goal && (
-        <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card ph-goal-card">
           <WeekGoalBar done={data.weekDone} target={data.goal.weekly_target} />
         </div>
       )}
@@ -291,41 +247,39 @@ export default function PatientHome({ session, setSession, setView }) {
       {/* ── Primary CTA ── */}
       {!data.hasActivityToday ? (
         <div
-          className="card cta-banner cta-green"
-          style={{ cursor: "pointer" }}
+          className="card cta-banner cta-green ph-cta"
           onClick={() => setView("diary")}
           role="button"
           tabIndex={0}
           aria-label="Ir para o diário emocional"
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setView("diary")}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="ph-cta-inner">
             <div>
-              <h3 style={{ fontSize: 17, marginBottom: 5 }}>Vamos regar agora?</h3>
-              <p style={{ fontSize: 13 }}>
+              <h3 className="ph-cta-title">Vamos regar agora?</h3>
+              <p className="ph-cta-desc">
                 Registe como você está hoje no diário e mantenha seu jardim vivo.
               </p>
             </div>
-            <div style={{ fontSize: 36 }} aria-hidden="true">🚿</div>
+            <div className="ph-cta-icon" aria-hidden="true">🚿</div>
           </div>
         </div>
       ) : data.pending > 0 ? (
         <div
-          className="card cta-banner cta-blue"
-          style={{ cursor: "pointer" }}
+          className="card cta-banner cta-blue ph-cta"
           onClick={() => setView("exercises")}
           role="button"
           tabIndex={0}
           aria-label="Ir para meus exercícios"
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setView("exercises")}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="ph-cta-inner">
             <div>
-              <div style={{ fontSize: 22, marginBottom: 7 }} aria-hidden="true">📋</div>
-              <h3 style={{ fontSize: 17, marginBottom: 5 }}>
+              <div className="ph-cta-ex-icon" aria-hidden="true">📋</div>
+              <h3 className="ph-cta-title">
                 Você tem {data.pending} exercício{data.pending > 1 ? "s" : ""} pendente{data.pending > 1 ? "s" : ""}!
               </h3>
-              <p style={{ fontSize: 13 }}>
+              <p className="ph-cta-desc">
                 Clique aqui para começar quando estiver pronto(a).
               </p>
             </div>

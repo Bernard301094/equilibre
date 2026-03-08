@@ -8,9 +8,9 @@ import { validateLoginForm } from "../../utils/validation";
  *   successMessage — optional banner text (e.g. "Conta criada com sucesso!")
  */
 export default function LoginForm({ onLogin, onForgot, successMessage }) {
-  const [tab, setTab] = useState("therapist");
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
+  const [tab,     setTab]     = useState("therapist");
+  const [form,    setForm]    = useState({ email: "", password: "" });
+  const [error,   setError]   = useState("");
   const [loading, setLoading] = useState(false);
 
   const update = (field) => (e) =>
@@ -19,22 +19,17 @@ export default function LoginForm({ onLogin, onForgot, successMessage }) {
   const handleSubmit = async () => {
     setError("");
     const validationErr = validateLoginForm(form);
-    if (validationErr) {
-      setError(validationErr);
-      return;
-    }
-
+    if (validationErr) { setError(validationErr); return; }
     setLoading(true);
     const serverErr = await onLogin({ ...form, role: tab });
     setLoading(false);
-
     if (serverErr) setError(serverErr);
   };
 
   return (
     <>
       {/* Role tabs */}
-      <div className="tab-switch" style={{ marginBottom: 18 }}>
+      <div className="tab-switch lf-tabs">
         <button
           type="button"
           className={tab === "therapist" ? "active" : ""}
@@ -97,25 +92,10 @@ export default function LoginForm({ onLogin, onForgot, successMessage }) {
         {loading ? "Entrando..." : "Entrar"}
       </button>
 
-      <p
-        style={{
-          textAlign: "center",
-          marginTop: 12,
-          fontSize: 13,
-          color: "var(--text-muted)",
-        }}
-      >
+      <p className="lf-forgot-row">
         <button
           type="button"
-          style={{
-            background: "none",
-            border: "none",
-            color: "var(--sage-dark)",
-            cursor: "pointer",
-            fontWeight: 500,
-            fontSize: 13,
-            padding: 0,
-          }}
+          className="lf-forgot-btn"
           onClick={() => onForgot?.(form.email)}
         >
           Esqueceu a senha?

@@ -40,10 +40,9 @@ export default function TherapistProgress({ session }) {
       if (!active) return;
 
       const exList = Array.isArray(exercises) ? exercises : [];
-      const rList  = Array.isArray(responses) ? responses : [];
+      const rList  = Array.isArray(responses)  ? responses  : [];
       const goal   = Array.isArray(goals) && goals.length > 0 ? goals[0].weekly_target : null;
 
-      // Build scale-point series
       const scalePts = rList
         .map((r) => {
           const ex  = exList.find((e) => e.id === r.exercise_id);
@@ -64,54 +63,62 @@ export default function TherapistProgress({ session }) {
         .filter(Boolean);
 
       const doneThisWeek = rList.filter((r) => isThisWeek(r.completed_at)).length;
-
       setChart({ scalePts, doneThisWeek, weeklyTarget: goal, totalDone: rList.length });
     })();
     return () => { active = false; };
   }, [selPat, session.access_token]);
 
-  if (loading) return <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Carregando...</p>;
+  if (loading) return <p className="tp-loading">Carregando...</p>;
 
   return (
-    <div style={{ animation: "fadeUp .4s ease" }}>
+    <div className="page-fade-in">
+
       <div className="page-header">
         <h2>📈 Progresso dos Pacientes</h2>
         <p>Acompanhe a evolução das respostas ao longo do tempo</p>
       </div>
 
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 24 }}>
+      {/* ── Patient selector ── */}
+      <div className="tp-patient-selector">
         {patients.map((p) => (
           <button
             key={p.id}
             onClick={() => setSelPat(p)}
-            style={{ padding: "9px 16px", borderRadius: 10, border: `1.5px solid ${selPat?.id === p.id ? "var(--blue-dark)" : "var(--warm)"}`, background: selPat?.id === p.id ? "rgba(23,82,124,0.07)" : "var(--white)", cursor: "pointer", fontFamily: "DM Sans,sans-serif", fontSize: 14, fontWeight: selPat?.id === p.id ? 600 : 500, color: selPat?.id === p.id ? "var(--blue-dark)" : "var(--text-muted)" }}
+            className={`tp-patient-btn${selPat?.id === p.id ? " tp-patient-btn--active" : ""}`}
           >
             {p.name.split(" ")[0]}
           </button>
         ))}
-        {patients.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Nenhum paciente ainda.</p>}
+        {patients.length === 0 && (
+          <p className="tp-no-patients">Nenhum paciente ainda.</p>
+        )}
       </div>
 
+      {/* ── Dashboard for selected patient ── */}
       {selPat && chart && (
-        <>
-          <div className="grid-3" style={{ marginBottom: 20 }}>
+        <div className="tp-dashboard">
+
+          {/* Stats row */}
+          <div className="grid-3 tp-stats-row">
             <StatCard icon="✅" value={chart.totalDone}    label="Exercícios concluídos" />
             <StatCard icon="📅" value={chart.doneThisWeek} label="Esta semana" />
             <StatCard icon="🎯" value={chart.weeklyTarget ?? "—"} label="Meta semanal" />
           </div>
 
+          {/* Weekly goal bar */}
           {chart.weeklyTarget && (
-            <div className="card" style={{ marginBottom: 20 }}>
-              <h3 style={{ fontSize: 15, marginBottom: 12 }}>
+            <div className="card tp-goal-card">
+              <h3 className="tp-card-title">
                 Meta semanal — {selPat.name.split(" ")[0]}
               </h3>
               <WeekGoalBar done={chart.doneThisWeek} target={chart.weeklyTarget} />
             </div>
           )}
 
-          <div className="card">
-            <h3 style={{ fontSize: 15, marginBottom: 4 }}>Evolução das respostas de escala</h3>
-            <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
+          {/* Scale evolution chart */}
+          <div className="card tp-chart-card">
+            <h3 className="tp-card-title">Evolução das respostas de escala</h3>
+            <p className="tp-chart-desc">
               Média das escalas (0–10) por exercício respondido
             </p>
             {chart.scalePts.length >= 2 ? (
@@ -127,7 +134,8 @@ export default function TherapistProgress({ session }) {
               />
             )}
           </div>
-        </>
+
+        </div>
       )}
     </div>
   );

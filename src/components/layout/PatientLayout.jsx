@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import Sidebar    from "./Sidebar";
 import BottomNav  from "./BottomNav";
 import ToastContainer from "../ui/Toast";
-import PatientHome     from "../../features/patient/Home";
+import PatientHome      from "../../features/patient/Home";
 import PatientExercises from "../../features/patient/ExercisesView";
-import ExercisePage    from "../../features/patient/ExercisePage";
-import PatientDiary    from "../../features/patient/DiaryView";
-import PatientRoutine  from "../../features/patient/RoutineView";
-import PatientProgress from "../../features/patient/ProgressView";
-import PatientHistory  from "../../features/patient/HistoryView";
-import ProfileModal    from "../shared/ProfileModal";
+import ExercisePage     from "../../features/patient/ExercisePage";
+import PatientDiary     from "../../features/patient/DiaryView";
+import PatientRoutine   from "../../features/patient/RoutineView";
+import PatientProgress  from "../../features/patient/ProgressView";
+import PatientHistory   from "../../features/patient/HistoryView";
+import ProfileModal     from "../shared/ProfileModal";
 import DeleteAccountModal from "../shared/DeleteAccountModal";
 import db from "../../services/db";
 
@@ -35,11 +35,18 @@ const BOTTOM_ITEMS = (pendingCount) => [
 function LogoutDialog({ onConfirm, onCancel }) {
   return (
     <div className="delete-overlay" onClick={onCancel}>
-      <div className="delete-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <div
+        className="delete-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
         <div className="delete-icon">👋</div>
         <div className="delete-title">Sair da conta?</div>
-        <div className="delete-desc">Você precisará fazer login novamente para aceder à plataforma.</div>
-        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+        <div className="delete-desc">
+          Você precisará fazer login novamente para aceder à plataforma.
+        </div>
+        <div className="logout-dialog-actions">
           <button className="btn btn-outline" onClick={onCancel}>Cancelar</button>
           <button className="btn-danger" onClick={onConfirm}>Sair</button>
         </div>
@@ -87,7 +94,11 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
   useEffect(() => {
     if (session.therapist_id === prevTherapistRef.current) return;
     prevTherapistRef.current = session.therapist_id;
-    db.query("users", { filter: { id: session.id }, select: "therapist_id,name,avatar_url" }, session.access_token)
+    db.query(
+      "users",
+      { filter: { id: session.id }, select: "therapist_id,name,avatar_url" },
+      session.access_token
+    )
       .then((r) => {
         if (Array.isArray(r) && r.length > 0) setSession((s) => ({ ...s, ...r[0] }));
       })
@@ -122,7 +133,8 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
 
   return (
     <div className="layout">
-      {/* Sidebar — apenas desktop */}
+      {/* Sidebar — apenas desktop.
+          className="patient-sidebar" aplica o gradiente mais escuro via CSS. */}
       {!isMobile && (
         <Sidebar
           brand="Equilibre"
@@ -140,11 +152,8 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
         />
       )}
 
-      {/* Main content */}
-      <main
-        className="main"
-        style={{ marginLeft: isMobile ? 0 : 256 }}
-      >
+      {/* Main content — margin-left gerido pelo CSS (.main + media queries) */}
+      <main className={`main${isMobile ? " main--mobile" : ""}`}>
         {renderView()}
       </main>
 
@@ -156,6 +165,8 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
           onNav={setView}
           session={session}
           onAvatarClick={() => setShowProfile(true)}
+          theme={theme}
+          toggleTheme={toggleTheme}
         />
       )}
 

@@ -13,30 +13,31 @@ function makeQuestion() {
 }
 
 const TYPE_META = {
-  open:        { icon: "📝", color: "#17527c",  label: "Resposta aberta"  },
-  scale:       { icon: "🔢", color: "#2e7fab",  label: "Escala 0–10"      },
-  reflect:     { icon: "💭", color: "#7a4800",  label: "Reflexão"         },
-  instruction: { icon: "📢", color: "#1a5c28",  label: "Instrução"        },
+  open:        { icon: "📝", color: "#17527c", label: "Resposta aberta" },
+  scale:       { icon: "🔢", color: "#2e7fab", label: "Escala 0–10"     },
+  reflect:     { icon: "💭", color: "#7a4800", label: "Reflexão"        },
+  instruction: { icon: "📢", color: "#1a5c28", label: "Instrução"       },
 };
 
-export default function CreateExerciseView({
-  session,
-  onSaved,
-  onCancel,
-  initialExercise,
-}) {
+const TYPE_HINT = {
+  open:        "📝 O paciente escreverá uma resposta livre.",
+  scale:       "🔢 O paciente escolherá um valor de 0 a 10.",
+  reflect:     "💭 Campo opcional — o paciente pode escrever ou apenas refletir.",
+  instruction: "📢 O paciente verá esta mensagem, mas não precisa responder.",
+};
+
+export default function CreateExerciseView({ session, onSaved, onCancel, initialExercise }) {
   const isEditing = !!initialExercise;
 
   const [form, setForm] = useState(() => ({
-    title:       isEditing ? initialExercise.title       : "",
-    category:    isEditing ? (initialExercise.category || CATEGORIES[0]) : CATEGORIES[0],
-    description: isEditing ? initialExercise.description : "",
+    title:       isEditing ? initialExercise.title                          : "",
+    category:    isEditing ? (initialExercise.category || CATEGORIES[0])   : CATEGORIES[0],
+    description: isEditing ? initialExercise.description                   : "",
   }));
 
-  const [questions, setQuestions] = useState(() =>
+  const [questions,   setQuestions]   = useState(() =>
     isEditing ? parseQuestions(initialExercise) : [makeQuestion()]
   );
-
   const [saving,      setSaving]      = useState(false);
   const [success,     setSuccess]     = useState("");
   const [error,       setError]       = useState("");
@@ -55,13 +56,13 @@ export default function CreateExerciseView({
   const removeQ = (i) => { setQuestions((qs) => qs.filter((_, idx) => idx !== i)); setActiveQIdx((p) => Math.max(0, p - 1)); };
   const updateQ = (i, field, val) => setQuestions((qs) => qs.map((q, idx) => idx === i ? { ...q, [field]: val } : q));
   const moveQ   = (i, dir) => setQuestions((qs) => {
-    const arr = [...qs]; const j = i + dir;
+    const arr = [...qs];
+    const j   = i + dir;
     if (j < 0 || j >= arr.length) return arr;
     [arr[i], arr[j]] = [arr[j], arr[i]];
     return arr;
   });
 
-  // No mobile, ao selecionar uma pergunta rola suavemente para o editor
   const selectQuestion = (i) => {
     setActiveQIdx(i);
     if (isMobile && editorRef.current) {
@@ -97,72 +98,35 @@ export default function CreateExerciseView({
     }
   };
 
-  const inputSt = {
-    width:      "100%",
-    padding:    isMobile ? "13px 14px" : "11px 14px",
-    minHeight:  isMobile ? 44 : "auto",
-    border:     "1.5px solid var(--warm)",
-    borderRadius: 10,
-    fontFamily: "'DM Sans', sans-serif",
-    fontSize:   14,
-    background: "var(--cream)",
-    color:      "var(--text)",
-    outline:    "none",
-    boxSizing:  "border-box",
-    transition: "border .2s, box-shadow .2s",
-  };
-
-  const labelSt = {
-    display:       "block",
-    fontSize:      11,
-    fontWeight:    700,
-    color:         "var(--text-muted)",
-    marginBottom:  6,
-    textTransform: "uppercase",
-    letterSpacing: ".06em",
-  };
-
-  const fieldSt = { marginBottom: isMobile ? 18 : 14 };
-
   const activeQ = questions[activeQIdx] ?? null;
 
   return (
-    <div style={{ animation: "fadeUp .4s ease", height: "100%", paddingBottom: isMobile ? 80 : 0 }}>
+    <div className={`page-fade-in cev-wrapper${isMobile ? " cev-wrapper--mobile" : ""}`}>
 
       {/* ── Top bar ── */}
-      <div style={{
-        display:       "flex",
-        flexDirection: isMobile ? "column" : "row",
-        alignItems:    isMobile ? "flex-start" : "center",
-        gap:           isMobile ? 12 : 14,
-        marginBottom:  24,
-      }}>
-        {/* Linha superior no mobile: botão voltar + título */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
+      <div className="cev-topbar">
+        <div className="cev-topbar-row">
           {onCancel && (
-            <button
-              className="btn btn-outline btn-sm"
-              onClick={onCancel}
-              style={{ minHeight: 44, padding: "0 16px", flexShrink: 0 }}
-            >
+            <button className="btn btn-outline btn-sm cev-back-btn" onClick={onCancel}>
               ← Voltar
             </button>
           )}
-          <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: isMobile ? 18 : 22, letterSpacing: "-.3px" }}>
+          <div className="cev-topbar-text">
+            <h2 className="cev-title">
               {isEditing ? "Editar Exercício" : "Criar Exercício"}
             </h2>
-            <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-              {isEditing ? "Modifique as informações abaixo" : "Monte um exercício personalizado para seus pacientes"}
+            <p className="cev-subtitle">
+              {isEditing
+                ? "Modifique as informações abaixo"
+                : "Monte um exercício personalizado para seus pacientes"}
             </p>
           </div>
         </div>
 
-        {/* Botão salvar: inline no desktop, fixo no rodapé no mobile */}
+        {/* Desktop inline save button */}
         {!isMobile && (
           <button
-            className="btn btn-sage"
-            style={{ padding: "11px 28px", fontSize: 14, minHeight: 44, flexShrink: 0 }}
+            className="btn btn-sage cev-save-btn"
             onClick={save}
             disabled={saving}
             aria-busy={saving}
@@ -172,50 +136,41 @@ export default function CreateExerciseView({
         )}
       </div>
 
-      {success && <div className="success-banner" role="status" style={{ marginBottom: 16 }}>{success}</div>}
-      {error   && <p className="error-msg" role="alert" style={{ marginBottom: 16 }}>{error}</p>}
+      {success && <div className="success-banner cev-alert" role="status">{success}</div>}
+      {error   && <p className="error-msg cev-alert" role="alert">{error}</p>}
 
       {isEditing && (
-        <div style={{ padding: "10px 14px", background: "var(--accent-soft)", borderRadius: 10, marginBottom: 16, fontSize: 12, color: "var(--orange)", border: "1px solid var(--accent)", fontWeight: 500 }}>
+        <div className="cev-warning" role="note">
           ⚠️ Alterar a ordem ou excluir perguntas de um exercício já respondido pode desalinhar respostas antigas.
         </div>
       )}
 
-      {/* ── Layout: duas colunas no desktop, coluna única no mobile ── */}
-      <div style={{
-        display:             "grid",
-        gridTemplateColumns: isMobile ? "1fr" : "1fr 1.4fr",
-        gap:                 isMobile ? 16 : 20,
-        alignItems:          "start",
-      }}>
+      {/* ── Two-column layout ── */}
+      <div className="cev-layout">
 
-        {/* ══ ESQUERDA — Info geral + lista de perguntas ══ */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* ══ LEFT — general info + question list ══ */}
+        <div className="cev-left">
 
-          {/* Card de informações gerais */}
+          {/* General info card */}
           <div className="card">
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--text-muted)", marginBottom: 16 }}>
-              Informações gerais
-            </div>
+            <div className="cev-section-label">Informações gerais</div>
 
-            <div style={fieldSt}>
-              <label htmlFor="ex-title" style={labelSt}>Título</label>
+            <div className="cev-field">
+              <label htmlFor="ex-title" className="cev-label">Título</label>
               <input
                 id="ex-title"
-                style={inputSt}
+                className="cev-input"
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 placeholder="Ex: Diário das Emoções"
-                onFocus={(e) => e.target.style.borderColor = "var(--blue-mid)"}
-                onBlur={(e)  => e.target.style.borderColor = "var(--warm)"}
               />
             </div>
 
-            <div style={fieldSt}>
-              <label htmlFor="ex-category" style={labelSt}>Categoria</label>
+            <div className="cev-field">
+              <label htmlFor="ex-category" className="cev-label">Categoria</label>
               <select
                 id="ex-category"
-                style={{ ...inputSt, cursor: "pointer" }}
+                className="cev-input cev-select"
                 value={form.category}
                 onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
               >
@@ -223,36 +178,30 @@ export default function CreateExerciseView({
               </select>
             </div>
 
-            <div>
-              <label htmlFor="ex-desc" style={labelSt}>Descrição breve</label>
+            <div className="cev-field cev-field--last">
+              <label htmlFor="ex-desc" className="cev-label">Descrição breve</label>
               <textarea
                 id="ex-desc"
-                style={{ ...inputSt, minHeight: isMobile ? 80 : 72, resize: "vertical" }}
+                className="cev-input cev-textarea"
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 placeholder="O que este exercício trabalha?"
-                onFocus={(e) => e.target.style.borderColor = "var(--blue-mid)"}
-                onBlur={(e)  => e.target.style.borderColor = "var(--warm)"}
               />
             </div>
           </div>
 
-          {/* Lista de perguntas */}
-          <div className="card" style={{ padding: "18px 20px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--text-muted)" }}>
+          {/* Questions list card */}
+          <div className="card cev-q-card">
+            <div className="cev-q-list-header">
+              <div className="cev-section-label">
                 Perguntas ({questions.length})
               </div>
-              <button
-                className="btn btn-sage btn-sm"
-                onClick={addQ}
-                style={{ fontSize: 12, minHeight: 44, padding: "0 16px" }}
-              >
+              <button className="btn btn-sage btn-sm cev-add-btn" onClick={addQ}>
                 + Adicionar
               </button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className="cev-q-list">
               {questions.map((q, i) => {
                 const meta     = TYPE_META[q.type] ?? TYPE_META.open;
                 const isActive = activeQIdx === i;
@@ -260,87 +209,49 @@ export default function CreateExerciseView({
                   <div
                     key={q.id}
                     onClick={() => selectQuestion(i)}
-                    style={{
-                      display:    "flex",
-                      alignItems: "center",
-                      gap:        10,
-                      padding:    isMobile ? "13px 12px" : "10px 12px",
-                      minHeight:  isMobile ? 56 : "auto",
-                      borderRadius: 10,
-                      cursor:     "pointer",
-                      border:     `1.5px solid ${isActive ? "var(--blue-dark)" : "var(--warm)"}`,
-                      background: isActive ? "rgba(23,82,124,0.06)" : "var(--cream)",
-                      transition: "all .15s",
-                    }}
+                    className={`cev-q-item${isActive ? " cev-q-item--active" : ""}`}
                   >
-                    {/* Número */}
-                    <div style={{
-                      width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-                      background: isActive ? "var(--blue-dark)" : "var(--warm)",
-                      color:      isActive ? "white" : "var(--text-muted)",
-                      display:    "flex", alignItems: "center", justifyContent: "center",
-                      fontSize:   11, fontWeight: 700, transition: "all .15s",
-                    }}>
+                    {/* Number bubble */}
+                    <div className={`cev-q-num${isActive ? " cev-q-num--active" : ""}`}>
                       {i + 1}
                     </div>
 
-                    {/* Tipo + preview */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
-                        <span style={{ fontSize: 11 }}>{meta.icon}</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: meta.color, textTransform: "uppercase", letterSpacing: ".05em" }}>
+                    {/* Type + preview text */}
+                    <div className="cev-q-body">
+                      <div className="cev-q-type-row">
+                        <span className="cev-q-type-icon" aria-hidden="true">{meta.icon}</span>
+                        <span
+                          className="cev-q-type-label"
+                          data-type={q.type}
+                          style={{ color: meta.color }}
+                        >
                           {meta.label}
                         </span>
                       </div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div className="cev-q-preview-text">
                         {q.text || <em>Sem texto ainda...</em>}
                       </div>
                     </div>
 
-                    {/* Mover + remover — botões maiores no mobile */}
-                    <div style={{ display: "flex", gap: isMobile ? 6 : 2, flexShrink: 0 }}>
+                    {/* Move / remove controls */}
+                    <div className="cev-q-controls">
                       <button
                         aria-label="Mover para cima"
+                        className="cev-q-btn"
                         onClick={(e) => { e.stopPropagation(); moveQ(i, -1); }}
                         disabled={i === 0}
-                        style={{
-                          background: "none", border: "none",
-                          cursor:     i === 0 ? "not-allowed" : "pointer",
-                          opacity:    i === 0 ? .3 : .6,
-                          fontSize:   isMobile ? 16 : 13,
-                          padding:    isMobile ? "6px 8px" : "2px 3px",
-                          minWidth:   isMobile ? 36 : "auto",
-                          minHeight:  isMobile ? 36 : "auto",
-                        }}
                       >↑</button>
                       <button
                         aria-label="Mover para baixo"
+                        className="cev-q-btn"
                         onClick={(e) => { e.stopPropagation(); moveQ(i, 1); }}
                         disabled={i === questions.length - 1}
-                        style={{
-                          background: "none", border: "none",
-                          cursor:     i === questions.length - 1 ? "not-allowed" : "pointer",
-                          opacity:    i === questions.length - 1 ? .3 : .6,
-                          fontSize:   isMobile ? 16 : 13,
-                          padding:    isMobile ? "6px 8px" : "2px 3px",
-                          minWidth:   isMobile ? 36 : "auto",
-                          minHeight:  isMobile ? 36 : "auto",
-                        }}
                       >↓</button>
                       <button
                         aria-label={`Remover pergunta ${i + 1}`}
+                        className="cev-q-btn cev-q-btn--remove"
                         onClick={(e) => { e.stopPropagation(); removeQ(i); }}
                         disabled={questions.length === 1}
-                        style={{
-                          background: "none", border: "none",
-                          cursor:     questions.length === 1 ? "not-allowed" : "pointer",
-                          color:      "var(--danger)",
-                          fontSize:   isMobile ? 16 : 13,
-                          opacity:    questions.length === 1 ? .3 : .7,
-                          padding:    isMobile ? "6px 8px" : "2px 4px",
-                          minWidth:   isMobile ? 36 : "auto",
-                          minHeight:  isMobile ? 36 : "auto",
-                        }}
                       >✕</button>
                     </div>
                   </div>
@@ -350,47 +261,35 @@ export default function CreateExerciseView({
           </div>
         </div>
 
-        {/* ══ DIREITA — Editor da pergunta ══ */}
-        <div
-          ref={editorRef}
-          style={{ position: isMobile ? "static" : "sticky", top: 20 }}
-        >
-          {/* Título de seção visível apenas no mobile */}
+        {/* ══ RIGHT — question editor ══ */}
+        <div ref={editorRef} className="cev-right">
+
           {isMobile && (
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--text-muted)", marginBottom: 10 }}>
+            <div className="cev-section-label cev-editor-mobile-label">
               Editor da pergunta selecionada
             </div>
           )}
 
           {activeQ ? (
-            <div className="card" style={{ animation: "fadeUp .25s ease" }} key={activeQ.id}>
+            <div className="card cev-editor-card" key={activeQ.id}>
 
-              {/* Cabeçalho do editor */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: "1.5px solid var(--warm)" }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  background: "var(--blue-dark)", color: "white",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 14, fontWeight: 700, flexShrink: 0,
-                }}>
-                  {activeQIdx + 1}
-                </div>
+              {/* Editor header */}
+              <div className="cev-editor-header">
+                <div className="cev-editor-num">{activeQIdx + 1}</div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>
+                  <div className="cev-editor-heading">
                     Editando pergunta {activeQIdx + 1}
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
+                  <div className="cev-editor-subheading">
                     {TYPE_META[activeQ.type]?.icon} {TYPE_META[activeQ.type]?.label}
                   </div>
                 </div>
               </div>
 
-              {/* Seletor de tipo */}
-              <div style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-muted)", marginBottom: 10 }}>
-                  Tipo de pergunta
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {/* Type selector */}
+              <div className="cev-type-section">
+                <div className="cev-section-label">Tipo de pergunta</div>
+                <div className="cev-type-grid">
                   {QUESTION_TYPES.map((t) => {
                     const meta  = TYPE_META[t.value] ?? TYPE_META.open;
                     const isSel = activeQ.type === t.value;
@@ -398,42 +297,28 @@ export default function CreateExerciseView({
                       <button
                         key={t.value}
                         onClick={() => updateQ(activeQIdx, "type", t.value)}
-                        style={{
-                          padding:    isMobile ? "13px 12px" : "10px 12px",
-                          minHeight:  44,
-                          border:     `1.5px solid ${isSel ? "var(--blue-dark)" : "var(--warm)"}`,
-                          borderRadius: 10,
-                          cursor:     "pointer",
-                          background: isSel ? "rgba(23,82,124,0.07)" : "var(--cream)",
-                          fontFamily: "'DM Sans', sans-serif",
-                          display:    "flex",
-                          alignItems: "center",
-                          gap:        8,
-                          transition: "all .15s",
-                          textAlign:  "left",
-                        }}
+                        className={`cev-type-btn${isSel ? " cev-type-btn--active" : ""}`}
                       >
-                        <span style={{ fontSize: 18 }}>{meta.icon}</span>
-                        <div style={{ fontSize: 12, fontWeight: isSel ? 700 : 500, color: isSel ? "var(--blue-dark)" : "var(--text)" }}>
+                        <span className="cev-type-btn-icon" aria-hidden="true">
+                          {meta.icon}
+                        </span>
+                        <span className={`cev-type-btn-label${isSel ? " cev-type-btn-label--active" : ""}`}>
                           {meta.label}
-                        </div>
+                        </span>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Campo de texto */}
-              <div style={{ marginBottom: 18 }}>
-                <label
-                  htmlFor={`q-text-${activeQ.id}`}
-                  style={{ ...labelSt, marginBottom: 8 }}
-                >
+              {/* Text / instruction textarea */}
+              <div className="cev-field">
+                <label htmlFor={`q-text-${activeQ.id}`} className="cev-label">
                   {activeQ.type === "instruction" ? "Texto da instrução" : "Texto da pergunta"}
                 </label>
                 <textarea
                   id={`q-text-${activeQ.id}`}
-                  style={{ ...inputSt, minHeight: isMobile ? 110 : 100, resize: "vertical" }}
+                  className="cev-input cev-textarea cev-textarea--question"
                   placeholder={
                     activeQ.type === "instruction"
                       ? "Escreva a instrução para o paciente..."
@@ -441,64 +326,43 @@ export default function CreateExerciseView({
                   }
                   value={activeQ.text}
                   onChange={(e) => updateQ(activeQIdx, "text", e.target.value)}
-                  onFocus={(e) => e.target.style.borderColor = "var(--blue-mid)"}
-                  onBlur={(e)  => e.target.style.borderColor = "var(--warm)"}
                 />
               </div>
 
-              {/* Dica do tipo */}
-              <div style={{
-                padding: "10px 14px", borderRadius: 10,
-                background: "var(--cream)", border: "1px solid var(--warm)",
-                fontSize: 12, color: "var(--text-muted)", lineHeight: 1.55,
-              }}>
-                {activeQ.type === "open"        && "📝 O paciente escreverá uma resposta livre."}
-                {activeQ.type === "scale"       && "🔢 O paciente escolherá um valor de 0 a 10."}
-                {activeQ.type === "reflect"     && "💭 Campo opcional — o paciente pode escrever ou apenas refletir."}
-                {activeQ.type === "instruction" && "📢 O paciente verá esta mensagem, mas não precisa responder."}
+              {/* Type hint */}
+              <div className="cev-type-hint">
+                {TYPE_HINT[activeQ.type]}
               </div>
 
-              {/* Pré-visualização */}
+              {/* Preview */}
               {activeQ.text && (
-                <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1.5px solid var(--warm)" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-muted)", marginBottom: 10 }}>
-                    Pré-visualização
-                  </div>
+                <div className="cev-preview">
+                  <div className="cev-section-label">Pré-visualização</div>
 
                   {activeQ.type === "instruction" && (
-                    <div style={{ background: "linear-gradient(135deg,#17527c,#1e6fa6)", color: "white", borderRadius: 12, padding: "16px 18px", fontSize: 14, lineHeight: 1.7, textAlign: "center" }}>
-                      {activeQ.text}
-                    </div>
+                    <div className="cev-preview-instruction">{activeQ.text}</div>
                   )}
 
                   {activeQ.type === "reflect" && (
                     <div>
-                      <div style={{ background: "var(--accent-soft)", borderLeft: "3px solid var(--accent)", borderRadius: 10, padding: "12px 14px", fontSize: 13, color: "var(--orange)", fontStyle: "italic", marginBottom: 8, lineHeight: 1.6 }}>
-                        {activeQ.text}
-                      </div>
-                      <div style={{ height: 50, border: "1.5px dashed var(--warm)", borderRadius: 10, background: "var(--cream)" }} />
+                      <div className="cev-preview-reflect">{activeQ.text}</div>
+                      <div className="cev-preview-placeholder" />
                     </div>
                   )}
 
                   {activeQ.type === "open" && (
                     <div>
-                      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, color: "var(--text)", marginBottom: 10, lineHeight: 1.5 }}>
-                        {activeQ.text}
-                      </div>
-                      <div style={{ height: 60, border: "1.5px dashed var(--warm)", borderRadius: 10, background: "var(--cream)" }} />
+                      <div className="cev-preview-q-text">{activeQ.text}</div>
+                      <div className="cev-preview-placeholder cev-preview-placeholder--tall" />
                     </div>
                   )}
 
                   {activeQ.type === "scale" && (
                     <div>
-                      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, color: "var(--text)", marginBottom: 12, lineHeight: 1.5 }}>
-                        {activeQ.text}
-                      </div>
-                      <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                      <div className="cev-preview-q-text">{activeQ.text}</div>
+                      <div className="cev-scale-dots">
                         {[0,1,2,3,4,5,6,7,8,9,10].map((n) => (
-                          <div key={n} style={{ width: 34, height: 34, borderRadius: "50%", border: "2px solid var(--warm)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>
-                            {n}
-                          </div>
+                          <div key={n} className="cev-scale-dot">{n}</div>
                         ))}
                       </div>
                     </div>
@@ -507,44 +371,27 @@ export default function CreateExerciseView({
               )}
             </div>
           ) : (
-            <div className="card" style={{ textAlign: "center", padding: "50px 24px", color: "var(--text-muted)" }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>👆</div>
-              <p style={{ fontSize: 14 }}>Seleciona uma pergunta acima para editá-la.</p>
+            <div className="card cev-empty-editor">
+              <div className="cev-empty-icon" aria-hidden="true">👆</div>
+              <p className="cev-empty-text">Seleciona uma pergunta acima para editá-la.</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Barra de ação fixa no rodapé — apenas mobile ── */}
+      {/* ── Mobile fixed save bar ── */}
       {isMobile && (
-        <div style={{
-          position:   "fixed",
-          bottom:     64,           /* acima do BottomNav */
-          left:       0,
-          right:      0,
-          zIndex:     90,
-          background: "var(--white)",
-          borderTop:  "1px solid var(--warm)",
-          padding:    "12px 16px",
-          display:    "flex",
-          gap:        10,
-          boxShadow:  "0 -4px 20px rgba(15,30,42,0.10)",
-        }}>
+        <div className="cev-mobile-bar">
           {onCancel && (
-            <button
-              className="btn btn-outline"
-              onClick={onCancel}
-              style={{ flex: 1, minHeight: 48, fontSize: 14 }}
-            >
+            <button className="btn btn-outline cev-mobile-bar-back" onClick={onCancel}>
               ← Voltar
             </button>
           )}
           <button
-            className="btn btn-sage"
+            className="btn btn-sage cev-mobile-bar-save"
             onClick={save}
             disabled={saving}
             aria-busy={saving}
-            style={{ flex: 2, minHeight: 48, fontSize: 14, fontWeight: 700 }}
           >
             {saving ? "Salvando..." : isEditing ? "💾 Atualizar" : "💾 Publicar"}
           </button>

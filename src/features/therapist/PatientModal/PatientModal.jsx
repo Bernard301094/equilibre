@@ -25,17 +25,17 @@ export default function PatientModal({ patient, session, onClose }) {
       try {
         const [ex, assign, goals, notes, acts, diary] = await Promise.all([
           db.query("exercises", {}, session.access_token),
-          db.query("assignments",   { filter: { patient_id: patient.id } }, session.access_token),
-          db.query("goals",         { filter: { patient_id: patient.id } }, session.access_token),
-          db.query("clinical_notes",{
+          db.query("assignments",    { filter: { patient_id: patient.id } }, session.access_token),
+          db.query("goals",          { filter: { patient_id: patient.id } }, session.access_token),
+          db.query("clinical_notes", {
             filter: { patient_id: patient.id, therapist_id: session.id },
-            order: "created_at.desc",
+            order:  "created_at.desc",
           }, session.access_token).catch(() => []),
           db.query("activities", { filter: { patient_id: patient.id }, order: "planned_date.desc" }, session.access_token).catch(() => []),
           db.query("diary_entries", {
             filter: { patient_id: patient.id },
             select: "id,date,mood,energy,anxiety,motivation,created_at",
-            order: "date.desc",
+            order:  "date.desc",
           }, session.access_token).catch(() => []),
         ]);
 
@@ -81,7 +81,6 @@ export default function PatientModal({ patient, session, onClose }) {
             {patient.name}
           </h3>
 
-          {/* 4 abas sempre visíveis */}
           <div
             role="tablist"
             aria-label="Abas do paciente"
@@ -105,9 +104,7 @@ export default function PatientModal({ patient, session, onClose }) {
         {/* Body */}
         <div className="patient-modal-body">
           {loading ? (
-            <p className="patient-modal-loading">
-              A carregar dados...
-            </p>
+            <p className="patient-modal-loading">A carregar dados...</p>
           ) : (
             <>
               <div role="tabpanel" id="tabpanel-assign" hidden={tab !== "assign"}>

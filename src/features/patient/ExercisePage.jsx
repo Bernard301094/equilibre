@@ -7,7 +7,6 @@ import { LOGO_PATH, LS_LAST_ACTION } from "../../utils/constants";
 export default function ExercisePage({ exercise, session, onBack }) {
   const questions = parseQuestions(exercise);
 
-  // answers keyed by questionId
   const [answers, setAnswers] = useState(() => {
     const init = {};
     questions.forEach((q) => { init[q.id] = ""; });
@@ -30,14 +29,10 @@ export default function ExercisePage({ exercise, session, onBack }) {
       setStep((s) => s + 1);
       return;
     }
-
-    // Final step — submit
     if (inflightRef.current || saving) return;
     inflightRef.current = true;
     setSaving(true);
-
     try {
-      // Find the specific pending assignment id to update only that record
       const assignments = await db.query(
         "assignments",
         { filter: { patient_id: session.id, exercise_id: exercise.id, status: "pending" }, select: "id" },
@@ -76,7 +71,7 @@ export default function ExercisePage({ exercise, session, onBack }) {
             read:           false,
           },
           session.access_token
-        ).catch(() => {}); // best-effort
+        ).catch(() => {});
       }
 
       localStorage.setItem(LS_LAST_ACTION, String(Date.now()));
@@ -90,18 +85,18 @@ export default function ExercisePage({ exercise, session, onBack }) {
     }
   };
 
-  // ── Done screen ────────────────────────────────────────────────────────────
+  /* ── Done screen ── */
   if (done) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--cream)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div className="question-card" style={{ textAlign: "center", maxWidth: 460 }}>
-          <img src={LOGO_PATH} alt="Equilibre" style={{ width: 60, height: 60, objectFit: "contain", marginBottom: 14 }} />
-          <h2 style={{ fontSize: 24, marginBottom: 10 }}>Exercício concluído!</h2>
-          <p style={{ color: "var(--text-muted)", lineHeight: 1.7, marginBottom: 24 }}>
+      <div className="ep-done-screen">
+        <div className="question-card ep-done-card">
+          <img src={LOGO_PATH} alt="Equilibre" className="ep-done-logo" />
+          <h2 className="ep-done-title">Exercício concluído!</h2>
+          <p className="ep-done-desc">
             Suas respostas foram salvas. Sua psicóloga poderá acompanhar o seu progresso.
             Parabéns por cuidar de você!
           </p>
-          <button className="btn btn-sage" style={{ padding: "13px 30px" }} onClick={onBack}>
+          <button className="btn btn-sage ep-done-btn" onClick={onBack}>
             Voltar aos exercícios
           </button>
         </div>
@@ -117,25 +112,29 @@ export default function ExercisePage({ exercise, session, onBack }) {
     answers[q.id] !== "";
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--cream)", padding: "38px 22px" }}>
+    <div className="ep-wrapper">
       <div className="exercise-page">
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22 }}>
+        {/* ── Header ── */}
+        <div className="ep-header">
           <button className="btn btn-outline btn-sm" onClick={onBack}>← Voltar</button>
-          <div style={{ flex: 1, fontFamily: "Playfair Display, serif", fontSize: 15, color: "var(--sage-dark)" }}>
-            {exercise.title}
-          </div>
-          <div style={{ fontSize: 12, color: "var(--text-muted)" }} aria-live="polite">
+          <div className="ep-title">{exercise.title}</div>
+          <div className="ep-step-counter" aria-live="polite">
             {step + 1} / {questions.length}
           </div>
         </div>
 
-        {/* Progress bar */}
-        <div className="progress-bar" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100}>
+        {/* ── Progress bar ── */}
+        <div
+          className="progress-bar"
+          role="progressbar"
+          aria-valuenow={Math.round(progress)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
           <div className="progress-fill" style={{ width: `${progress}%` }} />
         </div>
 
-        {/* Question card */}
+        {/* ── Question card ── */}
         <div className="question-card">
           <div className="q-step">Pergunta {step + 1}</div>
 
@@ -174,7 +173,7 @@ export default function ExercisePage({ exercise, session, onBack }) {
           {q.type === "scale" && (
             <>
               <div className="q-text">{q.text}</div>
-              <fieldset style={{ border: "none", padding: 0, margin: 0 }}>
+              <fieldset className="ep-scale-fieldset">
                 <legend className="sr-only">Escolha um valor de 0 a 10</legend>
                 <div className="scale-row">
                   {Array.from({ length: 11 }, (_, i) => (
@@ -194,7 +193,7 @@ export default function ExercisePage({ exercise, session, onBack }) {
             </>
           )}
 
-          {/* Navigation */}
+          {/* ── Navigation ── */}
           <div className="q-nav">
             <button
               className="btn btn-outline"

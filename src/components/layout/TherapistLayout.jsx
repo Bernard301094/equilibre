@@ -34,11 +34,18 @@ const BOTTOM_ITEMS = () => [
 function LogoutDialog({ onConfirm, onCancel }) {
   return (
     <div className="delete-overlay" onClick={onCancel}>
-      <div className="delete-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <div
+        className="delete-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
         <div className="delete-icon">👋</div>
         <div className="delete-title">Sair da conta?</div>
-        <div className="delete-desc">Você precisará fazer login novamente para aceder à plataforma.</div>
-        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+        <div className="delete-desc">
+          Você precisará fazer login novamente para aceder à plataforma.
+        </div>
+        <div className="logout-dialog-actions">
           <button className="btn btn-outline" onClick={onCancel}>Cancelar</button>
           <button className="btn-danger" onClick={onConfirm}>Sair</button>
         </div>
@@ -50,10 +57,8 @@ function LogoutDialog({ onConfirm, onCancel }) {
 /* ─────────────────────────────────────────────────────────────
    FloatingBell — botão flutuante de notificações (mobile only)
 
-   Usa as mesmas classes CSS (.notif-bell, .notif-dot) e o mesmo
-   emoji do sino da Sidebar para garantir consistência visual.
-   A diferença está apenas no posicionamento fixo e no fundo
-   colorido que dá destaque no mobile.
+   Usa as mesmas classes CSS (.notif-bell, .notif-dot) do App.css
+   mais classes BEM semânticas para os estados dinâmicos.
 ───────────────────────────────────────────────────────────── */
 function FloatingBell({ unreadCount, isActive, onClick }) {
   const [shake, setShake] = useState(false);
@@ -70,145 +75,40 @@ function FloatingBell({ unreadCount, isActive, onClick }) {
     prevCount.current = unreadCount;
   }, [unreadCount]);
 
+  const wrapClass = [
+    "floating-bell-wrap",
+    isActive                          ? "floating-bell-wrap--active"  : "",
+    unreadCount > 0 && !isActive      ? "floating-bell-wrap--unread"  : "",
+    shake                             ? "floating-bell-wrap--shaking" : "",
+  ].filter(Boolean).join(" ");
+
   return (
-    <>
-      <style>{`
-        /* Shake: replica o rotate(-12deg) scale(1.1) do .notif-bell:hover
-           da Sidebar, mas como keyframe contínuo para o mobile */
-        @keyframes bell-shake {
-          0%,100% { transform: rotate(0deg)   scale(1);    }
-          15%     { transform: rotate(-14deg)  scale(1.08); }
-          30%     { transform: rotate( 12deg)  scale(1.10); }
-          45%     { transform: rotate(-10deg)  scale(1.08); }
-          60%     { transform: rotate(  8deg)  scale(1.05); }
-          75%     { transform: rotate( -5deg)  scale(1.02); }
-          90%     { transform: rotate(  2deg)  scale(1.01); }
-        }
-
-        /* Pulso de atenção periódico quando há não-lidas */
-        @keyframes bell-attention {
-          0%,100% { box-shadow: 0 4px 20px rgba(224,120,32,0.45); }
-          50%     { box-shadow: 0 4px 28px rgba(224,120,32,0.80),
-                                0 0 0 8px rgba(224,120,32,0.12); }
-        }
-
-        @keyframes badge-in {
-          from { transform: translate(30%,-30%) scale(0); opacity: 0; }
-          to   { transform: translate(30%,-30%) scale(1); opacity: 1; }
-        }
-
-        /* Botão flutuante: posição fixa + fundo colorido,
-           tudo o resto herdado dos padrões do .notif-bell */
-        .floating-bell-wrap {
-          position:   fixed;
-          top:        14px;
-          right:      14px;
-          z-index:    200;
-          /* Círculo de fundo para dar destaque no mobile */
-          width:      48px;
-          height:     48px;
-          border-radius: 50%;
-          display:    flex;
-          align-items: center;
-          justify-content: center;
-          transition: background .25s, box-shadow .25s;
-        }
-        .floating-bell-wrap.has-unread:not(.is-active) {
-          animation: bell-attention 2.4s ease-in-out infinite;
-        }
-
-        /* O .notif-bell interno herda hover e transform do CSS global,
-           mas sobrescrevemos a cor para branco (fundo é escuro) */
-        .floating-bell-wrap .notif-bell {
-          color: rgba(255,255,255,0.90) !important;
-          font-size: 22px !important;
-          padding: 0 !important;
-          transition: transform .3s cubic-bezier(.4,0,.2,1), color .2s !important;
-        }
-        /* Activo: icono rotado mientras el panel está abierto.
-           Al cerrar, la transición de arriba lo devuelve suavemente. */
-        .floating-bell-wrap.is-active .notif-bell {
-          transform: rotate(-12deg) scale(1.1) !important;
-          color: #ffffff !important;
-        }
-        /* Hover solo en dispositivos con puntero real (mouse).
-           En táctil se desactiva para no interferir con el toggle. */
-        @media (hover: hover) {
-          .floating-bell-wrap .notif-bell:hover {
-            color: #ffffff !important;
-          }
-        }
-        /* Shake dispara via classe adicional */
-        .floating-bell-wrap.is-shaking .notif-bell {
-          animation: bell-shake .7s cubic-bezier(.4,0,.2,1) !important;
-        }
-
-        /* Badge: mesmo .notif-dot mas com cores invertidas para contrastar
-           com o fundo colorido do botão flutuante */
-        .floating-bell-wrap .notif-dot {
-          /* Posição já definida no CSS global — apenas cores */
-          background: #ffffff !important;
-          color:      #e07820 !important;
-          font-size:  10px !important;
-          min-width:  18px !important;
-          height:     18px !important;
-          padding:    0 4px !important;
-          border-radius: 9px !important;
-          animation:  badge-in .3s cubic-bezier(.34,1.56,.64,1);
-        }
-        /* Quando a view de notificações está ativa: badge amarelo */
-        .floating-bell-wrap.is-active .notif-dot {
-          background: var(--yellow) !important;
-          color:      #0f1e2a      !important;
-        }
-      `}</style>
-
-      <div
-        className={[
-          "floating-bell-wrap",
-          unreadCount > 0 && !isActive ? "has-unread" : "",
-          shake                         ? "is-shaking" : "",
-          isActive                      ? "is-active"  : "",
-        ].filter(Boolean).join(" ")}
-        style={{
-          background: isActive
-            ? "linear-gradient(135deg,#17527c,#2e7fab)"
-            : unreadCount > 0
-              ? "linear-gradient(135deg,#e07820,#c06010)"
-              : "rgba(23,82,124,0.82)",
-          backdropFilter: "blur(8px)",
-          boxShadow: isActive
-            ? "0 4px 18px rgba(23,82,124,0.45)"
-            : unreadCount > 0
-              ? "0 4px 20px rgba(224,120,32,0.45)"
-              : "0 4px 14px rgba(23,82,124,0.30)",
-        }}
+    <div className={wrapClass}>
+      <button
+        className="notif-bell"
+        aria-label={`Notificações${unreadCount > 0 ? ` (${unreadCount} não lidas)` : ""}${
+          isActive ? " — clique para fechar" : ""
+        }`}
+        aria-pressed={isActive}
+        onClick={onClick}
       >
-        {/* Mesmo componente de botão que a Sidebar usa no extraHeader */}
-        <button
-          className="notif-bell"
-          aria-label={`Notificações${unreadCount > 0 ? ` (${unreadCount} não lidas)` : ""}${isActive ? " — clique para fechar" : ""}`}
-          aria-pressed={isActive}
-          onClick={onClick}
-        >
-          🔔
-          {unreadCount > 0 && (
-            <span className="notif-dot" aria-hidden="true">
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
-          )}
-        </button>
-      </div>
-    </>
+        🔔
+        {unreadCount > 0 && (
+          <span className="notif-dot" aria-hidden="true">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
+      </button>
+    </div>
   );
 }
 
 export default function TherapistLayout({ session, setSession, logout, theme, toggleTheme }) {
-  const [view,          setView]          = useState("dashboard");
-  const [showProfile,   setShowProfile]   = useState(false);
-  const [showLogout,    setShowLogout]    = useState(false);
-  const [showDelete,    setShowDelete]    = useState(false);
-  const [isMobile,      setIsMobile]      = useState(window.innerWidth < 768);
+  const [view,        setView]        = useState("dashboard");
+  const [showProfile, setShowProfile] = useState(false);
+  const [showLogout,  setShowLogout]  = useState(false);
+  const [showDelete,  setShowDelete]  = useState(false);
+  const [isMobile,    setIsMobile]    = useState(window.innerWidth < 768);
 
   // Guarda a view anterior para o toggle do sino poder voltar a ela
   const prevViewRef = useRef("dashboard");
@@ -230,9 +130,9 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
   // Toggle do sino: abre notificações ou volta para a view anterior
   const handleBellClick = () => {
     if (view === "notifications") {
-      setView(prevViewRef.current); // fecha → volta ao ecrã anterior
+      setView(prevViewRef.current);
     } else {
-      prevViewRef.current = view;   // guarda onde estava antes de abrir
+      prevViewRef.current = view;
       setView("notifications");
       markAllRead();
     }
@@ -287,11 +187,8 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
         />
       )}
 
-      {/* Main content */}
-      <main
-        className="main"
-        style={{ marginLeft: isMobile ? 0 : 256 }}
-      >
+      {/* Main content — margin-left gerido pelo CSS (.main + media queries) */}
+      <main className={`main${isMobile ? " main--mobile" : ""}`}>
         {renderView()}
       </main>
 
