@@ -85,14 +85,26 @@ export default function Sidebar({
       <div className="sidebar__footer">
         <div className="sidebar__user-pill">
 
-          <AvatarDisplay
-            name={session.name}
-            avatarUrl={session.avatar_url}
-            size={38}
-            className="sidebar__avatar"
+          {/*
+            FIX: AvatarDisplay recebe onClick, mas não há garantia de que
+            o componente interno propague o evento. Envolvemos num <button>
+            explícito para que o clique seja sempre captado, independente
+            da implementação interna do AvatarDisplay.
+          */}
+          <button
+            className="sidebar__avatar-btn"
             onClick={onAvatarClick}
+            aria-label="Abrir perfil e alterar foto"
             title="Mudar foto de perfil"
-          />
+            type="button"
+          >
+            <AvatarDisplay
+              name={session.name}
+              avatarUrl={session.avatar_url}
+              size={38}
+              className="sidebar__avatar"
+            />
+          </button>
 
           <div className="sidebar__user-info">
             <div className="sidebar__user-name">{session.name.split(" ")[0]}</div>

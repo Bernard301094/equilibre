@@ -2,7 +2,7 @@ import { useState } from "react";
 import AvatarDisplay from "../shared/AvatarDisplay";
 import "./BottomNav.css";
 
-const FIXED_COUNT = 4; // primeiros 4 itens ficam sempre visíveis
+const FIXED_COUNT = 4;
 
 export default function BottomNav({
   items,
@@ -10,8 +10,6 @@ export default function BottomNav({
   onNav,
   session,
   onAvatarClick,
-  theme,
-  toggleTheme,
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -37,15 +35,16 @@ export default function BottomNav({
 
       {/* ── Drawer "Mais opções" ── */}
       <div
-        className={["bottom-nav__drawer", drawerOpen ? "bottom-nav__drawer--open" : ""].filter(Boolean).join(" ")}
+        className={[
+          "bottom-nav__drawer",
+          drawerOpen ? "bottom-nav__drawer--open" : "",
+        ].filter(Boolean).join(" ")}
         role="dialog"
         aria-label="Mais opções de navegação"
         aria-hidden={!drawerOpen}
       >
-        {/* Alça visual */}
         <div className="bottom-nav__drawer-handle" aria-hidden="true" />
 
-        {/* Grid de itens extras */}
         <div
           className="bottom-nav__drawer-grid"
           style={{ gridTemplateColumns: `repeat(${Math.max(moreItems.length, 1)}, 1fr)` }}
@@ -55,7 +54,10 @@ export default function BottomNav({
             return (
               <button
                 key={item.id}
-                className={["bottom-nav__drawer-item", isActive ? "bottom-nav__drawer-item--active" : ""].filter(Boolean).join(" ")}
+                className={[
+                  "bottom-nav__drawer-item",
+                  isActive ? "bottom-nav__drawer-item--active" : "",
+                ].filter(Boolean).join(" ")}
                 onClick={() => handleNav(item.id)}
                 aria-label={item.label}
                 aria-current={isActive ? "page" : undefined}
@@ -80,13 +82,16 @@ export default function BottomNav({
       {/* ── Barra de navegación fija ── */}
       <nav className="bottom-nav__bar" aria-label="Navegação principal">
 
-        {/* Itens fixos */}
+        {/* Ítems fijos */}
         {fixedItems.map((item) => {
           const isActive = activeView === item.id;
           return (
             <button
               key={item.id}
-              className={["bottom-nav__btn", isActive ? "bottom-nav__btn--active" : ""].filter(Boolean).join(" ")}
+              className={[
+                "bottom-nav__btn",
+                isActive ? "bottom-nav__btn--active" : "",
+              ].filter(Boolean).join(" ")}
               onClick={() => handleNav(item.id)}
               aria-label={item.label}
               aria-current={isActive ? "page" : undefined}
@@ -94,7 +99,6 @@ export default function BottomNav({
               {isActive && (
                 <div className="bottom-nav__indicator" aria-hidden="true" />
               )}
-
               <div className="bottom-nav__icon-wrap">
                 <span className="bottom-nav__icon" aria-hidden="true">
                   {item.icon}
@@ -105,7 +109,6 @@ export default function BottomNav({
                   </span>
                 )}
               </div>
-
               <span className="bottom-nav__label">{item.label}</span>
             </button>
           );
@@ -126,7 +129,6 @@ export default function BottomNav({
             {isMoreActive && !drawerOpen && (
               <div className="bottom-nav__indicator" aria-hidden="true" />
             )}
-
             <span
               className={[
                 "bottom-nav__more-dots",
@@ -137,7 +139,6 @@ export default function BottomNav({
             >
               •••
             </span>
-
             <span
               className={[
                 "bottom-nav__label",
@@ -149,38 +150,23 @@ export default function BottomNav({
           </button>
         )}
 
-        {/* Slot de perfil */}
+        {/* ── Slot de perfil — sin botón de tema ── */}
+        {/* CHANGE: se eliminaron `theme`, `toggleTheme` de las props y
+            el <button className="bottom-nav__theme-btn"> completo.
+            El toggle de tema queda delegado al ProfileModal que se abre
+            al pulsar el avatar (onAvatarClick). */}
         <div className="bottom-nav__profile">
-          <div className="bottom-nav__profile-controls">
-            <button
-              className="bottom-nav__profile-btn"
-              onClick={onAvatarClick}
-              aria-label="Perfil"
-            >
-              <AvatarDisplay
-                name={session.name}
-                avatarUrl={session.avatar_url}
-                size={30}
-              />
-            </button>
-
-            {toggleTheme && (
-              <button
-                className="bottom-nav__theme-btn"
-                onClick={toggleTheme}
-                aria-label={
-                  theme === "dark"
-                    ? "Mudar para modo claro"
-                    : "Mudar para modo escuro"
-                }
-              >
-                <span aria-hidden="true">
-                  {theme === "dark" ? "☀️" : "🌙"}
-                </span>
-              </button>
-            )}
-          </div>
-
+          <button
+            className="bottom-nav__profile-btn"
+            onClick={onAvatarClick}
+            aria-label="Perfil"
+          >
+            <AvatarDisplay
+              name={session.name}
+              avatarUrl={session.avatar_url}
+              size={30}
+            />
+          </button>
           <span className="bottom-nav__label" aria-hidden="true">Perfil</span>
         </div>
 

@@ -12,11 +12,19 @@
   z-index: 101;
   display: flex;
   align-items: stretch;
-  height: 64px;
+  height: calc(64px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
-  background: var(--white, #ffffff);
-  border-top: 1px solid var(--warm, #e8e0d5);
-  box-shadow: 0 -4px 24px rgba(15, 30, 42, 0.10);
+
+  /* CHANGE · Gradiente del Sidebar para consistencia visual.
+     Reemplaza el fondo blanco (#ffffff) por el mismo gradiente
+     azul oscuro que usa .sidebar, unificando el lenguaje visual
+     entre móvil y desktop. La dirección se invierte (a top) para
+     que el tono más oscuro quede en la base, igual que el sidebar
+     que va de oscuro arriba hacia azul medio abajo. */
+  background: linear-gradient(to top, #0a2e48 0%, #17527c 100%);
+
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -34,17 +42,19 @@
   border: none;
   cursor: pointer;
   padding: 6px 4px 4px;
-  min-width: 0;
+  min-width: 44px;
+  min-height: 44px;
   -webkit-tap-highlight-color: transparent;
   transition: background 0.15s;
 }
 
+/* CHANGE · Hover claro sobre fondo oscuro */
 .bottom-nav__btn:active {
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .bottom-nav__btn:focus-visible {
-  outline: 2px solid var(--primary, #17527c);
+  outline: 2px solid rgba(255, 255, 255, 0.7);
   outline-offset: -2px;
   border-radius: 8px;
 }
@@ -57,23 +67,32 @@
   right: 20%;
   height: 3px;
   border-radius: 0 0 3px 3px;
-  background: var(--blue-dark, #17527c);
+  /* CHANGE · Amarillo del sistema (--yellow) para máximo contraste
+     sobre el fondo azul oscuro, igual que el indicador lateral
+     del sidebar activo. */
+  background: var(--yellow, #ffbd59);
   pointer-events: none;
 }
 
 /* ── Icono con badge ──────────────────────────────────────── */
 .bottom-nav__icon-wrap {
   position: relative;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
+/* ── Ícono ────────────────────────────────────────────────── */
 .bottom-nav__icon {
   font-size: 1.3rem;
   line-height: 1;
   display: block;
-  transition: transform 0.18s;
+  will-change: transform;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .bottom-nav__btn--active .bottom-nav__icon {
@@ -96,14 +115,17 @@
   line-height: 16px;
   text-align: center;
   box-sizing: border-box;
-  border: 1.5px solid var(--white, #fff);
+  /* CHANGE · El borde del badge ahora es semitransparente para
+     que contraste bien tanto sobre fondo oscuro como sobre ícono. */
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
   pointer-events: none;
 }
 
 /* ── Label ────────────────────────────────────────────────── */
 .bottom-nav__label {
-  font-size: 0.625rem; /* 10px */
-  color: var(--text-muted, #9ca3af);
+  font-size: 0.625rem;
+  /* CHANGE · Blanco semitransparente, igual que sidebar__nav-item */
+  color: rgba(255, 255, 255, 0.55);
   line-height: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -112,16 +134,18 @@
   transition: color 0.18s, font-weight 0.18s;
 }
 
+/* CHANGE · Blanco puro al activar, igual que sidebar--active */
 .bottom-nav__btn--active .bottom-nav__label,
 .bottom-nav__label--active {
-  color: var(--blue-dark, #17527c);
+  color: #ffffff;
   font-weight: 700;
 }
 
 /* ── Botón "Mais" — los tres puntitos ─────────────────────── */
 .bottom-nav__more-dots {
   font-size: 1rem;
-  color: var(--text-muted, #9ca3af);
+  /* CHANGE · Blanco semitransparente coherente con los labels */
+  color: rgba(255, 255, 255, 0.55);
   letter-spacing: 2px;
   line-height: 1;
   transition: color 0.18s, transform 0.22s;
@@ -130,11 +154,11 @@
 
 .bottom-nav__more-dots--open {
   transform: rotate(90deg);
-  color: var(--blue-dark, #17527c);
+  color: #ffffff;
 }
 
 .bottom-nav__more-dots--active {
-  color: var(--blue-dark, #17527c);
+  color: #ffffff;
 }
 
 /* ── Slot de perfil ───────────────────────────────────────── */
@@ -144,17 +168,18 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 4px 6px;
+
+  /* CHANGE · Al eliminar el botón de tema, el slot se simplifica.
+     El padding lateral simétrico garantiza que el avatar quede
+     centrado en su celda sin huecos residuales del botón borrado. */
+  padding: 4px 10px;
   flex-shrink: 0;
   min-width: 52px;
 }
 
-.bottom-nav__profile-controls {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
+/* CHANGE · Se elimina .bottom-nav__profile-controls y
+   .bottom-nav__theme-btn — ya no existen en el JSX.
+   El profile-btn pasa a ser el único hijo del slot. */
 .bottom-nav__profile-btn {
   background: none;
   border: none;
@@ -164,35 +189,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.18s;
+  transition: opacity 0.18s, box-shadow 0.18s;
   -webkit-tap-highlight-color: transparent;
 }
 
 .bottom-nav__profile-btn:hover {
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
+/* CHANGE · El anillo de focus usa blanco para contrastar
+   sobre el fondo azul oscuro. */
 .bottom-nav__profile-btn:focus-visible {
-  outline: 2px solid var(--primary, #17527c);
-  outline-offset: 2px;
-}
-
-.bottom-nav__theme-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 2px;
-  font-size: 0.8rem;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.18s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.bottom-nav__theme-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
 }
 
 /* ── Backdrop del drawer ──────────────────────────────────── */
@@ -200,7 +210,7 @@
   position: fixed;
   inset: 0;
   z-index: 102;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   animation: backdrop-fade-in 0.2s ease;
@@ -214,33 +224,42 @@
 /* ── Drawer "Mais opções" ─────────────────────────────────── */
 .bottom-nav__drawer {
   position: fixed;
-  bottom: calc(64px + env(safe-area-inset-bottom));
+  bottom: 0;
   left: 0;
   right: 0;
   z-index: 103;
-  background: var(--white, #ffffff);
+
+  /* CHANGE · El drawer hereda el mismo gradiente que la barra,
+     continuando visualmente el panel azul hacia arriba.
+     La dirección to top hace que la zona más oscura quede
+     abajo, junto a la barra, y el azul medio quede arriba,
+     generando profundidad natural en el stack. */
+  background: linear-gradient(to top, #0a2e48 0%, #17527c 100%);
+
   border-radius: 20px 20px 0 0;
-  padding: 8px 16px 20px;
-  box-shadow: 0 -8px 32px rgba(15, 30, 42, 0.14);
-  transform: translateY(110%);
-  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
   will-change: transform;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: 8px 16px calc(64px + env(safe-area-inset-bottom) + 12px);
+  transform: translateY(100%);
 }
 
 .bottom-nav__drawer--open {
   transform: translateY(0);
 }
 
-/* Alça visual */
+/* CHANGE · La alça pasa a blanco semitransparente para
+   contrastar sobre el fondo oscuro */
 .bottom-nav__drawer-handle {
   width: 40px;
   height: 4px;
   border-radius: 2px;
-  background: var(--warm, #e8e0d5);
+  background: rgba(255, 255, 255, 0.25);
   margin: 0 auto 16px;
 }
 
-/* Grid de itens del drawer */
+/* Grid de ítems del drawer */
 .bottom-nav__drawer-grid {
   display: grid;
   gap: 8px;
@@ -254,8 +273,9 @@
   justify-content: center;
   gap: 6px;
   padding: 14px 8px;
-  background: var(--surface-alt, #f7f9fc);
-  border: 1.5px solid transparent;
+  /* CHANGE · Superficie translúcida clara sobre el fondo azul */
+  background: rgba(255, 255, 255, 0.07);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
   cursor: pointer;
   transition: background 0.18s, border-color 0.18s, transform 0.15s;
@@ -266,9 +286,16 @@
   transform: scale(0.96);
 }
 
+/* CHANGE · Estado activo con amarillo del sistema,
+   coherente con el indicador de la barra y el sidebar */
 .bottom-nav__drawer-item--active {
-  background: var(--primary-light, #e8f0f7);
-  border-color: var(--primary, #17527c);
+  background: rgba(255, 189, 89, 0.15);
+  border-color: var(--yellow, #ffbd59);
+}
+
+.bottom-nav__drawer-item:hover:not(.bottom-nav__drawer-item--active) {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .bottom-nav__drawer-icon-wrap {
@@ -283,15 +310,16 @@
   line-height: 1;
 }
 
+/* CHANGE · Label claro sobre fondo oscuro */
 .bottom-nav__drawer-label {
   font-size: 0.7rem;
   font-weight: 500;
-  color: var(--text-secondary, #4a5568);
+  color: rgba(255, 255, 255, 0.7);
   white-space: nowrap;
 }
 
 .bottom-nav__drawer-item--active .bottom-nav__drawer-label {
-  color: var(--blue-dark, #17527c);
+  color: var(--yellow, #ffbd59);
   font-weight: 700;
 }
 
@@ -307,11 +335,11 @@
 /* ── Pantallas muy pequeñas ───────────────────────────────── */
 @media (max-width: 360px) {
   .bottom-nav__bar {
-    height: 58px;
+    height: calc(58px + env(safe-area-inset-bottom));
   }
 
   .bottom-nav__drawer {
-    bottom: calc(58px + env(safe-area-inset-bottom));
+    padding-bottom: calc(58px + env(safe-area-inset-bottom) + 12px);
   }
 
   .bottom-nav__icon {

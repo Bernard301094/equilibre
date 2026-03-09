@@ -1,45 +1,230 @@
 /* ============================================================
-   RegisterForm.css — Registration form with role tabs
+   RegisterForm.css — Registration form with Role Selection Cards
    ============================================================ */
 
-/* ---------- Role tabs ---------- */
-.rf-role-tabs {
-  display: flex;
-  background: var(--cream, #fdf8f3);
-  border-radius: var(--radius-md, 10px);
-  border: 1.5px solid var(--warm, #e8d5b7);
-  padding: 4px;
-  margin-bottom: 18px;
-  gap: 4px;
+/* ── Role Selection Grid ──────────────────────────────────────
+   Layout: 2 colunas em >= 380px, 1 coluna abaixo disso.
+   Usar CSS Grid com auto-fit garante que em telas muito
+   pequenas os cards empilhem sem breakpoints mágicos.
+   ─────────────────────────────────────────────────────────── */
+.rf-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
-.rf-role-tabs__btn {
-  flex: 1;
-  padding: 10px 8px;
-  min-height: 44px;
+/* ── Role Card ────────────────────────────────────────────────
+   Cada card é um <button> semântico.
+
+   ANATOMIA:
+   ┌──────────────────────────────────┐
+   │ [✓ check]          [Tag discreta] │
+   │ [  Ícone em bolha               ] │
+   │ Título                            │
+   │ Descrição curta                   │
+   └──────────────────────────────────┘
+
+   CUSTOM PROPS injetadas via style inline no JSX:
+   --rc-accent     : cor de destaque do role (azul ou sálvia)
+   --rc-accent-rgb : versão RGB pura para rgba()
+   --rc-icon-bg    : fundo suave do ícone no estado inativo
+   ─────────────────────────────────────────────────────────── */
+.rf-role-card {
+  /* Reset de botão */
+  appearance: none;
+  -webkit-appearance: none;
   border: none;
-  border-radius: calc(var(--radius-md, 10px) - 2px);
-  background: transparent;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-muted, #6b7280);
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
-}
+  text-align: left;
 
-.rf-role-tabs__btn--active {
+  /* Layout interno: coluna, alinhamento centralizado */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+
+  /* Dimensões e espaçamento */
+  padding: 18px 14px 16px;
+  border-radius: 16px;
+
+  /* Estado padrão (inativo): borda discreta */
   background: var(--white, #ffffff);
-  color: var(--blue-dark, #0a2e48);
+  border: 2px solid var(--warm, #cddcea);
+  box-shadow: 0 2px 8px rgba(15, 30, 42, 0.06);
+
+  /* Animação de entrada suave */
+  transition:
+    border-color  0.22s ease,
+    box-shadow    0.22s ease,
+    background    0.22s ease,
+    transform     0.18s ease;
+
+  /* Garante que o card seja acessível via teclado */
+  outline-offset: 3px;
+}
+
+/* ── Hover — convida sem pressionar ───────────────────────── */
+.rf-role-card:hover {
+  border-color: var(--rc-accent);
+  box-shadow:
+    0 4px 20px rgba(var(--rc-accent-rgb), 0.14),
+    0 1px  6px rgba(var(--rc-accent-rgb), 0.08);
+  transform: translateY(-2px);
+}
+
+/* ── Active (pressionado) ─────────────────────────────────── */
+.rf-role-card:active {
+  transform: scale(0.98) translateY(0);
+}
+
+/* ── Focus-visible — acessibilidade de teclado ───────────── */
+.rf-role-card:focus-visible {
+  outline: 3px solid var(--rc-accent);
+  border-color: var(--rc-accent);
+}
+
+/* ── Estado SELECIONADO ───────────────────────────────────────
+   Fundo: tinge sutilmente com a cor do role (alpha 6%).
+   Borda: cor plena do acento — indica seleção clara.
+   Sombra: "glow" suave — presença sem agressividade.
+   ─────────────────────────────────────────────────────────── */
+.rf-role-card--active {
+  background: rgba(var(--rc-accent-rgb), 0.05);
+  border-color: var(--rc-accent);
+  box-shadow:
+    0 0 0 3px rgba(var(--rc-accent-rgb), 0.12),
+    0 4px 20px rgba(var(--rc-accent-rgb), 0.14);
+}
+
+/* ── Marca de check ───────────────────────────────────────────
+   Aparece no canto superior direito quando selecionado.
+   Usa opacity + scale para animação suave.
+   ─────────────────────────────────────────────────────────── */
+.rf-role-card__check {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--rc-accent);
+  color: #fff;
+  font-size: 11px;
   font-weight: 700;
-  box-shadow: 0 2px 8px rgba(23, 82, 124, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+
+  /* Inativo: invisível e encolhido */
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.rf-role-tabs__btn:not(.rf-role-tabs__btn--active):hover {
-  color: var(--blue-dark, #0a2e48);
+/* Ativo: aparece com spring bounce */
+.rf-role-card--active .rf-role-card__check {
+  opacity: 1;
+  transform: scale(1);
 }
 
-/* ---------- Field ---------- */
+/* ── Ícone em bolha ───────────────────────────────────────────
+   A bolha muda de cor de fundo no hover/active para
+   reforçar a identidade do role sem precisar de imagem.
+   ─────────────────────────────────────────────────────────── */
+.rf-role-card__icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--rc-icon-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background 0.22s ease, transform 0.22s ease;
+}
+
+.rf-role-card--active .rf-role-card__icon-wrap {
+  background: rgba(var(--rc-accent-rgb), 0.12);
+  transform: scale(1.06);
+}
+
+/* ── Corpo do card — título + descrição ─────────────────────── */
+.rf-role-card__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.rf-role-card__title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text, #1a202c);
+  line-height: 1.2;
+  transition: color 0.2s ease;
+}
+
+.rf-role-card--active .rf-role-card__title {
+  color: var(--rc-accent);
+}
+
+.rf-role-card__desc {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-muted, #718096);
+  line-height: 1.45;
+}
+
+/* ── Tag discreta ─────────────────────────────────────────────
+   Pequeno label no rodapé do card, desaparece quando ativo
+   (o check já comunica a seleção).
+   ─────────────────────────────────────────────────────────── */
+.rf-role-card__tag {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted, #9ca3af);
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--cream, #f0f6fb);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.rf-role-card--active .rf-role-card__tag {
+  background: rgba(var(--rc-accent-rgb), 0.10);
+  color: var(--rc-accent);
+}
+
+/* ── Campo de convite — destaque especial ─────────────────────
+   Borda animada no foco indica que este campo é diferente
+   dos demais (código externo, não inventado pelo usuário).
+   ─────────────────────────────────────────────────────────── */
+.rf-field--invite {
+  animation: rf-slide-down 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes rf-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- Field ------------------------------------------- */
 .rf-field {
   margin-bottom: 14px;
 }
@@ -96,7 +281,7 @@
   color: var(--text-muted, #6b7280);
 }
 
-/* ---------- Error ---------- */
+/* ---------- Error ------------------------------------------- */
 .rf-error-msg {
   font-family: 'DM Sans', sans-serif;
   font-size: 13px;
@@ -107,29 +292,34 @@
   margin: 0 0 14px;
 }
 
-/* ---------- Submit button ---------- */
+/* ---------- Submit button -----------------------------------
+   Cor de fundo usa --rc-accent do role selecionado,
+   injetada via style inline no JSX.
+   Fallback: azul escuro padrão.
+─────────────────────────────────────────────────────────── */
 .rf-submit-btn {
   width: 100%;
   padding: 13px 16px;
   min-height: 48px;
   border: none;
   border-radius: var(--radius-md, 10px);
-  background: var(--blue-dark, #0a2e48);
+  background: var(--rc-accent, var(--blue-dark, #0a2e48));
   color: var(--white, #ffffff);
   font-family: 'DM Sans', sans-serif;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
+  transition: filter 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
   margin-bottom: 4px;
 }
 
 .rf-submit-btn:hover:not(:disabled) {
-  background: var(--blue-mid, #17527c);
+  filter: brightness(1.10);
 }
 
 .rf-submit-btn:active:not(:disabled) {
   transform: scale(0.98);
+  filter: brightness(0.95);
 }
 
 .rf-submit-btn:disabled {
@@ -137,7 +327,7 @@
   cursor: not-allowed;
 }
 
-/* ---------- Switch to login ---------- */
+/* ---------- Switch to login --------------------------------- */
 .rf-switch-row {
   text-align: center;
   margin: 12px 0 0;
@@ -154,7 +344,7 @@
   font-weight: 500;
   color: var(--sage-dark, #2d6a4f);
   cursor: pointer;
-  padding: 4px 4px;
+  padding: 4px;
   min-height: 44px;
   transition: color 0.2s ease;
 }
@@ -164,14 +354,56 @@
   text-decoration: underline;
 }
 
-/* ---------- Mobile tweaks ---------- */
+/* ---------- Mobile tweaks ----------------------------------- */
 @media (max-width: 479px) {
+  /* Cards: empilham em coluna única em telas muito pequenas */
+  .rf-role-grid {
+    grid-template-columns: 1fr 1fr; /* mantém 2 colunas até 380px */
+  }
+
+  /* Abaixo de 340px: 1 coluna */
+  @media (max-width: 340px) {
+    .rf-role-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Ícone ligeiramente menor em mobile */
+  .rf-role-card__icon-wrap {
+    width: 44px;
+    height: 44px;
+    font-size: 1.35rem;
+  }
+
   .rf-field__input {
-    font-size: 16px; /* evita zoom automático en iOS */
+    font-size: 16px; /* evita zoom automático em iOS */
   }
 
   .rf-field__input--code {
     font-size: 16px;
     letter-spacing: 0.1em;
   }
+}
+
+/* ---------- Dark mode overrides ----------------------------- */
+body.dark-mode .rf-role-card {
+  background: var(--card, #213d56);
+  border-color: var(--warm, #152333);
+}
+
+body.dark-mode .rf-role-card:hover {
+  border-color: var(--rc-accent);
+}
+
+body.dark-mode .rf-role-card--active {
+  background: rgba(var(--rc-accent-rgb), 0.08);
+  border-color: var(--rc-accent);
+}
+
+body.dark-mode .rf-role-card__tag {
+  background: var(--white, #1b2f42);
+}
+
+body.dark-mode .rf-role-card--active .rf-role-card__tag {
+  background: rgba(var(--rc-accent-rgb), 0.15);
 }

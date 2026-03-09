@@ -1,63 +1,223 @@
 /* ============================================================
-   ProfileModal.css — Profile photo + mobile system actions
+   ProfileModal.css
+   Hereda el sistema de diseño del modal base (Modal.css).
    Mobile-first | BEM
    ============================================================ */
 
-/* ---------- Body ---------- */
+/* ── Body ─────────────────────────────────────────────────── */
 .pm-body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 28px 24px 20px;
+
+  /* Respeta el padding de 32px que Modal.css aplica al .modal-dialog
+     en desktop. En mobile Modal.css ya gestiona 24px 20px + safe-area. */
+  gap: 10px;
   width: 100%;
   box-sizing: border-box;
-  gap: 12px;
 }
 
-/* ---------- Title ---------- */
+/* ── Título ───────────────────────────────────────────────── */
 .pm-title {
+  /* Playfair Display es el heading estándar de la app (App.css: h1,h2,h3) */
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: 17px;
-  color: var(--text, #1a1a2e);
+  font-size: clamp(1.05rem, 2.2vw, 1.2rem);
+  font-weight: 700;
+  color: var(--text, #0f1e2a);
   text-align: center;
-  margin: 0 0 8px;
+  margin: 0 0 4px;
+  line-height: 1.3;
 }
 
-/* ---------- Error ---------- */
+/* ── Wrapper del avatar + badge de cámara ─────────────────── */
+.pm-avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+/* Badge circular de cámara sobre la esquina inferior del avatar */
+.pm-avatar-badge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--blue-dark, #17527c);
+  color: #fff;
+  border: 2px solid var(--white, #fff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.15s;
+  padding: 0;
+}
+
+.pm-avatar-wrap:hover .pm-avatar-badge {
+  background: var(--blue-mid, #2e7fab);
+  transform: scale(1.1);
+}
+
+/* ── Nombre del usuario ───────────────────────────────────── */
+.pm-username {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-muted, #3d5a70);
+  margin: 0;
+  text-align: center;
+}
+
+/* ── Error ────────────────────────────────────────────────── */
 .pm-error {
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  color: var(--error, #dc2626);
-  background: rgba(220, 38, 38, 0.06);
+  font-size: 0.8125rem;
+  color: var(--danger, #b03030);
+  background: var(--danger-soft, #fde8e8);
+  border: 1px solid rgba(176, 48, 48, 0.2);
   border-radius: var(--radius-sm, 8px);
   padding: 8px 12px;
   margin: 0;
   text-align: center;
   width: 100%;
   box-sizing: border-box;
+  line-height: 1.4;
 }
 
-/* ---------- Hidden file input ---------- */
+/* ── Input file oculto ────────────────────────────────────── */
 .pm-file-input {
   display: none;
 }
 
-/* ---------- Buttons ---------- */
-.pm-btn-upload,
-.pm-btn-close {
+/* ── Grupo de acciones principales ───────────────────────── */
+.pm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+/* ── Sistema de botones del modal ─────────────────────────── */
+
+/* Base compartida — alineada con los estándares de la app:
+   height 44px (WCAG mínimo táctil), radius-md, DM Sans, weight 600 */
+.pm-btn {
   width: 100%;
   min-height: 44px;
+  height: 44px;
+  border-radius: var(--radius-md, 14px);
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.18s, color 0.18s,
+              border-color 0.18s, transform 0.15s,
+              box-shadow 0.18s;
+  box-sizing: border-box;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* ---------- Divider ---------- */
+.pm-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.pm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pm-btn:focus-visible {
+  outline: 2px solid var(--blue-dark, #17527c);
+  outline-offset: 2px;
+}
+
+/* Primario — usa el color de acción principal de la app */
+.pm-btn--primary {
+  background: var(--blue-dark, #17527c);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.pm-btn--primary:hover:not(:disabled) {
+  background: var(--blue-mid, #2e7fab);
+  box-shadow: var(--shadow-md);
+}
+
+/* Ghost / outline — borde warm, sin fondo */
+.pm-btn--ghost {
+  background: transparent;
+  color: var(--text-muted, #3d5a70);
+  border: 1.5px solid var(--warm, #cddcea);
+}
+
+.pm-btn--ghost:hover:not(:disabled) {
+  background: var(--warm, #cddcea);
+  color: var(--text, #0f1e2a);
+}
+
+/* System — acciones secundarias (tema, logout) */
+.pm-btn--system {
+  background: transparent;
+  color: var(--text, #0f1e2a);
+  border: 1.5px solid var(--warm, #cddcea);
+  font-size: 0.875rem;
+}
+
+.pm-btn--system:hover:not(:disabled) {
+  background: var(--cream, #f0f6fb);
+  border-color: var(--blue-light, #86bcde);
+  color: var(--blue-dark, #17527c);
+}
+
+/* Danger — destrucción de cuenta */
+.pm-btn--danger {
+  background: transparent;
+  color: var(--danger, #b03030);
+  border: 1.5px solid rgba(176, 48, 48, 0.3);
+  font-size: 0.875rem;
+}
+
+.pm-btn--danger:hover:not(:disabled) {
+  background: var(--danger-soft, #fde8e8);
+  border-color: var(--danger, #b03030);
+}
+
+/* ── Spinner de carga inline ──────────────────────────────── */
+.pm-spinner {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: pm-spin 0.65s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pm-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Divisor ──────────────────────────────────────────────── */
 .pm-divider {
   width: 100%;
+  height: 1px;
+  background: var(--warm, #cddcea);
   border: none;
-  border-top: 1px solid var(--warm, #e8d5b7);
-  margin: 8px 0 4px;
+  margin: 6px 0 2px;
+  flex-shrink: 0;
 }
 
-/* ---------- System actions ---------- */
+/* ── Acciones del sistema ─────────────────────────────────── */
 .pm-system-actions {
   display: flex;
   flex-direction: column;
@@ -65,29 +225,20 @@
   width: 100%;
 }
 
-.pm-system-btn {
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-}
+/* ── Responsive ───────────────────────────────────────────── */
 
-.pm-system-btn--delete {
-  margin-top: 4px;
-}
-
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
-@media (max-width: 479px) {
+/* En mobile Modal.css ya gestiona el padding del sheet.
+   Solo ajustamos gaps y tamaños internos. */
+@media (max-width: 767px) {
   .pm-body {
-    padding: 16px 14px;
-    gap: 10px;
+    gap: 8px;
   }
 
   .pm-title {
-    font-size: 15px;
+    font-size: 1rem;
+  }
+
+  .pm-btn {
+    font-size: 0.9rem;
   }
 }

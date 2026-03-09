@@ -6,7 +6,15 @@
 /* ── Contenedor raíz ──────────────────────────────────────── */
 .patient-layout {
   display: flex;
-  min-height: 100vh;
+
+  /* FIX · dvh en lugar de vh.
+     100vh en Chrome/Safari móvil incluye la barra de navegación
+     nativa del browser en su cálculo, provocando que el layout
+     sea más alto de lo visible y el contenido quede cortado.
+     100dvh se recalcula dinámicamente cuando esa barra aparece
+     o desaparece, garantizando que el layout ocupe exactamente
+     la altura visible real en todo momento. */
+  min-height: 100dvh;
   background: var(--cream);
 }
 
@@ -20,7 +28,11 @@
   flex: 1;
   width: 100%;
   box-sizing: border-box;
-  min-height: 100vh;
+
+  /* FIX · dvh por el mismo motivo que el contenedor raíz.
+     El área de contenido debe cubrir la pantalla visible,
+     no la pantalla teórica que incluye el chrome del browser. */
+  min-height: 100dvh;
   background: var(--cream);
 
   /* Mobile: espacio inferior para la BottomNav */
@@ -51,7 +63,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 500;
+
+  /* FIX · Variable semántica en lugar del literal 500 */
+  z-index: var(--z-logout-dialog);
+
   padding: 16px;
   box-sizing: border-box;
 }

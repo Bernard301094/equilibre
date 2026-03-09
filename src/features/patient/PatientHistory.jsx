@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import db from "../../services/db";
 import { parseQuestions, parseAnswers, matchAnswersToQuestions } from "../../utils/parsing";
+import { CATEGORY_CLASS } from "../../utils/constants";
 import EmptyState from "../../components/ui/EmptyState";
 import "./PatientHistory.css";
 
@@ -29,53 +30,99 @@ export default function PatientHistory({ session }) {
     return () => { active = false; };
   }, [session.id, session.access_token]);
 
-  if (loading) return <p className="ph-loading">Carregando histórico...</p>;
+  if (loading) {
+    return (
+      <div className="ph-loading" aria-live="polite">
+        <span className="ph-loading__icon" aria-hidden="true">🕰️</span>
+        <p>Carregando histórico…</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="page-fade-in">
-      <div className="page-header">
-        <h2>🕰️ Meu Histórico</h2>
-        <p>Todos os exercícios que você concluiu</p>
-      </div>
+    <div className="ph-page page-fade-in">
 
+      {/* ── Header ── */}
+      <header className="ph-header">
+        <div className="ph-header__text">
+          <h2 className="ph-header__title">🕰️ Meu Histórico</h2>
+          <p className="ph-header__sub">Todos os exercícios que você concluiu</p>
+        </div>
+        {responses.length > 0 && (
+          <div className="ph-counter" aria-label={`${responses.length} registros`}>
+            <span className="ph-counter__dot" aria-hidden="true" />
+            {responses.length} {responses.length === 1 ? "registro" : "registros"}
+          </div>
+        )}
+      </header>
+
+      {/* ── Empty ── */}
       {responses.length === 0 && (
-        <EmptyState icon="📭" message="Nenhum exercício concluído ainda." />
+        <div className="ph-empty">
+          <EmptyState icon="📭" message="Nenhum exercício concluído ainda." />
+        </div>
       )}
 
-      <div className="ph-list">
+      {/* ── Lista ── */}
+      <div className="ph-list" role="list">
         {responses.map((r) => {
           const ex        = exercises.find((e) => e.id === r.exercise_id);
           const questions = ex ? parseQuestions(ex) : [];
           const answers   = parseAnswers(r);
           const answerMap = matchAnswersToQuestions(questions, answers);
+          const catClass  = ex?.category ? (CATEGORY_CLASS[ex.category] || "ph-cat--outro") : "ph-cat--outro";
+          const answeredQs = questions.filter((q) => q.type !== "instruction" && answerMap[q.id]);
 
           return (
-            <div key={r.id} className="card ph-entry">
-              <div className="ph-entry__title">
-                {ex?.title || "Exercício removido"}
-              </div>
-              <div className="ph-entry__date">
-                {new Date(r.completed_at).toLocaleDateString("pt-BR", {
-                  weekday: "long",
-                  day:     "numeric",
-                  month:   "long",
-                })}
+            <article key={r.id} className="ph-entry" role="listitem">
+
+              {/* Cabeçalho do card */}
+              <div className="ph-entry__head">
+                <div className="ph-entry__title-wrap">
+                  {ex?.category && (
+                    <span className={`ph-entry__cat ${catClass}`}>{ex.category}</span>
+                  )}
+                  <h3 className="ph-entry__title">
+                    {ex?.title || "Exercício removido"}
+                  </h3>
+                  <p className="ph-entry__date">
+                    {new Date(r.completed_at).toLocaleDateString("pt-BR", {
+                      weekday: "long", day: "numeric", month: "long",
+                    })}
+                  </p>
+                </div>
+
+                <div className="ph-entry__done-badge" aria-label="Concluído">
+                  <span aria-hidden="true">✅</span>
+                  <span>Concluído</span>
+                </div>
               </div>
 
-              <div className="ph-entry__answers">
-                {questions.map((q) => {
-                  if (q.type === "instruction") return null;
-                  const val = answerMap[q.id];
-                  if (!val) return null;
-                  return (
-                    <div key={q.id} className="ph-response">
-                      <div className="ph-response__question">{q.text}</div>
-                      <div className="ph-response__answer">{val}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+              {/* Divisor */}
+              {answeredQs.length > 0 && (
+                <hr className="ph-entry__divider" aria-hidden="true" />
+              )}
+
+              {/* Respostas */}
+              {answeredQs.length > 0 && (
+                <div className="ph-entry__answers">
+                  {answeredQs.map((q) => {
+                    const val = answerMap[q.id];
+                    const isScale = q.type === "scale";
+                    return (
+                      <div
+                        key={q.id}
+                        className={`ph-response${isScale ? " ph-response--scale" : ""}`}
+                      >
+                        <p className="ph-response__question">{q.text}</p>
+                        <p className="ph-response__answer">{val}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+            </article>
           );
         })}
       </div>

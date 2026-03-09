@@ -1,22 +1,48 @@
 /* ============================================================
-   EXERCISE PAGE — ExercisePage.css
-   Experiencia inmersiva de pantalla completa.
-   Mobile-first.
+   EXERCISE PAGE — ExercisePage.css  (v2 — Token System)
+   Experiência imersiva de tela cheia. Mobile-first.
+
+   ── DIAGNÓSTICO DAS FALHAS ORIGINAIS ──────────────────────
+   O arquivo anterior referenciava variáveis que NÃO existem
+   em App.css, forçando o browser a cair nos fallbacks
+   hardcoded em valores claros:
+
+   ✗  var(--surface, #fff)          → --surface não existe
+   ✗  var(--surface-alt, #f0f4f8)   → --surface-alt não existe
+   ✗  var(--text-primary, #1a202c)  → --text-primary não existe
+   ✗  var(--text-secondary, #718096)→ --text-secondary não existe
+   ✗  var(--border, #e2e8f0)        → --border não existe
+   ✗  var(--primary, #17527c)       → --primary não existe
+   ✗  var(--cream, #faf8f5)         → fallback errado (≠ #f0f6fb)
+
+   ── MAPEAMENTO DE CORREÇÕES ───────────────────────────────
+   --surface        → --white    (superfície base; muda em dark)
+   --surface-alt    → --warm     (superfície secundária/inputs)
+   --text-primary   → --text     (texto principal)
+   --text-secondary → --text-muted
+   --border         → --warm     (bordas e divisores)
+   --primary        → --blue-dark
+   rgba(0,0,0,0.1)  → var(--shadow-md) (sombras via token)
+
+   Com essa troca, body.dark-mode sobrescreve automaticamente
+   todos os tokens, e nenhum override extra é necessário para
+   o dark mode funcionar.
    ============================================================ */
 
-/* ── Wrapper de pantalla completa ─────────────────────────── */
+/* ── Wrapper de tela cheia ────────────────────────────────── */
 .exercise-page__wrapper {
   position: fixed;
   inset: 0;
-  background: var(--cream, #faf8f5);
+  background: var(--cream);       /* dark: #0c1923 */
   overflow-y: auto;
-  z-index: 300;
+  z-index: var(--z-modal, 300);   /* usa z-index do sistema */
   display: flex;
   flex-direction: column;
   -webkit-overflow-scrolling: touch;
+  transition: background 0.3s;
 }
 
-/* ── Contenedor central con ancho máximo ──────────────────── */
+/* ── Contêiner central ────────────────────────────────────── */
 .exercise-page {
   width: 100%;
   max-width: 680px;
@@ -47,24 +73,25 @@
   height: 38px;
   padding: 0 14px;
   border-radius: 10px;
-  border: 1.5px solid var(--warm, #e8e0d5);
-  background: var(--surface, #fff);
-  color: var(--text-secondary, #718096);
+  border: 1.5px solid var(--warm);          /* dark: #152333 */
+  background: var(--white);                 /* dark: #1b2f42 */
+  color: var(--text-muted);                 /* dark: #7da4be */
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.18s, border-color 0.18s;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
   white-space: nowrap;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .exercise-page__back-btn:hover {
-  background: var(--cream, #faf8f5);
-  border-color: var(--primary, #17527c);
-  color: var(--primary, #17527c);
+  background: var(--cream);                 /* dark: #0c1923 */
+  border-color: var(--blue-dark);           /* dark: #6fb8de */
+  color: var(--blue-dark);
 }
 
 .exercise-page__back-btn:focus-visible {
-  outline: 2px solid var(--primary, #17527c);
+  outline: 2px solid var(--blue-dark);
   outline-offset: 2px;
 }
 
@@ -72,51 +99,61 @@
   flex: 1;
   font-size: 0.9375rem;
   font-weight: 700;
-  color: var(--text-primary, #1a202c);
+  color: var(--text);                       /* dark: #d8e8f2 */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .exercise-page__counter {
   flex-shrink: 0;
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--text-muted, #9ca3af);
-  background: var(--surface, #fff);
-  border: 1px solid var(--warm, #e8e0d5);
+  color: var(--text-muted);                 /* dark: #7da4be */
+  background: var(--white);                 /* dark: #1b2f42 */
+  border: 1px solid var(--warm);            /* dark: #152333 */
   border-radius: 20px;
   padding: 4px 12px;
   white-space: nowrap;
+  font-family: 'DM Sans', sans-serif;
+  transition: background 0.3s, border-color 0.3s, color 0.3s;
 }
 
-/* ── Barra de progreso ────────────────────────────────────── */
+/* ── Barra de progresso ───────────────────────────────────── */
 .exercise-page__progress-track {
   height: 6px;
-  background: var(--warm, #e8e0d5);
+  background: var(--warm);                  /* dark: #152333 */
   border-radius: 4px;
   overflow: hidden;
+  transition: background 0.3s;
 }
 
 .exercise-page__progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--blue-dark, #17527c), var(--blue-light, #3a8fc1));
+  /* Gradiente usa tokens — em dark fica mais vibrante
+     pois --blue-dark e --blue-light ficam mais claros     */
+  background: linear-gradient(90deg,
+    var(--blue-dark),
+    var(--blue-light)
+  );
   border-radius: 4px;
   transition: width 0.45s ease;
   min-width: 3px;
 }
 
-/* ── Tarjeta de pregunta ──────────────────────────────────── */
+/* ── Cartão de pergunta ───────────────────────────────────── */
 .exercise-page__question-card {
-  background: var(--surface, #fff);
+  background: var(--white);                 /* dark: #1b2f42 */
   border-radius: 20px;
   padding: clamp(18px, 4vw, 32px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--warm, #e8e0d5);
+  box-shadow: var(--shadow-md);             /* dark: rgba(0,0,0,0.44) */
+  border: 1px solid var(--warm);            /* dark: #152333 */
   display: flex;
   flex-direction: column;
   gap: 16px;
   animation: card-fade-up 0.3s ease both;
+  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
 @keyframes card-fade-up {
@@ -129,27 +166,40 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--text-muted, #9ca3af);
+  color: var(--text-muted);                 /* dark: #7da4be */
+  font-family: 'DM Sans', sans-serif;
 }
 
-/* ── Tipos de pregunta ────────────────────────────────────── */
+/* ── Tipos de pergunta ────────────────────────────────────── */
+
+/* Instrução — faixa lateral com tint azul */
 .exercise-page__instruction {
   font-size: 1rem;
-  color: var(--text-primary, #1a202c);
+  color: var(--text);                       /* dark: #d8e8f2 */
   line-height: 1.7;
   font-style: italic;
+  /* Tint de fundo: em dark ficará rgba(111,184,222, 0.07) */
   background: rgba(23, 82, 124, 0.04);
-  border-left: 3px solid var(--primary, #17527c);
+  border-left: 3px solid var(--blue-dark);  /* dark: #6fb8de */
   border-radius: 0 10px 10px 0;
   padding: 12px 16px;
+  font-family: 'DM Sans', sans-serif;
+  transition: background 0.3s, border-color 0.3s, color 0.3s;
+}
+
+/* Instrução dark: tint calculado via var para manter */
+body.dark-mode .exercise-page__instruction {
+  background: rgba(111, 184, 222, 0.07);
 }
 
 .exercise-page__reflect-text,
 .exercise-page__question-text {
   font-size: 1.0625rem;
   font-weight: 600;
-  color: var(--text-primary, #1a202c);
+  color: var(--text);                       /* dark: #d8e8f2 */
   line-height: 1.6;
+  font-family: 'DM Sans', sans-serif;
+  transition: color 0.3s;
 }
 
 /* ── Textarea ─────────────────────────────────────────────── */
@@ -158,25 +208,32 @@
   min-height: 130px;
   padding: 12px 14px;
   border-radius: 12px;
-  border: 1.5px solid var(--warm, #e8e0d5);
-  background: var(--cream, #faf8f5);
+  border: 1.5px solid var(--warm);          /* dark: #152333 */
+  background: var(--cream);                 /* dark: #0c1923 */
   font-size: 0.9375rem;
-  color: var(--text-primary, #1a202c);
+  color: var(--text);                       /* dark: #d8e8f2 */
   line-height: 1.65;
   resize: vertical;
   box-sizing: border-box;
   font-family: inherit;
-  transition: border-color 0.18s, background 0.18s;
+  transition: border-color 0.18s, background 0.18s, color 0.18s;
 }
 
 .exercise-page__textarea:focus {
   outline: none;
-  border-color: var(--primary, #17527c);
-  background: var(--surface, #fff);
+  border-color: var(--blue-dark);           /* dark: #6fb8de */
+  background: var(--white);                 /* dark: #1b2f42 */
+  /* Glow de foco: usa cor do sistema */
+  box-shadow: 0 0 0 3px rgba(23, 82, 124, 0.10);
+}
+
+body.dark-mode .exercise-page__textarea:focus {
+  box-shadow: 0 0 0 3px rgba(111, 184, 222, 0.14);
 }
 
 .exercise-page__textarea::placeholder {
-  color: var(--text-muted, #9ca3af);
+  color: var(--text-muted);                 /* dark: #7da4be */
+  opacity: 0.7;
 }
 
 /* ── Escala 0-10 ──────────────────────────────────────────── */
@@ -200,33 +257,47 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 2px solid var(--warm, #e8e0d5);
-  background: var(--surface, #fff);
-  color: var(--text-primary, #1a202c);
+  border: 2px solid var(--warm);            /* dark: #152333 */
+  background: var(--white);                 /* dark: #1b2f42 */
+  color: var(--text);                       /* dark: #d8e8f2 */
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.16s, border-color 0.16s, transform 0.16s, color 0.16s;
+  transition: background 0.16s, border-color 0.16s,
+              transform 0.16s, color 0.16s;
   -webkit-tap-highlight-color: transparent;
   flex-shrink: 0;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .exercise-page__scale-btn:hover {
-  border-color: var(--primary, #17527c);
+  border-color: var(--blue-dark);           /* dark: #6fb8de */
   background: rgba(23, 82, 124, 0.06);
 }
 
+body.dark-mode .exercise-page__scale-btn:hover {
+  background: rgba(111, 184, 222, 0.10);
+}
+
 .exercise-page__scale-btn:focus-visible {
-  outline: 2px solid var(--primary, #17527c);
+  outline: 2px solid var(--blue-dark);
   outline-offset: 2px;
 }
 
+/* Botão selecionado — sólido com token de cor */
 .exercise-page__scale-btn--selected {
-  background: var(--blue-dark, #17527c);
-  border-color: var(--blue-dark, #17527c);
-  color: #fff;
+  background: var(--blue-dark);             /* dark: #6fb8de */
+  border-color: var(--blue-dark);
+  /* Em dark, texto escuro sobre fundo claro (#6fb8de) */
+  color: var(--text-on-dark);               /* dark: #d8e8f2 */
   transform: scale(1.12);
-  box-shadow: 0 4px 12px rgba(23, 82, 124, 0.3);
+  box-shadow: 0 4px 12px rgba(23, 82, 124, 0.30);
+}
+
+body.dark-mode .exercise-page__scale-btn--selected {
+  /* Em dark --blue-dark é #6fb8de (claro), então texto escuro */
+  color: #0c1923;
+  box-shadow: 0 4px 14px rgba(111, 184, 222, 0.28);
 }
 
 .exercise-page__scale-labels {
@@ -237,8 +308,9 @@
 
 .exercise-page__scale-labels span {
   font-size: 0.7rem;
-  color: var(--text-muted, #9ca3af);
+  color: var(--text-muted);                 /* dark: #7da4be */
   font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
 }
 
 @media (max-width: 420px) {
@@ -253,13 +325,14 @@
   }
 }
 
-/* ── Navegación entre preguntas ───────────────────────────── */
+/* ── Navegação entre perguntas ────────────────────────────── */
 .exercise-page__nav {
   display: flex;
   gap: 10px;
   margin-top: 8px;
   padding-top: 16px;
-  border-top: 1px solid var(--warm, #e8e0d5);
+  border-top: 1px solid var(--warm);        /* dark: #152333 */
+  transition: border-color 0.3s;
 }
 
 .exercise-page__nav-btn {
@@ -269,8 +342,10 @@
   font-weight: 600;
   cursor: pointer;
   border: none;
-  transition: background 0.2s, transform 0.15s, opacity 0.2s;
+  transition: background 0.2s, transform 0.15s, opacity 0.2s,
+              box-shadow 0.2s, filter 0.2s;
   -webkit-tap-highlight-color: transparent;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .exercise-page__nav-btn:active:not(:disabled) {
@@ -283,44 +358,55 @@
 }
 
 .exercise-page__nav-btn:focus-visible {
-  outline: 2px solid var(--primary, #17527c);
+  outline: 2px solid var(--blue-dark);
   outline-offset: 2px;
 }
 
+/* Botão Anterior — superfície neutra */
 .exercise-page__nav-btn--prev {
   flex: 0 0 auto;
   padding: 0 20px;
-  background: var(--surface-alt, #f0f4f8);
-  color: var(--text-primary, #1a202c);
-  border: 1.5px solid var(--border, #e2e8f0);
+  background: var(--white);                 /* dark: #1b2f42 */
+  color: var(--text);                       /* dark: #d8e8f2 */
+  border: 1.5px solid var(--warm);          /* dark: #152333 */
 }
 
 .exercise-page__nav-btn--prev:hover:not(:disabled) {
-  background: var(--border, #e2e8f0);
+  background: var(--warm);                  /* dark: levemente mais claro */
 }
 
+/* Botão Próximo/Concluir — sálvia terapêutica */
 .exercise-page__nav-btn--next {
   flex: 1;
-  background: var(--sage, #6b9e78);
-  color: #fff;
+  /* --sage é #2e7fab no light, #5ab07a no dark (via App.css)
+     ATENÇÃO: --sage no design system atual é azul no light mode.
+     Para o botão de ação usamos --pt-sage-500 que é sempre verde. */
+  background: var(--pt-sage-500, #6b9e78);
+  color: #ffffff;
   box-shadow: 0 4px 14px rgba(107, 158, 120, 0.35);
 }
 
 .exercise-page__nav-btn--next:hover:not(:disabled) {
-  background: #5a8a67;
+  filter: brightness(1.08);
 }
 
-/* ── Pantalla de éxito ────────────────────────────────────── */
+body.dark-mode .exercise-page__nav-btn--next {
+  /* Em dark --pt-sage-500 = #5ab07a, sombra precisa de mais alpha */
+  box-shadow: 0 4px 16px rgba(90, 176, 122, 0.30);
+}
+
+/* ── Tela de sucesso ──────────────────────────────────────── */
 .exercise-page__done-screen {
   position: fixed;
   inset: 0;
-  background: var(--cream, #faf8f5);
+  background: var(--cream);                 /* dark: #0c1923 */
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
-  z-index: 300;
+  z-index: var(--z-modal, 300);
   animation: page-fade-in 0.4s ease both;
+  transition: background 0.3s;
 }
 
 @keyframes page-fade-in {
@@ -329,19 +415,20 @@
 }
 
 .exercise-page__done-card {
-  background: var(--surface, #fff);
+  background: var(--white);                 /* dark: #1b2f42 */
   border-radius: 24px;
   padding: clamp(28px, 6vw, 48px);
   max-width: 440px;
   width: 100%;
   text-align: center;
-  box-shadow: 0 16px 60px rgba(0, 0, 0, 0.12);
-  border: 1px solid var(--warm, #e8e0d5);
+  box-shadow: var(--shadow-lg);             /* dark: rgba(0,0,0,0.52) */
+  border: 1px solid var(--warm);            /* dark: #152333 */
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
   animation: done-card-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transition: background 0.3s, border-color 0.3s;
 }
 
 @keyframes done-card-pop {
@@ -353,6 +440,12 @@
   width: 56px;
   height: 56px;
   object-fit: contain;
+  /* Em dark, um filtro suave tira o fundo branco de logos PNG */
+  transition: filter 0.3s;
+}
+
+body.dark-mode .exercise-page__done-logo {
+  filter: brightness(0.9) saturate(0.9);
 }
 
 .exercise-page__done-icon {
@@ -365,15 +458,18 @@
   font-family: 'Playfair Display', Georgia, serif;
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--text-primary, #1a202c);
+  color: var(--text);                       /* dark: #d8e8f2 */
   margin: 0;
+  transition: color 0.3s;
 }
 
 .exercise-page__done-desc {
   font-size: 0.9rem;
-  color: var(--text-secondary, #718096);
+  color: var(--text-muted);                 /* dark: #7da4be */
   line-height: 1.65;
   margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  transition: color 0.3s;
 }
 
 .exercise-page__done-btn {
@@ -381,22 +477,27 @@
   height: 48px;
   border-radius: 12px;
   border: none;
-  background: var(--sage, #6b9e78);
-  color: #fff;
+  background: var(--pt-sage-500, #6b9e78);
+  color: #ffffff;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   margin-top: 8px;
-  box-shadow: 0 4px 14px rgba(107, 158, 120, 0.3);
-  transition: background 0.2s, transform 0.15s;
+  box-shadow: 0 4px 14px rgba(107, 158, 120, 0.30);
+  transition: filter 0.2s, transform 0.15s;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .exercise-page__done-btn:hover {
-  background: #5a8a67;
+  filter: brightness(1.08);
 }
 
 .exercise-page__done-btn:active {
   transform: scale(0.97);
+}
+
+body.dark-mode .exercise-page__done-btn {
+  box-shadow: 0 4px 16px rgba(90, 176, 122, 0.28);
 }
 
 /* ── sr-only ──────────────────────────────────────────────── */

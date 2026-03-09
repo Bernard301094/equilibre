@@ -6,51 +6,66 @@ import { CATEGORY_CLASS } from "../../utils/constants";
 import EmptyState from "../../components/ui/EmptyState";
 import "./PatientExercises.css";
 
-/* ── Due date chip ───────────────────────────────────────────────────────── */
+/* ── Due date chip ───────────────────────────────────────────── */
 function DueChip({ dueDate }) {
   const days = daysUntil(dueDate);
   if (days === null) return null;
-  if (days < 0)  return <span className="due-chip due-chip--late">Atrasado</span>;
-  if (days <= 2) return <span className="due-chip due-chip--warn">Vence em {days}d</span>;
+  if (days < 0)  return <span className="due-chip due-chip--late" aria-label="Atrasado">⚠️ Atrasado</span>;
+  if (days <= 2) return <span className="due-chip due-chip--warn" aria-label={`Vence em ${days} dias`}>⏳ Vence em {days}d</span>;
   return (
-    <span className="due-chip due-chip--ok">
-      {new Date(dueDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+    <span className="due-chip due-chip--ok" aria-label={`Data limite: ${new Date(dueDate).toLocaleDateString("pt-BR")}`}>
+      📅 {new Date(dueDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
     </span>
   );
 }
 
-/* ── Exercise card ───────────────────────────────────────────────────────── */
+/* ── Exercise card ───────────────────────────────────────────── */
 function ExCard({ assign, isDone, exercises, onStart }) {
   const ex = exercises.find((e) => e.id === assign.exercise_id);
   if (!ex) return null;
 
-  const qs       = parseQuestions(ex);
-  const catClass = CATEGORY_CLASS[ex.category] || "outro";
+  const qs       = parseQuestions(ex).filter((q) => q.type !== "instruction");
+  /* CATEGORY_CLASS mapeia categorias para classes CSS do sistema */
+  const catClass = CATEGORY_CLASS[ex.category] || "cat-outro";
 
   return (
     <div
-      className={`ex-card${isDone ? " ex-card--done" : ""}`}
+      className={[
+        "ex-card",
+        catClass,
+        isDone ? "ex-card--done" : "",
+      ].filter(Boolean).join(" ")}
       onClick={() => !isDone && onStart(ex)}
       role={isDone ? "article" : "button"}
       tabIndex={isDone ? undefined : 0}
       aria-label={isDone ? `${ex.title} — concluído` : `Iniciar exercício: ${ex.title}`}
-      onKeyDown={!isDone ? (e) => (e.key === "Enter" || e.key === " ") && onStart(ex) : undefined}
+      onKeyDown={!isDone
+        ? (e) => (e.key === "Enter" || e.key === " ") && onStart(ex)
+        : undefined}
     >
+      {/* Categoria */}
       <span className={`ex-cat ${catClass}`}>{ex.category}</span>
-      <div className="ex-card__title">{ex.title}</div>
-      <div className="ex-card__desc">{ex.description}</div>
 
+      {/* Título + descrição */}
+      <h3 className="ex-card__title">{ex.title}</h3>
+      {ex.description && (
+        <p className="ex-card__desc">{ex.description}</p>
+      )}
+
+      {/* Footer */}
       <div className="ex-card__footer">
         <span className="ex-card__question-count">
           {qs.length} {qs.length === 1 ? "pergunta" : "perguntas"}
         </span>
+
         <div className="ex-card__actions">
           {!isDone && <DueChip dueDate={assign.due_date} />}
+
           {isDone ? (
-            <span className="response-badge badge-done">Concluído</span>
+            <span className="response-badge badge-done">✅ Concluído</span>
           ) : (
-            <button className="btn btn-sage btn-sm" tabIndex={-1} aria-hidden="true">
-              Começar
+            <button className="btn-start" tabIndex={-1} aria-hidden="true">
+              Começar →
             </button>
           )}
         </div>
@@ -59,12 +74,17 @@ function ExCard({ assign, isDone, exercises, onStart }) {
   );
 }
 
-/* ── Section label ───────────────────────────────────────────────────────── */
+/* ── Section label com linha decorativa ─────────────────────── */
 function SectionLabel({ children }) {
-  return <div className="exercises-section__label">{children}</div>;
+  return (
+    <div className="pex-section__label" aria-hidden="true">
+      {children}
+      <span className="pex-section__label-line" />
+    </div>
+  );
 }
 
-/* ── Main component ──────────────────────────────────────────────────────── */
+/* ── Main ────────────────────────────────────────────────────── */
 export default function PatientExercises({ session, onStart }) {
   const [pending,   setPending]   = useState([]);
   const [done,      setDone]      = useState([]);
@@ -82,8 +102,8 @@ export default function PatientExercises({ session, onStart }) {
         ]);
         if (!active) return;
         setPending(Array.isArray(pend) ? pend : []);
-        setDone(Array.isArray(don) ? don : []);
-        setExercises(Array.isArray(ex) ? ex : []);
+        setDone(Array.isArray(don)     ? don  : []);
+        setExercises(Array.isArray(ex) ? ex   : []);
       } catch (e) {
         console.error("[PatientExercises]", e);
       } finally {
@@ -93,44 +113,77 @@ export default function PatientExercises({ session, onStart }) {
     return () => { active = false; };
   }, [session.id, session.access_token]);
 
-  if (loading) return <p className="exercises-loading">Carregando...</p>;
+  if (loading) {
+    return (
+      <div className="pex-loading" aria-live="polite">
+        <span style={{ fontSize: "2rem" }} aria-hidden="true">📚</span>
+        <p>Carregando exercícios…</p>
+      </div>
+    );
+  }
+
+  const hasContent = pending.length > 0 || done.length > 0;
 
   return (
-    <div className="patient-exercises">
-      <div className="page-header">
-        <h2>Meus Exercícios</h2>
-        <p>Complete as tarefas recomendadas pela sua profissional.</p>
-      </div>
+    <div className="pex-page page-fade-in">
 
+      {/* ── Header ── */}
+      <header className="pex-header">
+        <h2 className="pex-header__title">📚 Meus Exercícios</h2>
+        <p className="pex-header__sub">
+          Complete as tarefas recomendadas pela sua profissional.
+        </p>
+      </header>
+
+      {/* ── Para fazer ── */}
       {pending.length > 0 && (
-        <section className="exercises-section" aria-label="Exercícios para fazer">
-          <SectionLabel>Para fazer</SectionLabel>
-          <div className="exercises-section__grid exercises-section__grid--pending">
+        <section className="pex-section" aria-label="Exercícios para fazer">
+          <SectionLabel>Para fazer · {pending.length}</SectionLabel>
+          <div className="pex-grid pex-grid--pending" role="list">
             {pending.map((a) => (
-              <ExCard key={a.id} assign={a} isDone={false} exercises={exercises} onStart={onStart} />
+              <div key={a.id} role="listitem">
+                <ExCard
+                  assign={a}
+                  isDone={false}
+                  exercises={exercises}
+                  onStart={onStart}
+                />
+              </div>
             ))}
           </div>
         </section>
       )}
 
+      {/* ── Concluídos ── */}
       {done.length > 0 && (
-        <section className="exercises-section" aria-label="Exercícios concluídos">
-          <SectionLabel>Concluídos</SectionLabel>
-          <div className="exercises-section__grid exercises-section__grid--done">
+        <section className="pex-section" aria-label="Exercícios concluídos">
+          <SectionLabel>Concluídos · {done.length}</SectionLabel>
+          <div className="pex-grid pex-grid--done" role="list">
             {done.map((a) => (
-              <ExCard key={a.id} assign={a} isDone={true} exercises={exercises} onStart={onStart} />
+              <div key={a.id} role="listitem">
+                <ExCard
+                  assign={a}
+                  isDone={true}
+                  exercises={exercises}
+                  onStart={onStart}
+                />
+              </div>
             ))}
           </div>
         </section>
       )}
 
-      {pending.length === 0 && done.length === 0 && (
-        <EmptyState
-          icon="📭"
-          message="Nenhum exercício atribuído ainda."
-          sub="Aguarde a sua psicóloga enviar exercícios para você."
-        />
+      {/* ── Empty state ── */}
+      {!hasContent && (
+        <div className="pex-empty">
+          <EmptyState
+            icon="📭"
+            message="Nenhum exercício atribuído ainda."
+            sub="Aguarde a sua psicóloga enviar exercícios para você."
+          />
+        </div>
       )}
+
     </div>
   );
 }

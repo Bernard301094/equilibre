@@ -2,11 +2,25 @@ import { useState, useEffect } from "react";
 import db from "../../services/db";
 import { parseQuestions, parseAnswers, matchAnswersToQuestions } from "../../utils/parsing";
 import { calcStreak, isThisWeek } from "../../utils/dates";
-import StatCard from "../../components/ui/StatCard";
 import WeekGoalBar from "../../components/ui/WeekGoalBar";
 import MiniLineChart from "../../components/ui/MiniLineChart";
 import EmptyState from "../../components/ui/EmptyState";
 import "./PatientProgress.css";
+
+/* ── Stat card inline (substitui o StatCard genérico) ───────────
+   Mantém a aparência do sistema de design sem depender do componente
+   externo cujo visual pode divergir.                               */
+function StatCard({ icon, value, label }) {
+  return (
+    <div className="pp-stat-card">
+      <span className="pp-stat-card__icon" aria-hidden="true">{icon}</span>
+      <span className="pp-stat-card__value" aria-label={`${value} ${label}`}>
+        {value}
+      </span>
+      <span className="pp-stat-card__label">{label}</span>
+    </div>
+  );
+}
 
 export default function PatientProgress({ session }) {
   const [data, setData] = useState(null);
@@ -57,16 +71,13 @@ export default function PatientProgress({ session }) {
           ...rList.map((r) => r.completed_at?.slice(0, 10)).filter(Boolean),
         ];
 
-        const streak   = calcStreak(activeDates);
-        const weekDone = rList.filter((r) => isThisWeek(r.completed_at)).length;
-
         setData({
           scalePts,
           moodPts,
-          streak,
-          total:       rList.length,
-          diaryCount:  dList.length,
-          weekDone,
+          streak:     calcStreak(activeDates),
+          total:      rList.length,
+          diaryCount: dList.length,
+          weekDone:   rList.filter((r) => isThisWeek(r.completed_at)).length,
           goal: g,
         });
       } catch (e) {
@@ -76,68 +87,93 @@ export default function PatientProgress({ session }) {
     return () => { active = false; };
   }, [session.id, session.access_token]);
 
-  if (!data) return <p className="pp-loading">Carregando...</p>;
+  if (!data) {
+    return (
+      <div className="pp-loading" aria-live="polite">
+        <span className="pp-loading__icon" aria-hidden="true">📊</span>
+        <p>Carregando progresso…</p>
+      </div>
+    );
+  }
 
-  const noCharts = data.scalePts.length < 2 && data.moodPts.length < 2;
+  const hasScale = data.scalePts.length >= 2;
+  const hasMood  = data.moodPts.length  >= 2;
+  const noCharts = !hasScale && !hasMood;
+
+  /* Quando há só 1 gráfico ele ocupa a linha toda */
+  const onlyOneChart = hasScale !== hasMood;
 
   return (
-    <div className="page-fade-in">
-      <div className="page-header">
-        <h2>📊 Meu Progresso</h2>
-        <p>Acompanhe sua evolução ao longo do tempo</p>
+    <div className="pp-page page-fade-in">
+
+      {/* ── Header ── */}
+      <header className="pp-header">
+        <h2 className="pp-header__title">📊 Meu Progresso</h2>
+        <p className="pp-header__sub">Acompanhe sua evolução ao longo do tempo</p>
+      </header>
+
+      {/* ── Stats ── */}
+      <div className="pp-stats-grid" role="list" aria-label="Estatísticas gerais">
+        <StatCard icon="🔥" value={data.streak}     label="Dias seguidos"        />
+        <StatCard icon="✅" value={data.total}      label="Exercícios feitos"    />
+        <StatCard icon="📓" value={data.diaryCount} label="Registros no diário"  />
       </div>
 
-      {/* Stats */}
-      <div className="pp-stats-grid">
-        <StatCard icon="🔥" value={data.streak}     label="Dias seguidos"       />
-        <StatCard icon="✅" value={data.total}      label="Exercícios feitos"   />
-        <StatCard icon="📓" value={data.diaryCount} label="Registros no diário" />
-      </div>
-
-      {/* Weekly goal */}
+      {/* ── Meta semanal ── */}
       {data.goal && (
-        <div className="card pp-goal-card">
-          <h3 className="pp-card-title">Meta desta semana</h3>
+        <div className="pp-goal-card">
+          <h3 className="pp-section-title">🎯 Meta desta semana</h3>
           <WeekGoalBar done={data.weekDone} target={data.goal.weekly_target} />
         </div>
       )}
 
-      {/* Scale chart */}
-      {data.scalePts.length >= 2 && (
-        <div className="card pp-chart-card">
-          <h3 className="pp-card-title">Evolução das respostas de escala</h3>
-          <p className="pp-chart-desc">Média das escalas (0–10) por exercício</p>
-          <MiniLineChart
-            points={data.scalePts.map((p) => p.avg)}
-            labels={data.scalePts.map((p) => p.date)}
-            height={90}
-          />
+      {/* ── Gráficos ── */}
+      {!noCharts && (
+        <div className="pp-charts-grid">
+
+          {hasScale && (
+            <div className={`pp-chart-card pp-chart-card--scale${onlyOneChart ? " pp-chart-card--full" : ""}`}>
+              <h3 className="pp-section-title">📈 Escalas dos Exercícios</h3>
+              <p className="pp-section-desc">Média das escalas (0–10) por exercício concluído</p>
+              <div className="pp-chart-card__inner">
+                <MiniLineChart
+                  points={data.scalePts.map((p) => p.avg)}
+                  labels={data.scalePts.map((p) => p.date)}
+                  height={110}
+                  color="var(--pt-blue-500, #2e7fab)"
+                />
+              </div>
+            </div>
+          )}
+
+          {hasMood && (
+            <div className={`pp-chart-card pp-chart-card--mood${onlyOneChart ? " pp-chart-card--full" : ""}`}>
+              <h3 className="pp-section-title">😊 Histórico do Humor</h3>
+              <p className="pp-section-desc">Do diário emocional (1 = difícil · 5 = ótimo)</p>
+              <div className="pp-chart-card__inner">
+                <MiniLineChart
+                  points={data.moodPts.map((p) => p.val)}
+                  labels={data.moodPts.map((p) => p.date)}
+                  height={110}
+                  color="var(--pt-amber-500, #e8941a)"
+                />
+              </div>
+            </div>
+          )}
+
         </div>
       )}
 
-      {/* Mood chart */}
-      {data.moodPts.length >= 2 && (
-        <div className="card pp-chart-card">
-          <h3 className="pp-card-title">Histórico do humor</h3>
-          <p className="pp-chart-desc">Do diário emocional (1 = difícil, 5 = ótimo)</p>
-          <MiniLineChart
-            points={data.moodPts.map((p) => p.val)}
-            labels={data.moodPts.map((p) => p.date)}
-            height={90}
-            color="var(--orange)"
-          />
-        </div>
-      )}
-
-      {/* Empty state */}
+      {/* ── Empty state ── */}
       {noCharts && (
-        <div className="card">
+        <div className="pp-empty">
           <EmptyState
             icon="📈"
             message="Complete mais exercícios e registros no diário para ver seu progresso aqui."
           />
         </div>
       )}
+
     </div>
   );
 }

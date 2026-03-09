@@ -1,50 +1,344 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ============================================================
+   APP — App.css
+   Reset, tokens globais, utilidades e animações base
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap');
 
+/* ============================================================
+   TOKENS GLOBAIS — Light mode (default)
+   ============================================================ */
 :root {
-  --blue-dark: #17527c; --blue-mid: #2e7fab; --blue-light: #86bcde;
-  --yellow: #ffbd59; --orange: #e07820; --accent: #e07820;
-  --accent-soft: #fff3e0; --danger: #b03030; --danger-soft: #fde8e8;
-  --cream: #f0f6fb; --warm: #cddcea; --white: #ffffff;
-  --card: rgba(255,255,255,0.98);
-  --text: #0f1e2a; --text-muted: #3d5a70;
-  --text-on-dark: #ffffff; --text-on-accent: #ffffff;
-  --sage-dark: #17527c; --sage: #2e7fab; --sage-light: #cddcea;
-  --shadow-sm: 0 1px 4px rgba(15,30,42,0.08);
-  --shadow-md: 0 4px 16px rgba(15,30,42,0.10);
-  --shadow-lg: 0 8px 36px rgba(15,30,42,0.14);
-  --radius-sm: 8px; --radius-md: 14px; --radius-lg: 18px; --radius-xl: 24px;
-  --space-page-x: clamp(12px, 3.5vw, 42px);
-  --space-page-y: clamp(20px, 3.5vh, 40px);
+
+  /* ── Paleta de cor (tokens legados — mantidos para compatibilidade) ── */
+  --blue-dark:       #17527c;
+  --blue-mid:        #2e7fab;
+  --blue-light:      #86bcde;
+  --yellow:          #ffbd59;
+  --orange:          #e07820;
+  --accent:          #e07820;
+  --accent-soft:     #fff3e0;
+  --danger:          #b03030;
+  --danger-soft:     #fde8e8;
+  --cream:           #f0f6fb;
+  --warm:            #cddcea;
+  --white:           #ffffff;
+  --card:            rgba(255, 255, 255, 0.98);
+  --text:            #0f1e2a;
+  --text-muted:      #3d5a70;
+  --text-on-dark:    #ffffff;
+  --text-on-accent:  #ffffff;
+  --sage-dark:       #17527c;
+  --sage:            #2e7fab;
+  --sage-light:      #cddcea;
+
+  /* ── Sombras ──────────────────────────────────────────────── */
+  --shadow-sm:  0 1px 4px  rgba(15, 30, 42, 0.08);
+  --shadow-md:  0 4px 16px rgba(15, 30, 42, 0.10);
+  --shadow-lg:  0 8px 36px rgba(15, 30, 42, 0.14);
+
+  /* ── Raios ────────────────────────────────────────────────── */
+  --radius-sm:  8px;
+  --radius-md:  14px;
+  --radius-lg:  18px;
+  --radius-xl:  24px;
+
+  /* ── Espaçamento e tipografia fluida ─────────────────────── */
+  --space-page-x:    clamp(12px, 3.5vw, 42px);
+  --space-page-y:    clamp(20px, 3.5vh, 40px);
   --font-page-title: clamp(19px, 2.5vw, 26px);
-  --font-stat-val: clamp(24px, 3vw, 36px);
+  --font-stat-val:   clamp(24px, 3vw, 36px);
+
+  /* ── Z-Index — sistema de camadas ────────────────────────────
+     REGRA: nunca use um número literal de z-index no projeto.
+     Use sempre uma destas variáveis.
+  ─────────────────────────────────────────────────────────── */
+  --z-sidebar:         10;
+  --z-sticky:          15;
+  --z-bottom-nav:      20;
+  --z-bottom-drawer:   30;
+  --z-fab:             40;
+  --z-dropdown:        50;
+  --z-modal-backdrop: 100;
+  --z-modal:          110;
+  --z-logout-dialog:  120;
+  --z-toast:          200;
+  --z-top:            999;
+
+  /* ════════════════════════════════════════════════════════════
+     DESIGN SYSTEM "CLÍNICA NATURAL" — tokens --pt-*
+     Usados pelas telas de paciente:
+     PatientHistory, PatientProgress, PatientExercises, RoutineView
+     ════════════════════════════════════════════════════════════ */
+
+  /* ── Superfícies ─────────────────────────────────────────── */
+  --pt-bg:           #eef3f7;
+  --pt-surface:      #ffffff;
+  --pt-surface-alt:  #f4f8fb;
+  --pt-surface-warm: #f9f6f2;
+  --pt-border:       #dde5ed;
+  --pt-border-warm:  #e8ddd0;
+
+  /* ── Azul-petróleo ───────────────────────────────────────── */
+  --pt-blue-900: #0f3552;
+  --pt-blue-700: #17527c;   /* = --blue-dark */
+  --pt-blue-500: #2e7fab;   /* = --blue-mid  */
+  --pt-blue-300: #90c7e8;
+  --pt-blue-100: #ddedf9;
+  --pt-blue-050: #eef6fc;
+
+  /* ── Sálvia (sucesso / saúde) ────────────────────────────── */
+  --pt-sage-700: #4a7d57;
+  --pt-sage-500: #6b9e78;
+  --pt-sage-100: #d6edd9;
+  --pt-sage-050: #edf7ee;
+
+  /* ── Âmbar (alertas) ─────────────────────────────────────── */
+  --pt-amber-700: #a05e0a;
+  --pt-amber-500: #e8941a;
+  --pt-amber-100: #fde9c0;
+  --pt-amber-050: #fff6e8;
+
+  /* ── Perigo ──────────────────────────────────────────────── */
+  --pt-danger-700: #b53030;
+  --pt-danger-500: #e05252;
+  --pt-danger-100: #fde0e0;
+  --pt-danger-050: #fff5f5;
+
+  /* ── Violeta (histórico / autoconhecimento) ──────────────── */
+  --pt-violet-500: #7c5cbf;
+  --pt-violet-100: #e8e0f8;
+  --pt-violet-050: #f4f0fc;
+
+  /* ── Texto ───────────────────────────────────────────────── */
+  --pt-text:       #1a202c;
+  --pt-text-sub:   #4a5568;
+  --pt-text-muted: #718096;
+  --pt-text-faint: #a0aec0;
+
+  /* ── Sombras pt-* ────────────────────────────────────────── */
+  --pt-shadow-sm:
+    0 1px 2px  rgba(15, 53, 82, 0.05),
+    0 3px 8px  rgba(15, 53, 82, 0.04);
+  --pt-shadow-md:
+    0 2px 4px  rgba(15, 53, 82, 0.06),
+    0 8px 20px rgba(15, 53, 82, 0.07);
+  --pt-shadow-lg:
+    0 4px 8px  rgba(15, 53, 82, 0.08),
+    0 16px 40px rgba(15, 53, 82, 0.10);
+  --pt-shadow-xl:
+    0 8px 16px rgba(15, 53, 82, 0.10),
+    0 32px 64px rgba(15, 53, 82, 0.14);
+
+  /* ── Raios pt-* ──────────────────────────────────────────── */
+  --pt-r-xs:  6px;
+  --pt-r-sm:  10px;
+  --pt-r-md:  14px;
+  --pt-r-lg:  20px;
+  --pt-r-xl:  28px;
+
+  /* ── Espaçamento pt-* ────────────────────────────────────── */
+  --pt-sp-1:  4px;
+  --pt-sp-2:  8px;
+  --pt-sp-3:  12px;
+  --pt-sp-4:  16px;
+  --pt-sp-5:  20px;
+  --pt-sp-6:  24px;
+  --pt-sp-8:  32px;
+  --pt-sp-10: 40px;
+
+  /* ── Transições ──────────────────────────────────────────── */
+  --pt-ease:     cubic-bezier(0.4, 0, 0.2, 1);
+  --pt-t-fast:   0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --pt-t-normal: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  --pt-t-slow:   0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ============================================================
+   DARK MODE — paleta "Noite Terapêutica" v2
+   ──────────────────────────────────────────────────────────
+   HIERARQUIA DE SUPERFÍCIES (do mais escuro ao mais claro):
+     --cream  #0c1923  →  fundo de página         (nível 0)
+     --warm   #152333  →  bordas / hover sutil     (nível 0.5)
+     --white  #1b2f42  →  sidebar, inputs          (nível 1)
+     --card   #213d56  →  cards, modais            (nível 2)
+   Cada nível é ~6–8% mais claro em luminosidade HSL que o
+   anterior, suficiente para criar profundidade sem vibração.
+
+   TEXTO:
+     --text         #d8e8f2  →  branco-azulado suave  (~92% branco)
+     --text-muted   #7da4be  →  azul-acinzentado médio (~60%)
+   Evita branco puro (#fff) que causa halos em fundos escuros.
+
+   SOMBRAS:
+     Substituem rgba claro por rgba preto com alpha maior,
+     tornando-as visíveis sobre fundos escuros.
+   ──────────────────────────────────────────────────────────
+   ============================================================ */
 body.dark-mode {
-  --blue-dark: #7fc4e8; --blue-mid: #5aaad4; --blue-light: #3a7fa8;
-  --yellow: #ffd27a; --orange: #f5a24a; --accent: #f5a24a;
-  --accent-soft: rgba(245,162,74,0.15); --danger: #e06060; --danger-soft: rgba(224,96,96,0.15);
-  --cream: #0b1520; --warm: #1a2d3e; --white: #142030;
-  --card: rgba(20,32,48,0.98);
-  --text: #e8f3fa; --text-muted: #8ab4cc;
-  --text-on-dark: #e8f3fa; --text-on-accent: #0b1520;
-  --sage-dark: #0b1520; --sage: #5aaad4; --sage-light: #1a2d3e;
+
+  /* ── Superfícies — 4 níveis de profundidade ──────────────── */
+  --cream:  #0c1923;   /* página: azul-noite profundo, nunca preto puro  */
+  --warm:   #152333;   /* bordas, separadores, hover sutil               */
+  --white:  #1b2f42;   /* superfície base — sidebar, inputs              */
+  --card:   #213d56;   /* cards e modais — ~8% mais claro que a página   */
+
+  /* ── Texto — hierarquia sem branco puro ──────────────────── */
+  --text:           #d8e8f2;   /* branco-azulado suave — principal       */
+  --text-muted:     #7da4be;   /* azul-acinzentado médio — secundário    */
+  --text-on-dark:   #d8e8f2;   /* igual ao --text neste tema             */
+  --text-on-accent: #0c1923;   /* texto sobre botões de acento           */
+
+  /* ── Acentos — calibrados para contraste WCAG AA ─────────── */
+  --blue-dark:   #6fb8de;
+  --blue-mid:    #4fa0cc;
+  --blue-light:  #2a6a90;
+  --orange:      #f5a03a;
+  --accent:      #f5a03a;
+  --accent-soft: rgba(245, 160, 58, 0.14);
+  --yellow:      #ffd27a;
+
+  /* ── Perigo e sage ────────────────────────────────────────── */
+  --danger:      #e07070;
+  --danger-soft: rgba(224, 112, 112, 0.14);
+  --sage-dark:   #0c1923;
+  --sage:        #5ab07a;
+  --sage-light:  #162e20;
+
+  /* ── Sombras globais — visíveis sobre fundo escuro ───────────
+     PROBLEMA ORIGINAL: as sombras de :root usam rgba(15,30,42,…)
+     que é quase invisível sobre fundos escuros.
+     SOLUÇÃO: substituir por rgba preto com alpha mais alto.
+     Os valores de Y-offset e blur permanecem iguais para não
+     alterar a sensação de elevação dos componentes.
+  ─────────────────────────────────────────────────────────── */
+  --shadow-sm:  0 1px 4px  rgba(0, 0, 0, 0.36);
+  --shadow-md:  0 4px 16px rgba(0, 0, 0, 0.44);
+  --shadow-lg:  0 8px 36px rgba(0, 0, 0, 0.52);
+
+  /* ── Tokens --pt-* em dark mode ─────────────────────────── */
+  --pt-bg:           #0c1923;   /* = --cream  */
+  --pt-surface:      #213d56;   /* = --card   */
+  --pt-surface-alt:  #1b2f42;   /* = --white  */
+  --pt-surface-warm: #1a2f40;
+  --pt-border:       #243d52;
+  --pt-border-warm:  #2a3d4e;
+
+  --pt-blue-900: #c8e4f5;
+  --pt-blue-700: #6fb8de;
+  --pt-blue-500: #4fa0cc;
+  --pt-blue-300: #2a6a90;
+  --pt-blue-100: #163050;
+  --pt-blue-050: #0c2035;
+
+  --pt-sage-700: #8ecfa0;
+  --pt-sage-500: #5ab07a;
+  --pt-sage-100: #143822;
+  --pt-sage-050: #0c2016;
+
+  --pt-amber-700: #ffca80;
+  --pt-amber-500: #f5a03a;
+  --pt-amber-100: #3a2600;
+  --pt-amber-050: #201600;
+
+  --pt-danger-700: #f0a0a0;
+  --pt-danger-500: #e07070;
+  --pt-danger-100: #3a1010;
+  --pt-danger-050: #200a0a;
+
+  --pt-violet-500: #b8a0e8;
+  --pt-violet-100: #281e48;
+  --pt-violet-050: #160e30;
+
+  --pt-text:       #d8e8f2;
+  --pt-text-sub:   #90b8d0;
+  --pt-text-muted: #5a88a8;
+  --pt-text-faint: #2e5068;
+
+  /* ── Sombras pt-* — versão dark ──────────────────────────── */
+  --pt-shadow-sm:
+    0 1px 3px  rgba(0, 0, 0, 0.40),
+    0 3px 10px rgba(0, 0, 0, 0.32);
+  --pt-shadow-md:
+    0 2px 6px  rgba(0, 0, 0, 0.46),
+    0 8px 24px rgba(0, 0, 0, 0.38);
+  --pt-shadow-lg:
+    0 4px 10px rgba(0, 0, 0, 0.52),
+    0 16px 44px rgba(0, 0, 0, 0.44);
+  --pt-shadow-xl:
+    0 8px 18px rgba(0, 0, 0, 0.56),
+    0 32px 64px rgba(0, 0, 0, 0.50);
 }
 
-body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; transition: background 0.3s, color 0.3s; -webkit-font-smoothing: antialiased; }
-h1, h2, h3 { font-family: 'Playfair Display', serif; }
+/* ============================================================
+   BASE
+   ============================================================ */
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  min-height: 100dvh;
+  transition: background 0.3s, color 0.3s;
+  -webkit-font-smoothing: antialiased;
+}
 
-/* Animaciones Globales */
-@keyframes sway { 0%,100%{transform:rotate(-3deg)} 50%{transform:rotate(3deg)} }
-@keyframes drop { 0%{transform:translateY(-15px);opacity:0} 30%{opacity:1} 100%{transform:translateY(15px);opacity:0} }
-@keyframes spin { to{transform:rotate(360deg)} }
-@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-@keyframes fadeIn { from{opacity:0} to{opacity:1} }
-@keyframes skeleton-shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+h1, h2, h3 {
+  font-family: 'Playfair Display', serif;
+}
 
-/* Utilidades de Scroll y Grid */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-thumb { background: var(--warm); border-radius: 3px; }
-.grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 18px; }
-.grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 18px; }
+/* ============================================================
+   ANIMAÇÕES GLOBAIS
+   ============================================================ */
+@keyframes sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50%       { transform: rotate(3deg);  }
+}
+
+@keyframes drop {
+  0%   { transform: translateY(-15px); opacity: 0; }
+  30%  { opacity: 1; }
+  100% { transform: translateY(15px);  opacity: 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+/* ============================================================
+   UTILITÁRIOS DE SCROLL E GRID
+   ============================================================ */
+::-webkit-scrollbar         { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb   { background: var(--warm); border-radius: 3px; }
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 18px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 18px;
+}

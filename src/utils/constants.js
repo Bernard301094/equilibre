@@ -39,15 +39,58 @@ export const QUESTION_TYPES = [
   { value: "instruction", label: "Instrução (sem resposta)" },
 ];
 
-// ─── Diary moods ──────────────────────────────────────────────────────────────
+// ─── Diary moods — FONTE ÚNICA DA VERDADE ─────────────────────────────────────
+//
+//  Cada humor tem:
+//    id    → chave estável gravada no banco (string, única)
+//    val   → valor numérico 1–5 para gráficos (pode repetir entre humores)
+//    emoji → representação visual universal
+//    label → nome em PT-BR, primeira pessoa implícita, sem julgamento
+//    color → cor semântica usada em botões, badges e barras
+//
+//  Humores difíceis (val 1–2) ficam na primeira fileira do grid 5×2.
+//  Humores positivos/neutros (val 3–5) ficam na segunda fileira.
+//
+// ─────────────────────────────────────────────────────────────────────────────
 
-export const MOODS = [
-  { val: 1, emoji: "😔", label: "Difícil" },
-  { val: 2, emoji: "😕", label: "Baixo" },
-  { val: 3, emoji: "😐", label: "Neutro" },
-  { val: 4, emoji: "🙂", label: "Bem" },
-  { val: 5, emoji: "😄", label: "Ótimo" },
+export const MOOD_OPTIONS = [
+  // — Fileira superior: humores difíceis —
+  { id: "muito-dificil", val: 1, emoji: "😔", label: "Muito difícil",  color: "#e53e3e" },
+  { id: "esgotado",      val: 2, emoji: "😞", label: "Esgotado",       color: "#dd6b20" },
+  { id: "frustrado",     val: 2, emoji: "😤", label: "Frustrado",      color: "#d69e2e" },
+  { id: "ansioso",       val: 3, emoji: "😰", label: "Ansioso",        color: "#b7791f" },
+  { id: "sem-sentir",    val: 3, emoji: "😶", label: "Sem sentir",     color: "#718096" },
+  // — Fileira inferior: humores neutros e positivos —
+  { id: "neutro",        val: 3, emoji: "😐", label: "Neutro",         color: "#4a5568" },
+  { id: "tranquilo",     val: 4, emoji: "🙂", label: "Tranquilo",      color: "#2f855a" },
+  { id: "esperancoso",   val: 4, emoji: "🌱", label: "Esperançoso",    color: "#276749" },
+  { id: "bem",           val: 5, emoji: "😊", label: "Bem",            color: "#2b6cb0" },
+  { id: "muito-bem",     val: 5, emoji: "😄", label: "Muito bem",      color: "#2c5282" },
 ];
+
+/**
+ * Resolve o objeto de humor a partir de uma entrada do banco.
+ * Tenta primeiro pelo id estável; se não existir (registros antigos),
+ * cai de volta ao primeiro humor com o val correspondente.
+ *
+ * @param {string|undefined} moodId  — campo `mood_id` da entrada
+ * @param {number|undefined} moodVal — campo `mood` da entrada (numérico)
+ * @returns {typeof MOOD_OPTIONS[0]}
+ */
+export function resolveMood(moodId, moodVal) {
+  if (moodId) {
+    const byId = MOOD_OPTIONS.find((m) => m.id === moodId);
+    if (byId) return byId;
+  }
+  return MOOD_OPTIONS.find((m) => m.val === moodVal) ?? MOOD_OPTIONS[4]; // fallback: Neutro
+}
+
+/**
+ * Alias de retrocompatibilidade.
+ * Componentes que ainda importam `MOODS` continuam funcionando.
+ * @deprecated Use MOOD_OPTIONS
+ */
+export const MOODS = MOOD_OPTIONS;
 
 // ─── Behavioral Activation pillars ───────────────────────────────────────────
 

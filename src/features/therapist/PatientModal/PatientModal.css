@@ -11,7 +11,7 @@
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex;
-  align-items: flex-end;       /* mobile: bottom-sheet */
+  align-items: flex-end;
   justify-content: center;
   z-index: 400;
   padding: 0;
@@ -35,12 +35,12 @@
 .patient-modal {
   width: 100%;
   max-width: 100vw;
-  height: 92dvh;               /* mobile: ocupa casi toda la pantalla */
+  height: 92dvh;
   max-height: 92dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 20px 20px 0 0;  /* mobile: bordes solo arriba */
+  border-radius: 20px 20px 0 0;
   background: var(--white, #fff);
   box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18);
   border: 1px solid var(--warm, #e8e0d5);
@@ -114,29 +114,60 @@
   }
 }
 
+/* ── Close button ─────────────────────────────────────────── */
 .patient-modal__close-btn {
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+
+  /* FIX · Touch target 44 × 44 (WCAG 2.5.5)
+     El elemento ocupa 44 × 44 para cumplir el mínimo táctil,
+     pero la apariencia visual del círculo sigue siendo 34 × 34
+     gracias al pseudo-elemento ::before. */
+  width: 44px;
+  height: 44px;
+
+  /* FIX · Compensación de layout en Flexbox
+     margin: -5px devuelve los 5px extra en cada borde al contenedor,
+     manteniendo el mismo espaciado que tenía el botón original de 34px. */
+  margin: -5px;
+
+  /* El fondo vive en ::before — aquí va transparente */
+  background: transparent;
   border-radius: 50%;
   border: none;
-  background: rgba(0, 0, 0, 0.06);
   color: var(--text-secondary, #718096);
   font-size: 0.9rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.18s, color 0.18s;
+  transition: color 0.18s;
   line-height: 1;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* FIX · Círculo visual de 34 × 34 via pseudo-elemento
+   inset: 5px recorta 5px en cada lado del área de 44px:
+   44 − (5 × 2) = 34px → el círculo visual no cambia de tamaño. */
+.patient-modal__close-btn::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.06);
+  transition: background 0.18s;
 }
 
 .patient-modal__close-btn:hover {
-  background: rgba(0, 0, 0, 0.12);
   color: var(--text-primary, #1a202c);
 }
 
+.patient-modal__close-btn:hover::before {
+  background: rgba(0, 0, 0, 0.12);
+}
+
 .patient-modal__close-btn:focus-visible {
+  /* El outline rodea el área táctil de 44px — más visible y accesible. */
   outline: 2px solid var(--primary, #17527c);
   outline-offset: 2px;
 }
@@ -152,7 +183,7 @@
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  margin-bottom: -1px;  /* se fusiona con el border-bottom del header */
+  margin-bottom: -1px;
 }
 
 .patient-modal__tabs::-webkit-scrollbar {
@@ -187,7 +218,6 @@
   box-shadow: 0 2px 8px rgba(23, 82, 124, 0.12);
 }
 
-/* En desktop las tabs pueden expandirse */
 @media (min-width: 600px) {
   .patient-modal__tab-btn {
     flex: 1;
@@ -202,7 +232,6 @@
   overflow-y: auto;
   padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
   -webkit-overflow-scrolling: touch;
-  /* Scrollbar sutil */
   scrollbar-width: thin;
   scrollbar-color: var(--warm, #e8e0d5) transparent;
 }
@@ -226,7 +255,7 @@
   }
 }
 
-/* ── Panel de tab (contenedor de cada vista) ──────────────── */
+/* ── Panel de tab ─────────────────────────────────────────── */
 .patient-modal__panel {
   display: block;
 }

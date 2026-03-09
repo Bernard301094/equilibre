@@ -6,7 +6,11 @@
 /* ── Contenedor raíz ──────────────────────────────────────── */
 .therapist-layout {
   display: flex;
-  min-height: 100vh;
+
+  /* FIX · dvh en lugar de vh.
+     Evita que la barra de navegación nativa del browser
+     (Chrome/Safari móvil) tape el fondo del layout. */
+  min-height: 100dvh;
   background: var(--cream);
 }
 
@@ -15,14 +19,16 @@
   flex: 1;
   width: 100%;
   box-sizing: border-box;
-  min-height: 100vh;
+
+  /* FIX · dvh consistente con el contenedor raíz */
+  min-height: 100dvh;
 
   /* Mobile: padding generoso + espacio para BottomNav */
   padding: 20px 16px calc(72px + env(safe-area-inset-bottom)) 16px;
   background: var(--cream);
 }
 
-/* Desktop: desplaza el contenido para no solapar la sidebar */
+/* Desktop: desplaza el contenido para no solapar la Sidebar */
 @media (min-width: 768px) {
   .therapist-layout__main {
     margin-left: 256px;
@@ -41,7 +47,10 @@
   position: fixed;
   top: 14px;
   right: 14px;
-  z-index: 200;
+
+  /* FIX · Variable semántica en lugar del literal 200 */
+  z-index: var(--z-fab);
+
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -74,13 +83,13 @@
 }
 
 @keyframes bell-shake {
-  0%,  100% { transform: rotate(0deg); }
+  0%,  100% { transform: rotate(0deg);   }
   15%        { transform: rotate(-14deg); }
-  30%        { transform: rotate(12deg); }
+  30%        { transform: rotate(12deg);  }
   45%        { transform: rotate(-10deg); }
-  60%        { transform: rotate(8deg); }
-  75%        { transform: rotate(-5deg); }
-  90%        { transform: rotate(3deg); }
+  60%        { transform: rotate(8deg);   }
+  75%        { transform: rotate(-5deg);  }
+  90%        { transform: rotate(3deg);   }
 }
 
 /* Botón interno del floating bell */
@@ -186,7 +195,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 500;
+
+  /* FIX · Variable semántica en lugar del literal 500 */
+  z-index: var(--z-logout-dialog);
+
   padding: 16px;
 }
 

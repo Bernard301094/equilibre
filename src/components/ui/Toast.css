@@ -151,8 +151,13 @@
 /* ── Mobile ──────────────────────────────────────────────────────────────── */
 @media (max-width: 767px) {
   .toast-container {
-    /* Center at bottom, above BottomNav */
-    bottom: 80px;
+    /* FIX · bottom dinámico con safe-area.
+       80px = altura base de la BottomNav.
+       env(safe-area-inset-bottom) suma el Home Indicator en iPhones
+       (≈ 34px en modelos recientes) y vale 0px en Android/escritorio,
+       por lo que no tiene efecto secundario en otros dispositivos. */
+    bottom: calc(80px + env(safe-area-inset-bottom));
+
     right: 50%;
     transform: translateX(50%);
     align-items: center;

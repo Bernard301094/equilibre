@@ -1,197 +1,277 @@
-/* ══════════════════════════════════════════════════════════════════════════
-   PATIENT EXERCISES
-   ══════════════════════════════════════════════════════════════════════════ */
+/* ================================================================
+   PatientExercises.css — "Clínica Natural" Design System
+   Mobile-first · BEM · Therapeutic UI
+   ================================================================ */
 
-/* ── Page wrapper ────────────────────────────────────────────────────────── */
-.patient-exercises {
-  animation: fadeUp 0.4s ease;
-}
-
-/* ── Loading state ───────────────────────────────────────────────────────── */
-.exercises-loading {
-  color: var(--text-muted);
-  font-size: 14px;
-}
-
-/* ── Section ─────────────────────────────────────────────────────────────── */
-.exercises-section {
-  margin-bottom: 28px;
-}
-
-.exercises-section__label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text-muted);
-  margin-bottom: 11px;
-}
-
-/* ── Grid ────────────────────────────────────────────────────────────────── */
-.exercises-section__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
-}
-
-/* ── Exercise card ───────────────────────────────────────────────────────── */
-.ex-card {
-  background: var(--card);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  border: 1.5px solid var(--warm);
-  box-shadow: var(--shadow-sm);
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+/* ── Loading ──────────────────────────────────────────────────── */
+.pex-loading {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 24px;
+  color: var(--pt-text-muted, #718096);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* ── Página ───────────────────────────────────────────────────── */
+.pex-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pt-sp-6, 24px);
+}
+
+/* ── Header ───────────────────────────────────────────────────── */
+.pex-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pt-sp-1, 4px);
+}
+
+.pex-header__title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.3rem, 4vw, 1.625rem);
+  font-weight: 700;
+  color: var(--pt-text, #1a202c);
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.pex-header__sub {
+  font-size: 0.875rem;
+  color: var(--pt-text-muted, #718096);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Seção ────────────────────────────────────────────────────── */
+.pex-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pt-sp-4, 16px);
+}
+
+.pex-section__label {
+  display: flex;
+  align-items: center;
+  gap: var(--pt-sp-2, 8px);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--pt-text-muted, #718096);
+}
+
+.pex-section__label-line {
+  flex: 1;
+  height: 1px;
+  background: var(--pt-border, #dde5ed);
+}
+
+/* ── Grid de cards ────────────────────────────────────────────── */
+.pex-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--pt-sp-4, 16px);
+}
+
+@media (min-width: 600px) {
+  .pex-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 1024px) {
+  .pex-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ── Exercise card ────────────────────────────────────────────── */
+.ex-card {
+  background: var(--pt-surface, #fff);
+  border-radius: var(--pt-r-lg, 20px);
+  padding: var(--pt-sp-5, 20px);
+  border: 1.5px solid var(--pt-border, #dde5ed);
+  box-shadow: var(--pt-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pt-sp-2, 8px);
+  cursor: pointer;
+  transition: transform var(--pt-t-normal, .22s), box-shadow var(--pt-t-normal, .22s),
+              border-color var(--pt-t-normal, .22s);
+  /* Accent lateral colorido por categoria */
+  border-left: 3px solid var(--ex-accent, var(--pt-blue-500, #2e7fab));
+  position: relative;
+  outline: none;
 }
 
 .ex-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--blue-mid);
+  transform: translateY(-3px);
+  box-shadow: var(--pt-shadow-md);
+  border-color: var(--pt-blue-300, #90c7e8);
 }
 
 .ex-card:focus-visible {
-  outline: 2px solid var(--blue-mid);
-  outline-offset: 3px;
+  outline: 2.5px solid var(--pt-blue-500, #2e7fab);
+  outline-offset: 2px;
 }
 
-/* Done variant — reduced emphasis */
+/* Variante: concluído — tom apagado */
 .ex-card--done {
-  opacity: 0.6;
+  opacity: 0.65;
   cursor: default;
+  border-left-color: var(--pt-sage-500, #6b9e78);
 }
 
 .ex-card--done:hover {
   transform: none;
-  box-shadow: var(--shadow-sm);
-  border-color: var(--warm);
+  box-shadow: var(--pt-shadow-sm);
 }
 
-/* ── Category badge ──────────────────────────────────────────────────────── */
+/* ── Acento de cor por categoria ─────────────────────────────── */
+.ex-card.cat-mindfulness     { --ex-accent: var(--pt-blue-500,   #2e7fab); }
+.ex-card.cat-bem-estar       { --ex-accent: var(--pt-sage-500,   #6b9e78); }
+.ex-card.cat-ansiedade       { --ex-accent: var(--pt-amber-500,  #e8941a); }
+.ex-card.cat-autoconhecimento{ --ex-accent: var(--pt-violet-500, #7c5cbf); }
+.ex-card.cat-relacionamentos { --ex-accent: var(--pt-danger-500, #e05252); }
+.ex-card.cat-outro           { --ex-accent: var(--pt-text-faint, #a0aec0); }
+
+/* ── Categoria badge ──────────────────────────────────────────── */
 .ex-cat {
-  display: inline-block;
-  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 11px;
+  border-radius: 99px;
+  font-size: 0.6875rem;
   font-weight: 700;
   text-transform: uppercase;
-  padding: 3px 10px;
-  border-radius: 20px;
-  background: var(--accent-soft);
-  color: var(--orange);
-  margin-bottom: 9px;
+  letter-spacing: 0.05em;
   align-self: flex-start;
+  margin-bottom: var(--pt-sp-1, 4px);
 }
 
-/* ── Card body ───────────────────────────────────────────────────────────── */
+/* Classes geradas por CATEGORY_CLASS */
+.cat-mindfulness      { background: var(--pt-blue-050,   #eef6fc); color: var(--pt-blue-900,   #0f3552); border: 1px solid var(--pt-blue-100,   #ddedf9); }
+.cat-bem-estar        { background: var(--pt-sage-050,   #edf7ee); color: var(--pt-sage-700,   #4a7d57); border: 1px solid var(--pt-sage-100,   #d6edd9); }
+.cat-ansiedade        { background: var(--pt-amber-050,  #fff6e8); color: var(--pt-amber-700,  #a05e0a); border: 1px solid var(--pt-amber-100,  #fde9c0); }
+.cat-autoconhecimento { background: var(--pt-violet-050, #f4f0fc); color: var(--pt-violet-500, #7c5cbf); border: 1px solid var(--pt-violet-100, #e8e0f8); }
+.cat-relacionamentos  { background: var(--pt-danger-050, #fff5f5); color: var(--pt-danger-700, #b53030); border: 1px solid var(--pt-danger-100, #fde0e0); }
+.cat-outro            { background: var(--pt-surface-alt,#f4f8fb); color: var(--pt-text-muted, #718096); border: 1px solid var(--pt-border,     #dde5ed); }
+
+/* ── Card body ────────────────────────────────────────────────── */
 .ex-card__title {
-  font-family: "Playfair Display", serif;
-  font-size: 16px;
-  color: var(--text);
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--pt-text, #1a202c);
   line-height: 1.3;
-  margin-bottom: 4px;
+  margin: 0;
 }
 
 .ex-card__desc {
-  font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.5;
+  font-size: 0.875rem;
+  color: var(--pt-text-sub, #4a5568);
+  line-height: 1.6;
   flex: 1;
+  margin: 0;
+  /* Limite visual a 3 linhas — não corta info, apenas organiza */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-/* ── Card footer ─────────────────────────────────────────────────────────── */
+/* ── Card footer ──────────────────────────────────────────────── */
 .ex-card__footer {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 12px;
+  gap: var(--pt-sp-2, 8px);
+  margin-top: var(--pt-sp-2, 8px);
+  padding-top: var(--pt-sp-3, 12px);
+  border-top: 1px solid var(--pt-border, #dde5ed);
 }
 
 .ex-card__question-count {
-  font-size: 12px;
-  color: var(--text-muted);
+  font-size: 0.75rem;
+  color: var(--pt-text-muted, #718096);
 }
 
 .ex-card__actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--pt-sp-2, 8px);
 }
 
-/* ── Response badges ─────────────────────────────────────────────────────── */
+/* ── Due date chips ───────────────────────────────────────────── */
+.due-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+.due-chip--ok   { background: var(--pt-blue-050,   #eef6fc); color: var(--pt-blue-900,   #0f3552); border: 1px solid var(--pt-blue-100,   #ddedf9); }
+.due-chip--warn { background: var(--pt-amber-050,  #fff6e8); color: var(--pt-amber-700,  #a05e0a); border: 1px solid var(--pt-amber-100,  #fde9c0); }
+.due-chip--late { background: var(--pt-danger-050, #fff5f5); color: var(--pt-danger-700, #b53030); border: 1px solid var(--pt-danger-100, #fde0e0); }
+
+/* ── Response badges ──────────────────────────────────────────── */
 .response-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
-  padding: 3px 10px;
-  border-radius: 20px;
+  font-size: 0.6875rem;
   font-weight: 700;
+  padding: 3px 11px;
+  border-radius: 99px;
+  white-space: nowrap;
 }
 
-.badge-done {
-  background: #c8ead0;
-  color: #1a5c28;
-}
+.badge-done    { background: var(--pt-sage-050, #edf7ee); color: var(--pt-sage-700, #4a7d57); border: 1px solid var(--pt-sage-100, #d6edd9); }
+.badge-pending { background: var(--pt-surface-alt, #f4f8fb); color: var(--pt-text-muted, #718096); border: 1px solid var(--pt-border, #dde5ed); }
 
-.badge-pending {
-  background: var(--warm);
-  color: var(--text-muted);
-  border: 1px solid var(--warm);
-}
-
-/* ── Due date chips ──────────────────────────────────────────────────────── */
-.due-chip {
+/* ── Botão "Começar" ─────────────────────────────────────────── */
+.btn-start {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  padding: 2px 9px;
-  border-radius: 20px;
+  gap: var(--pt-sp-1, 4px);
+  height: 36px;
+  padding: 0 var(--pt-sp-4, 16px);
+  border-radius: var(--pt-r-md, 14px);
+  font-size: 0.8125rem;
   font-weight: 700;
+  background: var(--pt-blue-700, #17527c);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background var(--pt-t-fast, .15s), transform var(--pt-t-fast, .15s);
+  pointer-events: none; /* acessível pelo card inteiro */
+  white-space: nowrap;
 }
 
-.due-chip--ok {
-  background: #ddeaff;
-  color: #0f3d6e;
+.ex-card:hover .btn-start {
+  background: var(--pt-blue-900, #0f3552);
 }
 
-.due-chip--warn {
-  background: #fff3dd;
-  color: #7a4800;
+.ex-card:active .btn-start {
+  transform: scale(0.96);
 }
 
-.due-chip--late {
-  background: #fde8e8;
-  color: #8b1c1c;
+/* ── Empty ────────────────────────────────────────────────────── */
+.pex-empty {
+  background: var(--pt-surface, #fff);
+  border-radius: var(--pt-r-lg, 20px);
+  padding: var(--pt-sp-10, 40px) var(--pt-sp-6, 24px);
+  box-shadow: var(--pt-shadow-sm);
+  border: 1.5px solid var(--pt-border, #dde5ed);
+  text-align: center;
 }
 
-/* ── Mobile ──────────────────────────────────────────────────────────────── */
-@media (max-width: 767px) {
-  .exercises-section__grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 599px) {
-  .ex-card {
-    padding: 14px;
-  }
-
-  .ex-card__title {
-    font-size: 14px;
-  }
-
-  .ex-card__desc {
-    font-size: 12px;
-  }
-
-  .due-chip,
-  .response-badge {
-    font-size: 9.5px;
-  }
+/* ── Desktop ──────────────────────────────────────────────────── */
+@media (min-width: 640px) {
+  .ex-card { padding: var(--pt-sp-6, 24px); }
 }

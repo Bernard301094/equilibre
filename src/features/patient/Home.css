@@ -1,12 +1,21 @@
 /* ============================================================
    PATIENT HOME — Home.css
-   Mobile-first
+   Mobile-first · Perfil terapéutico
    ============================================================ */
 
 .patient-home {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+
+  --card-shadow:       0 2px 20px rgba(15, 46, 72, 0.06),
+                       0 1px  4px rgba(15, 46, 72, 0.04);
+  --card-shadow-hover: 0 6px 32px rgba(15, 46, 72, 0.10),
+                       0 2px  8px rgba(15, 46, 72, 0.06);
+  --card-radius:       20px;
+  --card-radius-sm:    14px;
+  --card-padding:      22px;
+  --card-padding-sm:   16px 18px;
 }
 
 /* ── Loading ──────────────────────────────────────────────── */
@@ -16,70 +25,76 @@
   align-items: center;
   justify-content: center;
   min-height: 60vh;
-  gap: 12px;
+  gap: 14px;
   text-align: center;
   padding: 40px 20px;
 }
 
 .patient-home-loading__icon {
   font-size: 2.5rem;
-  animation: pulse-soft 1.8s ease-in-out infinite;
+  line-height: 1;
+  animation: pulse-soft 2.4s ease-in-out infinite;
 }
 
 @keyframes pulse-soft {
-  0%, 100% { transform: scale(1);    opacity: 1;   }
-  50%       { transform: scale(1.12); opacity: 0.7; }
+  0%, 100% { transform: scale(1);   opacity: 1;   }
+  50%       { transform: scale(1.1); opacity: 0.7; }
 }
 
 .patient-home-loading__title {
   font-size: 1.2rem;
   font-weight: 700;
-  color: var(--text-primary, #1a202c);
+  color: var(--text, #1a202c);
+  margin: 0;
 }
 
 .patient-home-loading__sub {
   font-size: 0.875rem;
-  color: var(--text-secondary, #718096);
+  color: var(--text-muted, #718096);
+  margin: 0;
 }
 
 /* ── Header ───────────────────────────────────────────────── */
 .patient-home__header {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  padding-top: 4px;
 }
 
 .patient-home__greeting {
-  font-size: 1.4rem;
+  font-size: clamp(1.3rem, 3.5vw, 1.6rem);
   font-weight: 700;
-  color: var(--text-primary, #1a202c);
+  color: var(--text, #1a202c);
   margin: 0;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 
 .patient-home__greeting-sub {
-  font-size: 0.9rem;
-  color: var(--text-secondary, #718096);
+  font-size: 0.9375rem;
+  color: var(--text-muted, #718096);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 /* ── Tarjeta de vinculación ───────────────────────────────── */
 .patient-home__link-card {
   display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  background: var(--surface, #fff);
-  border-radius: 16px;
-  padding: 18px 20px;
-  border-left: 4px solid var(--blue-mid, #3a8fc1);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  gap: 16px;
+  align-items: center;
+  background: var(--white, #fff);
+  border-radius: var(--card-radius);
+  padding: var(--card-padding);
+  border-left: 4px solid var(--blue-mid, #2e7fab);
+  box-shadow: var(--card-shadow);
 }
 
 .patient-home__link-icon {
   font-size: 1.75rem;
   flex-shrink: 0;
-  margin-top: 2px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
 }
 
 .patient-home__link-body {
@@ -87,27 +102,29 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .patient-home__link-title {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--text-primary, #1a202c);
+  color: var(--text, #1a202c);
   margin: 0;
+  line-height: 1.3;
 }
 
 .patient-home__link-desc {
   font-size: 0.875rem;
-  color: var(--text-secondary, #718096);
+  color: var(--text-muted, #718096);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .patient-home__link-row {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .patient-home__invite-input {
@@ -115,23 +132,24 @@
   min-width: 120px;
   height: 44px;
   padding: 0 14px;
-  border-radius: 10px;
-  border: 1.5px solid var(--warm, #e8e0d5);
-  background: var(--cream, #faf8f5);
+  border-radius: 12px;
+  border: 1.5px solid var(--warm, #cddcea);
+  background: var(--cream, #f0f6fb);
   font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: 3px;
-  color: var(--text-primary, #1a202c);
+  color: var(--text, #1a202c);
   text-transform: uppercase;
-  transition: border-color 0.18s;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
   font-family: 'Courier New', monospace;
   box-sizing: border-box;
 }
 
 .patient-home__invite-input:focus {
   outline: none;
-  border-color: var(--primary, #17527c);
-  background: var(--surface, #fff);
+  border-color: var(--blue-dark, #17527c);
+  background: var(--white, #fff);
+  box-shadow: 0 0 0 3px rgba(23, 82, 124, 0.10);
 }
 
 .patient-home__invite-input::placeholder {
@@ -142,21 +160,22 @@
 
 .patient-home__link-btn {
   height: 44px;
-  padding: 0 20px;
-  border-radius: 10px;
+  padding: 0 22px;
+  border-radius: 12px;
   border: none;
-  background: var(--sage, #6b9e78);
+  background: var(--blue-dark, #17527c);
   color: #fff;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.2s, transform 0.15s, opacity 0.2s;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
   flex-shrink: 0;
 }
 
 .patient-home__link-btn:hover:not(:disabled) {
-  background: #5a8a67;
+  background: var(--blue-mid, #2e7fab);
+  box-shadow: 0 4px 14px rgba(23, 82, 124, 0.25);
 }
 
 .patient-home__link-btn:active:not(:disabled) {
@@ -164,16 +183,20 @@
 }
 
 .patient-home__link-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
 .patient-home__link-msg {
   font-size: 0.825rem;
   font-weight: 600;
-  border-radius: 8px;
-  padding: 8px 12px;
+  border-radius: 10px;
+  padding: 10px 14px;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.4;
 }
 
 .patient-home__link-msg--success {
@@ -183,61 +206,70 @@
 }
 
 .patient-home__link-msg--error {
-  background: rgba(239, 68, 68, 0.08);
-  color: var(--danger, #ef4444);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(176, 48, 48, 0.07);
+  color: var(--danger, #b03030);
+  border: 1px solid rgba(176, 48, 48, 0.2);
 }
 
-/* En mobile: icono se oculta para ahorrar espacio */
 @media (max-width: 420px) {
-  .patient-home__link-icon {
-    display: none;
-  }
-
-  .patient-home__link-row {
-    flex-direction: column;
-  }
-
-  .patient-home__link-btn {
-    width: 100%;
-  }
+  .patient-home__link-icon { display: none; }
+  .patient-home__link-row  { flex-direction: column; }
+  .patient-home__link-btn  { width: 100%; }
 }
 
 /* ── Grid de stats ────────────────────────────────────────── */
 .patient-home__stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   gap: 14px;
-}
-
-@media (max-width: 360px) {
-  .patient-home__stats-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
+  align-items: stretch;
 }
 
 /* ── Tarjeta de planta/streak ─────────────────────────────── */
+/*
+   MUDANÇAS E RACIOCÍNIO:
+   ─────────────────────────────────────────────────────────
+   • justify-content: center  (era: space-between)
+     space-between empurrava emoji para o topo e dados para
+     o rodapé, maximizando a separação. center mantém tudo
+     unido ao centro vertical — o card "respira" junto.
+
+   • padding: 16px 14px 14px  (era: 20px 14px 18px)
+     Redução de 4px no topo e 4px no fundo elimina o espaço
+     vazio que aparecia ao redor do conteúdo centralizado.
+
+   • gap: 6px  (era: 8px)
+     2px a menos, mas somados ao line-height do streak-val,
+     resultam em ~6px a menos de separação perceptual.
+*/
 .patient-home__plant-card {
   position: relative;
   overflow: hidden;
-  background: var(--surface, #fff);
-  border-radius: 16px;
-  padding: 18px 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  background: var(--white, #fff);
+  border-radius: var(--card-radius);
+  padding: 16px 14px 14px;
+  box-shadow: var(--card-shadow);
+  border: none;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 6px;
   text-align: center;
-  border: 1px solid var(--warm, #e8e0d5);
+  transition: box-shadow 0.25s, transform 0.25s;
+}
+
+.patient-home__plant-card:hover {
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-2px);
 }
 
 .patient-home__water-drop {
   position: absolute;
-  top: 8px;
-  right: 10px;
-  font-size: 1.2rem;
+  top: 10px;
+  right: 12px;
+  font-size: 1.1rem;
+  line-height: 1;
   animation: water-drop-fall 2s ease-in-out both;
   pointer-events: none;
 }
@@ -249,159 +281,269 @@
   100% { transform: translateY(10px);  opacity: 0; }
 }
 
-.patient-home__plant-emoji {
-  font-size: 2.75rem;
-  line-height: 1;
-  margin-bottom: 4px;
-  animation: plant-pulse 3s ease-in-out infinite;
+/* ── Wrapper do emoji ─────────────────────────────────────────
+   height: 44px  (era: 54px)
+   O wrapper precisa ser apenas alto o suficiente para que
+   transform-origin: bottom center funcione corretamente —
+   o pivô do sway fica exatamente na base do emoji.
+   54px criava 12–14px de espaço vazio acima do emoji de 2.1rem.
+*/
+.patient-home__plant-emoji-wrap {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 44px;
 }
 
-@keyframes plant-pulse {
-  0%, 100% { transform: scale(1);    }
-  50%       { transform: scale(1.06); }
+/* ── Emoji da planta ──────────────────────────────────────────
+   font-size: 2.1rem  (era: 2.75rem)
+
+   Em um card de ~100–130px de largura:
+   • 2.75rem ≈ 44px → ~38% da largura → elemento dominante
+   • 2.1rem  ≈ 33px → ~28% da largura → elemento de suporte
+
+   O emoji deve "anunciar" o estado da planta, não ocupar
+   todo o espaço visual. O número de streak (o dado real)
+   precisa de igualdade hierárquica com o ícone.
+*/
+.patient-home__plant-emoji {
+  font-size: 2.1rem;
+  line-height: 1;
+  display: block;
+  transform-origin: bottom center;
+  animation: plant-sway 5s ease-in-out infinite;
+}
+
+@keyframes plant-sway {
+  0%   { transform: rotate(0deg);    }
+  20%  { transform: rotate(2.5deg);  }
+  50%  { transform: rotate(0deg);    }
+  70%  { transform: rotate(-1.8deg); }
+  100% { transform: rotate(0deg);    }
+}
+
+/* ── Dados de streak ──────────────────────────────────────────
+   gap: 2px  (era: 3px) — número e label ficam ainda mais
+   unidos, formando uma unidade léxica "42 dias seguidos".
+
+   streak-val: font-size 1.5rem (era 1.75rem) e line-height
+   explícito 1.1 — reduz a altura de linha implícita do
+   browser, que adicionava ~4px invisíveis abaixo do número.
+*/
+.patient-home__plant-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
 
 .patient-home__streak-val {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 800;
-  line-height: 1;
-  /* color se aplica inline desde stage.color (valor dinámico de datos) */
+  line-height: 1.1;
 }
 
 .patient-home__streak-label {
-  font-size: 0.675rem;
+  font-size: 0.625rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--text-muted, #9ca3af);
+  line-height: 1.2;
 }
 
-/* StatCard con borde de advertencia */
 .patient-home__stat--overdue {
-  border: 1.5px solid var(--accent, #f59e0b) !important;
+  box-shadow: var(--card-shadow), 0 0 0 2px var(--accent, #e07820) !important;
+  border: none !important;
 }
 
 /* ── Aviso de streak ──────────────────────────────────────── */
 .patient-home__streak-warn {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  background: var(--surface, #fff);
-  border-radius: 14px;
-  padding: 14px 16px;
-  border: 1.5px solid rgba(107, 158, 120, 0.4);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  align-items: center;
+  gap: 14px;
+  background: var(--white, #fff);
+  border-radius: var(--card-radius);
+  padding: var(--card-padding);
+  box-shadow: var(--card-shadow);
+  border: none;
 }
 
 .patient-home__streak-warn--late {
-  border-color: rgba(245, 158, 11, 0.5);
-  background: rgba(255, 251, 235, 0.8);
+  background: linear-gradient(135deg,
+    rgba(255, 251, 235, 0.95) 0%,
+    rgba(255, 244, 214, 0.95) 100%
+  );
+  box-shadow: var(--card-shadow),
+              0 0 0 1.5px rgba(245, 158, 11, 0.25);
 }
 
 .patient-home__streak-warn-icon {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   flex-shrink: 0;
-  margin-top: 1px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
 }
 
 .patient-home__streak-warn-body {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .patient-home__streak-warn-title {
   font-size: 0.9375rem;
   font-weight: 700;
-  color: var(--sage-dark, #4a7c5f);
-  margin: 0 0 4px;
+  color: var(--blue-dark, #17527c);
+  margin: 0;
+  line-height: 1.3;
 }
 
 .patient-home__streak-warn-title--late {
-  color: #b45309;
+  color: #92620a;
 }
 
 .patient-home__streak-warn-desc {
-  font-size: 0.825rem;
-  color: var(--text-secondary, #718096);
+  font-size: 0.8375rem;
+  color: var(--text-muted, #718096);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 /* ── Meta semanal ─────────────────────────────────────────── */
 .patient-home__goal-card {
-  background: var(--surface, #fff);
-  border-radius: 14px;
-  padding: 16px 18px;
-  border: 1px solid var(--warm, #e8e0d5);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  background: var(--white, #fff);
+  border-radius: var(--card-radius);
+  padding: var(--card-padding);
+  box-shadow: var(--card-shadow);
+  border: none;
 }
 
-/* ── CTA ──────────────────────────────────────────────────── */
+/* ── CTA — base ───────────────────────────────────────────── */
 .patient-home__cta {
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: var(--card-radius);
+  padding: var(--card-padding);
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.28s ease, box-shadow 0.28s ease;
   border: none;
   text-align: left;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--card-shadow);
 }
 
 .patient-home__cta:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14);
+  box-shadow: var(--card-shadow-hover);
 }
 
 .patient-home__cta:active {
-  transform: translateY(0);
+  transform: translateY(-1px);
 }
 
 .patient-home__cta:focus-visible {
-  outline: 3px solid var(--primary, #17527c);
+  outline: 3px solid var(--blue-dark, #17527c);
   outline-offset: 3px;
+  border-radius: var(--card-radius);
 }
 
+/* ── CTA — Light mode ─────────────────────────────────────── */
 .patient-home__cta--diary {
-  background: linear-gradient(135deg, #e8f5ec 0%, #d4edd9 100%);
-  border: 1.5px solid #c3e6cb;
+  background: linear-gradient(140deg,
+    #eef6f0 0%,
+    #ddf0e2 60%,
+    #d0ebd8 100%
+  );
 }
 
 .patient-home__cta--exercises {
-  background: linear-gradient(135deg, #e8f0f7 0%, #d6e8f5 100%);
-  border: 1.5px solid #b8d4ec;
+  background: linear-gradient(140deg,
+    #eaf2f8 0%,
+    #d8eaf5 60%,
+    #cce3f2 100%
+  );
 }
 
+/* ── CTA — Dark mode ─────────────────────────────────────── */
+body.dark-mode .patient-home__cta--exercises {
+  background: linear-gradient(140deg,
+    #1e3d56 0%,
+    #193450 60%,
+    #152d48 100%
+  );
+  border: 1px solid rgba(111, 184, 222, 0.14);
+  box-shadow: var(--card-shadow),
+              inset 0 1px 0 rgba(111, 184, 222, 0.08);
+}
+
+body.dark-mode .patient-home__cta--diary {
+  background: linear-gradient(140deg,
+    #163826 0%,
+    #12301e 60%,
+    #0e2a18 100%
+  );
+  border: 1px solid rgba(90, 176, 122, 0.14);
+  box-shadow: var(--card-shadow),
+              inset 0 1px 0 rgba(90, 176, 122, 0.08);
+}
+
+body.dark-mode .patient-home__streak-warn--late {
+  background: linear-gradient(135deg,
+    rgba(58, 38, 0, 0.95)  0%,
+    rgba(50, 32, 0, 0.95) 100%
+  );
+  box-shadow: var(--card-shadow),
+              0 0 0 1.5px rgba(245, 160, 58, 0.22);
+}
+
+body.dark-mode .patient-home__streak-warn-title--late {
+  color: var(--pt-amber-700, #ffca80);
+}
+
+/* ── CTA — body e ícone ───────────────────────────────────── */
 .patient-home__cta-body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 16px;
+}
+
+.patient-home__cta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
 }
 
 .patient-home__cta-title {
-  font-size: 1rem;
+  font-size: 1.0625rem;
   font-weight: 700;
-  color: var(--text-primary, #1a202c);
-  margin: 0 0 6px;
+  color: var(--text, #1a202c);
+  margin: 0;
   line-height: 1.3;
 }
 
 .patient-home__cta-desc {
-  font-size: 0.85rem;
-  color: var(--text-secondary, #718096);
+  font-size: 0.875rem;
+  color: var(--text-muted, #718096);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .patient-home__cta-icon {
   font-size: 2.5rem;
   flex-shrink: 0;
   line-height: 1;
+  display: flex;
+  align-items: center;
 }
 
 .patient-home__cta-ex-icon {
   font-size: 1.4rem;
-  margin-bottom: 8px;
+  line-height: 1;
+  margin: 0 0 4px;
 }
 
 /* ── Estado "todo en orden" ───────────────────────────────── */
@@ -411,23 +553,25 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 36px 20px;
-  background: var(--surface, #fff);
-  border-radius: 16px;
-  border: 1px solid var(--warm, #e8e0d5);
+  padding: 40px 24px;
+  background: var(--white, #fff);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  border: none;
   text-align: center;
 }
 
 .patient-home__all-done-icon {
-  font-size: 2.5rem;
+  font-size: 2.75rem;
   line-height: 1;
 }
 
 .patient-home__all-done-text {
   font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--text-primary, #1a202c);
+  color: var(--text, #1a202c);
   margin: 0;
+  line-height: 1.5;
 }
 
 /* ── sr-only ──────────────────────────────────────────────── */
@@ -445,6 +589,22 @@
 
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 480px) {
+  .patient-home {
+    gap: 18px;
+  }
+
+  .patient-home__plant-emoji {
+    font-size: 1.8rem;
+  }
+
+  .patient-home__plant-emoji-wrap {
+    height: 38px;
+  }
+
+  .patient-home__streak-val {
+    font-size: 1.35rem;
+  }
+
   .patient-home__cta-body {
     flex-direction: column;
     align-items: flex-start;
@@ -454,7 +614,7 @@
     display: none;
   }
 
-  .patient-home__plant-emoji {
-    font-size: 2.25rem;
+  .patient-home__all-done {
+    padding: 32px 20px;
   }
 }

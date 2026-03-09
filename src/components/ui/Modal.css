@@ -2,7 +2,12 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
+
+  /* FIX 1 · Z-Index elevado a 1000.
+     Garantiza superposición sobre BottomNav (101), su drawer (103)
+     y cualquier FAB (200) del layout principal. */
+  z-index: 1000;
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -25,8 +30,11 @@
   border: 1px solid var(--warm);
   animation: modal-fade-up 0.25s ease;
 
-  /* Prevent dialog from growing taller than the viewport */
-  max-height: calc(100vh - 40px);
+  /* FIX 2 · Reemplaza 100vh por 100dvh (dynamic viewport height).
+     En Safari/Chrome móvil, vh incluye la barra del navegador, lo que
+     hace que el modal quede cortado en la parte inferior. dvh se recalcula
+     dinámicamente cuando esa barra aparece o desaparece. */
+  max-height: calc(100dvh - 40px);
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -39,12 +47,8 @@
 
 /* ── Animations ──────────────────────────────────────────────────────────── */
 @keyframes modal-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes modal-fade-up {
@@ -67,15 +71,26 @@
 
   .modal-dialog {
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    max-height: 88vh;
-    /* Full width on mobile */
+
+    /* FIX 2 (continuación) · Mismo criterio: dvh en lugar de vh.
+       88vh en Safari podía hacer que el sheet quedara tapado por
+       la barra de navegación nativa al scrollear. */
+    max-height: 88dvh;
+
+    /* FIX 3 · Se añade padding-bottom con safe-area-inset-bottom.
+       Sin esto, en iPhones con Home Indicator el contenido inferior
+       del sheet queda oculto detrás del área del sistema. */
+    padding: 24px 20px calc(20px + env(safe-area-inset-bottom));
+
     max-width: 100% !important;
-    padding: 24px 20px;
     animation: modal-slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .modal-dialog--no-padding {
-    padding: 0;
+    /* FIX 3 (variante sin padding) · Preservamos solo el safe-area
+       para que el contenido interno pueda gestionar su propio spacing
+       pero el sistema operativo nunca tape el borde inferior. */
+    padding: 0 0 env(safe-area-inset-bottom);
   }
 
   @keyframes modal-slide-up {

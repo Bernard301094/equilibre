@@ -76,11 +76,24 @@
   gap: 2px;
   padding: 16px 12px;
   overflow-y: auto;
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none;
+
+  /* FIX · Colchón visual al final del scroll.
+     Cuando la lista de ítems supera la altura disponible,
+     el último enlace queda pegado contra el borde del footer.
+     padding-bottom añade 16px de respiro en el interior del
+     scroll container, de modo que al llegar al fondo siempre
+     queda aire entre el último ítem y el separador del footer.
+
+     Nota: en contenedores con overflow-y: auto el padding-bottom
+     sí se respeta en todos los navegadores modernos cuando el
+     contenido desborda, a diferencia del margen del último hijo
+     que algunos engines colapsan o ignoran en este contexto. */
+  padding-bottom: 16px;
 }
 
 .sidebar__nav::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
+  display: none;
 }
 
 .sidebar__nav-item {
@@ -254,6 +267,42 @@
 /* ── Variante paciente (se aplica desde PatientLayout via className) ── */
 .patient-layout__sidebar {
   background: linear-gradient(185deg, #0f3d5c 0%, #1a6090 100%);
+}
+
+/* ── PATCH: sidebar__avatar-btn ──────────────────────────────────────────────
+   Adicione este bloco ao seu Sidebar.css existente, na seção do footer/user-pill.
+   Garante que o botão ao redor do avatar não quebre o layout do user-pill e
+   que o cursor de mão sinalize a clicabilidade corretamente.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.sidebar__avatar-btn {
+  /* Reset completo de button para não herdar borda, fundo ou padding */
+  all: unset;
+
+  /* Manter o display inline-flex para não quebrar o alinhamento no flex do user-pill */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Área de toque mínima (WCAG 2.5.5) */
+  min-width:  38px;
+  min-height: 38px;
+
+  cursor: pointer;
+  border-radius: 50%;
+
+  /* Anel de foco acessível — visível apenas via teclado */
+  outline-offset: 2px;
+}
+
+.sidebar__avatar-btn:focus-visible {
+  outline: 2px solid var(--blue-mid, #2e7fab);
+}
+
+.sidebar__avatar-btn:hover .sidebar__avatar,
+.sidebar__avatar-btn:focus-visible .sidebar__avatar {
+  opacity: 0.82;
+  transition: opacity 0.15s ease;
 }
 
 /* ── Responsive: la sidebar solo existe en desktop ────────── */

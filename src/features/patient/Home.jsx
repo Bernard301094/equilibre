@@ -50,9 +50,9 @@ export default function PatientHome({ session, setSession, setView }) {
 
         const now      = new Date();
         const hour     = now.getHours();
-        const pendList = Array.isArray(pendRows)   ? pendRows   : [];
-        const respList = Array.isArray(responses)  ? responses  : [];
-        const dList    = Array.isArray(diary)       ? diary      : [];
+        const pendList = Array.isArray(pendRows)  ? pendRows  : [];
+        const respList = Array.isArray(responses) ? responses : [];
+        const dList    = Array.isArray(diary)     ? diary     : [];
 
         const activeDates = [
           ...dList.map((e) => e.date),
@@ -128,9 +128,9 @@ export default function PatientHome({ session, setSession, setView }) {
   if (loading) {
     return (
       <div className="patient-home-loading">
-        <div className="patient-home-loading__icon" aria-hidden="true">✨</div>
-        <div className="patient-home-loading__title">Respire fundo...</div>
-        <div className="patient-home-loading__sub">Preparando o seu espaço de cuidado.</div>
+        <span className="patient-home-loading__icon" aria-hidden="true">✨</span>
+        <p className="patient-home-loading__title">Respire fundo...</p>
+        <p className="patient-home-loading__sub">Preparando o seu espaço de cuidado.</p>
       </div>
     );
   }
@@ -142,15 +142,15 @@ export default function PatientHome({ session, setSession, setView }) {
     <div className="patient-home page-fade-in">
 
       {/* ── Header ── */}
-      <div className="patient-home__header">
+      <header className="patient-home__header">
         <h2 className="patient-home__greeting">{getGreeting(firstName)}</h2>
         <p className="patient-home__greeting-sub">{getGreetingSub()}</p>
-      </div>
+      </header>
 
       {/* ── Vincular profesional ── */}
       {!session.therapist_id && (
         <div className="patient-home__link-card">
-          <div className="patient-home__link-icon" aria-hidden="true">🤝</div>
+          <span className="patient-home__link-icon" aria-hidden="true">🤝</span>
           <div className="patient-home__link-body">
             <h3 className="patient-home__link-title">Vincular profissional</h3>
             <p className="patient-home__link-desc">
@@ -195,24 +195,29 @@ export default function PatientHome({ session, setSession, setView }) {
       {/* ── Stats ── */}
       <div className="patient-home__stats-grid">
 
-        {/* Planta / streak */}
+        {/* Tarjeta planta — emoji aislado en wrapper para transform-origin correcto */}
         <div className="patient-home__plant-card">
           {showWater && (
-            <div className="patient-home__water-drop" aria-hidden="true">💧</div>
+            <span className="patient-home__water-drop" aria-hidden="true">💧</span>
           )}
-          <div
-            className="patient-home__plant-emoji"
-            aria-label={`Planta: ${stage.label}`}
-          >
-            {stage.icon}
+          <div className="patient-home__plant-emoji-wrap">
+            <span
+              className="patient-home__plant-emoji"
+              role="img"
+              aria-label={`Planta: ${stage.label}`}
+            >
+              {stage.icon}
+            </span>
           </div>
-          <div
-            className="patient-home__streak-val"
-            style={{ color: stage.color }}
-          >
-            {data.streak}
+          <div className="patient-home__plant-data">
+            <span
+              className="patient-home__streak-val"
+              style={{ color: stage.color }}
+            >
+              {data.streak}
+            </span>
+            <span className="patient-home__streak-label">Dias seguidos</span>
           </div>
-          <div className="patient-home__streak-label">Dias seguidos</div>
         </div>
 
         <StatCard icon="⏳" value={data.pending} label="Para fazer" />
@@ -240,9 +245,9 @@ export default function PatientHome({ session, setSession, setView }) {
           ].filter(Boolean).join(" ")}
           role="alert"
         >
-          <div className="patient-home__streak-warn-icon" aria-hidden="true">
+          <span className="patient-home__streak-warn-icon" aria-hidden="true">
             {data.isLate ? "⚠️" : "🪴"}
-          </div>
+          </span>
           <div className="patient-home__streak-warn-body">
             <h3 className={[
               "patient-home__streak-warn-title",
@@ -276,13 +281,13 @@ export default function PatientHome({ session, setSession, setView }) {
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setView("diary")}
         >
           <div className="patient-home__cta-body">
-            <div>
+            <div className="patient-home__cta-text">
               <h3 className="patient-home__cta-title">Vamos regar agora?</h3>
               <p className="patient-home__cta-desc">
                 Registe como você está hoje no diário e mantenha seu jardim vivo.
               </p>
             </div>
-            <div className="patient-home__cta-icon" aria-hidden="true">🚿</div>
+            <span className="patient-home__cta-icon" aria-hidden="true">🚿</span>
           </div>
         </div>
 
@@ -296,19 +301,21 @@ export default function PatientHome({ session, setSession, setView }) {
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setView("exercises")}
         >
           <div className="patient-home__cta-body">
-            <div className="patient-home__cta-ex-icon" aria-hidden="true">📋</div>
-            <h3 className="patient-home__cta-title">
-              Você tem {data.pending} exercício{data.pending > 1 ? "s" : ""} pendente{data.pending > 1 ? "s" : ""}!
-            </h3>
-            <p className="patient-home__cta-desc">
-              Clique aqui para começar quando estiver pronto(a).
-            </p>
+            <div className="patient-home__cta-text">
+              <span className="patient-home__cta-ex-icon" aria-hidden="true">📋</span>
+              <h3 className="patient-home__cta-title">
+                Você tem {data.pending} exercício{data.pending > 1 ? "s" : ""} pendente{data.pending > 1 ? "s" : ""}!
+              </h3>
+              <p className="patient-home__cta-desc">
+                Clique aqui para começar quando estiver pronto(a).
+              </p>
+            </div>
           </div>
         </div>
 
       ) : (
         <div className="patient-home__all-done">
-          <div className="patient-home__all-done-icon" aria-hidden="true">🎉</div>
+          <span className="patient-home__all-done-icon" aria-hidden="true">🎉</span>
           <p className="patient-home__all-done-text">
             Você está em dia com o seu cuidado hoje!
           </p>
