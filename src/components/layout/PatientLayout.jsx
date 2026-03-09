@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from "react";
-import Sidebar    from "./Sidebar";
-import BottomNav  from "./BottomNav";
-import ToastContainer from "../ui/Toast";
-import PatientHome     from "../../features/patient/Home";
-import PatientExercises from "../../features/patient/ExercisesView";
-import ExercisePage    from "../../features/patient/ExercisePage";
-import PatientDiary    from "../../features/patient/DiaryView";
-import PatientRoutine  from "../../features/patient/RoutineView";
-import PatientProgress from "../../features/patient/ProgressView";
-import PatientHistory  from "../../features/patient/HistoryView";
-import ProfileModal    from "../shared/ProfileModal";
+import Sidebar            from "./Sidebar";
+import BottomNav          from "./BottomNav";
+import ToastContainer     from "../ui/Toast";
+import PatientHome        from "../../features/patient/Home";
+import PatientExercises   from "../../features/patient/PatientExercises";
+import ExercisePage       from "../../features/patient/ExercisePage";
+import PatientDiary       from "../../features/patient/DiaryView";
+import PatientRoutine     from "../../features/patient/RoutineView";
+import PatientProgress    from "../../features/patient/PatientProgress";
+import PatientHistory     from "../../features/patient/PatientHistory";
+import ProfileModal       from "../shared/ProfileModal";
 import DeleteAccountModal from "../shared/DeleteAccountModal";
 import db from "../../services/db";
 
