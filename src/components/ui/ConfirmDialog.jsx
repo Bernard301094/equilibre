@@ -1,20 +1,21 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import "./ConfirmDialog.css";
 
 /**
  * ConfirmDialog
  *
  * Props:
- *   title        string
- *   description  string
- *   icon         string (emoji)
- *   confirmLabel string   (default "Confirmar")
- *   cancelLabel  string   (default "Cancelar")
- *   danger       bool     — red confirm button
- *   keyword      string   — if set, user must type this word to enable confirm
- *   loading      bool
- *   onConfirm    () => void
- *   onClose      () => void
- *   error        string
+ * title        string
+ * description  string
+ * icon         string (emoji)
+ * confirmLabel string   (default "Confirmar")
+ * cancelLabel  string   (default "Cancelar")
+ * danger       bool     — red confirm button
+ * keyword      string   — if set, user must type this word to enable confirm
+ * loading      bool
+ * onConfirm    () => void
+ * onClose      () => void
+ * error        string
  */
 export default function ConfirmDialog({
   title,
@@ -29,82 +30,69 @@ export default function ConfirmDialog({
   onClose,
   error,
 }) {
-  const inputRef    = useRef(null);
-  const cancelRef   = useRef(null);
-  const [typed, setTyped] = [
-    useRef(""),
-    (val) => {
-      typed.current = val;
-      forceRender((n) => n + 1);
-    },
-  ];
-  const [, forceRender] = useReducerShim();
-
-  // Focus cancel on mount, then restore on close
+  const inputRef  = useRef(null);
+  const cancelRef = useRef(null);
   const restoreRef = useRef(null);
+  
+  const [typed, setTyped] = useState("");
+
+  // Focus inicial y restauración al cerrar
   useEffect(() => {
     restoreRef.current = document.activeElement;
-    (keyword ? inputRef.current : cancelRef.current)?.focus();
+    if (keyword && inputRef.current) {
+      inputRef.current.focus();
+    } else if (cancelRef.current) {
+      cancelRef.current.focus();
+    }
     return () => restoreRef.current?.focus();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [keyword]);
 
-  // Escape key
+  // Cerrar con Escape
   useEffect(() => {
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    const handler = (e) => { 
+      if (e.key === "Escape") onClose(); 
+    };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  const canConfirm = !loading && (!keyword || typed.current === keyword);
+  const canConfirm = !loading && (!keyword || typed === keyword);
 
   return (
     <div
-      className="delete-overlay"
+      className="confirm-overlay"
       onClick={onClose}
       role="presentation"
     >
       <div
-        className="delete-modal"
+        className="confirm-modal"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="confirm-dialog-title"
+        aria-labelledby={title ? "confirm-dialog-title" : undefined}
         aria-describedby={description ? "confirm-dialog-desc" : undefined}
       >
         {icon && (
-          <div
-            className="delete-icon"
-            aria-hidden="true"
-            style={{ fontSize: 42, marginBottom: 16 }}
-          >
+          <div className="confirm-icon" aria-hidden="true">
             {icon}
           </div>
         )}
 
         {title && (
-          <div
-            id="confirm-dialog-title"
-            className="delete-title"
-            style={{ fontSize: 20 }}
-          >
+          <h3 id="confirm-dialog-title" className="confirm-title">
             {title}
-          </div>
+          </h3>
         )}
 
         {description && (
-          <div
-            id="confirm-dialog-desc"
-            className="delete-desc"
-            style={{ marginBottom: keyword ? 16 : 24, fontSize: 14 }}
-            dangerouslySetInnerHTML={undefined}
-          >
+          <p id="confirm-dialog-desc" className={`confirm-desc ${keyword ? 'with-keyword' : ''}`}>
             {description}
-          </div>
+          </p>
         )}
 
         {keyword && (
-          <div style={{ marginBottom: 24 }}>
-            <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 8 }}>
+          <div className="confirm-keyword-wrapper">
+            <p className="confirm-keyword-hint">
               Digite <strong>{keyword}</strong> para confirmar:
             </p>
             <label htmlFor="confirm-dialog-input" className="sr-only">
@@ -115,42 +103,30 @@ export default function ConfirmDialog({
               ref={inputRef}
               type="text"
               autoComplete="off"
-              value={typed.current}
+              value={typed}
               onChange={(e) => setTyped(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px 14px",
-                border: `1.5px solid ${typed.current === keyword ? "var(--sage)" : "var(--warm)"}`,
-                borderRadius: 10,
-                fontFamily: "DM Sans, sans-serif",
-                fontSize: 14,
-                background: "var(--cream)",
-                color: "var(--text)",
-                outline: "none",
-                boxSizing: "border-box",
-                transition: "border-color .2s",
-              }}
+              className={`confirm-input ${typed === keyword ? 'match' : ''}`}
             />
           </div>
         )}
 
         {error && (
-          <p className="error-msg" role="alert" style={{ marginBottom: 14 }}>
+          <p className="confirm-error-msg" role="alert">
             {error}
           </p>
         )}
 
-        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+        <div className="confirm-actions">
           <button
             ref={cancelRef}
-            className="btn btn-outline"
+            className="confirm-btn confirm-btn-cancel"
             onClick={onClose}
             disabled={loading}
           >
             {cancelLabel}
           </button>
           <button
-            className={danger ? "btn-danger" : "btn btn-sage"}
+            className={`confirm-btn ${danger ? "confirm-btn-danger" : "confirm-btn-primary"}`}
             onClick={onConfirm}
             disabled={!canConfirm}
             aria-busy={loading}
@@ -161,11 +137,4 @@ export default function ConfirmDialog({
       </div>
     </div>
   );
-}
-
-// Minimal local replacement for useState to avoid extra import complexity
-// in the typed-keyword input above.
-function useReducerShim() {
-  const [n, setN] = [useRef(0), (fn) => { useRef(0).current = fn(0); }];
-  return [n.current, setN];
 }

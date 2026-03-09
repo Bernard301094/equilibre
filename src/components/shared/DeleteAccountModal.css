@@ -1,0 +1,158 @@
+/* ==========================================================================
+   DELETEACCOUNTMODAL.CSS
+   Estilos específicos para el modal de eliminación de cuenta (Mobile-First)
+   ========================================================================== */
+
+.delete-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 15, 25, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-md);
+  backdrop-filter: blur(6px);
+  animation: fadeIn 0.2s ease;
+}
+
+.delete-modal {
+  background: var(--color-surface-card);
+  border-radius: var(--radius-xl);
+  padding: 36px var(--space-lg);
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-surface-hover);
+  animation: fadeUp 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+  box-sizing: border-box;
+}
+
+.delete-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-sm);
+  line-height: 1;
+}
+
+.delete-title {
+  font-family: var(--font-heading-main);
+  font-size: var(--text-xl);
+  color: var(--color-text-main);
+  margin-bottom: var(--space-xs);
+}
+
+.delete-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-bottom: var(--space-lg);
+}
+
+/* ─── INPUT DE CONFIRMACIÓN ─── */
+.delete-confirm-input {
+  width: 100%;
+  min-height: 48px; /* REGLA MAESTRA: Toque generoso en móvil */
+  padding: 0 var(--space-md);
+  border: 2px solid var(--color-surface-hover);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body-main);
+  font-size: var(--text-base);
+  text-align: center;
+  letter-spacing: 0.1em;
+  background: var(--color-surface-bg);
+  color: var(--color-text-main);
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+  margin-bottom: var(--space-md);
+}
+
+.delete-confirm-input:focus {
+  border-color: var(--color-danger-base);
+  box-shadow: 0 0 0 3px rgba(176, 48, 48, 0.15);
+}
+
+body.dark-mode .delete-confirm-input {
+  background: var(--color-surface-card);
+  border-color: var(--color-surface-hover);
+}
+
+/* ─── MENSAJE DE ERROR ─── */
+.delete-error-msg {
+  color: var(--color-danger-base);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+}
+
+/* ─── BOTONES DE ACCIÓN ─── */
+.delete-actions {
+  display: flex;
+  flex-direction: column; /* Apilados en móvil por defecto */
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.delete-btn-cancel,
+.delete-btn-confirm {
+  width: 100%;
+  min-height: 48px; /* Área táctil accesible */
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body-main);
+  font-size: var(--text-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-btn-cancel {
+  background: transparent;
+  border: 1.5px solid var(--color-surface-hover);
+  color: var(--color-text-muted);
+}
+
+.delete-btn-cancel:hover:not(:disabled) {
+  background: rgba(46, 127, 171, 0.07);
+  color: var(--color-brand-dark);
+  border-color: var(--color-brand-base);
+}
+
+.delete-btn-confirm {
+  background: linear-gradient(135deg, var(--color-danger-base), #8b1c1c);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 3px 10px rgba(176, 48, 48, 0.28);
+}
+
+.delete-btn-confirm:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(176, 48, 48, 0.38);
+}
+
+.delete-btn-cancel:disabled,
+.delete-btn-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ==========================================================================
+   MEDIA QUERIES
+   ========================================================================== */
+@media (min-width: 480px) {
+  /* En pantallas un poco más anchas, ponemos los botones lado a lado */
+  .delete-actions {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .delete-btn-cancel,
+  .delete-btn-confirm {
+    flex: 1;
+  }
+}

@@ -1,0 +1,108 @@
+/* ==========================================================================
+   BOTTOMNAV.CSS
+   Navegación inferior para móviles. Se oculta en pantallas grandes.
+   ========================================================================== */
+
+/* ─── CONTENEDOR PRINCIPAL (Mobile) ─── */
+.bottom-nav-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: var(--color-surface-card);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  /* Padding inferior dinámico para el área segura (notches/barras gestuales) */
+  padding: var(--space-xs) var(--space-sm) calc(var(--space-xs) + env(safe-area-inset-bottom)) var(--space-sm);
+  box-shadow: 0 -4px 16px rgba(15, 30, 42, 0.08);
+  border-top: 1px solid var(--color-surface-hover);
+  z-index: 50; /* Por encima del contenido principal, por debajo de modales */
+}
+
+body.dark-mode .bottom-nav-container {
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── BOTÓN DE NAVEGACIÓN ─── */
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px; /* REGLA MAESTRA: Toque generoso para pulgares */
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.2s ease;
+  padding: var(--space-xs);
+}
+
+.bottom-nav-item:hover {
+  color: var(--color-brand-base);
+}
+
+.bottom-nav-item.active {
+  color: var(--color-brand-dark);
+}
+
+/* ─── ICONOS Y BADGES ─── */
+.bottom-nav-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-nav-icon {
+  font-size: 22px; /* Ícono grande para rápida identificación visual */
+  transition: transform 0.2s ease;
+}
+
+.bottom-nav-item.active .bottom-nav-icon {
+  transform: translateY(-2px) scale(1.1);
+}
+
+/* Burbuja de notificaciones (ej: tareas pendientes) */
+.bottom-nav-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  background: var(--color-accent-base);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  min-width: 18px;
+  text-align: center;
+  border: 2px solid var(--color-surface-card);
+}
+
+/* ─── ETIQUETA DE TEXTO ─── */
+.bottom-nav-label {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-body-main);
+  opacity: 0.8;
+  transition: opacity 0.2s, font-weight 0.2s;
+}
+
+.bottom-nav-item.active .bottom-nav-label {
+  opacity: 1;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   MEDIA QUERIES
+   ========================================================================== */
+
+/* En tablets y escritorio, la navegación pasa al Sidebar, por lo que ocultamos BottomNav */
+@media (min-width: 768px) {
+  .bottom-nav-container {
+    display: none;
+  }
+}

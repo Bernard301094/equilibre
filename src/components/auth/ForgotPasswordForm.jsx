@@ -1,11 +1,12 @@
 import { useState } from "react";
 import auth from "../../services/auth";
 import { validateResetEmail } from "../../utils/validation";
+import "./ForgotPasswordForm.css";
 
 /**
  * Props:
- *   initialEmail  — pre-fills the email field
- *   onBack        — callback to return to the login view
+ * initialEmail  — pre-fills the email field
+ * onBack        — callback to return to the login view
  */
 export default function ForgotPasswordForm({ initialEmail = "", onBack }) {
   const [email, setEmail] = useState(initialEmail);
@@ -36,26 +37,21 @@ export default function ForgotPasswordForm({ initialEmail = "", onBack }) {
   };
 
   return (
-    <>
-      <div style={{ textAlign: "center", marginBottom: 24 }}>
-        <div style={{ fontSize: 36, marginBottom: 8 }} aria-hidden="true">
+    <div className="forgot-form-wrapper">
+      <div className="forgot-header">
+        <div className="forgot-icon" aria-hidden="true">
           🔑
         </div>
-        <h2 style={{ fontSize: 18, marginBottom: 6 }}>Recuperar senha</h2>
-        <p
-          style={{
-            fontSize: 13,
-            color: "var(--text-muted)",
-            lineHeight: 1.5,
-          }}
-        >
+        <h2 className="forgot-title">Recuperar senha</h2>
+        <p className="forgot-desc">
           Informe o seu e-mail e enviaremos um link para redefinir a sua senha.
         </p>
       </div>
 
-      <div className="field">
-        <label htmlFor="reset-email">E-mail</label>
+      <div className="forgot-field">
+        <label className="forgot-label" htmlFor="reset-email">E-mail</label>
         <input
+          className="forgot-input"
           id="reset-email"
           type="email"
           value={email}
@@ -68,12 +64,7 @@ export default function ForgotPasswordForm({ initialEmail = "", onBack }) {
 
       {message.text && (
         <p
-          style={{
-            fontSize: 13,
-            color: message.type === "success" ? "var(--sage-dark)" : "#c0444a",
-            marginBottom: 12,
-            textAlign: "center",
-          }}
+          className={`forgot-msg ${message.type === "success" ? "forgot-msg-success" : "forgot-msg-error"}`}
           role="alert"
         >
           {message.text}
@@ -81,7 +72,7 @@ export default function ForgotPasswordForm({ initialEmail = "", onBack }) {
       )}
 
       <button
-        className="btn-primary"
+        className="forgot-submit-btn"
         onClick={handleSubmit}
         disabled={loading}
         aria-busy={loading}
@@ -89,30 +80,15 @@ export default function ForgotPasswordForm({ initialEmail = "", onBack }) {
         {loading ? "A enviar..." : "Enviar link de recuperação"}
       </button>
 
-      <p
-        style={{
-          textAlign: "center",
-          marginTop: 12,
-          fontSize: 13,
-          color: "var(--text-muted)",
-        }}
-      >
+      <div className="forgot-footer">
         <button
+          className="forgot-back-btn"
           type="button"
-          style={{
-            background: "none",
-            border: "none",
-            color: "var(--sage-dark)",
-            cursor: "pointer",
-            fontWeight: 500,
-            fontSize: 13,
-            padding: 0,
-          }}
           onClick={onBack}
         >
           ← Voltar ao login
         </button>
-      </p>
-    </>
+      </div>
+    </div>
   );
 }

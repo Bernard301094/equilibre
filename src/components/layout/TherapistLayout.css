@@ -1,0 +1,256 @@
+/* ==========================================================================
+   THERAPISTLAYOUT.CSS
+   Estructura principal para el Terapeuta y componentes exclusivos de layout
+   ========================================================================== */
+
+.therapist-layout-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--color-surface-bg);
+}
+
+/* ─── ÁREA DE CONTENIDO PRINCIPAL (Mobile First) ─── */
+.therapist-main-content {
+  flex: 1;
+  width: 100%;
+  padding: var(--space-md);
+  padding-bottom: calc(80px + env(safe-area-inset-bottom)); /* Espacio para el BottomNav */
+  margin-left: 0;
+  transition: margin-left 0.3s ease;
+  box-sizing: border-box;
+}
+
+/* ─── MODAL DE CERRAR SESIÓN ─── */
+.logout-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 15, 25, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-md);
+  backdrop-filter: blur(6px);
+  animation: fadeIn 0.2s ease;
+}
+
+.logout-modal {
+  background: var(--color-surface-card);
+  border-radius: var(--radius-xl);
+  padding: 36px var(--space-lg);
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-surface-hover);
+  animation: fadeUp 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.logout-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-sm);
+}
+
+.logout-title {
+  font-family: var(--font-heading-main);
+  font-size: var(--text-xl);
+  color: var(--color-text-main);
+  margin-bottom: var(--space-xs);
+}
+
+.logout-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-bottom: var(--space-lg);
+}
+
+.logout-actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+}
+
+.logout-btn-cancel {
+  background: transparent;
+  border: 1.5px solid var(--color-surface-hover);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  padding: 10px var(--space-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 44px; /* REGLA MAESTRA: Toque móvil */
+}
+
+.logout-btn-cancel:hover {
+  background: rgba(46, 127, 171, 0.07);
+  color: var(--color-brand-dark);
+  border-color: var(--color-brand-base);
+}
+
+.logout-btn-confirm {
+  background: linear-gradient(135deg, var(--color-danger-base), #8b1c1c);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px var(--space-md);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 3px 10px rgba(176, 48, 48, 0.28);
+  min-height: 44px; /* REGLA MAESTRA: Toque móvil */
+}
+
+.logout-btn-confirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(176, 48, 48, 0.38);
+}
+
+/* ─── CAMPANA FLOTANTE (Mobile Only) ─── */
+@keyframes bell-shake {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  15% { transform: rotate(-14deg) scale(1.08); }
+  30% { transform: rotate(12deg) scale(1.10); }
+  45% { transform: rotate(-10deg) scale(1.08); }
+  60% { transform: rotate(8deg) scale(1.05); }
+  75% { transform: rotate(-5deg) scale(1.02); }
+  90% { transform: rotate(2deg) scale(1.01); }
+}
+
+@keyframes bell-attention {
+  0%, 100% { box-shadow: 0 4px 20px rgba(224, 120, 32, 0.45); }
+  50% { box-shadow: 0 4px 28px rgba(224, 120, 32, 0.80), 0 0 0 8px rgba(224, 120, 32, 0.12); }
+}
+
+@keyframes badge-in {
+  from { transform: translate(30%, -30%) scale(0); opacity: 0; }
+  to { transform: translate(30%, -30%) scale(1); opacity: 1; }
+}
+
+.floating-bell-wrap {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 200;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.25s, box-shadow 0.25s;
+  background: rgba(23, 82, 124, 0.82);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(23, 82, 124, 0.30);
+}
+
+.floating-bell-wrap.has-unread {
+  background: linear-gradient(135deg, var(--color-accent-base), #c06010);
+  box-shadow: 0 4px 20px rgba(224, 120, 32, 0.45);
+}
+
+.floating-bell-wrap.has-unread:not(.is-active) {
+  animation: bell-attention 2.4s ease-in-out infinite;
+}
+
+.floating-bell-wrap.is-active {
+  background: linear-gradient(135deg, var(--color-brand-dark), var(--color-brand-base));
+  box-shadow: 0 4px 18px rgba(23, 82, 124, 0.45);
+}
+
+.floating-bell-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.90);
+  font-size: 22px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s;
+  position: relative;
+}
+
+.floating-bell-wrap.is-active .floating-bell-btn {
+  transform: rotate(-12deg) scale(1.1);
+  color: #ffffff;
+}
+
+.floating-bell-wrap.is-shaking .floating-bell-btn {
+  animation: bell-shake 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-bell-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: #ffffff;
+  color: var(--color-accent-base);
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: badge-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.floating-bell-wrap.is-active .floating-bell-badge {
+  background: var(--color-accent-light);
+  color: var(--color-text-main);
+}
+
+/* ─── CAMPANA EN EL SIDEBAR (Desktop) ─── */
+.therapist-sidebar-bell {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.therapist-sidebar-bell:hover {
+  color: #ffffff;
+  transform: rotate(-12deg) scale(1.1);
+}
+
+.therapist-sidebar-bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  background: var(--color-accent-base);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ==========================================================================
+   MEDIA QUERIES - DESKTOP
+   ========================================================================== */
+@media (min-width: 768px) {
+  .therapist-layout-root {
+    flex-direction: row;
+  }
+  
+  .therapist-main-content {
+    margin-left: 256px; /* Ancho exacto del Sidebar Desktop */
+    padding: var(--space-xl) var(--space-2xl);
+    padding-bottom: var(--space-xl);
+  }
+}

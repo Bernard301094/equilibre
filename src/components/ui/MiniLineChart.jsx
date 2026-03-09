@@ -1,9 +1,10 @@
 import { memo, useState } from "react";
+import "./MiniLineChart.css";
 
 const MiniLineChart = memo(function MiniLineChart({
   points = [],
   labels = [],
-  color  = "var(--sage-dark)",
+  color  = "var(--color-brand-base)",
   height = 140,
 }) {
   const [hovered, setHovered] = useState(null);
@@ -25,7 +26,7 @@ const MiniLineChart = memo(function MiniLineChart({
   const cx = (i) => paddingX + (i / (points.length - 1)) * chartW;
   const cy = (v) => paddingTop + chartH - ((v - min) / span) * chartH;
 
-  // Smooth curve using cubic bezier
+  // Curva suave usando bezier cúbico
   const smoothPath = points.reduce((path, v, i) => {
     if (i === 0) return `M ${cx(0).toFixed(1)},${cy(v).toFixed(1)}`;
     const prev  = points[i - 1];
@@ -48,53 +49,27 @@ const MiniLineChart = memo(function MiniLineChart({
   const glowId   = `glow-${gradId}`;
 
   return (
-    <div style={{ position: "relative", width: "100%" }}>
+    <div className="mini-chart-wrapper" style={{ "--chart-color": color }}>
       {/* Tooltip */}
       {hovered !== null && (
         <div
-          style={{
-            position:    "absolute",
-            top:         0,
-            left:        `${(cx(hovered) / 600) * 100}%`,
-            transform:   "translateX(-50%)",
-            background:  "var(--blue-dark)",
-            color:       "white",
-            borderRadius: 10,
-            padding:     "6px 12px",
-            fontSize:    13,
-            fontWeight:  700,
-            pointerEvents: "none",
-            whiteSpace:  "nowrap",
-            boxShadow:   "0 4px 16px rgba(0,0,0,0.18)",
-            zIndex:      10,
-            lineHeight:  1.4,
-          }}
+          className="mini-chart-tooltip"
+          style={{ "--tooltip-left": `${(cx(hovered) / 600) * 100}%` }}
         >
-          <div style={{ fontSize: 16 }}>{points[hovered]}</div>
+          <div className="mini-chart-tooltip-val">{points[hovered]}</div>
           {labels[hovered] && (
-            <div style={{ fontSize: 11, opacity: 0.75, fontWeight: 500 }}>
+            <div className="mini-chart-tooltip-label">
               {labels[hovered]}
             </div>
           )}
-          <div
-            style={{
-              position:    "absolute",
-              bottom:      -6,
-              left:        "50%",
-              transform:   "translateX(-50%)",
-              width:       0,
-              height:      0,
-              borderLeft:  "6px solid transparent",
-              borderRight: "6px solid transparent",
-              borderTop:   "6px solid var(--blue-dark)",
-            }}
-          />
+          <div className="mini-chart-tooltip-caret" />
         </div>
       )}
 
       <svg
+        className="mini-chart-svg"
         viewBox={`0 0 ${W} ${H}`}
-        style={{ width: "100%", height, display: "block", overflow: "visible", marginTop: 28 }}
+        style={{ "--chart-height": `${height}px` }}
         aria-hidden="true"
         onMouseLeave={() => setHovered(null)}
       >
@@ -120,19 +95,19 @@ const MiniLineChart = memo(function MiniLineChart({
             <g key={t}>
               <line
                 x1={paddingX} y1={y} x2={W - paddingX} y2={y}
-                stroke="var(--warm)"
+                stroke="var(--color-surface-hover)"
                 strokeWidth="1"
                 strokeDasharray="4 6"
-                opacity="0.5"
+                opacity="0.8"
               />
               <text
                 x={paddingX - 6}
                 y={y + 4}
                 textAnchor="end"
-                fontSize="9"
-                fill="var(--text-muted)"
-                fontFamily="DM Sans, sans-serif"
-                opacity="0.7"
+                className="mini-chart-axis-text"
+                fontSize="10"
+                fill="var(--color-text-muted)"
+                opacity="0.8"
               >
                 {v}
               </text>
@@ -173,9 +148,8 @@ const MiniLineChart = memo(function MiniLineChart({
             y={paddingTop}
             width={chartW / (points.length - 1)}
             height={chartH}
-            fill="transparent"
+            className="mini-chart-hitbox"
             onMouseEnter={() => setHovered(i)}
-            style={{ cursor: "crosshair" }}
           />
         ))}
 
@@ -201,12 +175,12 @@ const MiniLineChart = memo(function MiniLineChart({
               />
             )}
             <circle
+              className="mini-chart-point"
               cx={cx(i)} cy={cy(v)}
               r={hovered === i ? 5.5 : 4}
-              fill="white"
+              fill="var(--color-surface-card)"
               stroke={color}
               strokeWidth="2.5"
-              style={{ transition: "r .15s ease" }}
             />
           </g>
         ))}
@@ -218,11 +192,10 @@ const MiniLineChart = memo(function MiniLineChart({
             x={cx(i)}
             y={H - 6}
             textAnchor="middle"
+            className="mini-chart-axis-label"
             fontSize="10"
-            fill={hovered === i ? color : "var(--text-muted)"}
-            fontFamily="DM Sans, sans-serif"
-            fontWeight={hovered === i ? "700" : "400"}
-            style={{ transition: "fill .15s" }}
+            fill={hovered === i ? color : "var(--color-text-muted)"}
+            fontWeight={hovered === i ? "700" : "500"}
           >
             {labels[i] ?? ""}
           </text>

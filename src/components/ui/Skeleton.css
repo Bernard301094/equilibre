@@ -1,0 +1,126 @@
+/* ==========================================================================
+   SKELETON.CSS
+   Animaciones y contenedores para estados de carga (Shimmer effect).
+   ========================================================================== */
+
+/* ─── ANIMACIÓN SHIMMER ─── */
+@keyframes skeleton-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+/* ─── BLOQUE BASE ─── */
+.skel-base {
+  /* Utiliza las variables inyectadas con fallbacks de seguridad */
+  width: var(--skel-w, 100%);
+  height: var(--skel-h, 16px);
+  border-radius: var(--skel-r, 8px);
+  /* Los colores del gradiente se adaptan a temas claros/oscuros mediante variables globales */
+  background: linear-gradient(90deg, var(--color-surface-hover) 25%, var(--color-surface-bg) 50%, var(--color-surface-hover) 75%);
+  background-size: 400px 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+}
+
+/* ─── CLASES DE UTILIDAD (Márgenes) ─── */
+.skel-mb-xs { margin-bottom: 6px; }
+.skel-mb-sm { margin-bottom: 8px; }
+.skel-mb-md { margin-bottom: 12px; }
+.skel-mb-lg { margin-bottom: 16px; }
+
+/* ─── CONTENEDORES GENÉRICOS ─── */
+.skel-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--skel-gap, 8px);
+}
+
+.skel-card,
+.skel-stat-card {
+  background: var(--color-surface-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  border: 1px solid var(--color-surface-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.skel-stat-card {
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+}
+
+/* ─── FILAS DE PACIENTES / LISTAS ─── */
+.skel-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.skel-row-avatar {
+  flex-shrink: 0;
+}
+
+.skel-row-content {
+  flex: 1;
+}
+
+.skel-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.skel-divider {
+  height: 1px;
+  background: var(--color-surface-hover);
+  margin: 2px 0;
+}
+
+/* ─── EJERCICIOS ─── */
+.skel-ex-card {
+  pointer-events: none;
+}
+
+.skel-ex-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+}
+
+/* ─── LAYOUTS Y GRIDS (Mobile-First) ─── */
+.skel-header {
+  margin-bottom: 28px;
+}
+
+.skel-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.skel-grid-3 {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: 1fr; /* Móvil: 1 columna */
+  margin-bottom: 28px;
+}
+
+.skel-grid-2 {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: 1fr; /* Móvil: 1 columna */
+  align-items: start;
+}
+
+/* ==========================================================================
+   MEDIA QUERIES (Desktop)
+   ========================================================================== */
+@media (min-width: 768px) {
+  .skel-grid-3 {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+
+  .skel-grid-2 {
+    grid-template-columns: 1fr 1fr; /* Desktop: 2 columnas */
+  }
+}

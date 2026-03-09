@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
+import "./App.css";
+
 import { useSession } from "./hooks/useSession";
 import { useTheme } from "./hooks/useTheme";
 import db from "./services/db";
 import auth from "./services/auth";
 import { SEED_EXERCISES, LS_SEEDED_KEY, ROLE } from "./utils/constants";
+
 import Spinner from "./components/ui/Spinner";
 import LoginPage from "./components/auth/LoginPage";
 import TherapistLayout from "./components/layout/TherapistLayout";
@@ -30,10 +33,6 @@ async function seedExercisesIfNeeded() {
 }
 
 // ─── handleLogin ─────────────────────────────────────────────────────────────
-/**
- * Authenticates a user and returns { session, error }.
- * All role-validation and account-state logic lives here.
- */
 async function resolveLogin({ email, password, role }) {
   const authData = await auth.signIn(email, password);
 
@@ -45,7 +44,6 @@ async function resolveLogin({ email, password, role }) {
 
   const token = authData.access_token;
 
-  // Try to find user row by auth id first, then fall back to email
   let userRow = null;
   try {
     const byId = await db.query(
@@ -60,25 +58,19 @@ async function resolveLogin({ email, password, role }) {
 
   if (!userRow) {
     try {
-      const byEmail = await db.query(
-        "users",
-        { filter: { email } },
-        token
-      );
+      const byEmail = await db.query("users", { filter: { email } }, token);
       if (Array.isArray(byEmail) && byEmail.length > 0) {
         userRow = byEmail[0];
       }
     } catch (_) {}
   }
 
-  // Patient must always have a valid user row (created via invite)
   if (!userRow) {
     if (role === ROLE.PATIENT) {
       throw new Error(
         "Conta não encontrada. Para aceder, solicite um novo convite à sua profissional."
       );
     }
-    // Therapist without a user row: create a minimal session from auth metadata
     const meta = authData.user?.user_metadata || {};
     const metaRole = meta.role || role;
     if (metaRole !== role) {
@@ -112,9 +104,6 @@ async function resolveLogin({ email, password, role }) {
 }
 
 // ─── handleRegister ───────────────────────────────────────────────────────────
-/**
- * Registers a new user. Returns an error string or null on success.
- */
 async function resolveRegister(form) {
   let therapistId = null;
 
@@ -156,7 +145,6 @@ async function resolveRegister(form) {
       msg.includes("id não retornado");
 
     if (isAlready) {
-      // Account already exists in Auth — try to sign in to get the id
       try {
         const authRes = await auth.signIn(form.email, form.password);
         if (!authRes?.access_token) {
@@ -180,7 +168,6 @@ async function resolveRegister(form) {
 
   try {
     if (isReactivation) {
-      // Try to update existing row; insert if missing
       try {
         await db.update(
           "users",
@@ -213,7 +200,7 @@ async function resolveRegister(form) {
       );
     }
 
-    return null; // success
+    return null;
   } catch (e) {
     return `Erro ao finalizar criação de conta: ${e.message}`;
   }
@@ -221,68 +208,72 @@ async function resolveRegister(form) {
 
 // ─── App root ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const { session, setSession, updateSession, logout, sessionReady } =
-    useSession();
+  const { session, setSession, updateSession, logout, sessionReady } = useSession();
   const { theme, toggleTheme } = useTheme(session?.id ?? null);
 
   const [appReady, setAppReady] = useState(false);
   const [dbError, setDbError] = useState(false);
 
-  // Initial view derived from session role
-  const defaultView =
-    session?.role === ROLE.PATIENT ? "home" : "dashboard";
+  const defaultView = session?.role === ROLE.PATIENT ? "home" : "dashboard";
   const [view, setView] = useState(defaultView);
 
-  // Sync view when session changes (login / logout)
   useEffect(() => {
     if (session) {
       setView(session.role === ROLE.PATIENT ? "home" : "dashboard");
     }
-  }, [session?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [session?.id]);
 
-  // Seed + app ready
   useEffect(() => {
     seedExercisesIfNeeded()
       .catch(() => setDbError(true))
       .finally(() => setAppReady(true));
   }, []);
 
-  // ── Login handler exposed to LoginPage ────────────────────────────────────
   const handleLogin = async ({ email, password, role }) => {
     try {
       const resolved = await resolveLogin({ email, password, role });
       setSession(resolved);
-      return null; // no error
+      return null;
     } catch (e) {
       return e.message;
     }
   };
 
-  // ── Register handler exposed to LoginPage ─────────────────────────────────
   const handleRegister = async (form) => {
     return resolveRegister(form);
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
-  if (!sessionReady || !appReady) {
-    return <Spinner message="Conectando ao Equilibre..." />;
-  }
+  // Render condicional basado en el estado
+  const renderContent = () => {
+    if (!sessionReady || !appReady) {
+      return <Spinner message="Conectando ao Equilibre..." />;
+    }
 
-  if (dbError) {
-    return (
-      <Spinner message="Erro ao conectar ao banco de dados. Verifique as configurações." />
-    );
-  }
+    if (dbError) {
+      return <Spinner message="Erro ao conectar ao banco de dados. Verifique as configurações." />;
+    }
 
-  if (!session) {
-    return (
-      <LoginPage onLogin={handleLogin} onRegister={handleRegister} />
-    );
-  }
+    if (!session) {
+      return <LoginPage onLogin={handleLogin} onRegister={handleRegister} />;
+    }
 
-  if (session.role === ROLE.THERAPIST) {
+    if (session.role === ROLE.THERAPIST) {
+      return (
+        <TherapistLayout
+          session={session}
+          setSession={setSession}
+          updateSession={updateSession}
+          logout={logout}
+          view={view}
+          setView={setView}
+          toggleTheme={toggleTheme}
+          theme={theme}
+        />
+      );
+    }
+
     return (
-      <TherapistLayout
+      <PatientLayout
         session={session}
         setSession={setSession}
         updateSession={updateSession}
@@ -293,18 +284,11 @@ export default function App() {
         theme={theme}
       />
     );
-  }
+  };
 
   return (
-    <PatientLayout
-      session={session}
-      setSession={setSession}
-      updateSession={updateSession}
-      logout={logout}
-      view={view}
-      setView={setView}
-      toggleTheme={toggleTheme}
-      theme={theme}
-    />
+    <div className="app-root">
+      {renderContent()}
+    </div>
   );
 }

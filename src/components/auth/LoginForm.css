@@ -1,0 +1,158 @@
+/* ==========================================================================
+   LOGINFORM.CSS
+   Estilos específicos para el formulario de inicio de sesión.
+   ========================================================================== */
+
+.login-form-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* ─── SELECTOR DE ROL INTERNO ─── */
+.form-tab-switch {
+  display: flex;
+  background: var(--color-surface-bg);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  border: 1.5px solid var(--color-surface-hover);
+  margin-bottom: var(--space-md);
+}
+
+.form-tab-switch button {
+  flex: 1;
+  min-height: 44px; /* REGLA MAESTRA: Accesibilidad táctil */
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  transition: all 0.2s ease;
+}
+
+.form-tab-switch button.active {
+  background: var(--color-surface-card);
+  color: var(--color-brand-dark);
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ─── BANNERS Y MENSAJES ─── */
+.form-success-banner {
+  background: var(--color-success-soft);
+  color: var(--color-success-base);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: center;
+  border: 1px solid rgba(26, 92, 40, 0.2);
+  margin-bottom: var(--space-md);
+}
+
+.form-error-msg {
+  color: var(--color-danger-base);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+  text-align: center;
+}
+
+/* ─── CAMPOS DE FORMULARIO ─── */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.form-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-brand-dark); /* Aplicando tu azul corporativo */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.form-input {
+  width: 100%;
+  min-height: 44px; /* REGLA MAESTRA: Accesibilidad táctil */
+  padding: 0 var(--space-md);
+  border: 1.5px solid var(--color-surface-hover);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body-main);
+  font-size: var(--text-base);
+  background: var(--color-surface-bg);
+  color: var(--color-text-main);
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.form-input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.form-input:focus {
+  border-color: var(--color-brand-base);
+  box-shadow: 0 0 0 3px rgba(46, 127, 171, 0.15);
+}
+
+body.dark-mode .form-input {
+  background: var(--color-surface-card);
+  border-color: var(--color-surface-hover);
+}
+
+/* ─── BOTÓN PRINCIPAL ─── */
+.form-submit-btn {
+  width: 100%;
+  min-height: 48px; /* Extra grande para móviles */
+  padding: 0 var(--space-md);
+  border: none;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-brand-dark), var(--color-brand-base));
+  color: var(--color-text-invert);
+  font-family: var(--font-body-main);
+  font-size: var(--text-base);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  margin-top: var(--space-xs);
+}
+
+.form-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  filter: brightness(1.05);
+}
+
+.form-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ─── ENLACE DE RECUPERACIÓN (AZUL CORPORATIVO) ─── */
+.form-forgot-container {
+  text-align: center;
+  margin-top: var(--space-md);
+}
+
+.form-forgot-btn {
+  background: none;
+  border: none;
+  color: var(--color-brand-dark); /* Tu azul corporativo solicitado */
+  cursor: pointer;
+  font-weight: 600;
+  font-size: var(--text-sm);
+  padding: var(--space-sm);
+  min-height: 44px; /* Área táctil segura */
+  transition: color 0.2s ease;
+}
+
+.form-forgot-btn:hover {
+  color: var(--color-brand-base);
+  text-decoration: underline;
+}

@@ -1,48 +1,52 @@
+import "./WeekGoalBar.css";
+
 /**
- * Horizontal progress bar showing weekly exercise goal completion.
+ * Barra de progreso para la meta semanal del paciente.
  *
  * Props:
- *   done    — number of exercises completed this week
- *   target  — weekly target set by the therapist
+ * completed  — número de días o tareas completadas (ej. 2)
+ * goal       — meta semanal (ej. 3)
+ * label      — texto descriptivo (default: "Meta semanal")
+ * className  — clase extra opcional para el layout
  */
-export default function WeekGoalBar({ done, target }) {
-  if (!target || target <= 0) return null;
-
-  const pct = Math.min(100, Math.round((done / target) * 100));
-  const color =
-    pct >= 100 ? "#2d7a3a" : pct >= 50 ? "var(--blue-dark)" : "var(--accent)";
+export default function WeekGoalBar({ 
+  completed = 0, 
+  goal = 3, 
+  label = "Meta semanal",
+  className = "" 
+}) {
+  // Calculamos el porcentaje asegurando que no pase de 100% ni sea menor a 0
+  const percentage = Math.min(100, Math.max(0, (completed / goal) * 100)) || 0;
+  const isGoalReached = completed >= goal;
 
   return (
-    <div role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          fontSize: 12,
-          color: "var(--text-muted)",
-          marginBottom: 4,
-        }}
-      >
-        <span>Meta semanal</span>
-        <span style={{ fontWeight: 600, color }}>
-          {done}/{target} exercícios
+    <div className={`week-goal-container ${className}`.trim()}>
+      <div className="week-goal-header">
+        <span className="week-goal-label">{label}</span>
+        <span className="week-goal-text">
+          <strong>{completed}</strong> / {goal}
         </span>
       </div>
-
-      <div className="goal-bar-bg">
-        <div
-          className="goal-bar-fill"
-          style={{
-            width: `${pct}%`,
-            background: pct >= 100 ? "#2d7a3a" : undefined,
-            transition: "width 0.4s ease",
-          }}
-        />
+      
+      <div 
+        className="week-goal-track" 
+        role="progressbar" 
+        aria-valuenow={completed} 
+        aria-valuemin="0" 
+        aria-valuemax={goal}
+        aria-label={label}
+      >
+        <div 
+          className={`week-goal-fill ${isGoalReached ? "goal-reached" : ""}`} 
+          style={{ "--goal-progress": `${percentage}%` }}
+        ></div>
       </div>
-
-      <div style={{ fontSize: 11, color, textAlign: "right", marginTop: 3 }}>
-        {pct >= 100 ? "🎉 Meta atingida!" : `${pct}% concluído`}
-      </div>
+      
+      {isGoalReached && (
+        <p className="week-goal-success" role="status">
+          🎉 Meta alcançada!
+        </p>
+      )}
     </div>
   );
 }

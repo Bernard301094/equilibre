@@ -1,0 +1,117 @@
+/* ==========================================================================
+   LOGINPAGE.CSS
+   Diseño Mobile-First para el contenedor de autenticación.
+   ========================================================================== */
+
+.login-bg {
+  min-height: 100dvh;
+  /* El gradiente usa los tokens de marca definidos en App.css */
+  background: linear-gradient(145deg, #0a2e48 0%, var(--color-brand-dark) 45%, var(--color-brand-base) 75%, var(--color-accent-light) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-md);
+}
+
+.login-bg::before {
+  content: ''; 
+  position: absolute; 
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 10% 80%, rgba(255, 189, 89, 0.1) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* ─── TARJETA PRINCIPAL (Mobile por defecto ocupa el 100% menos padding) ─── */
+.login-card {
+  background: var(--color-surface-card);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl) var(--space-md);
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  z-index: 1;
+  animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ─── CABECERA LOGO ─── */
+.login-logo {
+  text-align: center;
+  margin-bottom: var(--space-lg);
+}
+
+.login-logo img {
+  border-radius: 50%;
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  box-shadow: var(--shadow-sm);
+}
+
+.login-logo h1 {
+  font-size: var(--text-2xl);
+  color: var(--color-brand-dark);
+  margin-top: var(--space-sm);
+}
+
+.login-logo p {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin-top: var(--space-xs);
+}
+
+/* ─── SELECTOR DE PESTAÑAS (Entrar / Registar) ─── */
+.tab-switch {
+  display: flex;
+  background: var(--color-surface-bg);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  margin-bottom: var(--space-lg);
+  border: 1.5px solid var(--color-surface-hover);
+}
+
+.tab-switch button {
+  flex: 1;
+  padding: 10px var(--space-sm);
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  transition: all 0.2s ease;
+  min-height: 44px; /* REGLA MAESTRA: Accesibilidad táctil en móvil */
+}
+
+.tab-switch button.active {
+  background: var(--color-surface-card);
+  color: var(--color-brand-dark);
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ─── ANIMACIONES ─── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── MEDIA QUERIES (TABLET Y ESCRITORIO) ─── */
+@media (min-width: 768px) {
+  .login-card {
+    padding: 48px 40px; /* Más aire interno en pantallas grandes */
+  }
+
+  .login-logo img {
+    width: 88px;
+    height: 88px;
+  }
+
+  .login-logo {
+    margin-bottom: var(--space-xl);
+  }
+}

@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { validateRegisterForm } from "../../utils/validation";
+import "./RegisterForm.css";
 
 /**
  * Props:
- *   onRegister   — async (formData) => errorString | null
- *   onSuccess    — called after successful registration; receives the role
- *   onSwitchMode — callback to go back to login
+ * onRegister   — async (formData) => errorString | null
+ * onSuccess    — called after successful registration; receives the role
+ * onSwitchMode — callback to go back to login
  */
 export default function RegisterForm({ onRegister, onSuccess, onSwitchMode }) {
   const [form, setForm] = useState({
@@ -42,9 +43,9 @@ export default function RegisterForm({ onRegister, onSuccess, onSwitchMode }) {
   };
 
   return (
-    <>
+    <div className="register-form-wrapper">
       {/* Role tabs */}
-      <div className="tab-switch" style={{ marginBottom: 18 }}>
+      <div className="register-tab-switch">
         <button
           type="button"
           className={form.role === "therapist" ? "active" : ""}
@@ -61,9 +62,10 @@ export default function RegisterForm({ onRegister, onSuccess, onSwitchMode }) {
         </button>
       </div>
 
-      <div className="field">
-        <label htmlFor="reg-name">Nome completo</label>
+      <div className="register-field">
+        <label className="register-label" htmlFor="reg-name">Nome completo</label>
         <input
+          className="register-input"
           id="reg-name"
           type="text"
           value={form.name}
@@ -73,9 +75,10 @@ export default function RegisterForm({ onRegister, onSuccess, onSwitchMode }) {
         />
       </div>
 
-      <div className="field">
-        <label htmlFor="reg-email">E-mail</label>
+      <div className="register-field">
+        <label className="register-label" htmlFor="reg-email">E-mail</label>
         <input
+          className="register-input"
           id="reg-email"
           type="email"
           value={form.email}
@@ -85,9 +88,10 @@ export default function RegisterForm({ onRegister, onSuccess, onSwitchMode }) {
         />
       </div>
 
-      <div className="field">
-        <label htmlFor="reg-password">Senha</label>
+      <div className="register-field">
+        <label className="register-label" htmlFor="reg-password">Senha</label>
         <input
+          className="register-input"
           id="reg-password"
           type="password"
           value={form.password}
@@ -97,9 +101,10 @@ export default function RegisterForm({ onRegister, onSuccess, onSwitchMode }) {
         />
       </div>
 
-      <div className="field">
-        <label htmlFor="reg-confirm">Confirmar senha</label>
+      <div className="register-field">
+        <label className="register-label" htmlFor="reg-confirm">Confirmar senha</label>
         <input
+          className="register-input"
           id="reg-confirm"
           type="password"
           value={form.confirm}
@@ -111,9 +116,10 @@ export default function RegisterForm({ onRegister, onSuccess, onSwitchMode }) {
       </div>
 
       {form.role === "patient" && (
-        <div className="field">
-          <label htmlFor="reg-invite">Código de convite</label>
+        <div className="register-field">
+          <label className="register-label" htmlFor="reg-invite">Código de convite</label>
           <input
+            className="register-input register-input-code"
             id="reg-invite"
             type="text"
             value={form.inviteCode}
@@ -124,34 +130,23 @@ export default function RegisterForm({ onRegister, onSuccess, onSwitchMode }) {
               }))
             }
             placeholder="Ex: AB3X9K7"
-            style={{
-              fontFamily: "monospace",
-              fontSize: 18,
-              letterSpacing: "0.12em",
-            }}
             maxLength={10}
             autoComplete="off"
           />
-          <div
-            style={{
-              fontSize: 11,
-              color: "var(--text-muted)",
-              marginTop: 4,
-            }}
-          >
+          <div className="register-hint">
             Código único enviado pela sua psicóloga.
           </div>
         </div>
       )}
 
       {error && (
-        <p className="error-msg" role="alert">
+        <p className="register-error-msg" role="alert">
           {error}
         </p>
       )}
 
       <button
-        className="btn-primary"
+        className="register-submit-btn"
         onClick={handleSubmit}
         disabled={loading}
         aria-busy={loading}
@@ -159,31 +154,16 @@ export default function RegisterForm({ onRegister, onSuccess, onSwitchMode }) {
         {loading ? "Criando conta..." : "Criar conta"}
       </button>
 
-      <p
-        style={{
-          textAlign: "center",
-          marginTop: 12,
-          fontSize: 13,
-          color: "var(--text-muted)",
-        }}
-      >
-        Já tem conta?{" "}
+      <div className="register-footer">
+        <p>Já tem conta?</p>
         <button
+          className="register-link-btn"
           type="button"
-          style={{
-            background: "none",
-            border: "none",
-            color: "var(--sage-dark)",
-            cursor: "pointer",
-            fontWeight: 500,
-            fontSize: 13,
-            padding: 0,
-          }}
           onClick={onSwitchMode}
         >
           Entrar
         </button>
-      </p>
-    </>
+      </div>
+    </div>
   );
 }

@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { validateLoginForm } from "../../utils/validation";
+import "./LoginForm.css";
 
 /**
  * Props:
- *   onLogin        — async ({ email, password, role }) => errorString | null
- *   onForgot       — callback to switch to the forgot-password view
- *   successMessage — optional banner text (e.g. "Conta criada com sucesso!")
+ * onLogin        — async ({ email, password, role }) => errorString | null
+ * onForgot       — callback to switch to the forgot-password view
+ * successMessage — optional banner text (e.g. "Conta criada com sucesso!")
  */
 export default function LoginForm({ onLogin, onForgot, successMessage }) {
-  const [tab,     setTab]     = useState("therapist");
-  const [form,    setForm]    = useState({ email: "", password: "" });
-  const [error,   setError]   = useState("");
+  const [tab, setTab] = useState("therapist");
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const update = (field) => (e) =>
@@ -19,17 +20,22 @@ export default function LoginForm({ onLogin, onForgot, successMessage }) {
   const handleSubmit = async () => {
     setError("");
     const validationErr = validateLoginForm(form);
-    if (validationErr) { setError(validationErr); return; }
+    if (validationErr) {
+      setError(validationErr);
+      return;
+    }
+
     setLoading(true);
     const serverErr = await onLogin({ ...form, role: tab });
     setLoading(false);
+
     if (serverErr) setError(serverErr);
   };
 
   return (
-    <>
+    <div className="login-form-wrapper">
       {/* Role tabs */}
-      <div className="tab-switch lf-tabs">
+      <div className="form-tab-switch">
         <button
           type="button"
           className={tab === "therapist" ? "active" : ""}
@@ -47,14 +53,15 @@ export default function LoginForm({ onLogin, onForgot, successMessage }) {
       </div>
 
       {successMessage && (
-        <div className="success-banner" role="status">
+        <div className="form-success-banner" role="status">
           ✅ {successMessage}
         </div>
       )}
 
-      <div className="field">
-        <label htmlFor="login-email">E-mail</label>
+      <div className="form-field">
+        <label className="form-label" htmlFor="login-email">E-mail</label>
         <input
+          className="form-input"
           id="login-email"
           type="email"
           value={form.email}
@@ -64,9 +71,10 @@ export default function LoginForm({ onLogin, onForgot, successMessage }) {
         />
       </div>
 
-      <div className="field">
-        <label htmlFor="login-password">Senha</label>
+      <div className="form-field">
+        <label className="form-label" htmlFor="login-password">Senha</label>
         <input
+          className="form-input"
           id="login-password"
           type="password"
           value={form.password}
@@ -78,13 +86,13 @@ export default function LoginForm({ onLogin, onForgot, successMessage }) {
       </div>
 
       {error && (
-        <p className="error-msg" role="alert">
+        <p className="form-error-msg" role="alert">
           {error}
         </p>
       )}
 
       <button
-        className="btn-primary"
+        className="form-submit-btn"
         onClick={handleSubmit}
         disabled={loading}
         aria-busy={loading}
@@ -92,15 +100,15 @@ export default function LoginForm({ onLogin, onForgot, successMessage }) {
         {loading ? "Entrando..." : "Entrar"}
       </button>
 
-      <p className="lf-forgot-row">
+      <div className="form-forgot-container">
         <button
+          className="form-forgot-btn"
           type="button"
-          className="lf-forgot-btn"
           onClick={() => onForgot?.(form.email)}
         >
           Esqueceu a senha?
         </button>
-      </p>
-    </>
+      </div>
+    </div>
   );
 }

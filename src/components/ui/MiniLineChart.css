@@ -1,0 +1,83 @@
+/* ==========================================================================
+   MINILINECHART.CSS
+   Estilos limpios y fluidos para el mini gráfico de líneas (Mobile-First)
+   ========================================================================== */
+
+.mini-chart-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* ─── TOOLTIP FLOTANTE (Centrado sobre el punto con variables inyectadas) ─── */
+.mini-chart-tooltip {
+  position: absolute;
+  top: 0;
+  /* La posición horizontal viene de la variable calculada en React */
+  left: var(--tooltip-left, 50%);
+  transform: translateX(-50%);
+  background: var(--color-brand-dark);
+  color: #ffffff;
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(15, 30, 42, 0.18);
+  z-index: 10;
+  line-height: 1.4;
+  text-align: center;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.mini-chart-tooltip-val {
+  font-family: var(--font-heading-main);
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.mini-chart-tooltip-label {
+  font-family: var(--font-body-main);
+  font-size: 11px;
+  opacity: 0.8;
+  font-weight: 500;
+}
+
+/* El triangulito (caret) que apunta hacia abajo */
+.mini-chart-tooltip-caret {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid var(--color-brand-dark);
+}
+
+/* ─── CONTENEDOR SVG PRINCIPAL ─── */
+.mini-chart-svg {
+  width: 100%;
+  height: var(--chart-height, 140px);
+  display: block;
+  overflow: visible;
+  margin-top: var(--space-xl);
+}
+
+/* ─── TEXTOS Y ETIQUETAS DE EJES ─── */
+.mini-chart-axis-text,
+.mini-chart-axis-label {
+  font-family: var(--font-body-main);
+  transition: fill 0.15s ease, font-weight 0.15s ease;
+  user-select: none;
+}
+
+/* ─── PUNTOS Y ÁREAS INTERACTIVAS ─── */
+.mini-chart-hitbox {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+/* Animación del radio del punto (r) al pasar el cursor */
+.mini-chart-point {
+  transition: r 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}

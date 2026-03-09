@@ -1,95 +1,51 @@
-import { useState } from "react";
-import { LOGO_PATH, APP_NAME } from "../../utils/constants";
-import LoginForm from "./LoginForm";
-import RegisterForm from "./RegisterForm";
-import ForgotPasswordForm from "./ForgotPasswordForm";
+import { useState } from 'react';
+import './LoginPage.css';
+import LoginForm from './LoginForm';
+import RegisterForm from './RegisterForm';
+import ForgotPasswordForm from './ForgotPasswordForm';
 
-/**
- * Top-level auth page.
- * Manages the mode: "login" | "register" | "forgot"
- *
- * Props:
- *   onLogin     — async ({ email, password, role }) => errorString | null
- *   onRegister  — async (formData) => errorString | null
- */
 export default function LoginPage({ onLogin, onRegister }) {
-  const [mode, setMode] = useState("login");
-  const [successMsg, setSuccessMsg] = useState("");
-  const [forgotEmail, setForgotEmail] = useState("");
-
-  const handleRegisterSuccess = (role) => {
-    setSuccessMsg("Conta criada com sucesso! Faça o login.");
-    setMode("login");
-  };
-
-  const handleForgotClick = (email) => {
-    setForgotEmail(email || "");
-    setMode("forgot");
-    setSuccessMsg("");
-  };
+  const [activeTab, setActiveTab] = useState('login'); // 'login', 'register', 'forgot'
 
   return (
     <div className="login-bg">
       <div className="login-card">
-        {/* Branding */}
         <div className="login-logo">
-          <img
-            src={LOGO_PATH}
-            alt={`${APP_NAME} logo`}
-            style={{ width: 72, height: 72, objectFit: "contain", marginBottom: 2 }}
-          />
-          <h1>{APP_NAME}</h1>
-          <p>Exercícios terapêuticos personalizados</p>
+          <img src="/equilibre-icon.png" alt="Equilibre Logo" width="80" height="80" />
+          <h1>Equilibre</h1>
+          <p>O seu espaço de bem-estar</p>
         </div>
 
-        {/* Mode tabs (only for login / register) */}
-        {mode !== "forgot" && (
+        {activeTab !== 'forgot' && (
           <div className="tab-switch">
-            <button
+            <button 
+              className={activeTab === 'login' ? 'active' : ''} 
+              onClick={() => setActiveTab('login')}
               type="button"
-              className={mode === "login" ? "active" : ""}
-              onClick={() => {
-                setMode("login");
-                setSuccessMsg("");
-              }}
             >
               Entrar
             </button>
-            <button
+            <button 
+              className={activeTab === 'register' ? 'active' : ''} 
+              onClick={() => setActiveTab('register')}
               type="button"
-              className={mode === "register" ? "active" : ""}
-              onClick={() => {
-                setMode("register");
-                setSuccessMsg("");
-              }}
             >
-              Criar conta
+              Registar
             </button>
           </div>
         )}
 
-        {/* Forms */}
-        {mode === "login" && (
-          <LoginForm
-            onLogin={onLogin}
-            onForgot={handleForgotClick}
-            successMessage={successMsg}
-          />
+        {/* Renderizado condicional de los formularios */}
+        {activeTab === 'login' && (
+          <LoginForm onLogin={onLogin} onForgot={() => setActiveTab('forgot')} />
         )}
-
-        {mode === "register" && (
-          <RegisterForm
-            onRegister={onRegister}
-            onSuccess={handleRegisterSuccess}
-            onSwitchMode={() => setMode("login")}
-          />
+        
+        {activeTab === 'register' && (
+          <RegisterForm onRegister={onRegister} />
         )}
-
-        {mode === "forgot" && (
-          <ForgotPasswordForm
-            initialEmail={forgotEmail}
-            onBack={() => setMode("login")}
-          />
+        
+        {activeTab === 'forgot' && (
+          <ForgotPasswordForm onBack={() => setActiveTab('login')} />
         )}
       </div>
     </div>

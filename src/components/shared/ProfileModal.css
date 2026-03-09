@@ -1,0 +1,121 @@
+/* ==========================================================================
+   PROFILEMODAL.CSS
+   Estilos específicos para el Modal de Perfil de Usuario y Acciones del Sistema.
+   ========================================================================== */
+
+.profile-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-lg) var(--space-md) var(--space-md);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.profile-modal-title {
+  margin-bottom: var(--space-lg);
+  font-family: var(--font-heading-main);
+  font-size: var(--text-lg);
+  color: var(--color-text-main);
+  text-align: center;
+}
+
+.profile-modal-avatar {
+  margin-bottom: var(--space-sm);
+}
+
+.profile-modal-error {
+  color: var(--color-danger-base);
+  font-size: var(--text-sm);
+  margin-top: var(--space-sm);
+  text-align: center;
+  font-weight: 600;
+}
+
+.profile-modal-input-hidden {
+  display: none;
+}
+
+/* ─── BOTONES DEL MODAL ─── */
+.profile-modal-btn {
+  width: 100%;
+  min-height: 44px; /* REGLA MAESTRA: Toque táctil accesible en móviles */
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body-main);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.profile-modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.profile-modal-btn-primary {
+  background: linear-gradient(135deg, var(--color-brand-dark), var(--color-brand-base));
+  color: var(--color-text-invert);
+  border: none;
+  margin-top: var(--space-lg);
+  margin-bottom: var(--space-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.profile-modal-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  filter: brightness(1.05);
+}
+
+.profile-modal-btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--color-surface-hover);
+  color: var(--color-text-muted);
+}
+
+.profile-modal-btn-outline:hover {
+  background: rgba(46, 127, 171, 0.07);
+  color: var(--color-brand-dark);
+  border-color: var(--color-brand-base);
+}
+
+body.dark-mode .profile-modal-btn-outline:hover {
+  background: rgba(127, 196, 232, 0.1);
+  color: var(--color-brand-base);
+}
+
+.profile-modal-btn-danger {
+  background: linear-gradient(135deg, var(--color-danger-base), #8b1c1c);
+  color: #ffffff;
+  border: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.profile-modal-btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.profile-modal-btn-icon {
+  gap: var(--space-sm);
+}
+
+/* ─── DIVISOR Y ACCIONES DEL SISTEMA (Mobile) ─── */
+.profile-modal-divider {
+  width: 100%;
+  margin: var(--space-lg) 0 var(--space-md);
+  border-top: 1px solid var(--color-surface-hover);
+}
+
+.profile-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  width: 100%;
+}

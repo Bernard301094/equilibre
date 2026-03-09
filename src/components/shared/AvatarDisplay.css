@@ -1,0 +1,53 @@
+/* ==========================================================================
+   AVATARDISPLAY.CSS
+   Estilos compartidos para los avatares de usuario.
+   ========================================================================== */
+
+.avatar-display {
+  /* Los valores por defecto entran en acción si no se pasa la variable */
+  width: var(--avatar-size, 40px);
+  height: var(--avatar-size, 40px);
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  pointer-events: none; /* Por defecto no interactivo */
+}
+
+/* ─── MODIFICADOR INTERACTIVO ─── */
+.avatar-display.clickable {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.avatar-display.clickable:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-sm);
+}
+
+.avatar-display.clickable:focus-visible {
+  outline: 2px solid var(--color-brand-base);
+  outline-offset: 2px;
+}
+
+/* ─── VARIANTE: IMAGEN ─── */
+.avatar-image {
+  object-fit: cover;
+  /* Fondo de respaldo por si la imagen tarda en cargar o tiene transparencias */
+  background-color: var(--color-surface-hover); 
+}
+
+/* ─── VARIANTE: INICIALES ─── */
+.avatar-initial {
+  background-color: var(--avatar-bg, var(--color-brand-dark));
+  color: #ffffff;
+  font-weight: 700;
+  font-size: var(--avatar-font-size, 16px);
+  font-family: var(--font-body-main);
+  user-select: none;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}

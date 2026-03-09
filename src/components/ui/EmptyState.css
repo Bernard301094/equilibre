@@ -1,0 +1,78 @@
+/* ==========================================================================
+   EMPTYSTATE.CSS
+   Diseño responsivo para los estados vacíos (cuando no hay datos)
+   ========================================================================== */
+
+.empty-state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-2xl) var(--space-md);
+  width: 100%;
+  animation: fadeIn 0.3s ease;
+  box-sizing: border-box;
+}
+
+/* ─── ICONO VISUAL ─── */
+.empty-state-icon {
+  font-size: 56px;
+  margin-bottom: var(--space-md);
+  opacity: 0.8;
+  line-height: 1;
+}
+
+/* ─── TEXTOS ─── */
+.empty-state-message {
+  font-family: var(--font-heading-main);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-main);
+  margin-bottom: var(--space-xs);
+  max-width: 400px;
+}
+
+.empty-state-sub {
+  font-family: var(--font-body-main);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  max-width: 320px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* ─── BOTÓN DE ACCIÓN (OPCIONAL) ─── */
+.empty-state-btn {
+  margin-top: var(--space-lg);
+  min-height: 44px; /* REGLA MAESTRA: Toque táctil en móviles */
+  padding: 0 var(--space-xl);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--color-brand-dark), var(--color-brand-base));
+  color: var(--color-text-invert);
+  font-family: var(--font-body-main);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.empty-state-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ==========================================================================
+   MEDIA QUERIES
+   ========================================================================== */
+@media (max-width: 480px) {
+  .empty-state-container {
+    padding: var(--space-xl) var(--space-sm);
+  }
+  
+  .empty-state-icon {
+    font-size: 48px;
+  }
+}

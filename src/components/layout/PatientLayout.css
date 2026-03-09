@@ -1,0 +1,125 @@
+/* ==========================================================================
+   PATIENTLAYOUT.CSS
+   Estructura principal para el Paciente (Mobile-First)
+   ========================================================================== */
+
+.patient-layout-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--color-surface-bg);
+}
+
+/* ─── ÁREA DE CONTENIDO PRINCIPAL (Mobile First) ─── */
+.patient-main-content {
+  flex: 1;
+  width: 100%;
+  padding: var(--space-md);
+  /* Dejamos un relleno inferior para que el contenido no quede oculto bajo el BottomNav */
+  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  margin-left: 0;
+  transition: margin-left 0.3s ease;
+  box-sizing: border-box;
+}
+
+/* ─── MODAL DE CERRAR SESIÓN (Adaptado para layout) ─── */
+.patient-logout-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 15, 25, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-md);
+  backdrop-filter: blur(6px);
+  animation: fadeIn 0.2s ease;
+}
+
+.patient-logout-modal {
+  background: var(--color-surface-card);
+  border-radius: var(--radius-xl);
+  padding: 36px var(--space-lg);
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-surface-hover);
+  animation: fadeUp 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.patient-logout-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-sm);
+}
+
+.patient-logout-title {
+  font-family: var(--font-heading-main);
+  font-size: var(--text-xl);
+  color: var(--color-text-main);
+  margin-bottom: var(--space-xs);
+}
+
+.patient-logout-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-bottom: var(--space-lg);
+}
+
+.patient-logout-actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+}
+
+.patient-logout-btn-cancel {
+  background: transparent;
+  border: 1.5px solid var(--color-surface-hover);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  padding: 10px var(--space-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 44px; /* Área táctil accesible */
+}
+
+.patient-logout-btn-cancel:hover {
+  background: rgba(46, 127, 171, 0.07);
+  color: var(--color-brand-dark);
+  border-color: var(--color-brand-base);
+}
+
+.patient-logout-btn-confirm {
+  background: linear-gradient(135deg, var(--color-danger-base), #8b1c1c);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px var(--space-md);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 3px 10px rgba(176, 48, 48, 0.28);
+  min-height: 44px; /* Área táctil accesible */
+}
+
+.patient-logout-btn-confirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(176, 48, 48, 0.38);
+}
+
+/* ==========================================================================
+   MEDIA QUERIES - DESKTOP
+   ========================================================================== */
+@media (min-width: 768px) {
+  .patient-layout-root {
+    flex-direction: row;
+  }
+  
+  .patient-main-content {
+    margin-left: 256px; /* Desplaza el contenido para dejar espacio al Sidebar */
+    padding: var(--space-xl) var(--space-2xl);
+    padding-bottom: var(--space-xl); /* En desktop no necesitamos el extra del BottomNav */
+  }
+}

@@ -12,6 +12,7 @@ import NotificationsView   from "../../features/therapist/NotificationsView";
 import ProfileModal        from "../shared/ProfileModal";
 import DeleteAccountModal  from "../shared/DeleteAccountModal";
 import { useNotifications } from "../../hooks/useNotifications";
+import "./TherapistLayout.css";
 
 const NAV_ITEMS = () => [
   { id: "dashboard",  icon: "🏠", label: "Início"     },
@@ -33,33 +34,20 @@ const BOTTOM_ITEMS = () => [
 
 function LogoutDialog({ onConfirm, onCancel }) {
   return (
-    <div className="delete-overlay" onClick={onCancel}>
-      <div
-        className="delete-modal"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-      >
-        <div className="delete-icon">👋</div>
-        <div className="delete-title">Sair da conta?</div>
-        <div className="delete-desc">
-          Você precisará fazer login novamente para aceder à plataforma.
-        </div>
-        <div className="logout-dialog-actions">
-          <button className="btn btn-outline" onClick={onCancel}>Cancelar</button>
-          <button className="btn-danger" onClick={onConfirm}>Sair</button>
+    <div className="logout-overlay" onClick={onCancel}>
+      <div className="logout-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="logout-icon">👋</div>
+        <div className="logout-title">Sair da conta?</div>
+        <div className="logout-desc">Você precisará fazer login novamente para aceder à plataforma.</div>
+        <div className="logout-actions">
+          <button className="logout-btn-cancel" onClick={onCancel}>Cancelar</button>
+          <button className="logout-btn-confirm" onClick={onConfirm}>Sair</button>
         </div>
       </div>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   FloatingBell — botão flutuante de notificações (mobile only)
-
-   Usa as mesmas classes CSS (.notif-bell, .notif-dot) do App.css
-   mais classes BEM semânticas para os estados dinâmicos.
-───────────────────────────────────────────────────────────── */
 function FloatingBell({ unreadCount, isActive, onClick }) {
   const [shake, setShake] = useState(false);
   const prevCount = useRef(unreadCount);
@@ -75,26 +63,24 @@ function FloatingBell({ unreadCount, isActive, onClick }) {
     prevCount.current = unreadCount;
   }, [unreadCount]);
 
-  const wrapClass = [
-    "floating-bell-wrap",
-    isActive                          ? "floating-bell-wrap--active"  : "",
-    unreadCount > 0 && !isActive      ? "floating-bell-wrap--unread"  : "",
-    shake                             ? "floating-bell-wrap--shaking" : "",
-  ].filter(Boolean).join(" ");
-
   return (
-    <div className={wrapClass}>
+    <div
+      className={[
+        "floating-bell-wrap",
+        unreadCount > 0 && !isActive ? "has-unread" : "",
+        shake ? "is-shaking" : "",
+        isActive ? "is-active" : "",
+      ].filter(Boolean).join(" ")}
+    >
       <button
-        className="notif-bell"
-        aria-label={`Notificações${unreadCount > 0 ? ` (${unreadCount} não lidas)` : ""}${
-          isActive ? " — clique para fechar" : ""
-        }`}
+        className="floating-bell-btn"
+        aria-label={`Notificações${unreadCount > 0 ? ` (${unreadCount} não lidas)` : ""}${isActive ? " — clique para fechar" : ""}`}
         aria-pressed={isActive}
         onClick={onClick}
       >
         🔔
         {unreadCount > 0 && (
-          <span className="notif-dot" aria-hidden="true">
+          <span className="floating-bell-badge" aria-hidden="true">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -104,13 +90,12 @@ function FloatingBell({ unreadCount, isActive, onClick }) {
 }
 
 export default function TherapistLayout({ session, setSession, logout, theme, toggleTheme }) {
-  const [view,        setView]        = useState("dashboard");
-  const [showProfile, setShowProfile] = useState(false);
-  const [showLogout,  setShowLogout]  = useState(false);
-  const [showDelete,  setShowDelete]  = useState(false);
-  const [isMobile,    setIsMobile]    = useState(window.innerWidth < 768);
+  const [view,          setView]          = useState("dashboard");
+  const [showProfile,   setShowProfile]   = useState(false);
+  const [showLogout,    setShowLogout]    = useState(false);
+  const [showDelete,    setShowDelete]    = useState(false);
+  const [isMobile,      setIsMobile]      = useState(window.innerWidth < 768);
 
-  // Guarda a view anterior para o toggle do sino poder voltar a ela
   const prevViewRef = useRef("dashboard");
 
   const { unreadCount, markAllRead } = useNotifications(session.id);
@@ -121,13 +106,11 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
     return () => window.removeEventListener("resize", handler);
   }, []);
 
-  // Navegação centralizada: guarda a view anterior (exceto notifications)
   const navigateTo = (id) => {
     if (id !== "notifications") prevViewRef.current = id;
     setView(id);
   };
 
-  // Toggle do sino: abre notificações ou volta para a view anterior
   const handleBellClick = () => {
     if (view === "notifications") {
       setView(prevViewRef.current);
@@ -155,7 +138,7 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
   };
 
   return (
-    <div className="layout">
+    <div className="therapist-layout-root">
       {/* Sidebar — apenas desktop */}
       {!isMobile && (
         <Sidebar
@@ -172,13 +155,13 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
           onDeleteAccount={() => setShowDelete(true)}
           extraHeader={
             <button
-              className="notif-bell"
+              className="therapist-sidebar-bell"
               aria-label={`Notificações${unreadCount > 0 ? ` (${unreadCount} não lidas)` : ""}`}
               onClick={() => navigateTo("notifications")}
             >
               🔔
               {unreadCount > 0 && (
-                <span className="notif-dot" aria-hidden="true">
+                <span className="therapist-sidebar-bell-badge" aria-hidden="true">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
@@ -187,8 +170,8 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
         />
       )}
 
-      {/* Main content — margin-left gerido pelo CSS (.main + media queries) */}
-      <main className={`main${isMobile ? " main--mobile" : ""}`}>
+      {/* Main content */}
+      <main className="therapist-main-content">
         {renderView()}
       </main>
 
@@ -204,7 +187,7 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
       {/* Bottom nav — apenas mobile */}
       {isMobile && (
         <BottomNav
-          items={bottomItems}
+          navItems={bottomItems}
           activeView={view}
           onNav={navigateTo}
           session={session}

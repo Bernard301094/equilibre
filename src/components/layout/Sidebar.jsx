@@ -1,22 +1,22 @@
 import AvatarDisplay from "../shared/AvatarDisplay";
+import "./Sidebar.css";
 
 /**
  * Shared sidebar shell used by both TherapistLayout and PatientLayout.
  *
  * Props:
- *   brand          — text beside the logo
- *   roleLabel      — subtitle shown below the brand
- *   navItems       — [{ id, icon, label, badge? }]
- *   activeView     — current view id
- *   onNav          — (id) => void
- *   session        — current session
- *   theme          — 'light' | 'dark'
- *   toggleTheme    — () => void
- *   onAvatarClick  — () => void  (opens ProfileModal)
- *   onLogout       — () => void
- *   onDeleteAccount — () => void
- *   extraHeader    — optional JSX rendered inside the header (e.g. notification bell)
- *   className      — optional extra class for the <aside> (e.g. "patient-sidebar")
+ * brand          — text beside the logo
+ * roleLabel      — subtitle shown below the brand
+ * navItems       — [{ id, icon, label, badge? }]
+ * activeView     — current view id
+ * onNav          — (id) => void
+ * session        — current session
+ * theme          — 'light' | 'dark'
+ * toggleTheme    — () => void
+ * onAvatarClick  — () => void  (opens ProfileModal)
+ * onLogout       — () => void
+ * onDeleteAccount — () => void
+ * extraHeader    — optional JSX rendered inside the header (e.g. notification bell)
  */
 export default function Sidebar({
   brand,
@@ -31,43 +31,44 @@ export default function Sidebar({
   onLogout,
   onDeleteAccount,
   extraHeader,
-  className = "",
 }) {
   return (
-    <aside className={`sidebar ${className}`.trim()}>
+    <aside className="sidebar-container">
       {/* ── Header ── */}
       <div className="sidebar-header">
-        <div className="sidebar-header-row">
+        <div className="sidebar-brand-wrapper">
           <div className="sidebar-brand">
             <img
               src="/equilibre-icon.png"
               alt=""
               aria-hidden="true"
-              className="sidebar-logo"
+              className="sidebar-brand-logo"
             />
-            {brand}
+            <span className="sidebar-brand-text">{brand}</span>
           </div>
-          {extraHeader}
+          {extraHeader && (
+            <div className="sidebar-extra-header">{extraHeader}</div>
+          )}
         </div>
-        <div className="role">{roleLabel}</div>
+        <div className="sidebar-role">{roleLabel}</div>
       </div>
 
       {/* ── Nav ── */}
-      <nav aria-label="Navegação principal">
+      <nav className="sidebar-nav" aria-label="Navegação principal">
         {navItems.map((n) => (
           <button
             key={n.id}
-            className={`nav-item ${activeView === n.id ? "active" : ""}`}
+            className={`sidebar-nav-item ${activeView === n.id ? "active" : ""}`}
             onClick={() => onNav(n.id)}
             aria-current={activeView === n.id ? "page" : undefined}
           >
-            <span className="icon" aria-hidden="true">
+            <span className="sidebar-nav-icon" aria-hidden="true">
               {n.icon}
             </span>
-            {n.label}
+            <span className="sidebar-nav-label">{n.label}</span>
             {n.badge > 0 && (
               <span
-                className="nav-badge"
+                className="sidebar-nav-badge"
                 aria-label={`${n.badge} pendentes`}
               >
                 {n.badge > 9 ? "9+" : n.badge}
@@ -79,24 +80,26 @@ export default function Sidebar({
 
       {/* ── Footer / User pill ── */}
       <div className="sidebar-footer">
-        <div className="user-pill">
-          <AvatarDisplay
-            name={session.name}
-            avatarUrl={session.avatar_url}
-            size={38}
-            className="avatar"
-            onClick={onAvatarClick}
-            title="Mudar foto de perfil"
-          />
-
-          <div className="user-info">
-            <div className="name">{session.name.split(" ")[0]}</div>
-            <div className="email">{session.email}</div>
+        <div className="sidebar-user-pill">
+          <div className="sidebar-user-avatar-wrapper">
+            <AvatarDisplay
+              name={session.name}
+              avatarUrl={session.avatar_url}
+              size={38}
+              className="sidebar-user-avatar"
+              onClick={onAvatarClick}
+              title="Mudar foto de perfil"
+            />
           </div>
 
-          <div className="pill-actions">
+          <div className="sidebar-user-info">
+            <div className="sidebar-user-name">{session.name.split(" ")[0]}</div>
+            <div className="sidebar-user-email">{session.email}</div>
+          </div>
+
+          <div className="sidebar-actions">
             <button
-              className="theme-toggle"
+              className="sidebar-action-btn"
               onClick={toggleTheme}
               aria-label={
                 theme === "dark"
@@ -109,7 +112,7 @@ export default function Sidebar({
             </button>
 
             <button
-              className="pill-btn"
+              className="sidebar-action-btn"
               title="Sair"
               aria-label="Encerrar sessão"
               onClick={onLogout}
@@ -132,7 +135,7 @@ export default function Sidebar({
             </button>
 
             <button
-              className="pill-btn delete"
+              className="sidebar-action-btn sidebar-action-btn-danger"
               title="Excluir conta"
               aria-label="Excluir conta permanentemente"
               onClick={onDeleteAccount}

@@ -1,0 +1,102 @@
+/* ==========================================================================
+   WEEKGOALBAR.CSS
+   Componente elástico y responsivo para mostrar progreso de metas
+   ========================================================================== */
+
+.week-goal-container {
+  background: var(--color-surface-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-surface-hover);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  width: 100%;
+  box-sizing: border-box;
+  transition: box-shadow 0.2s ease;
+}
+
+.week-goal-container:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* ─── CABECERA DE TEXTOS ─── */
+.week-goal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.week-goal-label {
+  font-family: var(--font-heading-main);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.week-goal-text {
+  font-family: var(--font-body-main);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.week-goal-text strong {
+  color: var(--color-brand-dark);
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+/* ─── PISTA Y BARRA DE PROGRESO ─── */
+.week-goal-track {
+  width: 100%;
+  height: 12px;
+  background: var(--color-surface-bg);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+}
+
+body.dark-mode .week-goal-track {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.week-goal-fill {
+  height: 100%;
+  /* El ancho es controlado por la variable inyectada desde React */
+  width: var(--goal-progress, 0%);
+  background: linear-gradient(90deg, var(--color-brand-light), var(--color-brand-base));
+  border-radius: var(--radius-full);
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s ease;
+}
+
+/* Cambio de color sutil cuando se alcanza la meta */
+.week-goal-fill.goal-reached {
+  background: linear-gradient(90deg, var(--color-success-soft), var(--color-success-base));
+}
+
+/* ─── MENSAJE DE ÉXITO ─── */
+.week-goal-success {
+  font-family: var(--font-body-main);
+  font-size: var(--text-xs);
+  color: var(--color-success-base);
+  font-weight: 700;
+  text-align: right;
+  margin: 0;
+  animation: fadeUp 0.3s ease;
+}
+
+/* ==========================================================================
+   MEDIA QUERIES (Mobile-First)
+   ========================================================================== */
+@media (max-width: 480px) {
+  .week-goal-container {
+    padding: var(--space-sm) var(--space-md);
+  }
+  
+  .week-goal-track {
+    height: 16px; /* Barra un poco más gruesa en móviles para mejor visualización */
+  }
+}

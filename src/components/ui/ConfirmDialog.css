@@ -1,0 +1,183 @@
+/* ==========================================================================
+   CONFIRMDIALOG.CSS
+   Estilos para el modal genérico de confirmación (Mobile-First)
+   ========================================================================== */
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 15, 25, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-md);
+  backdrop-filter: blur(6px);
+  animation: fadeIn 0.2s ease;
+}
+
+.confirm-modal {
+  background: var(--color-surface-card);
+  border-radius: var(--radius-xl);
+  padding: 32px var(--space-lg);
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-surface-hover);
+  animation: fadeUp 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+  box-sizing: border-box;
+}
+
+.confirm-icon {
+  font-size: 42px;
+  margin-bottom: var(--space-md);
+  line-height: 1;
+}
+
+.confirm-title {
+  font-family: var(--font-heading-main);
+  font-size: var(--text-lg);
+  color: var(--color-text-main);
+  margin-bottom: var(--space-sm);
+}
+
+.confirm-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-bottom: var(--space-lg);
+}
+
+.confirm-desc.with-keyword {
+  margin-bottom: var(--space-md);
+}
+
+/* ─── ENTRADA DE PALABRA CLAVE (KEYWORD) ─── */
+.confirm-keyword-wrapper {
+  margin-bottom: var(--space-lg);
+  text-align: left;
+}
+
+.confirm-keyword-hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.confirm-input {
+  width: 100%;
+  min-height: 48px; /* REGLA MAESTRA: Toque accesible en móvil */
+  padding: 0 var(--space-md);
+  border: 1.5px solid var(--color-surface-hover);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body-main);
+  font-size: var(--text-sm);
+  background: var(--color-surface-bg);
+  color: var(--color-text-main);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.confirm-input:focus {
+  border-color: var(--color-brand-base);
+  box-shadow: 0 0 0 3px rgba(46, 127, 171, 0.15);
+}
+
+.confirm-input.match {
+  border-color: var(--color-success-base);
+}
+
+body.dark-mode .confirm-input {
+  background: var(--color-surface-card);
+  border-color: var(--color-surface-hover);
+}
+
+/* ─── MENSAJE DE ERROR ─── */
+.confirm-error-msg {
+  color: var(--color-danger-base);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+}
+
+/* ─── ACCIONES (BOTONES) ─── */
+.confirm-actions {
+  display: flex;
+  flex-direction: column; /* Apilados en móviles muy estrechos */
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.confirm-btn {
+  width: 100%;
+  min-height: 44px; /* Área táctil accesible */
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body-main);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.confirm-btn-cancel {
+  background: transparent;
+  border: 1.5px solid var(--color-surface-hover);
+  color: var(--color-text-muted);
+}
+
+.confirm-btn-cancel:hover:not(:disabled) {
+  background: rgba(46, 127, 171, 0.07);
+  color: var(--color-brand-dark);
+  border-color: var(--color-brand-base);
+}
+
+.confirm-btn-primary {
+  background: linear-gradient(135deg, var(--color-brand-dark), var(--color-brand-base));
+  color: var(--color-text-invert);
+  border: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.confirm-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.confirm-btn-danger {
+  background: linear-gradient(135deg, var(--color-danger-base), #8b1c1c);
+  color: #ffffff;
+  border: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.confirm-btn-danger:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ==========================================================================
+   MEDIA QUERIES
+   ========================================================================== */
+@media (min-width: 480px) {
+  /* En pantallas más anchas que un móvil pequeño, los botones van lado a lado */
+  .confirm-actions {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .confirm-btn {
+    flex: 1;
+  }
+}

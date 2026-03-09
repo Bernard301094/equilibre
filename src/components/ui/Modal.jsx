@@ -1,14 +1,15 @@
 import { useEffect, useRef } from "react";
+import "./Modal.css";
 
 /**
  * Generic overlay modal.
  *
  * Props:
- *   onClose     — called when backdrop is clicked or Escape is pressed
- *   children
- *   maxWidth    — default 520
- *   noPadding   — strips inner padding (for tabbed modals that manage their own)
- *   labelId     — id of the element that labels this dialog (for aria-labelledby)
+ * onClose     — called when backdrop is clicked or Escape is pressed
+ * children
+ * maxWidth    — default 520
+ * noPadding   — strips inner padding (for tabbed modals that manage their own)
+ * labelId     — id of the element that labels this dialog (for aria-labelledby)
  */
 export default function Modal({
   onClose,
@@ -24,7 +25,7 @@ export default function Modal({
   useEffect(() => {
     previousFocusRef.current = document.activeElement;
     const firstFocusable = dialogRef.current?.querySelector(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     );
     firstFocusable?.focus();
 
@@ -68,7 +69,7 @@ export default function Modal({
 
   return (
     <div
-      className="overlay"
+      className="base-modal-overlay"
       onClick={onClose}
       role="presentation"
     >
@@ -77,12 +78,8 @@ export default function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelId}
-        className="modal"
-        style={{
-          maxWidth,
-          padding: noPadding ? 0 : undefined,
-          overflow: noPadding ? "hidden" : undefined,
-        }}
+        className={`base-modal-content ${noPadding ? "base-modal-no-padding" : ""}`}
+        style={{ "--modal-max-width": `${maxWidth}px` }}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
