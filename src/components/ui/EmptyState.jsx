@@ -1,3 +1,5 @@
+import "./EmptyState.css";
+
 /**
  * Centered empty state display.
  *
@@ -10,19 +12,21 @@
 export default function EmptyState({ icon = "📭", message, sub, action }) {
   return (
     <div className="empty-state">
-      <div className="empty-icon" aria-hidden="true">
+      <div className="empty-state__icon" aria-hidden="true">
         {icon}
       </div>
-      {message && <p>{message}</p>}
-      {sub && (
-        <p style={{ fontSize: 13, marginTop: 4, color: "var(--text-muted)" }}>
-          {sub}
-        </p>
+
+      {message && (
+        <p className="empty-state__message">{message}</p>
       )}
+
+      {sub && (
+        <p className="empty-state__sub">{sub}</p>
+      )}
+
       {action && (
         <button
-          className="btn btn-sage btn-sm"
-          style={{ marginTop: 14 }}
+          className="btn btn-sage btn-sm empty-state__action"
           onClick={action.onClick}
         >
           {action.label}

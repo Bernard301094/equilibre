@@ -1,0 +1,91 @@
+/* ── Overlay ─────────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(5, 15, 25, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  overflow-y: auto;
+  animation: modal-fade-in 0.2s ease;
+}
+
+/* ── Dialog box ──────────────────────────────────────────────────────────── */
+.modal-dialog {
+  position: relative;
+  width: 100%;
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--warm);
+  animation: modal-fade-up 0.25s ease;
+
+  /* Prevent dialog from growing taller than the viewport */
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ── No-padding variant (tabbed modals manage their own spacing) ─────────── */
+.modal-dialog--no-padding {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* ── Animations ──────────────────────────────────────────────────────────── */
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Mobile: sheet that slides up from the bottom ────────────────────────── */
+@media (max-width: 767px) {
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-dialog {
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    max-height: 88vh;
+    /* Full width on mobile */
+    max-width: 100% !important;
+    padding: 24px 20px;
+    animation: modal-slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .modal-dialog--no-padding {
+    padding: 0;
+  }
+
+  @keyframes modal-slide-up {
+    from {
+      transform: translateY(100%);
+      opacity: 0.6;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}

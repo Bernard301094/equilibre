@@ -1,0 +1,170 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   SKELETON — Shimmer loading placeholders
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Keyframe ────────────────────────────────────────────────────────────── */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+/* ── Base block ──────────────────────────────────────────────────────────── */
+.skeleton-block {
+  display: block;
+  width: var(--sk-w, 100%);
+  height: var(--sk-h, 16px);
+  border-radius: var(--sk-r, 8px);
+  background: linear-gradient(
+    90deg,
+    var(--warm) 25%,
+    var(--cream) 50%,
+    var(--warm) 75%
+  );
+  background-size: 400px 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+  flex-shrink: 0;
+}
+
+/* ── Text lines ──────────────────────────────────────────────────────────── */
+.skeleton-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+/* ── Stat card ───────────────────────────────────────────────────────────── */
+.skeleton-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-stat-card .skeleton-block:first-child {
+  margin-bottom: 4px;
+}
+
+/* ── Generic card ────────────────────────────────────────────────────────── */
+.skeleton-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Patient row ─────────────────────────────────────────────────────────── */
+.skeleton-patient-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.skeleton-patient-row .skeleton-block:first-child {
+  flex-shrink: 0;
+}
+
+.skeleton-patient-row__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* ── Exercise card ───────────────────────────────────────────────────────── */
+.skeleton-ex-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.skeleton-ex-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+
+/* ── List ────────────────────────────────────────────────────────────────── */
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.skeleton-list__divider {
+  height: 1px;
+  background: var(--warm);
+  margin: 2px 0;
+}
+
+/* ── Dashboard ───────────────────────────────────────────────────────────── */
+.skeleton-dashboard__header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.skeleton-dashboard__stats {
+  margin-bottom: 28px;
+}
+
+/* ── Responses ───────────────────────────────────────────────────────────── */
+.skeleton-responses__header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.skeleton-responses__grid {
+  align-items: start;
+}
+
+.skeleton-responses__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-responses__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.skeleton-responses__card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-responses__card .skeleton-block:nth-child(2) {
+  margin-bottom: 8px;
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .skeleton-responses__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skeleton-dashboard__stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .skeleton-patient-row {
+    padding: 10px 0;
+  }
+}
+
+@media (max-width: 479px) {
+  .skeleton-dashboard__stats {
+    grid-template-columns: 1fr;
+  }
+}

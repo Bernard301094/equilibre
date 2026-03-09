@@ -1,15 +1,6 @@
 import { useEffect, useRef } from "react";
+import "./Modal.css";
 
-/**
- * Generic overlay modal.
- *
- * Props:
- *   onClose     — called when backdrop is clicked or Escape is pressed
- *   children
- *   maxWidth    — default 520
- *   noPadding   — strips inner padding (for tabbed modals that manage their own)
- *   labelId     — id of the element that labels this dialog (for aria-labelledby)
- */
 export default function Modal({
   onClose,
   children,
@@ -20,20 +11,17 @@ export default function Modal({
   const dialogRef = useRef(null);
   const previousFocusRef = useRef(null);
 
-  // ── Focus trap ────────────────────────────────────────────────────────────
   useEffect(() => {
     previousFocusRef.current = document.activeElement;
     const firstFocusable = dialogRef.current?.querySelector(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
     firstFocusable?.focus();
-
     return () => {
       previousFocusRef.current?.focus();
     };
   }, []);
 
-  // ── Escape key ────────────────────────────────────────────────────────────
   useEffect(() => {
     const handle = (e) => {
       if (e.key === "Escape") onClose?.();
@@ -42,7 +30,6 @@ export default function Modal({
     return () => window.removeEventListener("keydown", handle);
   }, [onClose]);
 
-  // ── Tab trap ──────────────────────────────────────────────────────────────
   const handleKeyDown = (e) => {
     if (e.key !== "Tab") return;
     const focusable = Array.from(
@@ -68,7 +55,7 @@ export default function Modal({
 
   return (
     <div
-      className="overlay"
+      className="modal-overlay"
       onClick={onClose}
       role="presentation"
     >
@@ -77,12 +64,8 @@ export default function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelId}
-        className="modal"
-        style={{
-          maxWidth,
-          padding: noPadding ? 0 : undefined,
-          overflow: noPadding ? "hidden" : undefined,
-        }}
+        className={`modal-dialog${noPadding ? " modal-dialog--no-padding" : ""}`}
+        style={{ maxWidth }}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >

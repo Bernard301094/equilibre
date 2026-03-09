@@ -4,19 +4,22 @@ import { parseQuestions } from "../../utils/parsing";
 import { daysUntil } from "../../utils/dates";
 import { CATEGORY_CLASS } from "../../utils/constants";
 import EmptyState from "../../components/ui/EmptyState";
+import "./PatientExercises.css";
 
+/* ── Due date chip ───────────────────────────────────────────────────────── */
 function DueChip({ dueDate }) {
   const days = daysUntil(dueDate);
   if (days === null) return null;
-  if (days < 0)  return <span className="due-chip due-late">Atrasado</span>;
-  if (days <= 2) return <span className="due-chip due-warn">Vence em {days}d</span>;
+  if (days < 0)  return <span className="due-chip due-chip--late">Atrasado</span>;
+  if (days <= 2) return <span className="due-chip due-chip--warn">Vence em {days}d</span>;
   return (
-    <span className="due-chip due-ok">
+    <span className="due-chip due-chip--ok">
       {new Date(dueDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
     </span>
   );
 }
 
+/* ── Exercise card ───────────────────────────────────────────────────────── */
 function ExCard({ assign, isDone, exercises, onStart }) {
   const ex = exercises.find((e) => e.id === assign.exercise_id);
   if (!ex) return null;
@@ -26,8 +29,7 @@ function ExCard({ assign, isDone, exercises, onStart }) {
 
   return (
     <div
-      className="ex-card"
-      style={{ opacity: isDone ? 0.6 : 1, cursor: isDone ? "default" : "pointer" }}
+      className={`ex-card${isDone ? " ex-card--done" : ""}`}
       onClick={() => !isDone && onStart(ex)}
       role={isDone ? "article" : "button"}
       tabIndex={isDone ? undefined : 0}
@@ -35,14 +37,14 @@ function ExCard({ assign, isDone, exercises, onStart }) {
       onKeyDown={!isDone ? (e) => (e.key === "Enter" || e.key === " ") && onStart(ex) : undefined}
     >
       <span className={`ex-cat ${catClass}`}>{ex.category}</span>
-      <div className="ex-title">{ex.title}</div>
-      <div className="ex-desc">{ex.description}</div>
+      <div className="ex-card__title">{ex.title}</div>
+      <div className="ex-card__desc">{ex.description}</div>
 
-      <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
-        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+      <div className="ex-card__footer">
+        <span className="ex-card__question-count">
           {qs.length} {qs.length === 1 ? "pergunta" : "perguntas"}
         </span>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div className="ex-card__actions">
           {!isDone && <DueChip dueDate={assign.due_date} />}
           {isDone ? (
             <span className="response-badge badge-done">Concluído</span>
@@ -57,6 +59,12 @@ function ExCard({ assign, isDone, exercises, onStart }) {
   );
 }
 
+/* ── Section label ───────────────────────────────────────────────────────── */
+function SectionLabel({ children }) {
+  return <div className="exercises-section__label">{children}</div>;
+}
+
+/* ── Main component ──────────────────────────────────────────────────────── */
 export default function PatientExercises({ session, onStart }) {
   const [pending,   setPending]   = useState([]);
   const [done,      setDone]      = useState([]);
@@ -85,21 +93,19 @@ export default function PatientExercises({ session, onStart }) {
     return () => { active = false; };
   }, [session.id, session.access_token]);
 
-  if (loading) return <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Carregando...</p>;
+  if (loading) return <p className="exercises-loading">Carregando...</p>;
 
   return (
-    <div style={{ animation: "fadeUp .4s ease" }}>
+    <div className="patient-exercises">
       <div className="page-header">
         <h2>Meus Exercícios</h2>
         <p>Complete as tarefas recomendadas pela sua profissional.</p>
       </div>
 
       {pending.length > 0 && (
-        <section aria-label="Exercícios para fazer">
-          <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-muted)", marginBottom: 11 }}>
-            Para fazer
-          </div>
-          <div className="grid-auto" style={{ marginBottom: 28 }}>
+        <section className="exercises-section" aria-label="Exercícios para fazer">
+          <SectionLabel>Para fazer</SectionLabel>
+          <div className="exercises-section__grid exercises-section__grid--pending">
             {pending.map((a) => (
               <ExCard key={a.id} assign={a} isDone={false} exercises={exercises} onStart={onStart} />
             ))}
@@ -108,11 +114,9 @@ export default function PatientExercises({ session, onStart }) {
       )}
 
       {done.length > 0 && (
-        <section aria-label="Exercícios concluídos">
-          <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-muted)", marginBottom: 11 }}>
-            Concluídos
-          </div>
-          <div className="grid-auto" style={{ marginBottom: 28 }}>
+        <section className="exercises-section" aria-label="Exercícios concluídos">
+          <SectionLabel>Concluídos</SectionLabel>
+          <div className="exercises-section__grid exercises-section__grid--done">
             {done.map((a) => (
               <ExCard key={a.id} assign={a} isDone={true} exercises={exercises} onStart={onStart} />
             ))}
