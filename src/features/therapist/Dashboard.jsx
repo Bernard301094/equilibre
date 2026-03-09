@@ -6,6 +6,7 @@ import { SkeletonDashboard } from "../../components/ui/Skeleton";
 import StatCard from "../../components/ui/StatCard";
 import AvatarDisplay from "../../components/shared/AvatarDisplay";
 import EmptyState from "../../components/ui/EmptyState";
+import "./Dashboard.css";
 
 const getGreeting = (name) => {
   const h = new Date().getHours();
@@ -23,29 +24,21 @@ const getGreetingSub = () => {
   return "Trabalhando tarde? Lembre-se de cuidar de si também.";
 };
 
-/** Returns YYYY-MM-DD string for `n` days ago (local time) */
-const daysAgoStr = (n) => localDateOffset(n);
-
 export default function TherapistDashboard({ session, setView }) {
-  const [stats,     setStats]     = useState({ patients: 0, done: 0, pending: 0, recent: [] });
-  const [redFlags,  setRedFlags]  = useState([]);
-  const [loading,   setLoading]   = useState(true);
+  const [stats,    setStats]    = useState({ patients: 0, done: 0, pending: 0, recent: [] });
+  const [redFlags, setRedFlags] = useState([]);
+  const [loading,  setLoading]  = useState(true);
 
   useEffect(() => {
     let active = true;
 
     (async () => {
       try {
-        console.log("[Dashboard] session.id:", session.id);
-        console.log("[Dashboard] session.access_token present:", !!session.access_token);
-
         const patientsRaw = await db.query(
           "users",
           { filter: { therapist_id: session.id, role: "patient" } },
           session.access_token
         );
-
-        console.log("[Dashboard] patientsRaw:", patientsRaw);
 
         const pList = Array.isArray(patientsRaw)
           ? patientsRaw
@@ -54,7 +47,6 @@ export default function TherapistDashboard({ session, setView }) {
           : [];
 
         const pIds = pList.map((p) => p.id);
-        console.log("[Dashboard] pIds:", pIds);
 
         const [allAssign, diaryRows, respRows] = pIds.length > 0
           ? await Promise.all([
@@ -62,51 +54,43 @@ export default function TherapistDashboard({ session, setView }) {
                 "assignments",
                 { filterIn: { patient_id: pIds }, select: "id,patient_id,status,due_date" },
                 session.access_token
-              ).then((r) => {
-                console.log("[Dashboard] assignments raw:", r);
-                return Array.isArray(r) ? r : r && typeof r === "object" ? [r] : [];
-              }).catch((e) => { console.error("[Dashboard] assignments error:", e); return []; }),
+              ).then((r) => Array.isArray(r) ? r : r && typeof r === "object" ? [r] : [])
+               .catch(() => []),
               db.query(
                 "diary_entries",
                 { filterIn: { patient_id: pIds }, select: "patient_id,date" },
                 session.access_token
-              ).catch((e) => { console.error("[Dashboard] diary error:", e); return []; }),
+              ).catch(() => []),
               db.query(
                 "responses",
                 { filterIn: { patient_id: pIds }, select: "patient_id,completed_at" },
                 session.access_token
-              ).catch((e) => { console.error("[Dashboard] responses error:", e); return []; }),
+              ).catch(() => []),
             ])
           : [[], [], []];
 
-        console.log("[Dashboard] allAssign:", allAssign);
-
         if (!active) return;
 
-        // ── Red Flags ──────────────────────────────────────────────────────
-        const threeDaysAgo = daysAgoStr(3);
+        /* ── Red Flags ── */
+        const threeDaysAgo = localDateOffset(3);
         const flags = [];
 
         for (const p of pList) {
           const diaryDates = (Array.isArray(diaryRows) ? diaryRows : [])
             .filter((d) => d.patient_id === p.id)
             .map((d) => d.date);
+
           const respDates = (Array.isArray(respRows) ? respRows : [])
             .filter((r) => r.patient_id === p.id)
             .map((r) => r.completed_at?.slice(0, 10))
             .filter(Boolean);
 
-          const allDates = [...diaryDates, ...respDates];
-
-          // Most recent activity date
-          const lastDate = allDates.sort().reverse()[0] ?? null;
-
-          // Inactive flag: no activity in the last 3 days
+          const allDates   = [...diaryDates, ...respDates];
+          const lastDate   = allDates.sort().reverse()[0] ?? null;
           const isInactive = !lastDate || lastDate < threeDaysAgo;
 
-          // Overdue flag: 3+ pending assignments with past due_date
           const patientPending = allAssign.filter((a) => a.patient_id === p.id && a.status === "pending");
-          const overdueCount = patientPending.filter((a) => isOverdue(a.due_date)).length;
+          const overdueCount   = patientPending.filter((a) => isOverdue(a.due_date)).length;
           const hasHighOverdue = overdueCount >= 3;
 
           if (isInactive || hasHighOverdue) {
@@ -149,124 +133,85 @@ export default function TherapistDashboard({ session, setView }) {
   const firstName = session.name.split(" ")[0];
 
   return (
-    <div style={{ animation: "fadeUp .4s ease" }}>
-      <div className="page-header">
-        <h2>{getGreeting(firstName)}</h2>
-        <p>{getGreetingSub()}</p>
+    <div className="dashboard page-fade-in">
+
+      {/* ── Header ── */}
+      <div className="dashboard__header">
+        <h2 className="dashboard__greeting">{getGreeting(firstName)}</h2>
+        <p className="dashboard__greeting-sub">{getGreetingSub()}</p>
       </div>
 
       {/* ── Stats ── */}
-      <div className="grid-3" style={{ marginBottom: 28 }}>
+      <div className="dashboard__stats-grid">
         <StatCard icon="👥" value={stats.patients} label="Pacientes ativos"      />
         <StatCard icon="✅" value={stats.done}     label="Exercícios concluídos" />
         <StatCard icon="⏳" value={stats.pending}  label="Pendentes"             />
       </div>
 
-      {/* ── Red Flags / Alertas de Atenção ── */}
+      {/* ── Red Flags ── */}
       {redFlags.length > 0 && (
-        <div className="card" style={{ marginBottom: 24, borderLeft: "4px solid var(--danger)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-            <span style={{ fontSize: 22 }} aria-hidden="true">🚨</span>
+        <div className="dashboard__flags-card">
+          <div className="dashboard__flags-header">
+            <span className="dashboard__flags-icon" aria-hidden="true">🚨</span>
             <div>
-              <h3 style={{ fontSize: 16, color: "var(--danger)", marginBottom: 2 }}>
-                Alertas de Atenção
-              </h3>
-              <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
+              <h3 className="dashboard__flags-title">Alertas de Atenção</h3>
+              <p className="dashboard__flags-sub">
                 {redFlags.length} paciente{redFlags.length > 1 ? "s" : ""} precisam da sua atenção
               </p>
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="dashboard__flags-list">
             {redFlags.map(({ patient, isInactive, hasHighOverdue, overdueCount, daysSinceActivity, streak, stage }) => (
-              <div
-                key={patient.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "12px 14px",
-                  borderRadius: 12,
-                  background: "var(--danger-soft, rgba(239,68,68,0.06))",
-                  border: "1px solid rgba(239,68,68,0.18)",
-                  flexWrap: "wrap",
-                }}
-              >
-                {/* Avatar */}
+              <div key={patient.id} className="dashboard__flag-row">
+
                 <AvatarDisplay
                   name={patient.name}
                   avatarUrl={patient.avatar_url}
                   size={36}
-                  className="p-avatar"
+                  className="dashboard__flag-avatar"
                 />
 
-                {/* Info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: "var(--blue-dark)", marginBottom: 2 }}>
-                    {patient.name}
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                <div className="dashboard__flag-info">
+                  <div className="dashboard__flag-name">{patient.name}</div>
+                  <div className="dashboard__flag-tags">
                     {isInactive && (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          background: "rgba(239,68,68,0.12)",
-                          color: "var(--danger)",
-                          borderRadius: 6,
-                          padding: "2px 8px",
-                        }}
-                      >
+                      <span className="dashboard__flag-tag dashboard__flag-tag--inactive">
                         {daysSinceActivity != null
                           ? `😴 Sem atividade há ${daysSinceActivity} dia${daysSinceActivity !== 1 ? "s" : ""}`
                           : "😴 Nunca acessou"}
                       </span>
                     )}
                     {hasHighOverdue && (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          background: "rgba(245,158,11,0.12)",
-                          color: "#b45309",
-                          borderRadius: 6,
-                          padding: "2px 8px",
-                        }}
-                      >
+                      <span className="dashboard__flag-tag dashboard__flag-tag--overdue">
                         ⚠️ {overdueCount} exercício{overdueCount > 1 ? "s" : ""} vencido{overdueCount > 1 ? "s" : ""}
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Plant indicator */}
                 <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    background: "rgba(255,255,255,0.7)",
-                    border: "1px solid var(--warm)",
-                    borderRadius: 20,
-                    padding: "4px 10px",
-                    flexShrink: 0,
-                  }}
+                  className="dashboard__flag-plant"
                   title={`${stage.label} — ${streak} dias seguidos`}
                 >
-                  <span style={{ fontSize: 15 }} aria-hidden="true">{stage.icon}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: streak === 0 ? "var(--text-muted)" : stage.color }}>
+                  <span className="dashboard__flag-plant-icon" aria-hidden="true">
+                    {stage.icon}
+                  </span>
+                  <span
+                    className={["dashboard__flag-plant-streak", streak === 0 ? "dashboard__flag-plant-streak--zero" : ""].filter(Boolean).join(" ")}
+                    style={{ color: streak === 0 ? undefined : stage.color }}
+                  >
                     {streak}d
                   </span>
                 </div>
 
-                {/* Action button */}
                 <button
-                  className="btn btn-outline btn-sm"
-                  style={{ borderColor: "var(--danger)", color: "var(--danger)", flexShrink: 0 }}
+                  className="dashboard__flag-btn"
                   onClick={() => setView("patients")}
                 >
                   Ver paciente
                 </button>
+
               </div>
             ))}
           </div>
@@ -274,37 +219,44 @@ export default function TherapistDashboard({ session, setView }) {
       )}
 
       {/* ── Pacientes recentes ── */}
-      <div className="card">
-        <h3 style={{ fontSize: 17, marginBottom: 14 }}>Pacientes recentes</h3>
+      <div className="dashboard__recent-card">
+        <h3 className="dashboard__recent-title">Pacientes recentes</h3>
 
-        {stats.recent.length === 0 && (
+        {stats.recent.length === 0 ? (
           <EmptyState
             icon="👥"
             message="Nenhum paciente ainda."
             sub='Gere um código em "Pacientes" para convidar.'
           />
-        )}
-
-        {stats.recent.map((p) => (
-          <div key={p.id} className="patient-row">
-            <AvatarDisplay name={p.name} avatarUrl={p.avatar_url} size={38} className="p-avatar" />
-            <div>
-              <div className="p-name">{p.name}</div>
-              <div className="p-email">{p.email}</div>
+        ) : (
+          <>
+            <div className="dashboard__recent-list">
+              {stats.recent.map((p) => (
+                <div key={p.id} className="dashboard__patient-row">
+                  <AvatarDisplay
+                    name={p.name}
+                    avatarUrl={p.avatar_url}
+                    size={38}
+                    className="dashboard__patient-avatar"
+                  />
+                  <div className="dashboard__patient-info">
+                    <div className="dashboard__patient-name">{p.name}</div>
+                    <div className="dashboard__patient-email">{p.email}</div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-        ))}
 
-        {stats.recent.length > 0 && (
-          <button
-            className="btn btn-outline btn-sm"
-            style={{ marginTop: 14 }}
-            onClick={() => setView("patients")}
-          >
-            Ver todos →
-          </button>
+            <button
+              className="dashboard__see-all-btn"
+              onClick={() => setView("patients")}
+            >
+              Ver todos →
+            </button>
+          </>
         )}
       </div>
+
     </div>
   );
 }

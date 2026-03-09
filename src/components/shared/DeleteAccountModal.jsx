@@ -1,24 +1,16 @@
 import { useState } from "react";
-import Modal from "../ui/Modal";
 import db from "../../services/db";
+import "./DeleteAccountModal.css";
 
 const KEYWORD = "EXCLUIR";
 const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPA_KEY =
   import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_KEY;
 
-/**
- * Confirmation modal for permanent account deletion.
- *
- * Props:
- *   session    — current session object
- *   onClose
- *   onDeleted  — called after successful deletion; caller handles logout
- */
 export default function DeleteAccountModal({ session, onClose, onDeleted }) {
-  const [typed, setTyped] = useState("");
+  const [typed,   setTyped]   = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error,   setError]   = useState("");
   const labelId = "delete-account-title";
 
   const canConfirm = typed === KEYWORD && !loading;
@@ -30,19 +22,18 @@ export default function DeleteAccountModal({ session, onClose, onDeleted }) {
 
     try {
       if (session.role === "patient") {
-        // Notify therapist — best-effort
         if (session.therapist_id) {
           try {
             await db.insert(
               "notifications",
               {
-                therapist_id: session.therapist_id,
-                patient_id: session.id,
-                patient_name: session.name,
+                therapist_id:   session.therapist_id,
+                patient_id:     session.id,
+                patient_name:   session.name,
                 exercise_title: "Conta encerrada pelo paciente",
-                type: "account_deleted",
-                created_at: new Date().toISOString(),
-                read: false,
+                type:           "account_deleted",
+                created_at:     new Date().toISOString(),
+                read:           false,
               },
               session.access_token
             );
@@ -50,17 +41,14 @@ export default function DeleteAccountModal({ session, onClose, onDeleted }) {
             console.warn("[DeleteAccountModal] notification failed:", e);
           }
         }
-
-        // Remove the user row — blocks future login without deleting history
         await db.delete("users", { id: session.id }, session.access_token);
 
       } else {
-        // Therapist: clean up all owned records
         const ownedTables = [
-          ["invites", "therapist_id"],
-          ["notifications", "therapist_id"],
-          ["assignments", "therapist_id"],
-          ["goals", "therapist_id"],
+          ["invites",        "therapist_id"],
+          ["notifications",  "therapist_id"],
+          ["assignments",    "therapist_id"],
+          ["goals",          "therapist_id"],
           ["clinical_notes", "therapist_id"],
         ];
 
@@ -81,7 +69,6 @@ export default function DeleteAccountModal({ session, onClose, onDeleted }) {
           }
         }
 
-        // Unlink patients — set therapist_id to null
         try {
           const patients = await db.query(
             "users",
@@ -90,28 +77,21 @@ export default function DeleteAccountModal({ session, onClose, onDeleted }) {
           );
           if (Array.isArray(patients)) {
             for (const p of patients) {
-              await db.update(
-                "users",
-                { id: p.id },
-                { therapist_id: null },
-                session.access_token
-              );
+              await db.update("users", { id: p.id }, { therapist_id: null }, session.access_token);
             }
           }
         } catch (e) {
           console.warn("[DeleteAccountModal] unlink patients failed:", e);
         }
 
-        // Remove the therapist user row
         await db.delete("users", { id: session.id }, session.access_token);
       }
 
-      // Server-side session invalidation — best-effort
       try {
         await fetch(`${SUPA_URL}/auth/v1/logout`, {
-          method: "POST",
+          method:  "POST",
           headers: {
-            apikey: SUPA_KEY,
+            apikey:        SUPA_KEY,
             Authorization: `Bearer ${session.access_token}`,
           },
         });
@@ -126,56 +106,52 @@ export default function DeleteAccountModal({ session, onClose, onDeleted }) {
   };
 
   return (
-    <div className="delete-overlay" onClick={onClose}>
+    <div className="dam-overlay" onClick={onClose}>
       <div
-        className="delete-modal"
+        className="dam-modal"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelId}
       >
-        <div className="delete-icon" aria-hidden="true">⚠️</div>
+        <div className="dam-modal__icon" aria-hidden="true">⚠️</div>
 
-        <div id={labelId} className="delete-title">
+        <div id={labelId} className="dam-modal__title">
           Excluir conta
         </div>
 
-        <div className="delete-desc">
+        <div className="dam-modal__desc">
           Esta ação é <strong>permanente e irreversível</strong>. Todos os seus
           dados serão apagados para sempre.
+
           {session.role === "patient" && (
             <>
-              <br />
-              <br />
+              <br /><br />
               📋 O seu histórico de sessões ficará{" "}
               <strong>preservado no perfil da sua profissional</strong>. Para
               criar uma nova conta será necessário um{" "}
               <strong>novo código de convite</strong>.
             </>
           )}
+
           {session.role === "therapist" && (
             <>
-              <br />
-              <br />
+              <br /><br />
               ⚠️ Os seus pacientes serão <strong>desvinculados</strong>, mas as
               contas deles serão mantidas.
             </>
           )}
-          <br />
-          <br />
+
+          <br /><br />
           Digite <strong>{KEYWORD}</strong> para confirmar:
         </div>
 
-        <label
-          htmlFor="delete-keyword-input"
-          style={{ display: "block", marginBottom: 8 }}
-          className="sr-only"
-        >
+        <label htmlFor="delete-keyword-input" className="sr-only">
           Digite {KEYWORD} para confirmar
         </label>
         <input
           id="delete-keyword-input"
-          className="delete-confirm-input"
+          className="dam-modal__input"
           placeholder={KEYWORD}
           value={typed}
           onChange={(e) => setTyped(e.target.value.toUpperCase())}
@@ -184,15 +160,10 @@ export default function DeleteAccountModal({ session, onClose, onDeleted }) {
         />
 
         {error && (
-          <p
-            style={{ color: "#c0444a", fontSize: 13, marginBottom: 14 }}
-            role="alert"
-          >
-            {error}
-          </p>
+          <p className="dam-modal__error" role="alert">{error}</p>
         )}
 
-        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+        <div className="dam-modal__actions">
           <button
             className="btn btn-outline"
             onClick={onClose}

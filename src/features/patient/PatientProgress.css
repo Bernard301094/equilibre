@@ -1,0 +1,99 @@
+/* ============================================================
+   PatientProgress.css — Patient progress dashboard
+   Mobile-first | BEM
+   ============================================================ */
+
+/* ---------- Loading ---------- */
+.pp-loading {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text-muted, #6b7280);
+  padding: 24px 0;
+  text-align: center;
+}
+
+/* ============================================================
+   STATS GRID
+   ============================================================ */
+.pp-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 480px) {
+  .pp-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ============================================================
+   CARDS
+   ============================================================ */
+
+/* Goal card */
+.pp-goal-card {
+  margin-bottom: 0; /* gap handled by parent flow */
+}
+
+/* Chart card */
+.pp-chart-card {
+  /* inherits .card base */
+}
+
+.pp-card-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--blue-dark, #0a2e48);
+  margin: 0 0 6px;
+}
+
+.pp-chart-desc {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--text-muted, #6b7280);
+  margin: 0 0 14px;
+  line-height: 1.4;
+}
+
+/* ============================================================
+   PAGE FLOW — stack cards with consistent gap
+   ============================================================ */
+.page-fade-in .pp-stats-grid,
+.page-fade-in .pp-goal-card,
+.page-fade-in .pp-chart-card,
+.page-fade-in .card {
+  /* each card is a direct child of page-fade-in,
+     spacing comes from margin-bottom on the wrapper */
+}
+
+/* Vertical rhythm between sections */
+.pp-goal-card  + .pp-chart-card,
+.pp-chart-card + .pp-chart-card,
+.pp-chart-card + .card,
+.pp-stats-grid + .pp-goal-card,
+.pp-stats-grid + .pp-chart-card,
+.pp-stats-grid + .card {
+  margin-top: 16px;
+}
+
+/* ============================================================
+   DESKTOP REFINEMENTS
+   ============================================================ */
+@media (min-width: 768px) {
+  .pp-stats-grid {
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .pp-goal-card  + .pp-chart-card,
+  .pp-chart-card + .pp-chart-card,
+  .pp-chart-card + .card,
+  .pp-stats-grid + .pp-goal-card,
+  .pp-stats-grid + .pp-chart-card,
+  .pp-stats-grid + .card {
+    margin-top: 20px;
+  }
+}

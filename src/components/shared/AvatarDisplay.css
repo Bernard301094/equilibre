@@ -1,0 +1,66 @@
+/* ============================================================
+   AvatarDisplay.css — Photo or initial-letter avatar
+   ============================================================ */
+
+/* ---------- Base — shared by both variants ---------- */
+.avatar-display {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+  /* width & height come from inline style (dynamic prop) */
+}
+
+/* ---------- Photo variant ---------- */
+.avatar-display--photo {
+  object-fit: cover;
+  /* cursor & pointer-events set via modifier classes below */
+}
+
+/* ---------- Initials variant ---------- */
+.avatar-display--initials {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  color: #ffffff;
+  user-select: none;
+  letter-spacing: 0.01em;
+  /* background & font-size come from inline style (dynamic props) */
+}
+
+/* ---------- Clickable state ---------- */
+.avatar-display[role="button"] {
+  cursor: pointer;
+}
+
+.avatar-display[role="button"]:hover {
+  opacity: 0.88;
+  outline: 2px solid rgba(255, 255, 255, 0.4);
+  outline-offset: 1px;
+}
+
+.avatar-display[role="button"]:focus-visible {
+  outline: 2px solid var(--blue-mid, #17527c);
+  outline-offset: 2px;
+}
+
+/* ---------- Non-clickable ---------- */
+.avatar-display:not([role="button"]) {
+  cursor: inherit;
+  pointer-events: none;
+}
+
+/* ---------- Named variants (className prop) ---------- */
+
+/* Default sidebar/header avatar */
+.avatar {
+  width: 34px;
+  height: 34px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+/* Patient list avatar (ResponsesView) */
+.p-avatar {
+  width: 40px;
+  height: 40px;
+}

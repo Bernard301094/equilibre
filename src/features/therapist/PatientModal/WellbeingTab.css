@@ -1,0 +1,249 @@
+/* ============================================================
+   WELLBEING TAB — WellbeingTab.css
+   Mobile-first
+   ============================================================ */
+
+.wellbeing-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: fadeIn 0.3s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Empty state wrapper ──────────────────────────────────── */
+.wellbeing-tab__empty-wrap {
+  padding: 24px 0;
+}
+
+/* ── Tarjeta genérica ─────────────────────────────────────── */
+.wellbeing-tab__card {
+  background: var(--cream, #faf8f5);
+  border: 1px solid var(--warm, #e8e0d5);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Título de sección ────────────────────────────────────── */
+.wellbeing-tab__section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted, #9ca3af);
+  margin: 0;
+}
+
+/* ── Grid de stats de resumen ─────────────────────────────── */
+.wellbeing-tab__summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 400px) {
+  .wellbeing-tab__summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.wellbeing-tab__summary-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  background: var(--cream, #faf8f5);
+  border-radius: 12px;
+  padding: 14px 8px;
+  border: 1px solid var(--warm, #e8e0d5);
+}
+
+.wellbeing-tab__summary-icon {
+  font-size: 1.375rem;
+  line-height: 1;
+}
+
+.wellbeing-tab__summary-val {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.wellbeing-tab__summary-val--blue   { color: var(--blue-dark, #17527c); }
+.wellbeing-tab__summary-val--orange { color: var(--orange, #f97316);    }
+.wellbeing-tab__summary-val--yellow { color: #f59e0b;                   }
+
+.wellbeing-tab__summary-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #9ca3af);
+}
+
+/* ── Barras de distribución de humor ─────────────────────── */
+.wellbeing-tab__mood-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wellbeing-tab__mood-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wellbeing-tab__mood-emoji {
+  font-size: 1.125rem;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.wellbeing-tab__mood-track {
+  flex: 1;
+  height: 8px;
+  background: var(--warm, #e8e0d5);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.wellbeing-tab__mood-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.4s ease;
+  min-width: 3px;
+}
+
+.wellbeing-tab__mood-fill--low  { background: var(--danger, #ef4444);   }
+.wellbeing-tab__mood-fill--mid  { background: var(--accent, #f59e0b);   }
+.wellbeing-tab__mood-fill--high { background: var(--sage-dark, #4a7c5f); }
+
+.wellbeing-tab__mood-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted, #9ca3af);
+  width: 24px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Gráfica — leyenda ────────────────────────────────────── */
+.wellbeing-tab__chart-legend {
+  font-size: 0.688rem;
+  color: var(--text-muted, #9ca3af);
+  margin: -4px 0 0;
+}
+
+/* ── Lista de registros recientes ─────────────────────────── */
+.wellbeing-tab__recent {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wellbeing-tab__entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── Fila de entrada del diario ───────────────────────────── */
+.wellbeing-tab__entry-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--cream, #faf8f5);
+  border-radius: 10px;
+  border: 1px solid var(--warm, #e8e0d5);
+  transition: border-color 0.18s;
+}
+
+.wellbeing-tab__entry-row:hover {
+  border-color: var(--primary, #17527c);
+}
+
+.wellbeing-tab__entry-emoji {
+  font-size: 1.375rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.wellbeing-tab__entry-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.wellbeing-tab__entry-mood {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a202c);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wellbeing-tab__entry-date {
+  font-size: 0.6875rem;
+  color: var(--text-muted, #9ca3af);
+  margin-top: 1px;
+  text-transform: capitalize;
+}
+
+/* ── Chips de métricas (energía, ansiedad, motivación) ────── */
+.wellbeing-tab__entry-metrics {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.wellbeing-tab__metric-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  background: var(--surface, #fff);
+  border-radius: 8px;
+  padding: 4px 7px;
+  border: 1px solid var(--warm, #e8e0d5);
+  min-width: 34px;
+}
+
+.wellbeing-tab__metric-icon {
+  font-size: 0.625rem;
+  line-height: 1;
+}
+
+.wellbeing-tab__metric-val {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.wellbeing-tab__metric-val--yellow { color: #f59e0b;                   }
+.wellbeing-tab__metric-val--red    { color: var(--danger, #ef4444);    }
+.wellbeing-tab__metric-val--blue   { color: var(--blue-dark, #17527c); }
+
+/* ── Responsive: ocultar métricas en móvil muy pequeño ────── */
+@media (max-width: 360px) {
+  .wellbeing-tab__entry-metrics {
+    display: none;
+  }
+
+  .wellbeing-tab__entry-row {
+    padding: 10px;
+    gap: 8px;
+  }
+}

@@ -1,0 +1,485 @@
+/* ============================================================
+   PATIENTS VIEW — PatientsView.css
+   Mobile-first
+   ============================================================ */
+
+/* ── Contenedor raíz ──────────────────────────────────────── */
+.patients-view {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.patients-view__header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.patients-view__title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary, #1a202c);
+  margin: 0;
+}
+
+.patients-view__subtitle {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #718096);
+  margin: 0;
+}
+
+/* ── Grid de dos columnas ─────────────────────────────────── */
+.patients-view__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+@media (min-width: 860px) {
+  .patients-view__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Tarjeta base ─────────────────────────────────────────── */
+.patients-view__card {
+  background: var(--surface, #fff);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.patients-view__section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary, #1a202c);
+  margin: 0;
+}
+
+/* ── Lista de pacientes ───────────────────────────────────── */
+.patients-view__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Fila de paciente ─────────────────────────────────────── */
+.patient-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--warm, #e8e0d5);
+  border-radius: 12px;
+  background: var(--cream, #faf8f5);
+  transition: border-color 0.2s, background 0.2s;
+  flex-wrap: wrap;
+}
+
+.patient-row:hover {
+  border-color: var(--primary, #17527c);
+  background: var(--surface, #fff);
+}
+
+.patient-row__info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.patient-row__avatar {
+  flex-shrink: 0;
+}
+
+.patient-row__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.patient-row__name {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--blue-dark, #17527c);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.patient-row__email {
+  font-size: 0.775rem;
+  color: var(--text-secondary, #718096);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* ── Streak pill ──────────────────────────────────────────── */
+.patient-row__streak {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 20px;
+  background: rgba(23, 82, 124, 0.06);
+}
+
+.patient-row__streak--zero {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.patient-row__streak-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.patient-row__streak-val {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.patient-row__streak--zero .patient-row__streak-val {
+  color: var(--text-muted, #9ca3af);
+}
+
+/* ── Botones de acción del paciente ───────────────────────── */
+.patient-row__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.patient-row__btn {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background 0.18s, border-color 0.18s, transform 0.15s;
+  white-space: nowrap;
+}
+
+.patient-row__btn:active {
+  transform: scale(0.96);
+}
+
+.patient-row__btn--manage {
+  background: var(--sage, #6b9e78);
+  color: #fff;
+  border-color: var(--sage, #6b9e78);
+}
+
+.patient-row__btn--manage:hover {
+  background: #5a8a67;
+}
+
+.patient-row__btn--unlink {
+  background: transparent;
+  color: var(--danger, #ef4444);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.patient-row__btn--unlink:hover {
+  background: rgba(239, 68, 68, 0.06);
+  border-color: var(--danger, #ef4444);
+}
+
+/* En mobile: fila en columna, botones a ancho completo */
+@media (max-width: 560px) {
+  .patient-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .patient-row__info {
+    width: 100%;
+  }
+
+  .patient-row__streak {
+    align-self: flex-start;
+  }
+
+  .patient-row__actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .patient-row__btn {
+    width: 100%;
+    height: 42px;
+    font-size: 0.875rem;
+  }
+}
+
+/* ── Sección invites ──────────────────────────────────────── */
+.patients-view__invite-desc {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #718096);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.patients-view__gen-btn {
+  width: 100%;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--sage, #6b9e78);
+  color: #fff;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s, opacity 0.2s;
+}
+
+.patients-view__gen-btn:hover:not(:disabled) {
+  background: #5a8a67;
+}
+
+.patients-view__gen-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.patients-view__gen-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.patients-view__invites-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a202c);
+  margin: 0;
+}
+
+.patients-view__invites-empty {
+  font-size: 0.85rem;
+  color: var(--text-muted, #9ca3af);
+  margin: 0;
+}
+
+.patients-view__invites-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Fila de invite ───────────────────────────────────────── */
+.invite-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--warm, #e8e0d5);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  flex-wrap: wrap;
+  transition: border-color 0.2s;
+}
+
+.invite-row--used {
+  opacity: 0.55;
+}
+
+.invite-row__date {
+  font-size: 0.75rem;
+  color: var(--text-muted, #9ca3af);
+  flex-shrink: 0;
+}
+
+.invite-row__code {
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 3px;
+  color: var(--blue-dark, #17527c);
+}
+
+.invite-row__code--used {
+  color: var(--text-muted, #9ca3af);
+  text-decoration: line-through;
+}
+
+.invite-row__used {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.invite-row__badge-used {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-muted, #9ca3af);
+}
+
+/* ── Acciones del invite ──────────────────────────────────── */
+.invite-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.invite-row__action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--text-secondary, #718096);
+  transition: background 0.18s, color 0.18s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.invite-row__action-btn:hover {
+  background: var(--surface-alt, #f0f4f8);
+  color: var(--text-primary, #1a202c);
+}
+
+.invite-row__action-btn:active {
+  transform: scale(0.94);
+}
+
+.invite-row__action-btn--copied {
+  background: rgba(72, 187, 120, 0.1);
+  color: #276749;
+}
+
+.invite-row__action-btn--delete:hover {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.invite-row__copied-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+@media (max-width: 479px) {
+  .invite-row__action-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* ── Confirm Dialog ───────────────────────────────────────── */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.confirm-modal {
+  background: var(--surface, #fff);
+  border-radius: 16px;
+  padding: 32px 28px 24px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.confirm-modal__icon {
+  font-size: 2.2rem;
+  margin-bottom: 4px;
+}
+
+.confirm-modal__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary, #1a202c);
+}
+
+.confirm-modal__desc {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #718096);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.confirm-modal__actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.confirm-modal__btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.confirm-modal__btn:active {
+  transform: scale(0.97);
+}
+
+.confirm-modal__btn--cancel {
+  background: var(--surface-alt, #f0f4f8);
+  color: var(--text-primary, #1a202c);
+  border: 1.5px solid var(--border, #e2e8f0);
+}
+
+.confirm-modal__btn--cancel:hover {
+  background: var(--border, #e2e8f0);
+}
+
+.confirm-modal__btn--confirm {
+  background: #e53e3e;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.28);
+}
+
+.confirm-modal__btn--confirm:hover {
+  background: #c53030;
+}
+
+@media (max-width: 360px) {
+  .confirm-modal {
+    padding: 24px 16px 20px;
+  }
+
+  .confirm-modal__actions {
+    flex-direction: column;
+  }
+}

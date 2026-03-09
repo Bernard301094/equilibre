@@ -1,0 +1,385 @@
+/* ============================================================
+   ResponsesView.css — Therapist responses + feedback
+   Mobile-first | BEM
+   ============================================================ */
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.rv-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .rv-layout {
+    grid-template-columns: 220px 1fr;
+    gap: 20px;
+    max-width: 1100px;
+  }
+}
+
+/* ============================================================
+   FILTER SIDEBAR
+   ============================================================ */
+.rv-filter {
+  /* Mobile: horizontal scrollable strip */
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 6px;
+  padding: 10px 12px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.rv-filter::-webkit-scrollbar {
+  display: none;
+}
+
+.rv-filter__title {
+  display: none; /* hidden on mobile strip */
+}
+
+.rv-filter__row {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  min-height: 40px;
+  border-radius: var(--radius-md, 10px);
+  border: 1.5px solid var(--warm, #e8d5b7);
+  background: var(--white, #ffffff);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text-muted, #6b7280);
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  white-space: nowrap;
+}
+
+.rv-filter__row:hover {
+  border-color: var(--sage, #52b788);
+  color: var(--sage-dark, #2d6a4f);
+}
+
+.rv-filter__row--active {
+  background: rgba(122, 158, 135, 0.12);
+  border-color: var(--sage-dark, #2d6a4f);
+  color: var(--sage-dark, #2d6a4f);
+  font-weight: 600;
+}
+
+.rv-filter__name--active {
+  font-weight: 600;
+}
+
+.rv-filter__empty {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text-muted, #6b7280);
+  padding: 4px 0;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+/* Desktop: vertical list */
+@media (min-width: 768px) {
+  .rv-filter {
+    flex-direction: column;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    overflow-y: auto;
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 160px);
+    padding: 16px;
+    gap: 2px;
+  }
+
+  .rv-filter__title {
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted, #6b7280);
+    margin-bottom: 10px;
+  }
+
+  .rv-filter__row {
+    flex: 0 0 auto;
+    width: 100%;
+    border: none;
+    border-radius: var(--radius-sm, 8px);
+    padding: 9px 12px;
+    white-space: normal;
+  }
+
+  .rv-filter__row--active {
+    border: none;
+  }
+}
+
+/* ============================================================
+   RESPONSE LIST
+   ============================================================ */
+.rv-responses {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ============================================================
+   RESPONSE CARD
+   ============================================================ */
+.rv-response-card {
+  /* inherits .card */
+}
+
+.rv-response-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.rv-response-card__title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 16px;
+  color: var(--blue-dark, #0a2e48);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.rv-response-card__sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--text-muted, #6b7280);
+}
+
+.rv-response-card__badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(45, 106, 79, 0.1);
+  border: 1px solid rgba(45, 106, 79, 0.2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sage-dark, #2d6a4f);
+  white-space: nowrap;
+}
+
+/* Q&A items */
+.rv-response-card__answers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.rv-qa {
+  background: var(--cream, #fdf8f3);
+  border: 1px solid var(--warm, #e8d5b7);
+  border-radius: var(--radius-sm, 8px);
+  padding: 10px 14px;
+}
+
+.rv-qa__question {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted, #6b7280);
+  margin-bottom: 5px;
+}
+
+.rv-qa__answer {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text, #1a1a2e);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* Feedback zone separator */
+.rv-response-card__feedback {
+  border-top: 1px solid var(--warm, #e8d5b7);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+/* ============================================================
+   FEEDBACK PANEL (FeedbackPanel component)
+   ============================================================ */
+.fp {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Existing summary row */
+.fp__summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text, #1a1a2e);
+}
+
+.fp__summary-emoji {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.fp__summary-note {
+  flex: 1;
+  font-style: italic;
+  color: var(--text-muted, #6b7280);
+  font-size: 13px;
+}
+
+.fp__summary-stamp {
+  font-weight: 600;
+  color: var(--sage-dark, #2d6a4f);
+}
+
+.fp__edit-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Toggle button */
+.fp__toggle {
+  align-self: flex-start;
+}
+
+/* Panel */
+.fp__panel {
+  background: var(--cream, #fdf8f3);
+  border: 1px solid var(--warm, #e8d5b7);
+  border-radius: var(--radius-md, 10px);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fp__section-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted, #6b7280);
+  margin-bottom: 2px;
+}
+
+/* Stamps row */
+.fp__stamps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fp__stamp-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  min-height: 36px;
+  border-radius: 20px;
+  border: 1.5px solid var(--warm, #e8d5b7);
+  background: var(--white, #ffffff);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--text-muted, #6b7280);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.fp__stamp-btn--active {
+  border-color: var(--sage-dark, #2d6a4f);
+  background: rgba(122, 158, 135, 0.15);
+  color: var(--sage-dark, #2d6a4f);
+  font-weight: 700;
+}
+
+/* Textarea */
+.fp__textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--warm, #e8d5b7);
+  border-radius: var(--radius-sm, 8px);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  background: var(--white, #ffffff);
+  color: var(--text, #1a1a2e);
+  outline: none;
+  resize: vertical;
+  line-height: 1.5;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fp__textarea:focus {
+  border-color: var(--blue-mid, #17527c);
+  box-shadow: 0 0 0 3px rgba(23, 82, 124, 0.1);
+}
+
+/* Actions row */
+.fp__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.fp__btn-remove {
+  margin-right: auto; /* pushes remove to left, cancel+save to right */
+}
+
+/* ============================================================
+   RESPONSIVE TWEAKS
+   ============================================================ */
+@media (max-width: 479px) {
+  .rv-response-card__header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .rv-response-card__badge {
+    align-self: flex-start;
+  }
+
+  .fp__actions {
+    justify-content: stretch;
+  }
+
+  .fp__actions .btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .fp__btn-remove {
+    flex-basis: 100%;
+    margin-right: 0;
+  }
+}

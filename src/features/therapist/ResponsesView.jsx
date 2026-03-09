@@ -6,26 +6,21 @@ import { SkeletonResponses } from "../../components/ui/Skeleton";
 import AvatarDisplay from "../../components/shared/AvatarDisplay";
 import EmptyState from "../../components/ui/EmptyState";
 import toast from "../../utils/toast";
+import "./ResponsesView.css";
 
-/** Quick-select validation labels the therapist can stamp on a response */
 const VALIDATIONS = [
-  { emoji: "👏", label: "Parabéns!"        },
-  { emoji: "💪", label: "Continue assim!"  },
-  { emoji: "🌱", label: "Bom progresso!"   },
-  { emoji: "🔄", label: "Reflita mais"     },
-  { emoji: "❤️", label: "Aqui por você"    },
+  { emoji: "👏", label: "Parabéns!"       },
+  { emoji: "💪", label: "Continue assim!" },
+  { emoji: "🌱", label: "Bom progresso!"  },
+  { emoji: "🔄", label: "Reflita mais"    },
+  { emoji: "❤️", label: "Aqui por você"   },
 ];
 
-/**
- * Inline feedback panel for a single response.
- * Shows quick-select stamps AND a free-text comment field.
- * Saves to `responses.therapist_note` via PATCH.
- */
 function FeedbackPanel({ response, session, onSaved }) {
-  const [open,    setOpen]    = useState(false);
-  const [text,    setText]    = useState(response.therapist_note ?? "");
-  const [stamp,   setStamp]   = useState(response.therapist_stamp ?? "");
-  const [saving,  setSaving]  = useState(false);
+  const [open,   setOpen]   = useState(false);
+  const [text,   setText]   = useState(response.therapist_note  ?? "");
+  const [stamp,  setStamp]  = useState(response.therapist_stamp ?? "");
+  const [saving, setSaving] = useState(false);
   const inflightRef = useRef(false);
 
   const hasExisting = !!(response.therapist_note || response.therapist_stamp);
@@ -83,39 +78,24 @@ function FeedbackPanel({ response, session, onSaved }) {
   };
 
   return (
-    <div style={{ marginTop: 12 }}>
+    <div className="fp">
+
       {/* Existing feedback summary */}
       {hasExisting && !open && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "8px 12px",
-            background: "rgba(122,158,135,0.1)",
-            border: "1px solid rgba(122,158,135,0.25)",
-            borderRadius: 10,
-            marginBottom: 8,
-          }}
-        >
+        <div className="fp__summary">
           {response.therapist_stamp && (
-            <span style={{ fontSize: 18 }} aria-hidden="true">
+            <span className="fp__summary-emoji" aria-hidden="true">
               {VALIDATIONS.find((v) => v.label === response.therapist_stamp)?.emoji ?? "💬"}
             </span>
           )}
           {response.therapist_note && (
-            <span style={{ fontSize: 13, color: "var(--sage-dark)", fontStyle: "italic", flex: 1 }}>
-              "{response.therapist_note}"
-            </span>
+            <span className="fp__summary-note">"{response.therapist_note}"</span>
           )}
           {!response.therapist_note && response.therapist_stamp && (
-            <span style={{ fontSize: 13, color: "var(--sage-dark)", fontWeight: 600 }}>
-              {response.therapist_stamp}
-            </span>
+            <span className="fp__summary-stamp">{response.therapist_stamp}</span>
           )}
           <button
-            className="btn btn-outline btn-sm"
-            style={{ flexShrink: 0, fontSize: 11 }}
+            className="btn btn-outline btn-sm fp__edit-btn"
             onClick={() => setOpen(true)}
           >
             ✏️ Editar
@@ -126,12 +106,7 @@ function FeedbackPanel({ response, session, onSaved }) {
       {/* Toggle button */}
       {!open && (
         <button
-          className="btn btn-outline btn-sm"
-          style={{
-            fontSize: 12,
-            color: hasExisting ? "var(--text-muted)" : "var(--sage-dark)",
-            borderColor: hasExisting ? "var(--warm)" : "rgba(122,158,135,0.4)",
-          }}
+          className={`btn btn-outline btn-sm fp__toggle${hasExisting ? " fp__toggle--existing" : ""}`}
           onClick={() => setOpen(true)}
         >
           {hasExisting ? "Ver feedback" : "💬 Deixar feedback"}
@@ -140,38 +115,15 @@ function FeedbackPanel({ response, session, onSaved }) {
 
       {/* Feedback panel */}
       {open && (
-        <div
-          style={{
-            marginTop: 8,
-            padding: "14px 16px",
-            background: "var(--cream)",
-            border: "1.5px solid rgba(122,158,135,0.3)",
-            borderRadius: 12,
-          }}
-        >
-          {/* Quick stamps */}
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text-muted)", marginBottom: 10 }}>
-            Selos rápidos
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+        <div className="fp__panel">
+
+          <div className="fp__section-label">Selos rápidos</div>
+          <div className="fp__stamps">
             {VALIDATIONS.map((v) => (
               <button
                 key={v.label}
                 onClick={() => setStamp(stamp === v.label ? "" : v.label)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 5,
-                  padding: "5px 10px",
-                  borderRadius: 20,
-                  border: `1.5px solid ${stamp === v.label ? "var(--sage-dark)" : "var(--warm)"}`,
-                  background: stamp === v.label ? "rgba(122,158,135,0.15)" : "white",
-                  color: stamp === v.label ? "var(--sage-dark)" : "var(--text-muted)",
-                  fontWeight: stamp === v.label ? 700 : 400,
-                  fontSize: 12,
-                  cursor: "pointer",
-                  transition: "all .15s",
-                }}
+                className={`fp__stamp-btn${stamp === v.label ? " fp__stamp-btn--active" : ""}`}
               >
                 <span aria-hidden="true">{v.emoji}</span>
                 {v.label}
@@ -179,35 +131,32 @@ function FeedbackPanel({ response, session, onSaved }) {
             ))}
           </div>
 
-          {/* Free-text comment */}
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--text-muted)", marginBottom: 8 }}>
-            Comentário (opcional)
-          </div>
+          <div className="fp__section-label">Comentário (opcional)</div>
           <label htmlFor={`feedback-${response.id}`} className="sr-only">
             Comentário de feedback
           </label>
           <textarea
             id={`feedback-${response.id}`}
-            className="q-textarea"
+            className="fp__textarea"
             placeholder="Escreva um comentário de encorajamento ou orientação..."
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={3}
-            style={{ resize: "vertical", marginBottom: 12 }}
           />
 
-          {/* Actions */}
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <div className="fp__actions">
             {hasExisting && (
               <button
-                className="btn btn-outline btn-sm"
-                style={{ color: "var(--danger)", borderColor: "var(--danger)", fontSize: 12 }}
+                className="btn btn-outline btn-sm fp__btn-remove"
                 onClick={handleClear}
               >
                 🗑️ Remover
               </button>
             )}
-            <button className="btn btn-outline btn-sm" onClick={() => setOpen(false)}>
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={() => setOpen(false)}
+            >
               Cancelar
             </button>
             <button
@@ -271,7 +220,6 @@ export default function ResponsesView({ session }) {
     return () => { active = false; };
   }, [session.id, session.access_token]);
 
-  // Update a single response in local state when feedback is saved
   const handleFeedbackSaved = (responseId, updates) => {
     setResponses((prev) =>
       prev.map((r) => (r.id === responseId ? { ...r, ...updates } : r))
@@ -285,27 +233,22 @@ export default function ResponsesView({ session }) {
     : responses;
 
   return (
-    <div style={{ animation: "fadeUp .4s ease" }}>
+    <div className="page-fade-in">
       <div className="page-header">
         <h2>Respostas dos Pacientes</h2>
         <p>Acompanhe o que seus pacientes responderam nos exercícios</p>
       </div>
 
-      <div className="grid-2" style={{ alignItems: "start" }}>
+      <div className="rv-layout">
 
-        {/* ── Filtro lateral ── */}
-        <div className="card">
-          <h3 style={{ fontSize: 15, marginBottom: 12 }}>Filtrar por paciente</h3>
+        {/* ── Patient filter sidebar ── */}
+        <aside className="card rv-filter">
+          <h3 className="rv-filter__title">Filtrar por paciente</h3>
 
           <div
             role="button"
             tabIndex={0}
-            style={{
-              padding: "9px 12px", borderRadius: 10, cursor: "pointer",
-              background: !selPatient ? "rgba(122,158,135,0.12)" : "transparent",
-              fontWeight: !selPatient ? 600 : 400, fontSize: 14,
-              color: !selPatient ? "var(--sage-dark)" : "var(--text-muted)",
-            }}
+            className={`rv-filter__row${!selPatient ? " rv-filter__row--active" : ""}`}
             onClick={() => setSelPatient(null)}
             onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSelPatient(null)}
             aria-pressed={!selPatient}
@@ -318,38 +261,30 @@ export default function ResponsesView({ session }) {
               key={p.id}
               role="button"
               tabIndex={0}
-              style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "9px 12px", borderRadius: 10, cursor: "pointer",
-                background: selPatient?.id === p.id ? "rgba(122,158,135,0.12)" : "transparent",
-                marginTop: 4,
-              }}
+              className={`rv-filter__row rv-filter__row--patient${selPatient?.id === p.id ? " rv-filter__row--active" : ""}`}
               onClick={() => setSelPatient(p)}
               onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSelPatient(p)}
               aria-pressed={selPatient?.id === p.id}
             >
-              <AvatarDisplay name={p.name} avatarUrl={p.avatar_url} size={32} className="p-avatar" />
-              <span
-                style={{
-                  fontSize: 14,
-                  fontWeight: selPatient?.id === p.id ? 600 : 400,
-                  color: selPatient?.id === p.id ? "var(--sage-dark)" : "var(--text)",
-                }}
-              >
+              <AvatarDisplay
+                name={p.name}
+                avatarUrl={p.avatar_url}
+                size={32}
+                className="rv-filter__avatar"
+              />
+              <span className={`rv-filter__name${selPatient?.id === p.id ? " rv-filter__name--active" : ""}`}>
                 {p.name}
               </span>
             </div>
           ))}
 
           {patients.length === 0 && (
-            <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 8 }}>
-              Nenhum paciente ainda.
-            </p>
+            <p className="rv-filter__empty">Nenhum paciente ainda.</p>
           )}
-        </div>
+        </aside>
 
-        {/* ── Respostas ── */}
-        <div>
+        {/* ── Response list ── */}
+        <div className="rv-responses">
           {filtered.length === 0 && (
             <EmptyState icon="🔍" message="Nenhuma resposta encontrada." />
           )}
@@ -362,46 +297,50 @@ export default function ResponsesView({ session }) {
             const answerMap = matchAnswersToQuestions(questions, answers);
 
             return (
-              <div key={r.id} className="card" style={{ marginBottom: 14 }}>
-                {/* Header */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                  <div>
-                    <div style={{ fontFamily: "Playfair Display, serif", fontSize: 16 }}>
+              <div key={r.id} className="card rv-response-card">
+
+                {/* Card header */}
+                <div className="rv-response-card__header">
+                  <div className="rv-response-card__meta">
+                    <div className="rv-response-card__title">
                       {exercise?.title || "Exercício removido"}
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                    <div className="rv-response-card__sub">
                       {patient && (
-                        <AvatarDisplay name={patient.name} avatarUrl={patient.avatar_url} size={16} />
+                        <AvatarDisplay
+                          name={patient.name}
+                          avatarUrl={patient.avatar_url}
+                          size={16}
+                        />
                       )}
                       <span>
-                        {patient?.name} · {formatDate(r.completed_at, { day: "2-digit", month: "2-digit", year: "numeric" })}
+                        {patient?.name} ·{" "}
+                        {formatDate(r.completed_at, {
+                          day: "2-digit", month: "2-digit", year: "numeric",
+                        })}
                       </span>
                     </div>
                   </div>
-                  <span className="response-badge badge-done">✓ Concluído</span>
+                  <span className="rv-response-card__badge">✓ Concluído</span>
                 </div>
 
                 {/* Q&A */}
-                {questions.map((q) => {
-                  if (q.type === "instruction") return null;
-                  const val = answerMap[q.id];
-                  if (!val) return null;
-                  return (
-                    <div key={q.id} className="response-item">
-                      <div className="q-label">{q.text}</div>
-                      <div className="q-answer">{val}</div>
-                    </div>
-                  );
-                })}
+                <div className="rv-response-card__answers">
+                  {questions.map((q) => {
+                    if (q.type === "instruction") return null;
+                    const val = answerMap[q.id];
+                    if (!val) return null;
+                    return (
+                      <div key={q.id} className="rv-qa">
+                        <div className="rv-qa__question">{q.text}</div>
+                        <div className="rv-qa__answer">{val}</div>
+                      </div>
+                    );
+                  })}
+                </div>
 
-                {/* ── Therapist feedback ── */}
-                <div
-                  style={{
-                    borderTop: "1px solid var(--warm)",
-                    marginTop: 12,
-                    paddingTop: 12,
-                  }}
-                >
+                {/* Therapist feedback */}
+                <div className="rv-response-card__feedback">
                   <FeedbackPanel
                     response={r}
                     session={session}

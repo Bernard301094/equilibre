@@ -1,12 +1,8 @@
 import { useState } from "react";
 import auth from "../../services/auth";
 import { validateResetEmail } from "../../utils/validation";
+import "./ForgotPasswordForm.css";
 
-/**
- * Props:
- *   initialEmail  — pre-fills the email field
- *   onBack        — callback to return to the login view
- */
 export default function ForgotPasswordForm({ initialEmail = "", onBack }) {
   const [email, setEmail] = useState(initialEmail);
   const [loading, setLoading] = useState(false);
@@ -37,25 +33,20 @@ export default function ForgotPasswordForm({ initialEmail = "", onBack }) {
 
   return (
     <>
-      <div style={{ textAlign: "center", marginBottom: 24 }}>
-        <div style={{ fontSize: 36, marginBottom: 8 }} aria-hidden="true">
-          🔑
-        </div>
-        <h2 style={{ fontSize: 18, marginBottom: 6 }}>Recuperar senha</h2>
-        <p
-          style={{
-            fontSize: 13,
-            color: "var(--text-muted)",
-            lineHeight: 1.5,
-          }}
-        >
+      <div className="fpf-header">
+        <span className="fpf-header__icon" aria-hidden="true">🔑</span>
+        <h2 className="fpf-header__title">Recuperar senha</h2>
+        <p className="fpf-header__description">
           Informe o seu e-mail e enviaremos um link para redefinir a sua senha.
         </p>
       </div>
 
-      <div className="field">
-        <label htmlFor="reset-email">E-mail</label>
+      <div className="fpf-field">
+        <label className="fpf-field__label" htmlFor="reset-email">
+          E-mail
+        </label>
         <input
+          className="fpf-field__input"
           id="reset-email"
           type="email"
           value={email}
@@ -68,12 +59,7 @@ export default function ForgotPasswordForm({ initialEmail = "", onBack }) {
 
       {message.text && (
         <p
-          style={{
-            fontSize: 13,
-            color: message.type === "success" ? "var(--sage-dark)" : "#c0444a",
-            marginBottom: 12,
-            textAlign: "center",
-          }}
+          className={`fpf-message fpf-message--${message.type}`}
           role="alert"
         >
           {message.text}
@@ -81,7 +67,7 @@ export default function ForgotPasswordForm({ initialEmail = "", onBack }) {
       )}
 
       <button
-        className="btn-primary"
+        className="fpf-submit-btn"
         onClick={handleSubmit}
         disabled={loading}
         aria-busy={loading}
@@ -89,25 +75,10 @@ export default function ForgotPasswordForm({ initialEmail = "", onBack }) {
         {loading ? "A enviar..." : "Enviar link de recuperação"}
       </button>
 
-      <p
-        style={{
-          textAlign: "center",
-          marginTop: 12,
-          fontSize: 13,
-          color: "var(--text-muted)",
-        }}
-      >
+      <p className="fpf-back-row">
         <button
           type="button"
-          style={{
-            background: "none",
-            border: "none",
-            color: "var(--sage-dark)",
-            cursor: "pointer",
-            fontWeight: 500,
-            fontSize: 13,
-            padding: 0,
-          }}
+          className="fpf-back-btn"
           onClick={onBack}
         >
           ← Voltar ao login

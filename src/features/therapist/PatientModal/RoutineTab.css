@@ -1,0 +1,199 @@
+/* ============================================================
+   ROUTINE TAB — RoutineTab.css
+   Mobile-first
+   ============================================================ */
+
+.routine-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: fadeIn 0.3s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Descripción ──────────────────────────────────────────── */
+.routine-tab__desc {
+  font-size: 0.825rem;
+  color: var(--text-muted, #9ca3af);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Stats grid ───────────────────────────────────────────── */
+.routine-tab__stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.routine-tab__stat {
+  padding: 14px 16px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.routine-tab__stat--done {
+  background: #d4edd9;
+  border: 1px solid #c3e6cb;
+}
+
+.routine-tab__stat--avoided {
+  background: #fce8e8;
+  border: 1px solid #f9caca;
+}
+
+.routine-tab__stat-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.routine-tab__stat--done    .routine-tab__stat-value { color: #2d7a3a; }
+.routine-tab__stat--avoided .routine-tab__stat-value { color: #c0444a; }
+
+.routine-tab__stat-label {
+  font-size: 0.675rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.routine-tab__stat--done    .routine-tab__stat-label { color: #2d7a3a; }
+.routine-tab__stat--avoided .routine-tab__stat-label { color: #c0444a; }
+
+/* ── Título del historial ─────────────────────────────────── */
+.routine-tab__history-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted, #9ca3af);
+  margin: 0;
+}
+
+/* ── Lista de actividades ─────────────────────────────────── */
+.routine-tab__activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Tarjeta de actividad ─────────────────────────────────── */
+.routine-tab__activity-card {
+  background: var(--cream, #faf8f5);
+  border: 1.5px solid var(--warm, #e8e0d5);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.routine-tab__activity-card:hover {
+  border-color: var(--primary, #17527c);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Fila superior: categoría + fecha */
+.routine-tab__activity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.routine-tab__activity-date {
+  font-size: 0.7rem;
+  color: var(--text-muted, #9ca3af);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Título de la actividad */
+.routine-tab__activity-title {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-primary, #1a202c);
+  line-height: 1.4;
+}
+
+/* ── Estado: pendente ─────────────────────────────────────── */
+.routine-tab__status {
+  font-size: 0.775rem;
+  color: var(--text-muted, #9ca3af);
+}
+
+.routine-tab__status--pending {
+  color: #b45309;
+}
+
+/* ── Detalle de estado (concluido / evitado) ──────────────── */
+.routine-tab__status-detail {
+  background: var(--surface, #fff);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.775rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.routine-tab__status-detail--done {
+  border: 1px solid #c3e6cb;
+}
+
+.routine-tab__status-detail--avoided {
+  border: 1px solid #f9caca;
+}
+
+.routine-tab__status-detail-title {
+  font-size: 0.8rem;
+}
+
+.routine-tab__status-detail--done    .routine-tab__status-detail-title { color: #2d7a3a; }
+.routine-tab__status-detail--avoided .routine-tab__status-detail-title { color: #c0444a; }
+
+.routine-tab__status-detail-body {
+  color: var(--text-secondary, #718096);
+  line-height: 1.5;
+}
+
+/* ── cat-badge (compartido, puede vivir en global si ya existe) ── */
+.cat-badge {
+  display: inline-block;
+  font-size: 0.675rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--surface-alt, #f0f4f8);
+  color: var(--text-secondary, #4a5568);
+  white-space: nowrap;
+}
+
+/* Variantes de categoría — añade las tuyas según el modelo de datos */
+.cat-lazer      { background: #e8f4fd; color: #1a6fa0; }
+.cat-social     { background: #fef3c7; color: #92400e; }
+.cat-exercicio  { background: #d4edd9; color: #2d7a3a; }
+.cat-trabalho   { background: #ede9fe; color: #5b21b6; }
+.cat-autocuidado{ background: #fce7f3; color: #9d174d; }
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 360px) {
+  .routine-tab__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .routine-tab__stat-value {
+    font-size: 1.4rem;
+  }
+}

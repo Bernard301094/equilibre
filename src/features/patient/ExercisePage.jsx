@@ -1,13 +1,12 @@
 import { useState, useRef } from "react";
 import db from "../../services/db";
-import { parseQuestions } from "../../utils/parsing";
-import { serializeAnswers } from "../../utils/parsing";
+import { parseQuestions, serializeAnswers } from "../../utils/parsing";
 import { LOGO_PATH, LS_LAST_ACTION } from "../../utils/constants";
+import "./ExercisePage.css";
 
 export default function ExercisePage({ exercise, session, onBack }) {
   const questions = parseQuestions(exercise);
 
-  // answers keyed by questionId
   const [answers, setAnswers] = useState(() => {
     const init = {};
     questions.forEach((q) => { init[q.id] = ""; });
@@ -30,14 +29,10 @@ export default function ExercisePage({ exercise, session, onBack }) {
       setStep((s) => s + 1);
       return;
     }
-
-    // Final step — submit
     if (inflightRef.current || saving) return;
     inflightRef.current = true;
     setSaving(true);
-
     try {
-      // Find the specific pending assignment id to update only that record
       const assignments = await db.query(
         "assignments",
         { filter: { patient_id: session.id, exercise_id: exercise.id, status: "pending" }, select: "id" },
@@ -76,7 +71,7 @@ export default function ExercisePage({ exercise, session, onBack }) {
             read:           false,
           },
           session.access_token
-        ).catch(() => {}); // best-effort
+        ).catch(() => {});
       }
 
       localStorage.setItem(LS_LAST_ACTION, String(Date.now()));
@@ -90,18 +85,32 @@ export default function ExercisePage({ exercise, session, onBack }) {
     }
   };
 
-  // ── Done screen ────────────────────────────────────────────────────────────
+  const canAdvance =
+    !q ||
+    q.type === "instruction" ||
+    q.type === "reflect" ||
+    answers[q.id] !== "";
+
+  /* ── Pantalla de éxito ── */
   if (done) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--cream)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div className="question-card" style={{ textAlign: "center", maxWidth: 460 }}>
-          <img src={LOGO_PATH} alt="Equilibre" style={{ width: 60, height: 60, objectFit: "contain", marginBottom: 14 }} />
-          <h2 style={{ fontSize: 24, marginBottom: 10 }}>Exercício concluído!</h2>
-          <p style={{ color: "var(--text-muted)", lineHeight: 1.7, marginBottom: 24 }}>
-            Suas respostas foram salvas. Sua psicóloga poderá acompanhar o seu progresso.
-            Parabéns por cuidar de você!
+      <div className="exercise-page__done-screen">
+        <div className="exercise-page__done-card">
+          <img
+            src={LOGO_PATH}
+            alt="Equilibre"
+            className="exercise-page__done-logo"
+          />
+          <div className="exercise-page__done-icon" aria-hidden="true">🎉</div>
+          <h2 className="exercise-page__done-title">Exercício concluído!</h2>
+          <p className="exercise-page__done-desc">
+            Suas respostas foram salvas. Sua psicóloga poderá acompanhar o seu
+            progresso. Parabéns por cuidar de você!
           </p>
-          <button className="btn btn-sage" style={{ padding: "13px 30px" }} onClick={onBack}>
+          <button
+            className="exercise-page__done-btn"
+            onClick={onBack}
+          >
             Voltar aos exercícios
           </button>
         </div>
@@ -111,45 +120,65 @@ export default function ExercisePage({ exercise, session, onBack }) {
 
   if (!q) return null;
 
-  const canAdvance =
-    q.type === "instruction" ||
-    q.type === "reflect" ||
-    answers[q.id] !== "";
-
   return (
-    <div style={{ minHeight: "100vh", background: "var(--cream)", padding: "38px 22px" }}>
+    <div className="exercise-page__wrapper">
       <div className="exercise-page">
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22 }}>
-          <button className="btn btn-outline btn-sm" onClick={onBack}>← Voltar</button>
-          <div style={{ flex: 1, fontFamily: "Playfair Display, serif", fontSize: 15, color: "var(--sage-dark)" }}>
-            {exercise.title}
-          </div>
-          <div style={{ fontSize: 12, color: "var(--text-muted)" }} aria-live="polite">
+
+        {/* ── Header ── */}
+        <header className="exercise-page__header">
+          <button
+            className="exercise-page__back-btn"
+            onClick={onBack}
+            aria-label="Voltar aos exercícios"
+          >
+            ← Voltar
+          </button>
+          <div className="exercise-page__title">{exercise.title}</div>
+          <div
+            className="exercise-page__counter"
+            aria-live="polite"
+            aria-label={`Pergunta ${step + 1} de ${questions.length}`}
+          >
             {step + 1} / {questions.length}
           </div>
+        </header>
+
+        {/* ── Barra de progreso ── */}
+        <div
+          className="exercise-page__progress-track"
+          role="progressbar"
+          aria-valuenow={Math.round(progress)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Progresso do exercício"
+        >
+          <div
+            className="exercise-page__progress-fill"
+            style={{ width: `${progress}%` }}
+          />
         </div>
 
-        {/* Progress bar */}
-        <div className="progress-bar" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100}>
-          <div className="progress-fill" style={{ width: `${progress}%` }} />
-        </div>
+        {/* ── Tarjeta de pregunta ── */}
+        <div className="exercise-page__question-card">
+          <div className="exercise-page__step-label">
+            Pergunta {step + 1}
+          </div>
 
-        {/* Question card */}
-        <div className="question-card">
-          <div className="q-step">Pergunta {step + 1}</div>
-
+          {/* Instrucción */}
           {q.type === "instruction" && (
-            <div className="q-instruction">{q.text}</div>
+            <div className="exercise-page__instruction">{q.text}</div>
           )}
 
+          {/* Reflexión */}
           {q.type === "reflect" && (
             <>
-              <div className="q-reflect">{q.text}</div>
-              <label htmlFor={`ans-${q.id}`} className="sr-only">Reflexão (opcional)</label>
+              <div className="exercise-page__reflect-text">{q.text}</div>
+              <label htmlFor={`ans-${q.id}`} className="sr-only">
+                Reflexão (opcional)
+              </label>
               <textarea
                 id={`ans-${q.id}`}
-                className="q-textarea"
+                className="exercise-page__textarea"
                 placeholder="Escreva sua reflexão aqui... (opcional)"
                 value={answers[q.id]}
                 onChange={(e) => setAns(e.target.value)}
@@ -157,13 +186,16 @@ export default function ExercisePage({ exercise, session, onBack }) {
             </>
           )}
 
+          {/* Abierta */}
           {q.type === "open" && (
             <>
-              <div className="q-text">{q.text}</div>
-              <label htmlFor={`ans-${q.id}`} className="sr-only">Sua resposta</label>
+              <div className="exercise-page__question-text">{q.text}</div>
+              <label htmlFor={`ans-${q.id}`} className="sr-only">
+                Sua resposta
+              </label>
               <textarea
                 id={`ans-${q.id}`}
-                className="q-textarea"
+                className="exercise-page__textarea"
                 placeholder="Escreva sua resposta aqui..."
                 value={answers[q.id]}
                 onChange={(e) => setAns(e.target.value)}
@@ -171,33 +203,41 @@ export default function ExercisePage({ exercise, session, onBack }) {
             </>
           )}
 
+          {/* Escala 0-10 */}
           {q.type === "scale" && (
             <>
-              <div className="q-text">{q.text}</div>
-              <fieldset style={{ border: "none", padding: 0, margin: 0 }}>
+              <div className="exercise-page__question-text">{q.text}</div>
+              <fieldset className="exercise-page__scale-fieldset">
                 <legend className="sr-only">Escolha um valor de 0 a 10</legend>
-                <div className="scale-row">
+                <div className="exercise-page__scale-row">
                   {Array.from({ length: 11 }, (_, i) => (
                     <button
                       key={i}
                       type="button"
-                      className={`scale-btn ${answers[q.id] == i ? "selected" : ""}`}
+                      className={[
+                        "exercise-page__scale-btn",
+                        answers[q.id] == i ? "exercise-page__scale-btn--selected" : "",
+                      ].filter(Boolean).join(" ")}
                       onClick={() => setAns(String(i))}
                       aria-pressed={answers[q.id] == i}
-                      aria-label={String(i)}
+                      aria-label={`${i}`}
                     >
                       {i}
                     </button>
                   ))}
                 </div>
+                <div className="exercise-page__scale-labels" aria-hidden="true">
+                  <span>Nenhum</span>
+                  <span>Máximo</span>
+                </div>
               </fieldset>
             </>
           )}
 
-          {/* Navigation */}
-          <div className="q-nav">
+          {/* ── Navegación ── */}
+          <div className="exercise-page__nav">
             <button
-              className="btn btn-outline"
+              className="exercise-page__nav-btn exercise-page__nav-btn--prev"
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={step === 0}
               aria-disabled={step === 0}
@@ -205,7 +245,7 @@ export default function ExercisePage({ exercise, session, onBack }) {
               ← Anterior
             </button>
             <button
-              className="btn btn-sage"
+              className="exercise-page__nav-btn exercise-page__nav-btn--next"
               onClick={next}
               disabled={!canAdvance || saving}
               aria-busy={saving}
@@ -218,6 +258,7 @@ export default function ExercisePage({ exercise, session, onBack }) {
             </button>
           </div>
         </div>
+
       </div>
     </div>
   );

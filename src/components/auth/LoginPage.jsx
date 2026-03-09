@@ -3,21 +3,14 @@ import { LOGO_PATH, APP_NAME } from "../../utils/constants";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
 import ForgotPasswordForm from "./ForgotPasswordForm";
+import "./LoginPage.css";
 
-/**
- * Top-level auth page.
- * Manages the mode: "login" | "register" | "forgot"
- *
- * Props:
- *   onLogin     — async ({ email, password, role }) => errorString | null
- *   onRegister  — async (formData) => errorString | null
- */
 export default function LoginPage({ onLogin, onRegister }) {
   const [mode, setMode] = useState("login");
   const [successMsg, setSuccessMsg] = useState("");
   const [forgotEmail, setForgotEmail] = useState("");
 
-  const handleRegisterSuccess = (role) => {
+  const handleRegisterSuccess = () => {
     setSuccessMsg("Conta criada com sucesso! Faça o login.");
     setMode("login");
   };
@@ -30,45 +23,40 @@ export default function LoginPage({ onLogin, onRegister }) {
 
   return (
     <div className="login-bg">
+      <div className="login-bg__overlay" aria-hidden="true" />
+
       <div className="login-card">
-        {/* Branding */}
-        <div className="login-logo">
+        <div className="login-card__branding">
           <img
             src={LOGO_PATH}
             alt={`${APP_NAME} logo`}
-            style={{ width: 72, height: 72, objectFit: "contain", marginBottom: 2 }}
+            className="login-card__logo"
           />
-          <h1>{APP_NAME}</h1>
-          <p>Exercícios terapêuticos personalizados</p>
+          <h1 className="login-card__title">{APP_NAME}</h1>
+          <p className="login-card__subtitle">
+            Exercícios terapêuticos personalizados
+          </p>
         </div>
 
-        {/* Mode tabs (only for login / register) */}
         {mode !== "forgot" && (
-          <div className="tab-switch">
+          <div className="login-tabs">
             <button
               type="button"
-              className={mode === "login" ? "active" : ""}
-              onClick={() => {
-                setMode("login");
-                setSuccessMsg("");
-              }}
+              className={`login-tabs__btn${mode === "login" ? " login-tabs__btn--active" : ""}`}
+              onClick={() => { setMode("login"); setSuccessMsg(""); }}
             >
               Entrar
             </button>
             <button
               type="button"
-              className={mode === "register" ? "active" : ""}
-              onClick={() => {
-                setMode("register");
-                setSuccessMsg("");
-              }}
+              className={`login-tabs__btn${mode === "register" ? " login-tabs__btn--active" : ""}`}
+              onClick={() => { setMode("register"); setSuccessMsg(""); }}
             >
               Criar conta
             </button>
           </div>
         )}
 
-        {/* Forms */}
         {mode === "login" && (
           <LoginForm
             onLogin={onLogin}
@@ -76,7 +64,6 @@ export default function LoginPage({ onLogin, onRegister }) {
             successMessage={successMsg}
           />
         )}
-
         {mode === "register" && (
           <RegisterForm
             onRegister={onRegister}
@@ -84,7 +71,6 @@ export default function LoginPage({ onLogin, onRegister }) {
             onSwitchMode={() => setMode("login")}
           />
         )}
-
         {mode === "forgot" && (
           <ForgotPasswordForm
             initialEmail={forgotEmail}

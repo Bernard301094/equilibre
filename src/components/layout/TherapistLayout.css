@@ -1,0 +1,277 @@
+/* ============================================================
+   THERAPIST LAYOUT — TherapistLayout.css
+   Mobile-first: base = móvil, luego se expande a desktop
+   ============================================================ */
+
+/* ── Contenedor raíz ──────────────────────────────────────── */
+.therapist-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--cream);
+}
+
+/* ── Área de contenido principal ─────────────────────────── */
+.therapist-layout__main {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 100vh;
+
+  /* Mobile: padding generoso + espacio para BottomNav */
+  padding: 20px 16px calc(72px + env(safe-area-inset-bottom)) 16px;
+  background: var(--cream);
+}
+
+/* Desktop: desplaza el contenido para no solapar la sidebar */
+@media (min-width: 768px) {
+  .therapist-layout__main {
+    margin-left: 256px;
+    padding: var(--space-page-y, 32px) var(--space-page-x, 32px);
+  }
+}
+
+/* Variante explícita mobile (por si se necesita forzar desde JSX) */
+.therapist-layout__main--mobile {
+  margin-left: 0;
+  padding: 20px 16px calc(72px + env(safe-area-inset-bottom)) 16px;
+}
+
+/* ── Floating bell (mobile) ───────────────────────────────── */
+.floating-bell {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 200;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(23, 82, 124, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  transition: background 0.25s, transform 0.2s;
+}
+
+.floating-bell:hover {
+  background: rgba(23, 82, 124, 1);
+}
+
+.floating-bell--active {
+  background: var(--primary, #17527c);
+  box-shadow: 0 0 0 3px rgba(23, 82, 124, 0.35);
+}
+
+.floating-bell--unread {
+  background: rgba(23, 82, 124, 0.95);
+}
+
+/* Animación de shake cuando llega una nueva notificación */
+.floating-bell--shaking {
+  animation: bell-shake 0.6s ease-in-out;
+}
+
+@keyframes bell-shake {
+  0%,  100% { transform: rotate(0deg); }
+  15%        { transform: rotate(-14deg); }
+  30%        { transform: rotate(12deg); }
+  45%        { transform: rotate(-10deg); }
+  60%        { transform: rotate(8deg); }
+  75%        { transform: rotate(-5deg); }
+  90%        { transform: rotate(3deg); }
+}
+
+/* Botón interno del floating bell */
+.floating-bell__btn {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.35rem;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #fff;
+  border-radius: 50%;
+  transition: transform 0.15s;
+}
+
+.floating-bell__btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.floating-bell__btn:active {
+  transform: scale(0.9);
+}
+
+/* Badge de conteo */
+.floating-bell__badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: #e53e3e;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  box-sizing: border-box;
+  pointer-events: none;
+  border: 1.5px solid #fff;
+}
+
+/* ── Sidebar bell (desktop, dentro del Sidebar) ───────────── */
+.sidebar-bell {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+  color: inherit;
+}
+
+.sidebar-bell:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.sidebar-bell:focus-visible {
+  outline: 2px solid var(--primary, #17527c);
+  outline-offset: 2px;
+}
+
+.sidebar-bell__badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 8px;
+  background: #e53e3e;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  box-sizing: border-box;
+  pointer-events: none;
+  border: 1.5px solid #fff;
+}
+
+/* ── Logout Dialog ────────────────────────────────────────── */
+.logout-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 16px;
+}
+
+.logout-modal {
+  background: var(--surface, #fff);
+  border-radius: 16px;
+  padding: 32px 28px 24px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.logout-modal__icon {
+  font-size: 2.5rem;
+  margin-bottom: 4px;
+}
+
+.logout-modal__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary, #1a202c);
+}
+
+.logout-modal__desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #718096);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.logout-modal__actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.logout-modal__btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+
+.logout-modal__btn:active {
+  transform: scale(0.97);
+}
+
+.logout-modal__btn--cancel {
+  background: var(--surface-alt, #f0f4f8);
+  color: var(--text-primary, #1a202c);
+  border: 1.5px solid var(--border, #e2e8f0);
+}
+
+.logout-modal__btn--cancel:hover {
+  background: var(--border, #e2e8f0);
+}
+
+.logout-modal__btn--confirm {
+  background: #e53e3e;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+}
+
+.logout-modal__btn--confirm:hover {
+  background: #c53030;
+}
+
+/* ── Responsive fine-tuning ───────────────────────────────── */
+@media (max-width: 360px) {
+  .logout-modal {
+    padding: 24px 16px 20px;
+  }
+
+  .logout-modal__actions {
+    flex-direction: column;
+  }
+}

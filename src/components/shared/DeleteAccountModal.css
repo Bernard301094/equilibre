@@ -1,0 +1,138 @@
+/* ============================================================
+   DeleteAccountModal.css — Permanent account deletion confirm
+   Mobile-first | BEM
+   ============================================================ */
+
+/* ---------- Overlay ---------- */
+.dam-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 16px;
+}
+
+/* ---------- Modal ---------- */
+.dam-modal {
+  background: var(--white, #ffffff);
+  border-radius: var(--radius-xl, 20px);
+  padding: 32px 24px 24px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  text-align: center;
+  animation: fadeUp 0.25s ease;
+  box-sizing: border-box;
+}
+
+/* ---------- Icon ---------- */
+.dam-modal__icon {
+  font-size: 42px;
+  line-height: 1;
+  margin-bottom: 14px;
+  display: block;
+}
+
+/* ---------- Title ---------- */
+.dam-modal__title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 20px;
+  color: var(--blue-dark, #0a2e48);
+  margin-bottom: 14px;
+}
+
+/* ---------- Description ---------- */
+.dam-modal__desc {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text-muted, #6b7280);
+  line-height: 1.6;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.dam-modal__desc strong {
+  color: var(--text, #1a1a2e);
+}
+
+/* ---------- Keyword input ---------- */
+.dam-modal__input {
+  width: 100%;
+  padding: 12px 14px;
+  min-height: 44px;
+  border: 2px solid var(--danger, #e74c3c);
+  border-radius: var(--radius-sm, 8px);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+  background: rgba(231, 76, 60, 0.04);
+  color: var(--danger, #e74c3c);
+  outline: none;
+  box-sizing: border-box;
+  margin-bottom: 16px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dam-modal__input:focus {
+  border-color: var(--danger, #e74c3c);
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.15);
+}
+
+.dam-modal__input::placeholder {
+  color: rgba(231, 76, 60, 0.4);
+  letter-spacing: 0.12em;
+}
+
+/* ---------- Error ---------- */
+.dam-modal__error {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: #c0444a;
+  background: rgba(192, 68, 74, 0.06);
+  border-radius: var(--radius-sm, 8px);
+  padding: 8px 12px;
+  margin: 0 0 14px;
+}
+
+/* ---------- Actions ---------- */
+.dam-modal__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.dam-modal__actions .btn,
+.dam-modal__actions .btn-danger {
+  flex: 1;
+  min-width: 120px;
+  min-height: 44px;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 479px) {
+  .dam-modal {
+    padding: 24px 16px 20px;
+  }
+
+  .dam-modal__title {
+    font-size: 18px;
+  }
+
+  .dam-modal__actions {
+    flex-direction: column;
+  }
+
+  .dam-modal__actions .btn,
+  .dam-modal__actions .btn-danger {
+    width: 100%;
+  }
+}

@@ -1,0 +1,124 @@
+/* ============================================================
+   TherapistProgress.css — Therapist progress dashboard
+   Mobile-first | BEM
+   ============================================================ */
+
+/* ---------- Loading ---------- */
+.tp-loading {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text-muted, #6b7280);
+  padding: 24px 0;
+  text-align: center;
+}
+
+/* ============================================================
+   PATIENT SELECTOR
+   ============================================================ */
+.tp-patient-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 28px;
+  align-items: center;
+}
+
+.tp-patient-btn {
+  flex: 1 1 auto;
+  min-width: 80px;
+  padding: 9px 16px;
+  min-height: 44px;
+  border-radius: var(--radius-md, 10px);
+  border: 1.5px solid var(--warm, #e8d5b7);
+  background: var(--white, #ffffff);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text-muted, #6b7280);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.tp-patient-btn:hover {
+  border-color: var(--blue-mid, #17527c);
+  color: var(--blue-dark, #0a2e48);
+}
+
+.tp-patient-btn--active {
+  border-color: var(--blue-dark, #0a2e48);
+  background: rgba(23, 82, 124, 0.07);
+  color: var(--blue-dark, #0a2e48);
+  font-weight: 700;
+}
+
+.tp-no-patients {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text-muted, #6b7280);
+  margin: 0;
+}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+.tp-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---------- Stats grid ---------- */
+.tp-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 480px) {
+  .tp-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ---------- Goal card ---------- */
+.tp-goal-card {
+  /* inherits .card base styles */
+}
+
+.tp-card-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--blue-dark, #0a2e48);
+  margin: 0 0 12px;
+}
+
+/* ---------- Chart card ---------- */
+.tp-chart-card {
+  /* inherits .card base styles */
+}
+
+.tp-chart-desc {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--text-muted, #6b7280);
+  margin: -8px 0 14px;
+}
+
+/* ============================================================
+   DESKTOP REFINEMENTS
+   ============================================================ */
+@media (min-width: 768px) {
+  .tp-patient-btn {
+    flex: 0 1 auto;
+    font-size: 14px;
+  }
+
+  .tp-dashboard {
+    gap: 20px;
+  }
+
+  .tp-stats-grid {
+    gap: 16px;
+  }
+}

@@ -1,0 +1,75 @@
+/* ============================================================
+   MiniLineChart.css — SVG line chart with hover tooltip
+   ============================================================ */
+
+/* ---------- Wrapper ---------- */
+.mlc {
+  position: relative;
+  width: 100%;
+}
+
+/* ---------- SVG ---------- */
+.mlc__svg {
+  width: 100%;
+  display: block;
+  overflow: visible;
+  margin-top: 28px;
+}
+
+/* ---------- Hit areas ---------- */
+.mlc__hit-area {
+  cursor: crosshair;
+}
+
+/* ---------- Data points ---------- */
+.mlc__point {
+  transition: r 0.15s ease;
+}
+
+/* ---------- X-axis labels ---------- */
+.mlc__x-label {
+  transition: fill 0.15s ease;
+}
+
+/* ---------- Tooltip ---------- */
+.mlc__tooltip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  background: var(--blue-dark, #0a2e48);
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 6px 12px;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  z-index: 10;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.mlc__tooltip-value {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.mlc__tooltip-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+/* Caret arrow */
+.mlc__tooltip-arrow {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid var(--blue-dark, #0a2e48);
+}

@@ -1,0 +1,324 @@
+/* ============================================================
+   BOTTOM NAV — BottomNav.css
+   Mobile-first. Solo visible en pantallas < 768px.
+   ============================================================ */
+
+/* ── Barra principal ──────────────────────────────────────── */
+.bottom-nav__bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 101;
+  display: flex;
+  align-items: stretch;
+  height: 64px;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--white, #ffffff);
+  border-top: 1px solid var(--warm, #e8e0d5);
+  box-shadow: 0 -4px 24px rgba(15, 30, 42, 0.10);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── Botón genérico de nav ────────────────────────────────── */
+.bottom-nav__btn {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 4px 4px;
+  min-width: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+
+.bottom-nav__btn:active {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.bottom-nav__btn:focus-visible {
+  outline: 2px solid var(--primary, #17527c);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+
+/* ── Indicador superior del ítem activo ───────────────────── */
+.bottom-nav__indicator {
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--blue-dark, #17527c);
+  pointer-events: none;
+}
+
+/* ── Icono con badge ──────────────────────────────────────── */
+.bottom-nav__icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-nav__icon {
+  font-size: 1.3rem;
+  line-height: 1;
+  display: block;
+  transition: transform 0.18s;
+}
+
+.bottom-nav__btn--active .bottom-nav__icon {
+  transform: scale(1.12);
+}
+
+/* ── Badge numérico ───────────────────────────────────────── */
+.bottom-nav__badge {
+  position: absolute;
+  top: -5px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 8px;
+  background: #e53e3e;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+  box-sizing: border-box;
+  border: 1.5px solid var(--white, #fff);
+  pointer-events: none;
+}
+
+/* ── Label ────────────────────────────────────────────────── */
+.bottom-nav__label {
+  font-size: 0.625rem; /* 10px */
+  color: var(--text-muted, #9ca3af);
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  transition: color 0.18s, font-weight 0.18s;
+}
+
+.bottom-nav__btn--active .bottom-nav__label,
+.bottom-nav__label--active {
+  color: var(--blue-dark, #17527c);
+  font-weight: 700;
+}
+
+/* ── Botón "Mais" — los tres puntitos ─────────────────────── */
+.bottom-nav__more-dots {
+  font-size: 1rem;
+  color: var(--text-muted, #9ca3af);
+  letter-spacing: 2px;
+  line-height: 1;
+  transition: color 0.18s, transform 0.22s;
+  display: block;
+}
+
+.bottom-nav__more-dots--open {
+  transform: rotate(90deg);
+  color: var(--blue-dark, #17527c);
+}
+
+.bottom-nav__more-dots--active {
+  color: var(--blue-dark, #17527c);
+}
+
+/* ── Slot de perfil ───────────────────────────────────────── */
+.bottom-nav__profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 6px;
+  flex-shrink: 0;
+  min-width: 52px;
+}
+
+.bottom-nav__profile-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bottom-nav__profile-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.18s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav__profile-btn:hover {
+  opacity: 0.8;
+}
+
+.bottom-nav__profile-btn:focus-visible {
+  outline: 2px solid var(--primary, #17527c);
+  outline-offset: 2px;
+}
+
+.bottom-nav__theme-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  font-size: 0.8rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav__theme-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* ── Backdrop del drawer ──────────────────────────────────── */
+.bottom-nav__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 102;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: backdrop-fade-in 0.2s ease;
+}
+
+@keyframes backdrop-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Drawer "Mais opções" ─────────────────────────────────── */
+.bottom-nav__drawer {
+  position: fixed;
+  bottom: calc(64px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  z-index: 103;
+  background: var(--white, #ffffff);
+  border-radius: 20px 20px 0 0;
+  padding: 8px 16px 20px;
+  box-shadow: 0 -8px 32px rgba(15, 30, 42, 0.14);
+  transform: translateY(110%);
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
+}
+
+.bottom-nav__drawer--open {
+  transform: translateY(0);
+}
+
+/* Alça visual */
+.bottom-nav__drawer-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--warm, #e8e0d5);
+  margin: 0 auto 16px;
+}
+
+/* Grid de itens del drawer */
+.bottom-nav__drawer-grid {
+  display: grid;
+  gap: 8px;
+}
+
+/* Ítem del drawer */
+.bottom-nav__drawer-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 8px;
+  background: var(--surface-alt, #f7f9fc);
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav__drawer-item:active {
+  transform: scale(0.96);
+}
+
+.bottom-nav__drawer-item--active {
+  background: var(--primary-light, #e8f0f7);
+  border-color: var(--primary, #17527c);
+}
+
+.bottom-nav__drawer-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-nav__drawer-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.bottom-nav__drawer-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-secondary, #4a5568);
+  white-space: nowrap;
+}
+
+.bottom-nav__drawer-item--active .bottom-nav__drawer-label {
+  color: var(--blue-dark, #17527c);
+  font-weight: 700;
+}
+
+/* ── Responsive: ocultar en desktop ───────────────────────── */
+@media (min-width: 768px) {
+  .bottom-nav__bar,
+  .bottom-nav__drawer,
+  .bottom-nav__backdrop {
+    display: none;
+  }
+}
+
+/* ── Pantallas muy pequeñas ───────────────────────────────── */
+@media (max-width: 360px) {
+  .bottom-nav__bar {
+    height: 58px;
+  }
+
+  .bottom-nav__drawer {
+    bottom: calc(58px + env(safe-area-inset-bottom));
+  }
+
+  .bottom-nav__icon {
+    font-size: 1.15rem;
+  }
+
+  .bottom-nav__label {
+    font-size: 0.575rem;
+  }
+}

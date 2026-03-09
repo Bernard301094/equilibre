@@ -1,0 +1,93 @@
+/* ============================================================
+   ProfileModal.css — Profile photo + mobile system actions
+   Mobile-first | BEM
+   ============================================================ */
+
+/* ---------- Body ---------- */
+.pm-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 24px 20px;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 12px;
+}
+
+/* ---------- Title ---------- */
+.pm-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 17px;
+  color: var(--text, #1a1a2e);
+  text-align: center;
+  margin: 0 0 8px;
+}
+
+/* ---------- Error ---------- */
+.pm-error {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--error, #dc2626);
+  background: rgba(220, 38, 38, 0.06);
+  border-radius: var(--radius-sm, 8px);
+  padding: 8px 12px;
+  margin: 0;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ---------- Hidden file input ---------- */
+.pm-file-input {
+  display: none;
+}
+
+/* ---------- Buttons ---------- */
+.pm-btn-upload,
+.pm-btn-close {
+  width: 100%;
+  min-height: 44px;
+}
+
+/* ---------- Divider ---------- */
+.pm-divider {
+  width: 100%;
+  border: none;
+  border-top: 1px solid var(--warm, #e8d5b7);
+  margin: 8px 0 4px;
+}
+
+/* ---------- System actions ---------- */
+.pm-system-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.pm-system-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+}
+
+.pm-system-btn--delete {
+  margin-top: 4px;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 479px) {
+  .pm-body {
+    padding: 16px 14px;
+    gap: 10px;
+  }
+
+  .pm-title {
+    font-size: 15px;
+  }
+}

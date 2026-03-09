@@ -1,0 +1,143 @@
+/* ============================================================
+   PATIENT LAYOUT — PatientLayout.css
+   Mobile-first: base = móvil, se expande a desktop
+   ============================================================ */
+
+/* ── Contenedor raíz ──────────────────────────────────────── */
+.patient-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--cream);
+}
+
+/* ── Sidebar variante paciente (gradiente más oscuro) ─────── */
+.patient-layout__sidebar {
+  background: var(--sidebar-patient-bg, linear-gradient(180deg, #0f3d5c 0%, #17527c 100%));
+}
+
+/* ── Área de contenido principal ─────────────────────────── */
+.patient-layout__main {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 100vh;
+  background: var(--cream);
+
+  /* Mobile: espacio inferior para la BottomNav */
+  padding: 20px 16px calc(72px + env(safe-area-inset-bottom)) 16px;
+}
+
+/* Desktop: desplaza el contenido para no solapar la Sidebar */
+@media (min-width: 768px) {
+  .patient-layout__main {
+    margin-left: 256px;
+    padding: var(--space-page-y, 32px) var(--space-page-x, 32px);
+  }
+}
+
+/* Variante mobile explícita (por si se fuerza desde JSX) */
+.patient-layout__main--mobile {
+  margin-left: 0;
+  padding: 20px 16px calc(72px + env(safe-area-inset-bottom)) 16px;
+}
+
+/* ── Logout Dialog ────────────────────────────────────────── */
+.logout-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.logout-modal {
+  background: var(--surface, #fff);
+  border-radius: 16px;
+  padding: 32px 28px 24px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.logout-modal__icon {
+  font-size: 2.5rem;
+  margin-bottom: 4px;
+}
+
+.logout-modal__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary, #1a202c);
+}
+
+.logout-modal__desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #718096);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.logout-modal__actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.logout-modal__btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.logout-modal__btn:active {
+  transform: scale(0.97);
+}
+
+.logout-modal__btn--cancel {
+  background: var(--surface-alt, #f0f4f8);
+  color: var(--text-primary, #1a202c);
+  border: 1.5px solid var(--border, #e2e8f0);
+}
+
+.logout-modal__btn--cancel:hover {
+  background: var(--border, #e2e8f0);
+}
+
+.logout-modal__btn--confirm {
+  background: #e53e3e;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+}
+
+.logout-modal__btn--confirm:hover {
+  background: #c53030;
+}
+
+/* ── Responsive fine-tuning ───────────────────────────────── */
+@media (max-width: 360px) {
+  .logout-modal {
+    padding: 24px 16px 20px;
+  }
+
+  .logout-modal__actions {
+    flex-direction: column;
+  }
+}

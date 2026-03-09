@@ -1,4 +1,5 @@
 import { memo, useState } from "react";
+import "./MiniLineChart.css";
 
 const MiniLineChart = memo(function MiniLineChart({
   points = [],
@@ -25,12 +26,11 @@ const MiniLineChart = memo(function MiniLineChart({
   const cx = (i) => paddingX + (i / (points.length - 1)) * chartW;
   const cy = (v) => paddingTop + chartH - ((v - min) / span) * chartH;
 
-  // Smooth curve using cubic bezier
   const smoothPath = points.reduce((path, v, i) => {
     if (i === 0) return `M ${cx(0).toFixed(1)},${cy(v).toFixed(1)}`;
-    const prev  = points[i - 1];
-    const cpx1  = (cx(i - 1) + cx(i)) / 2;
-    const cpx2  = cpx1;
+    const prev = points[i - 1];
+    const cpx1 = (cx(i - 1) + cx(i)) / 2;
+    const cpx2 = cpx1;
     return `${path} C ${cpx1.toFixed(1)},${cy(prev).toFixed(1)} ${cpx2.toFixed(1)},${cy(v).toFixed(1)} ${cx(i).toFixed(1)},${cy(v).toFixed(1)}`;
   }, "");
 
@@ -44,57 +44,30 @@ const MiniLineChart = memo(function MiniLineChart({
     (i) => i % step === 0 || i === points.length - 1
   );
 
-  const gradId   = `grad-${Math.abs(color.split("").reduce((a, c) => a + c.charCodeAt(0), 0))}`;
-  const glowId   = `glow-${gradId}`;
+  const gradId = `grad-${Math.abs(color.split("").reduce((a, c) => a + c.charCodeAt(0), 0))}`;
+  const glowId = `glow-${gradId}`;
 
   return (
-    <div style={{ position: "relative", width: "100%" }}>
+    <div className="mlc">
+
       {/* Tooltip */}
       {hovered !== null && (
         <div
-          style={{
-            position:    "absolute",
-            top:         0,
-            left:        `${(cx(hovered) / 600) * 100}%`,
-            transform:   "translateX(-50%)",
-            background:  "var(--blue-dark)",
-            color:       "white",
-            borderRadius: 10,
-            padding:     "6px 12px",
-            fontSize:    13,
-            fontWeight:  700,
-            pointerEvents: "none",
-            whiteSpace:  "nowrap",
-            boxShadow:   "0 4px 16px rgba(0,0,0,0.18)",
-            zIndex:      10,
-            lineHeight:  1.4,
-          }}
+          className="mlc__tooltip"
+          style={{ left: `${(cx(hovered) / 600) * 100}%` }}
         >
-          <div style={{ fontSize: 16 }}>{points[hovered]}</div>
+          <div className="mlc__tooltip-value">{points[hovered]}</div>
           {labels[hovered] && (
-            <div style={{ fontSize: 11, opacity: 0.75, fontWeight: 500 }}>
-              {labels[hovered]}
-            </div>
+            <div className="mlc__tooltip-label">{labels[hovered]}</div>
           )}
-          <div
-            style={{
-              position:    "absolute",
-              bottom:      -6,
-              left:        "50%",
-              transform:   "translateX(-50%)",
-              width:       0,
-              height:      0,
-              borderLeft:  "6px solid transparent",
-              borderRight: "6px solid transparent",
-              borderTop:   "6px solid var(--blue-dark)",
-            }}
-          />
+          <div className="mlc__tooltip-arrow" />
         </div>
       )}
 
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        style={{ width: "100%", height, display: "block", overflow: "visible", marginTop: 28 }}
+        className="mlc__svg"
+        style={{ height }}
         aria-hidden="true"
         onMouseLeave={() => setHovered(null)}
       >
@@ -143,7 +116,7 @@ const MiniLineChart = memo(function MiniLineChart({
         {/* Area fill */}
         <path d={areaPath} fill={`url(#${gradId})`} />
 
-        {/* Glow line (blurred duplicate) */}
+        {/* Glow line */}
         <path
           d={smoothPath}
           fill="none"
@@ -165,7 +138,7 @@ const MiniLineChart = memo(function MiniLineChart({
           strokeLinecap="round"
         />
 
-        {/* Invisible hit areas for hover */}
+        {/* Invisible hit areas */}
         {points.map((v, i) => (
           <rect
             key={`hit-${i}`}
@@ -175,7 +148,7 @@ const MiniLineChart = memo(function MiniLineChart({
             height={chartH}
             fill="transparent"
             onMouseEnter={() => setHovered(i)}
-            style={{ cursor: "crosshair" }}
+            className="mlc__hit-area"
           />
         ))}
 
@@ -206,7 +179,7 @@ const MiniLineChart = memo(function MiniLineChart({
               fill="white"
               stroke={color}
               strokeWidth="2.5"
-              style={{ transition: "r .15s ease" }}
+              className="mlc__point"
             />
           </g>
         ))}
@@ -222,7 +195,7 @@ const MiniLineChart = memo(function MiniLineChart({
             fill={hovered === i ? color : "var(--text-muted)"}
             fontFamily="DM Sans, sans-serif"
             fontWeight={hovered === i ? "700" : "400"}
-            style={{ transition: "fill .15s" }}
+            className="mlc__x-label"
           >
             {labels[i] ?? ""}
           </text>

@@ -1,0 +1,73 @@
+/* ============================================================
+   WeekGoalBar.css — Weekly goal progress bar
+   ============================================================ */
+
+.wgb {
+  width: 100%;
+}
+
+/* ---------- Header row ---------- */
+.wgb__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--text-muted, #6b7280);
+  margin-bottom: 4px;
+}
+
+.wgb__label {
+  /* inherits header styles */
+}
+
+.wgb__count {
+  font-weight: 600;
+}
+
+/* ---------- Count color modifiers ---------- */
+.wgb__count--done  { color: #2d7a3a; }
+.wgb__count--mid   { color: var(--blue-dark, #0a2e48); }
+.wgb__count--low   { color: var(--accent, #ffbd59); }
+
+/* ---------- Track ---------- */
+.wgb__track {
+  height: 12px;
+  background: var(--warm, #e8d5b7);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 6px 0 4px;
+}
+
+/* ---------- Fill ---------- */
+.wgb__fill {
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--blue-dark, #0a2e48), var(--blue-mid, #2e7fab));
+  transition: width 0.7s ease-in-out;
+}
+
+.wgb__fill--done {
+  background: linear-gradient(90deg, #2d7a3a, #52b788);
+}
+
+.wgb__fill--mid {
+  background: linear-gradient(90deg, var(--blue-dark, #0a2e48), var(--blue-mid, #2e7fab));
+}
+
+.wgb__fill--low {
+  background: linear-gradient(90deg, var(--accent, #ffbd59), #f5a623);
+}
+
+/* ---------- Footer ---------- */
+.wgb__footer {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+  margin-top: 3px;
+}
+
+.wgb__footer--done { color: #2d7a3a; }
+.wgb__footer--mid  { color: var(--blue-dark, #0a2e48); }
+.wgb__footer--low  { color: var(--accent, #ffbd59); }

@@ -1,0 +1,611 @@
+/* ============================================================
+   ROUTINE VIEW — RoutineView.css
+   Mobile-first
+   ============================================================ */
+
+.routine-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Loading ──────────────────────────────────────────────── */
+.routine-view__loading {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-secondary, #718096);
+  font-size: 0.9rem;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.routine-view__header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.routine-view__title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary, #1a202c);
+  margin: 0;
+}
+
+.routine-view__subtitle {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #718096);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Flash de éxito ───────────────────────────────────────── */
+.routine-view__success {
+  background: rgba(72, 187, 120, 0.12);
+  border: 1px solid rgba(72, 187, 120, 0.35);
+  color: #276749;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  animation: fadeIn 0.25s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Grid de pilares ──────────────────────────────────────── */
+.routine-view__pillars {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .routine-view__pillars {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  /* El 5.º pilar ocupa todo el ancho en mobile */
+  .routine-view__pillar-card:nth-child(5) {
+    grid-column: span 2;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .routine-view__pillars {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .routine-view__pillar-card:nth-child(5) {
+    grid-column: unset;
+  }
+}
+
+/* ── Tarjeta de pilar ─────────────────────────────────────── */
+.routine-view__pillar-card {
+  padding: 18px 10px;
+  border-radius: 14px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--surface, #fff);
+  border: 1.5px solid var(--warm, #e8e0d5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.routine-view__pillar-card:hover,
+.routine-view__pillar-card:focus-visible {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+  border-color: var(--blue-mid, #3a8fc1);
+  outline: none;
+}
+
+.routine-view__pillar-card:active {
+  transform: translateY(-2px);
+}
+
+.routine-view__pillar-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.routine-view__pillar-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary, #1a202c);
+}
+
+.routine-view__pillar-desc {
+  font-size: 0.675rem;
+  color: var(--text-muted, #9ca3af);
+  line-height: 1.4;
+}
+
+/* Variantes de color por categoría */
+.pillar-cat--autocuidado      { border-top: 3px solid #3a8fc1; }
+.pillar-cat--responsabilidades{ border-top: 3px solid #f59e0b; }
+.pillar-cat--lazer            { border-top: 3px solid #ef4444; }
+.pillar-cat--social           { border-top: 3px solid #8b5cf6; }
+.pillar-cat--saúde            { border-top: 3px solid #10b981; }
+
+/* ── Título de sección ────────────────────────────────────── */
+.routine-view__section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted, #9ca3af);
+  margin: 0 0 12px;
+}
+
+/* ── Lista de actividades pendientes ─────────────────────── */
+.routine-view__activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Tarjeta de actividad ─────────────────────────────────── */
+.routine-view__activity-card {
+  background: var(--surface, #fff);
+  border: 1.5px solid var(--warm, #e8e0d5);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.routine-view__activity-card:hover {
+  border-color: var(--primary, #17527c);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Badge de categoría ───────────────────────────────────── */
+.routine-view__cat-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.675rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  align-self: flex-start;
+}
+
+.cat-Autocuidado       { background: #ddf0fb; color: #0e4060; border: 1px solid #b3d7ed; }
+.cat-Responsabilidades { background: #fff3dd; color: #7a4800; border: 1px solid #ffe0a0; }
+.cat-Lazer             { background: #fde8e8; color: #8b1c1c; border: 1px solid #f9caca; }
+.cat-Social            { background: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe; }
+.cat-Saúde             { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+
+.routine-view__act-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a202c);
+  margin: 0;
+}
+
+.routine-view__act-meta {
+  font-size: 0.775rem;
+  color: var(--text-secondary, #718096);
+}
+
+/* ── Acciones de la actividad ─────────────────────────────── */
+.routine-view__act-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.routine-view__act-btn {
+  height: 36px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background 0.18s, border-color 0.18s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+  padding: 0 12px;
+}
+
+.routine-view__act-btn:active { transform: scale(0.96); }
+
+.routine-view__act-btn--delete {
+  background: transparent;
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--danger, #ef4444);
+  padding: 0 10px;
+}
+
+.routine-view__act-btn--delete:hover {
+  background: rgba(239, 68, 68, 0.07);
+}
+
+.routine-view__act-btn--edit {
+  background: var(--surface-alt, #f0f4f8);
+  color: var(--text-primary, #1a202c);
+  border-color: var(--border, #e2e8f0);
+}
+
+.routine-view__act-btn--edit:hover {
+  background: var(--border, #e2e8f0);
+}
+
+.routine-view__act-btn--exec {
+  flex: 1;
+  background: var(--sage, #6b9e78);
+  color: #fff;
+  border-color: var(--sage, #6b9e78);
+  box-shadow: 0 2px 8px rgba(107, 158, 120, 0.3);
+}
+
+.routine-view__act-btn--exec:hover {
+  background: #5a8a67;
+}
+
+@media (max-width: 480px) {
+  .routine-view__act-btn--edit,
+  .routine-view__act-btn--exec {
+    flex: 1;
+    height: 42px;
+  }
+}
+
+/* ── Historial ────────────────────────────────────────────── */
+.routine-view__history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.routine-view__hist-card {
+  background: var(--surface, #fff);
+  border: 1.5px dashed var(--warm, #e8e0d5);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  opacity: 0.75;
+  transition: opacity 0.2s;
+}
+
+.routine-view__hist-card:hover { opacity: 1; }
+
+.routine-view__hist-card--concluido   { border-color: #c3e6cb; }
+.routine-view__hist-card--nao_realizado { border-color: #f9caca; }
+
+.routine-view__hist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.routine-view__hist-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.routine-view__hist-status {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.routine-view__hist-status--concluido {
+  background: rgba(72, 187, 120, 0.1);
+  color: #276749;
+}
+
+.routine-view__hist-status--nao_realizado {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--danger, #ef4444);
+}
+
+.routine-view__hist-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 4px;
+  border-radius: 6px;
+  opacity: 0.5;
+  transition: opacity 0.18s, background 0.18s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.routine-view__hist-delete-btn:hover {
+  opacity: 1;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.routine-view__hist-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a202c);
+  margin: 0;
+}
+
+.routine-view__hist-title--strike {
+  text-decoration: line-through;
+  color: var(--text-muted, #9ca3af);
+}
+
+.routine-view__hist-date {
+  font-size: 0.75rem;
+  color: var(--text-muted, #9ca3af);
+  text-transform: capitalize;
+}
+
+.routine-view__hist-metrics {
+  display: flex;
+  gap: 14px;
+  font-size: 0.775rem;
+  color: var(--text-secondary, #718096);
+  flex-wrap: wrap;
+}
+
+.routine-view__hist-reason {
+  font-size: 0.775rem;
+  color: var(--text-secondary, #718096);
+  font-style: italic;
+}
+
+/* ── Overlay ──────────────────────────────────────────────── */
+.routine-view__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 400;
+  padding: 0;
+  animation: overlay-in 0.2s ease both;
+}
+
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (min-width: 600px) {
+  .routine-view__overlay {
+    align-items: center;
+    padding: 24px;
+  }
+}
+
+/* ── Modal ────────────────────────────────────────────────── */
+.routine-view__modal {
+  background: var(--surface, #fff);
+  border-radius: 20px 20px 0 0;
+  padding: 28px 20px calc(24px + env(safe-area-inset-bottom));
+  width: 100%;
+  max-width: 100vw;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+  animation: modal-up 0.28s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+  max-height: 92dvh;
+  overflow-y: auto;
+}
+
+@keyframes modal-up {
+  from { transform: translateY(30px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@media (min-width: 600px) {
+  .routine-view__modal {
+    border-radius: 20px;
+    max-width: 480px;
+    padding: 32px 28px;
+    text-align: left;
+    animation: modal-scale-in 0.22s ease both;
+  }
+
+  @keyframes modal-scale-in {
+    from { transform: scale(0.96); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+  }
+}
+
+.routine-view__modal--form {
+  text-align: left;
+}
+
+.routine-view__modal-icon {
+  font-size: 2rem;
+  text-align: center;
+}
+
+.routine-view__modal-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary, #1a202c);
+  margin: 0;
+}
+
+.routine-view__modal-desc {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #718096);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Campos del modal ─────────────────────────────────────── */
+.routine-view__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.routine-view__field-label {
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a202c);
+}
+
+.routine-view__field-input {
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--warm, #e8e0d5);
+  background: var(--cream, #faf8f5);
+  font-size: 0.9rem;
+  color: var(--text-primary, #1a202c);
+  box-sizing: border-box;
+  width: 100%;
+  transition: border-color 0.18s;
+  font-family: inherit;
+}
+
+.routine-view__field-input:focus {
+  outline: none;
+  border-color: var(--primary, #17527c);
+  background: var(--surface, #fff);
+}
+
+.routine-view__field-select {
+  cursor: pointer;
+}
+
+/* ── Grid de fecha/hora ───────────────────────────────────── */
+.routine-view__date-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ── Error ────────────────────────────────────────────────── */
+.routine-view__error {
+  font-size: 0.825rem;
+  color: var(--danger, #ef4444);
+  background: rgba(239, 68, 68, 0.07);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 0;
+}
+
+/* ── Botones del modal ────────────────────────────────────── */
+.routine-view__modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.routine-view__modal-btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.routine-view__modal-btn:active { transform: scale(0.97); }
+
+.routine-view__modal-btn--cancel {
+  background: var(--surface-alt, #f0f4f8);
+  color: var(--text-primary, #1a202c);
+  border: 1.5px solid var(--border, #e2e8f0);
+}
+
+.routine-view__modal-btn--cancel:hover { background: var(--border, #e2e8f0); }
+
+.routine-view__modal-btn--save {
+  background: var(--sage, #6b9e78);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(107, 158, 120, 0.3);
+}
+
+.routine-view__modal-btn--save:hover { background: #5a8a67; }
+
+.routine-view__modal-btn--confirm {
+  background: #e53e3e;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.28);
+}
+
+.routine-view__modal-btn--confirm:hover { background: #c53030; }
+
+/* ── Botones "Fiz / Não fiz" ──────────────────────────────── */
+.routine-view__did-it-row {
+  display: flex;
+  gap: 10px;
+}
+
+.routine-view__did-it-btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background 0.18s, border-color 0.18s, transform 0.15s;
+}
+
+.routine-view__did-it-btn:active { transform: scale(0.97); }
+
+.routine-view__did-it-btn--yes {
+  background: var(--sage, #6b9e78);
+  color: #fff;
+  border-color: var(--sage, #6b9e78);
+}
+
+.routine-view__did-it-btn--no {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger, #ef4444);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.routine-view__did-it-btn--outline {
+  background: var(--surface-alt, #f0f4f8);
+  color: var(--text-secondary, #718096);
+  border-color: var(--border, #e2e8f0);
+}
+
+/* ── Sliders de ejecución ─────────────────────────────────── */
+.routine-view__exec-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.routine-view__exec-range {
+  width: 100%;
+  accent-color: var(--sage, #6b9e78);
+  cursor: pointer;
+}
+
+.routine-view__exec-range-val {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--blue-dark, #17527c);
+}

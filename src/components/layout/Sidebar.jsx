@@ -1,21 +1,23 @@
 import AvatarDisplay from "../shared/AvatarDisplay";
+import "./Sidebar.css";
 
 /**
  * Shared sidebar shell used by both TherapistLayout and PatientLayout.
  *
  * Props:
- *   brand          — text beside the logo
- *   roleLabel      — subtitle shown below the brand
- *   navItems       — [{ id, icon, label, badge? }]
- *   activeView     — current view id
- *   onNav          — (id) => void
- *   session        — current session
- *   theme          — 'light' | 'dark'
- *   toggleTheme    — () => void
- *   onAvatarClick  — () => void  (opens ProfileModal)
- *   onLogout       — () => void
+ *   brand           — text beside the logo
+ *   roleLabel       — subtitle shown below the brand
+ *   navItems        — [{ id, icon, label, badge? }]
+ *   activeView      — current view id
+ *   onNav           — (id) => void
+ *   session         — current session
+ *   theme           — 'light' | 'dark'
+ *   toggleTheme     — () => void
+ *   onAvatarClick   — () => void  (opens ProfileModal)
+ *   onLogout        — () => void
  *   onDeleteAccount — () => void
- *   extraHeader    — optional JSX rendered inside the header (e.g. notification bell)
+ *   extraHeader     — optional JSX rendered inside the header (e.g. notification bell)
+ *   className       — optional extra class for the <aside> (e.g. "patient-layout__sidebar")
  */
 export default function Sidebar({
   brand,
@@ -30,60 +32,46 @@ export default function Sidebar({
   onLogout,
   onDeleteAccount,
   extraHeader,
+  className = "",
 }) {
   return (
-    <aside className="sidebar">
+    <aside className={["sidebar", className].filter(Boolean).join(" ")}>
+
       {/* ── Header ── */}
-      <div className="sidebar-header">
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            width: "100%",
-          }}
-        >
-          <div
-            className="brand"
-            style={{ display: "flex", alignItems: "center", gap: 8 }}
-          >
+      <div className="sidebar__header">
+        <div className="sidebar__header-row">
+          <div className="sidebar__brand">
             <img
               src="/equilibre-icon.png"
               alt=""
               aria-hidden="true"
-              style={{ width: 32, height: 32, objectFit: "contain" }}
+              className="sidebar__logo"
             />
             {brand}
           </div>
-          {extraHeader}
+          {extraHeader && (
+            <div className="sidebar__extra-header">{extraHeader}</div>
+          )}
         </div>
-        <div className="role">{roleLabel}</div>
+        <div className="sidebar__role">{roleLabel}</div>
       </div>
 
       {/* ── Nav ── */}
-      <nav aria-label="Navegação principal">
+      <nav className="sidebar__nav" aria-label="Navegação principal">
         {navItems.map((n) => (
           <button
             key={n.id}
-            className={`nav-item ${activeView === n.id ? "active" : ""}`}
+            className={["sidebar__nav-item", activeView === n.id ? "sidebar__nav-item--active" : ""].filter(Boolean).join(" ")}
             onClick={() => onNav(n.id)}
             aria-current={activeView === n.id ? "page" : undefined}
           >
-            <span className="icon" aria-hidden="true">
+            <span className="sidebar__nav-icon" aria-hidden="true">
               {n.icon}
             </span>
-            {n.label}
+            <span className="sidebar__nav-label">{n.label}</span>
             {n.badge > 0 && (
               <span
-                style={{
-                  marginLeft: "auto",
-                  background: "var(--accent)",
-                  color: "white",
-                  padding: "2px 8px",
-                  borderRadius: 12,
-                  fontSize: 11,
-                  fontWeight: 700,
-                }}
+                className="sidebar__nav-badge"
                 aria-label={`${n.badge} pendentes`}
               >
                 {n.badge > 9 ? "9+" : n.badge}
@@ -94,51 +82,43 @@ export default function Sidebar({
       </nav>
 
       {/* ── Footer / User pill ── */}
-      <div className="sidebar-footer">
-        <div className="user-pill">
+      <div className="sidebar__footer">
+        <div className="sidebar__user-pill">
+
           <AvatarDisplay
             name={session.name}
             avatarUrl={session.avatar_url}
             size={38}
-            className="avatar"
+            className="sidebar__avatar"
             onClick={onAvatarClick}
             title="Mudar foto de perfil"
           />
 
-          <div className="user-info">
-            <div className="name">{session.name.split(" ")[0]}</div>
-            <div className="email">{session.email}</div>
+          <div className="sidebar__user-info">
+            <div className="sidebar__user-name">{session.name.split(" ")[0]}</div>
+            <div className="sidebar__user-email">{session.email}</div>
           </div>
 
-          <div className="pill-actions">
+          <div className="sidebar__pill-actions">
             <button
-              className="theme-toggle"
+              className="sidebar__icon-btn"
               onClick={toggleTheme}
-              aria-label={
-                theme === "dark"
-                  ? "Mudar para modo claro"
-                  : "Mudar para modo escuro"
-              }
+              aria-label={theme === "dark" ? "Mudar para modo claro" : "Mudar para modo escuro"}
               title={theme === "dark" ? "Modo claro" : "Modo escuro"}
             >
               {theme === "dark" ? "☀️" : "🌙"}
             </button>
 
             <button
-              className="pill-btn"
+              className="sidebar__icon-btn"
               title="Sair"
               aria-label="Encerrar sessão"
               onClick={onLogout}
             >
               <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                width="16" height="16" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor"
+                strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                 aria-hidden="true"
               >
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -148,20 +128,15 @@ export default function Sidebar({
             </button>
 
             <button
-              className="pill-btn delete"
+              className="sidebar__icon-btn sidebar__icon-btn--danger"
               title="Excluir conta"
               aria-label="Excluir conta permanentemente"
               onClick={onDeleteAccount}
             >
               <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                width="15" height="15" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor"
+                strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                 aria-hidden="true"
               >
                 <polyline points="3 6 5 6 21 6" />
@@ -169,6 +144,7 @@ export default function Sidebar({
               </svg>
             </button>
           </div>
+
         </div>
       </div>
     </aside>
