@@ -1,0 +1,237 @@
+/* ═══════════════════════════════════════════════
+   FeedbackTab.css  —  Therapist feedback panel
+═══════════════════════════════════════════════ */
+
+.feedback-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.25rem 0 1rem;
+  position: relative;
+}
+
+/* ── Toast notification ── */
+.feedback-tab__toast {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  animation: fb-slide-down 0.25s ease;
+}
+
+.feedback-tab__toast--success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+.feedback-tab__toast--error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+@keyframes fb-slide-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Info banner ── */
+.feedback-tab__info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  font-size: 0.83rem;
+  color: #1e40af;
+  line-height: 1.45;
+}
+
+.feedback-tab__info-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── New message button ── */
+.feedback-tab__new-btn {
+  align-self: flex-start;
+  background: var(--primary, #4f7cf6);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.12s;
+}
+
+.feedback-tab__new-btn:hover  { background: var(--primary-dark, #3b63d8); }
+.feedback-tab__new-btn:active { transform: scale(0.97); }
+
+/* ── Compose form ── */
+.feedback-tab__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--surface, #f9fafb);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  padding: 1rem;
+  animation: fb-fade-in 0.2s ease;
+}
+
+@keyframes fb-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.feedback-tab__textarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  border: 1px solid var(--border, #d1d5db);
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--text, #111827);
+  background: #fff;
+  line-height: 1.5;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+
+.feedback-tab__textarea:focus {
+  outline: none;
+  border-color: var(--primary, #4f7cf6);
+  box-shadow: 0 0 0 3px rgba(79, 124, 246, 0.15);
+}
+
+.feedback-tab__char-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted, #9ca3af);
+  text-align: right;
+}
+
+.feedback-tab__form-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+.feedback-tab__btn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s, transform 0.1s;
+}
+
+.feedback-tab__btn:active { transform: scale(0.97); }
+
+.feedback-tab__btn--cancel {
+  background: var(--surface-alt, #f3f4f6);
+  color: var(--text-muted, #6b7280);
+}
+.feedback-tab__btn--cancel:hover { background: #e5e7eb; }
+
+.feedback-tab__btn--save {
+  background: var(--primary, #4f7cf6);
+  color: #fff;
+}
+.feedback-tab__btn--save:hover:not(:disabled) { background: var(--primary-dark, #3b63d8); }
+.feedback-tab__btn--save:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── Empty state ── */
+.feedback-tab__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-muted, #6b7280);
+  font-size: 0.9rem;
+}
+
+.feedback-tab__empty-icon { font-size: 2rem; }
+
+.feedback-tab__empty-sub {
+  font-size: 0.8rem;
+  color: var(--text-subtle, #9ca3af);
+}
+
+/* ── Feedback list ── */
+.feedback-tab__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.feedback-tab__card {
+  background: #fff;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: box-shadow 0.15s;
+}
+
+.feedback-tab__card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+}
+
+.feedback-tab__card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.feedback-tab__card-date {
+  font-size: 0.75rem;
+  color: var(--text-muted, #6b7280);
+}
+
+.feedback-tab__card-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 99px;
+}
+
+.feedback-tab__card-badge--unread {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.feedback-tab__card-badge--read {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+.feedback-tab__card-body {
+  font-size: 0.9rem;
+  color: var(--text, #111827);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  margin: 0;
+}

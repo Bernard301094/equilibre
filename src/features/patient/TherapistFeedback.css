@@ -1,0 +1,207 @@
+/* ═══════════════════════════════════════════════════
+   TherapistFeedback.css  —  Patient-side feedback view
+═══════════════════════════════════════════════════ */
+
+/* ── Section wrapper ── */
+.tf-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 1.5rem;
+}
+
+.tf-section__header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.tf-section__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text, #111827);
+  margin: 0;
+}
+
+/* ── Unread badge ── */
+.tf-unread-badge {
+  background: var(--primary, #4f7cf6);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+  letter-spacing: 0.02em;
+  animation: tf-pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes tf-pop-in {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Loading ── */
+.tf-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.875rem;
+  color: var(--text-muted, #6b7280);
+  padding: 1rem 0;
+}
+
+.tf-loading__spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border, #e5e7eb);
+  border-top-color: var(--primary, #4f7cf6);
+  border-radius: 50%;
+  animation: tf-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes tf-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Error ── */
+.tf-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #991b1b;
+}
+
+.tf-retry-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.8rem;
+  color: #b91c1c;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.tf-retry-btn:hover { background: #fee2e2; }
+
+/* ── Empty state ── */
+.tf-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--text-muted, #6b7280);
+  font-size: 0.875rem;
+}
+
+.tf-empty__icon { font-size: 1.8rem; }
+
+/* ── Card list ── */
+.tf-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+/* ── Individual feedback card ── */
+.tf-card {
+  position: relative;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  transition: box-shadow 0.18s, transform 0.18s;
+  animation: tf-card-in 0.25s ease both;
+}
+
+.tf-card:hover {
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+/* First unread card gets a subtle green glow */
+.tf-card--highlight {
+  border-color: #6ee7b7;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 60%);
+  box-shadow: 0 0 0 3px rgba(110, 231, 183, 0.25);
+}
+
+@keyframes tf-card-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Unread dot ── */
+.tf-card__unread-dot {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 8px;
+  height: 8px;
+  background: var(--primary, #4f7cf6);
+  border-radius: 50%;
+  animation: tf-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes tf-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(1.35); }
+}
+
+/* ── Avatar ── */
+.tf-card__avatar {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+/* ── Content ── */
+.tf-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.tf-card__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tf-card__author {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--primary, #4f7cf6);
+}
+
+.tf-card__date {
+  font-size: 0.72rem;
+  color: var(--text-muted, #9ca3af);
+}
+
+.tf-card__message {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text, #111827);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

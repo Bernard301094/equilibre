@@ -5,11 +5,10 @@ import { calcStreak, isThisWeek } from "../../utils/dates";
 import WeekGoalBar from "../../components/ui/WeekGoalBar";
 import MiniLineChart from "../../components/ui/MiniLineChart";
 import EmptyState from "../../components/ui/EmptyState";
+import TherapistFeedback from "./TherapistFeedback"; // ← NEW
 import "./PatientProgress.css";
 
-/* ── Stat card inline (substitui o StatCard genérico) ───────────
-   Mantém a aparência do sistema de design sem depender do componente
-   externo cujo visual pode divergir.                               */
+/* ── Stat card inline ─────────────────────────────────────── */
 function StatCard({ icon, value, label }) {
   return (
     <div className="pp-stat-card">
@@ -173,6 +172,9 @@ export default function PatientProgress({ session }) {
           />
         </div>
       )}
+
+      {/* ── NEW: Therapist feedback section ── */}
+      <TherapistFeedback session={session} />
 
     </div>
   );
