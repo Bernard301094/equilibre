@@ -4,8 +4,11 @@ import { calcStreak, localDateOffset, isThisWeek } from "../../utils/dates";
 import { getPlantStage, LS_LAST_ACTION } from "../../utils/constants";
 import StatCard from "../../components/ui/StatCard";
 import WeekGoalBar from "../../components/ui/WeekGoalBar";
+import OnboardingTour from "../../components/ui/OnboardingTour";
+import { usePushNotifications } from "../../hooks/usePushNotifications";
 import { validateInviteCode } from "../../utils/validation";
 import "./Home.css";
+import "../../styles/micro-interactions.css";
 
 const getGreeting = (name) => {
   const h = new Date().getHours();
@@ -35,6 +38,26 @@ export default function PatientHome({ session, setSession, setView }) {
   const [linkMsg,    setLinkMsg]    = useState({ type: "", text: "" });
   const inflightRef = useRef(false);
 
+  // ── Micro-interaction state ──
+  const [prevStreak,    setPrevStreak]    = useState(null);
+  const [prevWeekDone,  setPrevWeekDone]  = useState(null);
+  const [plantPulse,    setPlantPulse]    = useState(false);
+  const [streakLevelUp, setStreakLevelUp] = useState(false);
+  const [goalReached,   setGoalReached]   = useState(false);
+
+  // ── Push notifications ──
+  const { supported, permission, subscribed, subscribe } =
+    usePushNotifications({ session, setView });
+
+  useEffect(() => {
+    if (supported && permission === "default" && !subscribed) {
+      // Pede permissão 4 segundos após o paciente abrir a tela
+      const t = setTimeout(() => subscribe(), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [supported, permission, subscribed, subscribe]);
+
+  // ── Data fetch ──
   useEffect(() => {
     let active = true;
     const fetchData = async () => {
@@ -96,6 +119,34 @@ export default function PatientHome({ session, setSession, setView }) {
     return () => { active = false; clearInterval(id); };
   }, [session.id, session.access_token]);
 
+  // ── Detect streak / goal growth and trigger micro-animations ──
+  useEffect(() => {
+    if (loading) return;
+
+    if (prevStreak === null) {
+      setPrevStreak(data.streak);
+      setPrevWeekDone(data.weekDone);
+      return;
+    }
+
+    if (data.streak > prevStreak) {
+      setPlantPulse(true);
+      setStreakLevelUp(true);
+      setTimeout(() => setPlantPulse(false),    800);
+      setTimeout(() => setStreakLevelUp(false),  950);
+    }
+
+    const target = data.goal?.weekly_target;
+    if (target && prevWeekDone < target && data.weekDone >= target) {
+      setGoalReached(true);
+      setTimeout(() => setGoalReached(false), 750);
+    }
+
+    setPrevStreak(data.streak);
+    setPrevWeekDone(data.weekDone);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.streak, data.weekDone, loading]);
+
   const handleLink = async () => {
     if (inflightRef.current || linking) return;
     const codeErr = validateInviteCode(inviteCode);
@@ -139,189 +190,202 @@ export default function PatientHome({ session, setSession, setView }) {
   const firstName = session.name.split(" ")[0];
 
   return (
-    <div className="patient-home page-fade-in">
+    <>
+      {/* ── Onboarding tour — shown only on first visit ── */}
+      <OnboardingTour />
 
-      {/* ── Header ── */}
-      <header className="patient-home__header">
-        <h2 className="patient-home__greeting">{getGreeting(firstName)}</h2>
-        <p className="patient-home__greeting-sub">{getGreetingSub()}</p>
-      </header>
+      <div className="patient-home page-fade-in">
 
-      {/* ── Vincular profesional ── */}
-      {!session.therapist_id && (
-        <div className="patient-home__link-card">
-          <span className="patient-home__link-icon" aria-hidden="true">🤝</span>
-          <div className="patient-home__link-body">
-            <h3 className="patient-home__link-title">Vincular profissional</h3>
-            <p className="patient-home__link-desc">
-              Digite o código de convite enviado pela sua psicóloga:
-            </p>
-            <div className="patient-home__link-row">
-              <label htmlFor="link-invite-input" className="sr-only">Código de convite</label>
-              <input
-                id="link-invite-input"
-                className="patient-home__invite-input"
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                placeholder="Ex: AB3X9K"
-                maxLength={10}
-                autoComplete="off"
-                onKeyDown={(e) => e.key === "Enter" && handleLink()}
-              />
-              <button
-                className="patient-home__link-btn"
-                onClick={handleLink}
-                disabled={linking}
-                aria-busy={linking}
-              >
-                {linking ? "Vinculando..." : "Vincular"}
-              </button>
-            </div>
-            {linkMsg.text && (
-              <p
-                role="alert"
-                className={[
-                  "patient-home__link-msg",
-                  `patient-home__link-msg--${linkMsg.type}`,
-                ].join(" ")}
-              >
-                {linkMsg.text}
+        {/* ── Header ── */}
+        <header className="patient-home__header">
+          <h2 className="patient-home__greeting">{getGreeting(firstName)}</h2>
+          <p className="patient-home__greeting-sub">{getGreetingSub()}</p>
+        </header>
+
+        {/* ── Vincular profesional ── */}
+        {!session.therapist_id && (
+          <div className="patient-home__link-card">
+            <span className="patient-home__link-icon" aria-hidden="true">🤝</span>
+            <div className="patient-home__link-body">
+              <h3 className="patient-home__link-title">Vincular profissional</h3>
+              <p className="patient-home__link-desc">
+                Digite o código de convite enviado pela sua psicóloga:
               </p>
+              <div className="patient-home__link-row">
+                <label htmlFor="link-invite-input" className="sr-only">Código de convite</label>
+                <input
+                  id="link-invite-input"
+                  className="patient-home__invite-input"
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                  placeholder="Ex: AB3X9K"
+                  maxLength={10}
+                  autoComplete="off"
+                  onKeyDown={(e) => e.key === "Enter" && handleLink()}
+                />
+                <button
+                  className="patient-home__link-btn"
+                  onClick={handleLink}
+                  disabled={linking}
+                  aria-busy={linking}
+                >
+                  {linking ? "Vinculando..." : "Vincular"}
+                </button>
+              </div>
+              {linkMsg.text && (
+                <p
+                  role="alert"
+                  className={[
+                    "patient-home__link-msg",
+                    `patient-home__link-msg--${linkMsg.type}`,
+                  ].join(" ")}
+                >
+                  {linkMsg.text}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Stats ── */}
+        <div className="patient-home__stats-grid">
+
+          <div className={[
+            "patient-home__plant-card",
+            streakLevelUp ? "streak-levelup" : "",
+          ].filter(Boolean).join(" ")}>
+            {showWater && (
+              <span className="patient-home__water-drop" aria-hidden="true">💧</span>
             )}
+            <div className="patient-home__plant-emoji-wrap">
+              <span
+                className={[
+                  "patient-home__plant-emoji",
+                  plantPulse ? "plant-pulse" : "",
+                ].filter(Boolean).join(" ")}
+                role="img"
+                aria-label={`Planta: ${stage.label}`}
+              >
+                {stage.icon}
+              </span>
+            </div>
+            <div className="patient-home__plant-data">
+              <span
+                className="patient-home__streak-val"
+                style={{ color: stage.color }}
+              >
+                {data.streak}
+              </span>
+              <span className="patient-home__streak-label">Dias seguidos</span>
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* ── Stats ── */}
-      <div className="patient-home__stats-grid">
+          <StatCard icon="⏳" value={data.pending} label="Para fazer" />
 
-        {/* Tarjeta planta — emoji aislado en wrapper para transform-origin correcto */}
-        <div className="patient-home__plant-card">
-          {showWater && (
-            <span className="patient-home__water-drop" aria-hidden="true">💧</span>
+          {data.overdue > 0 ? (
+            <StatCard
+              icon="⚠️"
+              value={data.overdue}
+              label="Com prazo vencido"
+              accent="var(--accent)"
+              className="patient-home__stat--overdue"
+            />
+          ) : (
+            <StatCard icon="✅" value={data.done} label="Concluídos" />
           )}
-          <div className="patient-home__plant-emoji-wrap">
-            <span
-              className="patient-home__plant-emoji"
-              role="img"
-              aria-label={`Planta: ${stage.label}`}
-            >
-              {stage.icon}
-            </span>
-          </div>
-          <div className="patient-home__plant-data">
-            <span
-              className="patient-home__streak-val"
-              style={{ color: stage.color }}
-            >
-              {data.streak}
-            </span>
-            <span className="patient-home__streak-label">Dias seguidos</span>
-          </div>
+
         </div>
 
-        <StatCard icon="⏳" value={data.pending} label="Para fazer" />
+        {/* ── Aviso de streak ── */}
+        {!data.hasActivityToday && data.streak > 0 && (
+          <div
+            className={[
+              "patient-home__streak-warn",
+              data.isLate ? "patient-home__streak-warn--late" : "",
+            ].filter(Boolean).join(" ")}
+            role="alert"
+          >
+            <span className="patient-home__streak-warn-icon" aria-hidden="true">
+              {data.isLate ? "⚠️" : "🪴"}
+            </span>
+            <div className="patient-home__streak-warn-body">
+              <h3 className={[
+                "patient-home__streak-warn-title",
+                data.isLate ? "patient-home__streak-warn-title--late" : "",
+              ].filter(Boolean).join(" ")}>
+                {data.isLate ? "Sua planta está com sede!" : "Não se esqueça de regar!"}
+              </h3>
+              <p className="patient-home__streak-warn-desc">
+                Registe algo hoje para manter a sequência de{" "}
+                <strong>{data.streak} dia{data.streak > 1 ? "s" : ""}</strong>.
+              </p>
+            </div>
+          </div>
+        )}
 
-        {data.overdue > 0 ? (
-          <StatCard
-            icon="⚠️"
-            value={data.overdue}
-            label="Com prazo vencido"
-            accent="var(--accent)"
-            className="patient-home__stat--overdue"
-          />
+        {/* ── Meta semanal ── */}
+        {data.goal && (
+          <div className={[
+            "patient-home__goal-card",
+            goalReached ? "goal-reached" : "",
+          ].filter(Boolean).join(" ")}>
+            <WeekGoalBar done={data.weekDone} target={data.goal.weekly_target} />
+          </div>
+        )}
+
+        {/* ── CTA principal ── */}
+        {!data.hasActivityToday ? (
+          <div
+            className="patient-home__cta patient-home__cta--diary"
+            onClick={() => setView("diary")}
+            role="button"
+            tabIndex={0}
+            aria-label="Ir para o diário emocional"
+            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setView("diary")}
+          >
+            <div className="patient-home__cta-body">
+              <div className="patient-home__cta-text">
+                <h3 className="patient-home__cta-title">Vamos regar agora?</h3>
+                <p className="patient-home__cta-desc">
+                  Registe como você está hoje no diário e mantenha seu jardim vivo.
+                </p>
+              </div>
+              <span className="patient-home__cta-icon" aria-hidden="true">🚿</span>
+            </div>
+          </div>
+
+        ) : data.pending > 0 ? (
+          <div
+            className="patient-home__cta patient-home__cta--exercises"
+            onClick={() => setView("exercises")}
+            role="button"
+            tabIndex={0}
+            aria-label="Ir para meus exercícios"
+            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setView("exercises")}
+          >
+            <div className="patient-home__cta-body">
+              <div className="patient-home__cta-text">
+                <span className="patient-home__cta-ex-icon" aria-hidden="true">📋</span>
+                <h3 className="patient-home__cta-title">
+                  Você tem {data.pending} exercício{data.pending > 1 ? "s" : ""} pendente{data.pending > 1 ? "s" : ""}!
+                </h3>
+                <p className="patient-home__cta-desc">
+                  Clique aqui para começar quando estiver pronto(a).
+                </p>
+              </div>
+            </div>
+          </div>
+
         ) : (
-          <StatCard icon="✅" value={data.done} label="Concluídos" />
+          <div className="patient-home__all-done">
+            <span className="patient-home__all-done-icon" aria-hidden="true">🎉</span>
+            <p className="patient-home__all-done-text">
+              Você está em dia com o seu cuidado hoje!
+            </p>
+          </div>
         )}
 
       </div>
-
-      {/* ── Aviso de streak ── */}
-      {!data.hasActivityToday && data.streak > 0 && (
-        <div
-          className={[
-            "patient-home__streak-warn",
-            data.isLate ? "patient-home__streak-warn--late" : "",
-          ].filter(Boolean).join(" ")}
-          role="alert"
-        >
-          <span className="patient-home__streak-warn-icon" aria-hidden="true">
-            {data.isLate ? "⚠️" : "🪴"}
-          </span>
-          <div className="patient-home__streak-warn-body">
-            <h3 className={[
-              "patient-home__streak-warn-title",
-              data.isLate ? "patient-home__streak-warn-title--late" : "",
-            ].filter(Boolean).join(" ")}>
-              {data.isLate ? "Sua planta está com sede!" : "Não se esqueça de regar!"}
-            </h3>
-            <p className="patient-home__streak-warn-desc">
-              Registe algo hoje para manter a sequência de{" "}
-              <strong>{data.streak} dia{data.streak > 1 ? "s" : ""}</strong>.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* ── Meta semanal ── */}
-      {data.goal && (
-        <div className="patient-home__goal-card">
-          <WeekGoalBar done={data.weekDone} target={data.goal.weekly_target} />
-        </div>
-      )}
-
-      {/* ── CTA principal ── */}
-      {!data.hasActivityToday ? (
-        <div
-          className="patient-home__cta patient-home__cta--diary"
-          onClick={() => setView("diary")}
-          role="button"
-          tabIndex={0}
-          aria-label="Ir para o diário emocional"
-          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setView("diary")}
-        >
-          <div className="patient-home__cta-body">
-            <div className="patient-home__cta-text">
-              <h3 className="patient-home__cta-title">Vamos regar agora?</h3>
-              <p className="patient-home__cta-desc">
-                Registe como você está hoje no diário e mantenha seu jardim vivo.
-              </p>
-            </div>
-            <span className="patient-home__cta-icon" aria-hidden="true">🚿</span>
-          </div>
-        </div>
-
-      ) : data.pending > 0 ? (
-        <div
-          className="patient-home__cta patient-home__cta--exercises"
-          onClick={() => setView("exercises")}
-          role="button"
-          tabIndex={0}
-          aria-label="Ir para meus exercícios"
-          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setView("exercises")}
-        >
-          <div className="patient-home__cta-body">
-            <div className="patient-home__cta-text">
-              <span className="patient-home__cta-ex-icon" aria-hidden="true">📋</span>
-              <h3 className="patient-home__cta-title">
-                Você tem {data.pending} exercício{data.pending > 1 ? "s" : ""} pendente{data.pending > 1 ? "s" : ""}!
-              </h3>
-              <p className="patient-home__cta-desc">
-                Clique aqui para começar quando estiver pronto(a).
-              </p>
-            </div>
-          </div>
-        </div>
-
-      ) : (
-        <div className="patient-home__all-done">
-          <span className="patient-home__all-done-icon" aria-hidden="true">🎉</span>
-          <p className="patient-home__all-done-text">
-            Você está em dia com o seu cuidado hoje!
-          </p>
-        </div>
-      )}
-
-    </div>
+    </>
   );
 }

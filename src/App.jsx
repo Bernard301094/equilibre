@@ -1,18 +1,25 @@
 import { useEffect, useState } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+} from "react-router-dom";
 import { useSession } from "./hooks/useSession";
-import { useTheme } from "./hooks/useTheme";
-import db from "./services/db";
+import { useTheme }   from "./hooks/useTheme";
+import db   from "./services/db";
 import auth from "./services/auth";
 import { SEED_EXERCISES, LS_SEEDED_KEY, ROLE } from "./utils/constants";
-import Spinner from "./components/ui/Spinner";
-import LoginPage from "./components/auth/LoginPage";
+import Spinner         from "./components/ui/Spinner";
+import ConnectionToast from "./components/ui/ConnectionToast";
+import LoginPage       from "./components/auth/LoginPage";
 import TherapistLayout from "./components/layout/TherapistLayout";
-import PatientLayout from "./components/layout/PatientLayout";
+import PatientLayout   from "./components/layout/PatientLayout";
 
-// ─── Seed helper ──────────────────────────────────────────────────────────────
+/* ── Seed helper ──────────────────────────────────────────── */
 async function seedExercisesIfNeeded() {
-  const already = localStorage.getItem(LS_SEEDED_KEY);
-  if (already) return;
+  if (localStorage.getItem(LS_SEEDED_KEY)) return;
   try {
     const existing = await db.query("exercises", { select: "id" });
     if (!Array.isArray(existing) || existing.length === 0) {
@@ -29,11 +36,7 @@ async function seedExercisesIfNeeded() {
   }
 }
 
-// ─── handleLogin ─────────────────────────────────────────────────────────────
-/**
- * Authenticates a user and returns { session, error }.
- * All role-validation and account-state logic lives here.
- */
+/* ── resolveLogin ─────────────────────────────────────────── */
 async function resolveLogin({ email, password, role }) {
   const authData = await auth.signIn(email, password);
 
@@ -44,46 +47,29 @@ async function resolveLogin({ email, password, role }) {
   }
 
   const token = authData.access_token;
-
-  // Try to find user row by auth id first, then fall back to email
   let userRow = null;
+
   try {
-    const byId = await db.query(
-      "users",
-      { filter: { id: authData.user.id } },
-      token
-    );
-    if (Array.isArray(byId) && byId.length > 0) {
-      userRow = byId[0];
-    }
+    const byId = await db.query("users", { filter: { id: authData.user.id } }, token);
+    if (Array.isArray(byId) && byId.length > 0) userRow = byId[0];
   } catch (_) {}
 
   if (!userRow) {
     try {
-      const byEmail = await db.query(
-        "users",
-        { filter: { email } },
-        token
-      );
-      if (Array.isArray(byEmail) && byEmail.length > 0) {
-        userRow = byEmail[0];
-      }
+      const byEmail = await db.query("users", { filter: { email } }, token);
+      if (Array.isArray(byEmail) && byEmail.length > 0) userRow = byEmail[0];
     } catch (_) {}
   }
 
-  // Patient must always have a valid user row (created via invite)
   if (!userRow) {
     if (role === ROLE.PATIENT) {
       throw new Error(
         "Conta não encontrada. Para aceder, solicite um novo convite à sua profissional."
       );
     }
-    // Therapist without a user row: create a minimal session from auth metadata
-    const meta = authData.user?.user_metadata || {};
+    const meta     = authData.user?.user_metadata || {};
     const metaRole = meta.role || role;
-    if (metaRole !== role) {
-      throw new Error("Conta não encontrada para este perfil.");
-    }
+    if (metaRole !== role) throw new Error("Conta não encontrada para este perfil.");
     return {
       id: authData.user.id,
       email: authData.user.email,
@@ -94,27 +80,17 @@ async function resolveLogin({ email, password, role }) {
     };
   }
 
-  if (userRow.role !== role) {
-    throw new Error("Conta não encontrada para este perfil.");
-  }
-
+  if (userRow.role !== role) throw new Error("Conta não encontrada para este perfil.");
   if (userRow.deleted_at) {
     throw new Error(
       "Esta conta foi encerrada. Para voltar a aceder, solicite um novo convite à sua profissional."
     );
   }
 
-  return {
-    ...userRow,
-    access_token: token,
-    refresh_token: authData.refresh_token,
-  };
+  return { ...userRow, access_token: token, refresh_token: authData.refresh_token };
 }
 
-// ─── handleRegister ───────────────────────────────────────────────────────────
-/**
- * Registers a new user. Returns an error string or null on success.
- */
+/* ── resolveRegister ──────────────────────────────────────── */
 async function resolveRegister(form) {
   let therapistId = null;
 
@@ -123,30 +99,21 @@ async function resolveRegister(form) {
     let invites;
     try {
       invites = await db.query("invites", { filter: { code } });
-    } catch (e) {
+    } catch {
       return "Erro ao verificar o código. Tente novamente.";
     }
-    if (!Array.isArray(invites) || invites.length === 0) {
-      return "Código de convite inválido.";
-    }
+    if (!Array.isArray(invites) || invites.length === 0) return "Código de convite inválido.";
     const invite = invites[0];
-    if (invite.status !== "pending") {
-      return "Este código já foi utilizado ou expirou.";
-    }
+    if (invite.status !== "pending") return "Este código já foi utilizado ou expirou.";
     therapistId = invite.therapist_id ?? invite.therapistid ?? null;
   }
 
-  let userId;
-  let token;
-  let isReactivation = false;
+  let userId, token, isReactivation = false;
 
   try {
-    const authRes = await auth.signUp(form.email, form.password, {
-      name: form.name,
-      role: form.role,
-    });
+    const authRes = await auth.signUp(form.email, form.password, { name: form.name, role: form.role });
     userId = authRes?.user?.id ?? authRes?.id;
-    token = authRes?.access_token ?? authRes?.session?.access_token ?? null;
+    token  = authRes?.access_token ?? authRes?.session?.access_token ?? null;
     if (!userId) throw new Error("ID não retornado na criação.");
   } catch (signUpErr) {
     const msg = (signUpErr.message || "").toLowerCase();
@@ -156,14 +123,11 @@ async function resolveRegister(form) {
       msg.includes("id não retornado");
 
     if (isAlready) {
-      // Account already exists in Auth — try to sign in to get the id
       try {
         const authRes = await auth.signIn(form.email, form.password);
-        if (!authRes?.access_token) {
-          return "Erro ao autenticar conta existente. Verifique a senha.";
-        }
+        if (!authRes?.access_token) return "Erro ao autenticar conta existente. Verifique a senha.";
         userId = authRes?.user?.id;
-        token = authRes.access_token;
+        token  = authRes.access_token;
         isReactivation = true;
       } catch {
         return (
@@ -180,11 +144,9 @@ async function resolveRegister(form) {
 
   try {
     if (isReactivation) {
-      // Try to update existing row; insert if missing
       try {
         await db.update(
-          "users",
-          { id: userId },
+          "users", { id: userId },
           { name: form.name, role: form.role, therapist_id: therapistId, deleted_at: null },
           token
         );
@@ -206,105 +168,196 @@ async function resolveRegister(form) {
     if (form.role === ROLE.PATIENT) {
       const code = form.inviteCode.trim().toUpperCase();
       await db.update(
-        "invites",
-        { code },
+        "invites", { code },
         { status: "used", used_by: userId, used_at: new Date().toISOString() },
         token
       );
     }
-
-    return null; // success
+    return null;
   } catch (e) {
     return `Erro ao finalizar criação de conta: ${e.message}`;
   }
 }
 
-// ─── App root ─────────────────────────────────────────────────────────────────
+/* ════════════════════════════════════════════════════════════
+   ROUTE MAPS
+   ════════════════════════════════════════════════════════════ */
+export const THERAPIST_ROUTES = {
+  dashboard:     "/terapeuta/inicio",
+  patients:      "/terapeuta/pacientes",
+  exercises:     "/terapeuta/exercicios",
+  create:        "/terapeuta/criar",
+  progress:      "/terapeuta/progresso",
+  responses:     "/terapeuta/respostas",
+  notifications: "/terapeuta/notificacoes",
+};
+
+export const PATIENT_ROUTES = {
+  home:      "/paciente/inicio",
+  exercises: "/paciente/exercicios",
+  diary:     "/paciente/diario",
+  routine:   "/paciente/rotina",
+  progress:  "/paciente/progresso",
+  history:   "/paciente/historico",
+};
+
+export const PATH_TO_THERAPIST_VIEW = Object.fromEntries(
+  Object.entries(THERAPIST_ROUTES).map(([id, path]) => [path, id])
+);
+export const PATH_TO_PATIENT_VIEW = Object.fromEntries(
+  Object.entries(PATIENT_ROUTES).map(([id, path]) => [path, id])
+);
+
+/* ── Guard de rota ───────────────────────────────────────── */
+function RequireAuth({ session, role, redirectTo, children }) {
+  if (!session)             return <Navigate to="/entrar"   replace />;
+  if (session.role !== role) return <Navigate to={redirectTo} replace />;
+  return children;
+}
+
+/* ── LoginWrapper ────────────────────────────────────────── */
+function LoginWrapper({ onLogin, onRegister }) {
+  const navigate = useNavigate();
+
+  const handleLogin = async (form) => {
+    const err = await onLogin(form);
+    if (!err) {
+      // sessão setada — RequireAuth cuida do redirect
+    }
+    return err;
+  };
+
+  return <LoginPage onLogin={handleLogin} onRegister={onRegister} />;
+}
+
+/* ── AppRoutes ───────────────────────────────────────────── */
+function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTheme }) {
+
+  const defaultRedirect = !session
+    ? "/entrar"
+    : session.role === ROLE.THERAPIST
+    ? THERAPIST_ROUTES.dashboard
+    : PATIENT_ROUTES.home;
+
+  const sharedTherapist = { session, setSession, updateSession, logout, theme, toggleTheme };
+  const sharedPatient   = { session, setSession, updateSession, logout, theme, toggleTheme };
+
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to={defaultRedirect} replace />} />
+
+      <Route
+        path="/entrar"
+        element={
+          session
+            ? <Navigate to={defaultRedirect} replace />
+            : <LoginWrapper
+                onLogin={async (form) => {
+                  try {
+                    const resolved = await resolveLogin(form);
+                    setSession(resolved);
+                    return null;
+                  } catch (e) { return e.message; }
+                }}
+                onRegister={resolveRegister}
+              />
+        }
+      />
+
+      {/* ── Terapeuta ── */}
+      <Route
+        path="/terapeuta"
+        element={
+          <RequireAuth session={session} role={ROLE.THERAPIST} redirectTo="/entrar">
+            <TherapistLayout {...sharedTherapist} />
+          </RequireAuth>
+        }
+      >
+        <Route index element={<Navigate to={THERAPIST_ROUTES.dashboard} replace />} />
+        <Route path="inicio"       element={<TherapistDashboard session={session} />} />
+        <Route path="pacientes"    element={<PatientsView       session={session} />} />
+        <Route path="exercicios"   element={<ExercisesView      session={session} />} />
+        <Route path="criar"        element={<CreateExerciseView session={session} />} />
+        <Route path="progresso"    element={<TherapistProgress  session={session} />} />
+        <Route path="respostas"    element={<ResponsesView      session={session} />} />
+        <Route path="notificacoes" element={<NotificationsView  session={session} />} />
+        <Route path="*" element={<Navigate to={THERAPIST_ROUTES.dashboard} replace />} />
+      </Route>
+
+      {/* ── Paciente ── */}
+      <Route
+        path="/paciente"
+        element={
+          <RequireAuth session={session} role={ROLE.PATIENT} redirectTo="/entrar">
+            <PatientLayout {...sharedPatient} />
+          </RequireAuth>
+        }
+      >
+        <Route index element={<Navigate to={PATIENT_ROUTES.home} replace />} />
+        <Route path="inicio"     element={<PatientHome      session={session} setSession={setSession} />} />
+        <Route path="exercicios" element={<PatientExercises session={session} />} />
+        <Route path="diario"     element={<PatientDiary     session={session} />} />
+        <Route path="rotina"     element={<PatientRoutine   session={session} />} />
+        <Route path="progresso"  element={<PatientProgress  session={session} />} />
+        <Route path="historico"  element={<PatientHistory   session={session} />} />
+        <Route path="*" element={<Navigate to={PATIENT_ROUTES.home} replace />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to={defaultRedirect} replace />} />
+    </Routes>
+  );
+}
+
+/* ── Imports das views ───────────────────────────────────── */
+import TherapistDashboard  from "./features/therapist/Dashboard";
+import PatientsView        from "./features/therapist/PatientsView";
+import ExercisesView       from "./features/therapist/ExercisesView";
+import CreateExerciseView  from "./features/therapist/CreateExerciseView";
+import ResponsesView       from "./features/therapist/ResponsesView";
+import TherapistProgress   from "./features/therapist/TherapistProgress";
+import NotificationsView   from "./features/therapist/NotificationsView";
+import PatientHome         from "./features/patient/Home";
+import PatientExercises    from "./features/patient/PatientExercises";
+import PatientDiary        from "./features/patient/DiaryView";
+import PatientRoutine      from "./features/patient/RoutineView";
+import PatientProgress     from "./features/patient/PatientProgress";
+import PatientHistory      from "./features/patient/PatientHistory";
+
+/* ── App root ─────────────────────────────────────────────── */
 export default function App() {
-  const { session, setSession, updateSession, logout, sessionReady } =
-    useSession();
+  const { session, setSession, updateSession, logout, sessionReady } = useSession();
   const { theme, toggleTheme } = useTheme(session?.id ?? null);
 
   const [appReady, setAppReady] = useState(false);
-  const [dbError, setDbError] = useState(false);
+  const [dbError,  setDbError]  = useState(false);
 
-  // Initial view derived from session role
-  const defaultView =
-    session?.role === ROLE.PATIENT ? "home" : "dashboard";
-  const [view, setView] = useState(defaultView);
-
-  // Sync view when session changes (login / logout)
-  useEffect(() => {
-    if (session) {
-      setView(session.role === ROLE.PATIENT ? "home" : "dashboard");
-    }
-  }, [session?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Seed + app ready
   useEffect(() => {
     seedExercisesIfNeeded()
       .catch(() => setDbError(true))
       .finally(() => setAppReady(true));
   }, []);
 
-  // ── Login handler exposed to LoginPage ────────────────────────────────────
-  const handleLogin = async ({ email, password, role }) => {
-    try {
-      const resolved = await resolveLogin({ email, password, role });
-      setSession(resolved);
-      return null; // no error
-    } catch (e) {
-      return e.message;
-    }
-  };
-
-  // ── Register handler exposed to LoginPage ─────────────────────────────────
-  const handleRegister = async (form) => {
-    return resolveRegister(form);
-  };
-
-  // ── Render ────────────────────────────────────────────────────────────────
   if (!sessionReady || !appReady) {
     return <Spinner message="Conectando ao Equilibre..." />;
   }
 
   if (dbError) {
-    return (
-      <Spinner message="Erro ao conectar ao banco de dados. Verifique as configurações." />
-    );
+    return <Spinner message="Erro ao conectar ao banco de dados. Verifique as configurações." />;
   }
 
-  if (!session) {
-    return (
-      <LoginPage onLogin={handleLogin} onRegister={handleRegister} />
-    );
-  }
+  return (
+    <BrowserRouter>
+      {/* ── Toast de conexão — visível em todas as telas ── */}
+      <ConnectionToast />
 
-  if (session.role === ROLE.THERAPIST) {
-    return (
-      <TherapistLayout
+      <AppRoutes
         session={session}
         setSession={setSession}
         updateSession={updateSession}
         logout={logout}
-        view={view}
-        setView={setView}
-        toggleTheme={toggleTheme}
         theme={theme}
+        toggleTheme={toggleTheme}
       />
-    );
-  }
-
-  return (
-    <PatientLayout
-      session={session}
-      setSession={setSession}
-      updateSession={updateSession}
-      logout={logout}
-      view={view}
-      setView={setView}
-      toggleTheme={toggleTheme}
-      theme={theme}
-    />
+    </BrowserRouter>
   );
 }

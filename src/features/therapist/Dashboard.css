@@ -1,6 +1,6 @@
 /* ============================================================
    THERAPIST DASHBOARD — Dashboard.css
-   Mobile-first
+   Mobile-first · 100% CSS variables · Dark mode ready
    ============================================================ */
 
 /* ── Contenedor raíz ──────────────────────────────────────── */
@@ -10,7 +10,7 @@
   gap: 24px;
 }
 
-/* ── Header / Saludo ──────────────────────────────────────── */
+/* ── Header / Saudação ────────────────────────────────────── */
 .dashboard__header {
   display: flex;
   flex-direction: column;
@@ -18,21 +18,98 @@
 }
 
 .dashboard__greeting {
-  font-size: 1.4rem;
+  font-size: clamp(1.25rem, 3vw, 1.6rem);
   font-weight: 700;
-  color: var(--text-primary, #1a202c);
+  color: var(--text);
   margin: 0;
   line-height: 1.3;
 }
 
 .dashboard__greeting-sub {
   font-size: 0.9rem;
-  color: var(--text-secondary, #718096);
+  color: var(--text-muted);
   margin: 0;
   line-height: 1.5;
 }
 
-/* ── Grid de estadísticas ─────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════
+   NAV CARD — wrapper clicável ao redor de cada StatCard
+   ════════════════════════════════════════════════════════════
+
+   POR QUE WRAPPER E NÃO MODIFICAR STATCARD?
+   ──────────────────────────────────────────
+   StatCard é um componente compartilhado usado em outras
+   telas (ex: PatientProgress). Modificar StatCard adicionaria
+   lógica de navegação onde ela não pertence — violaria o
+   princípio de responsabilidade única.
+
+   O wrapper isola completamente a interatividade:
+     • StatCard continua puramente presentacional
+     • NavCard cuida de cursor, hover, focus, active
+     • Remoção futura não afeta StatCard em nenhum lugar
+
+   ESTADOS VISUAIS:
+   ┌──────────┬──────────────────────────────────────────┐
+   │ :hover   │ sobe 3px + sombra mais profunda          │
+   │ :active  │ desce 1px + sombra mínima (pressão)      │
+   │ :focus-  │ outline azul — navegação por teclado     │
+   │  visible │                                          │
+   └──────────┴──────────────────────────────────────────┘
+   ════════════════════════════════════════════════════════════ */
+.dashboard__nav-card {
+  position: relative;
+  cursor: pointer;
+  border-radius: var(--radius-md, 14px);
+  outline: none;
+
+  /* A transição anima o transform + shadow juntos */
+  transition:
+    transform  0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.18s ease;
+}
+
+/* Hover: leve elevação — o card "flutua" */
+.dashboard__nav-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Active: pressão física — desce ligeiramente */
+.dashboard__nav-card:active {
+  transform: translateY(1px);
+  box-shadow: var(--shadow-sm);
+  transition-duration: 0.08s;
+}
+
+/* Focus por teclado: outline azul visível */
+.dashboard__nav-card:focus-visible {
+  outline: 2px solid var(--blue-mid);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(46, 127, 171, 0.15);
+}
+
+/* Hint "Ver X →" — aparece no hover do card */
+.dashboard__nav-hint {
+  display: block;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--blue-mid);
+  letter-spacing: 0.03em;
+  padding: 4px 0 8px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.18s, transform 0.18s;
+  pointer-events: none;
+}
+
+.dashboard__nav-card:hover  .dashboard__nav-hint,
+.dashboard__nav-card:focus-visible .dashboard__nav-hint {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Grid de estatísticas ─────────────────────────────────── */
 .dashboard__stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -53,13 +130,13 @@
   }
 }
 
-/* ── Tarjeta de alertas (Red Flags) ───────────────────────── */
+/* ── Card de alertas (Red Flags) ──────────────────────────── */
 .dashboard__flags-card {
-  background: var(--surface, #fff);
-  border-radius: 16px;
+  background: var(--card);
+  border-radius: var(--radius-lg, 16px);
   padding: 20px;
-  border-left: 4px solid var(--danger, #ef4444);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border-left: 4px solid var(--danger, #b03030);
+  box-shadow: var(--shadow-sm);
 }
 
 .dashboard__flags-header {
@@ -79,13 +156,13 @@
 .dashboard__flags-title {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--danger, #ef4444);
+  color: var(--danger, #b03030);
   margin: 0 0 4px;
 }
 
 .dashboard__flags-sub {
   font-size: 0.825rem;
-  color: var(--text-secondary, #718096);
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -96,21 +173,19 @@
   gap: 10px;
 }
 
-/* ── Fila de flag individual ──────────────────────────────── */
+/* ── Flag row ─────────────────────────────────────────────── */
 .dashboard__flag-row {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 12px;
-  background: rgba(239, 68, 68, 0.05);
-  border: 1px solid rgba(239, 68, 68, 0.16);
+  border-radius: var(--radius-md, 12px);
+  background: var(--danger-soft, rgba(176, 48, 48, 0.06));
+  border: 1px solid rgba(176, 48, 48, 0.14);
   flex-wrap: wrap;
 }
 
-.dashboard__flag-avatar {
-  flex-shrink: 0;
-}
+.dashboard__flag-avatar { flex-shrink: 0; }
 
 .dashboard__flag-info {
   flex: 1;
@@ -123,7 +198,7 @@
 .dashboard__flag-name {
   font-weight: 600;
   font-size: 0.875rem;
-  color: var(--blue-dark, #17527c);
+  color: var(--blue-dark);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -146,16 +221,16 @@
 }
 
 .dashboard__flag-tag--inactive {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--danger, #ef4444);
+  background: var(--danger-soft, rgba(176, 48, 48, 0.08));
+  color: var(--danger, #b03030);
 }
 
 .dashboard__flag-tag--overdue {
-  background: rgba(245, 158, 11, 0.1);
-  color: #b45309;
+  background: rgba(224, 120, 32, 0.1);
+  color: var(--orange, #e07820);
 }
 
-/* ── Indicador planta/streak ──────────────────────────────── */
+/* ── Planta / streak ──────────────────────────────────────── */
 .dashboard__flag-plant {
   display: flex;
   flex-direction: column;
@@ -165,79 +240,59 @@
   min-width: 32px;
 }
 
-.dashboard__flag-plant-icon {
-  font-size: 1.25rem;
-  line-height: 1;
-}
+.dashboard__flag-plant-icon   { font-size: 1.25rem; line-height: 1; }
+.dashboard__flag-plant-streak { font-size: 0.65rem; font-weight: 700; line-height: 1; }
+.dashboard__flag-plant-streak--zero { color: var(--text-muted); }
 
-.dashboard__flag-plant-streak {
-  font-size: 0.65rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.dashboard__flag-plant-streak--zero {
-  color: var(--text-muted, #9ca3af);
-}
-
-/* ── Botón "Ver paciente" ─────────────────────────────────── */
+/* ── Botão "Ver paciente" ─────────────────────────────────── */
 .dashboard__flag-btn {
   flex-shrink: 0;
   height: 34px;
   padding: 0 14px;
-  border-radius: 8px;
-  border: 1.5px solid var(--border, #e2e8f0);
-  background: var(--surface, #fff);
-  color: var(--blue-dark, #17527c);
+  border-radius: var(--radius-sm, 8px);
+  border: 1.5px solid var(--warm);
+  background: var(--card);
+  color: var(--blue-dark);
+  font-family: 'DM Sans', sans-serif;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.18s, border-color 0.18s;
+  transition: background 0.18s, border-color 0.18s, transform 0.15s;
 }
 
-.dashboard__flag-btn:hover {
-  background: var(--primary-light, #e8f0f7);
-  border-color: var(--primary, #17527c);
+.dashboard__flag-btn:hover  { background: var(--warm); border-color: var(--blue-mid); }
+.dashboard__flag-btn:active { transform: scale(0.97); }
+
+.dashboard__flag-btn:focus-visible {
+  outline: 2px solid var(--blue-mid);
+  outline-offset: 2px;
 }
 
-.dashboard__flag-btn:active {
-  transform: scale(0.97);
-}
-
-/* En mobile el botón ocupa todo el ancho */
 @media (max-width: 479px) {
-  .dashboard__flag-btn {
-    width: 100%;
-    height: 40px;
-    justify-content: center;
-  }
-
-  .dashboard__flag-row {
-    gap: 10px;
-    padding: 12px;
-  }
+  .dashboard__flag-btn  { width: 100%; height: 40px; justify-content: center; }
+  .dashboard__flag-row  { gap: 10px; padding: 12px; }
 }
 
-/* ── Tarjeta pacientes recientes ──────────────────────────── */
+/* ── Card pacientes recentes ──────────────────────────────── */
 .dashboard__recent-card {
-  background: var(--surface, #fff);
-  border-radius: 16px;
+  background: var(--card);
+  border-radius: var(--radius-lg, 16px);
   padding: 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 4px;
 }
 
 .dashboard__recent-title {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--text-primary, #1a202c);
-  margin: 0;
+  color: var(--text);
+  margin: 0 0 10px;
 }
 
-/* ── Lista de pacientes recientes ─────────────────────────── */
+/* ── Linhas de paciente — clicáveis ───────────────────────── */
 .dashboard__recent-list {
   display: flex;
   flex-direction: column;
@@ -248,18 +303,29 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 8px;
-  border-radius: 10px;
-  transition: background 0.15s;
+  padding: 10px 10px 10px 8px;
+  border-radius: var(--radius-sm, 10px);
+  cursor: pointer;
+  outline: none;
+  transition: background 0.15s, transform 0.15s;
 }
 
 .dashboard__patient-row:hover {
-  background: var(--surface-alt, #f7f9fc);
+  background: var(--cream);
+  transform: translateX(3px);
 }
 
-.dashboard__patient-avatar {
-  flex-shrink: 0;
+.dashboard__patient-row:active {
+  transform: translateX(1px);
+  background: var(--warm);
 }
+
+.dashboard__patient-row:focus-visible {
+  outline: 2px solid var(--blue-mid);
+  outline-offset: 1px;
+}
+
+.dashboard__patient-avatar { flex-shrink: 0; }
 
 .dashboard__patient-info {
   flex: 1;
@@ -269,7 +335,7 @@
 .dashboard__patient-name {
   font-weight: 600;
   font-size: 0.875rem;
-  color: var(--text-primary, #1a202c);
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -277,68 +343,72 @@
 
 .dashboard__patient-email {
   font-size: 0.775rem;
-  color: var(--text-secondary, #718096);
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   margin-top: 1px;
 }
 
-/* ── Botón "Ver todos" ────────────────────────────────────── */
+/* Seta → aparece no hover para reforçar que é clicável */
+.dashboard__patient-arrow {
+  font-size: 0.9rem;
+  color: var(--blue-mid);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.15s, transform 0.15s;
+  flex-shrink: 0;
+}
+
+.dashboard__patient-row:hover .dashboard__patient-arrow,
+.dashboard__patient-row:focus-visible .dashboard__patient-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ── Botão "Ver todos" ────────────────────────────────────── */
 .dashboard__see-all-btn {
   align-self: flex-start;
+  margin-top: 8px;
   height: 36px;
-  padding: 0 16px;
-  border-radius: 8px;
-  border: 1.5px solid var(--border, #e2e8f0);
+  padding: 0 18px;
+  border-radius: var(--radius-sm, 8px);
+  border: 1.5px solid var(--warm);
   background: transparent;
-  color: var(--blue-dark, #17527c);
+  color: var(--blue-dark);
+  font-family: 'DM Sans', sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.18s, border-color 0.18s;
+  transition: background 0.18s, border-color 0.18s, transform 0.15s;
 }
 
-.dashboard__see-all-btn:hover {
-  background: var(--primary-light, #e8f0f7);
-  border-color: var(--primary, #17527c);
-}
+.dashboard__see-all-btn:hover  { background: var(--warm); border-color: var(--blue-mid); }
+.dashboard__see-all-btn:active { transform: scale(0.97); }
 
-.dashboard__see-all-btn:active {
-  transform: scale(0.97);
+.dashboard__see-all-btn:focus-visible {
+  outline: 2px solid var(--blue-mid);
+  outline-offset: 2px;
 }
 
 @media (max-width: 479px) {
-  .dashboard__see-all-btn {
-    width: 100%;
-    height: 42px;
-  }
+  .dashboard__see-all-btn { width: 100%; height: 42px; align-self: stretch; }
 }
 
-/* ── Animación de entrada ─────────────────────────────────── */
-@keyframes page-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.page-fade-in {
-  animation: page-fade-in 0.3s ease both;
-}
-
-/* ── Desktop: ajustes de grilla en pantallas grandes ─────── */
+/* ── Desktop ──────────────────────────────────────────────── */
 @media (min-width: 1200px) {
-  .dashboard__stats-grid {
-    gap: 20px;
-  }
-
+  .dashboard__stats-grid  { gap: 20px; }
   .dashboard__flags-card,
-  .dashboard__recent-card {
-    padding: 28px;
+  .dashboard__recent-card { padding: 28px; }
+}
+
+/* ── Reduced motion ───────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .dashboard__nav-card,
+  .dashboard__patient-row,
+  .dashboard__nav-hint,
+  .dashboard__patient-arrow {
+    transition: none;
+    transform: none !important;
   }
 }

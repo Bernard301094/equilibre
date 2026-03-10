@@ -14,19 +14,183 @@ function makeQuestion() {
 }
 
 const TYPE_META = {
-  open:        { icon: "📝", color: "#17527c", label: "Resposta aberta" },
-  scale:       { icon: "🔢", color: "#2e7fab", label: "Escala 0–10"     },
-  reflect:     { icon: "💭", color: "#7a4800", label: "Reflexão"        },
-  instruction: { icon: "📢", color: "#1a5c28", label: "Instrução"       },
+  open:        { icon: "📝", label: "Resposta aberta",  color: "var(--blue-dark)"  },
+  scale:       { icon: "🔢", label: "Escala 0–10",      color: "var(--blue-mid)"   },
+  reflect:     { icon: "💭", label: "Reflexão",         color: "var(--orange)"     },
+  instruction: { icon: "📢", label: "Instrução",        color: "var(--sage, #2e7fab)" },
 };
 
 const TYPE_HINT = {
-  open:        "📝 O paciente escreverá uma resposta livre.",
-  scale:       "🔢 O paciente escolherá um valor de 0 a 10.",
-  reflect:     "💭 Campo opcional — o paciente pode escrever ou apenas refletir.",
-  instruction: "📢 O paciente verá esta mensagem, mas não precisa responder.",
+  open:        "O paciente escreverá uma resposta livre.",
+  scale:       "O paciente escolherá um valor de 0 a 10.",
+  reflect:     "Campo opcional — o paciente pode escrever ou apenas refletir.",
+  instruction: "O paciente verá esta mensagem, mas não precisa responder.",
 };
 
+/* ── QuestionItem ──────────────────────────────────────────── */
+function QuestionItem({ q, index, isActive, total, onSelect, onMove, onRemove, onUpdate }) {
+  const meta = TYPE_META[q.type] ?? TYPE_META.open;
+
+  return (
+    <div
+      className={`cev-qitem${isActive ? " cev-qitem--active" : ""}`}
+      onClick={() => onSelect(index)}
+      role="button"
+      tabIndex={0}
+      aria-label={`Pergunta ${index + 1}: ${q.text || "sem texto"}`}
+      aria-pressed={isActive}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(index); }
+      }}
+    >
+      {/* Number pill */}
+      <div className={`cev-qitem__num${isActive ? " cev-qitem__num--active" : ""}`}>
+        {index + 1}
+      </div>
+
+      {/* Content */}
+      <div className="cev-qitem__body">
+        <div className="cev-qitem__type-badge" style={{ "--badge-color": meta.color }}>
+          <span aria-hidden="true">{meta.icon}</span>
+          <span>{meta.label}</span>
+        </div>
+        <p className="cev-qitem__preview">
+          {q.text || <em>Sem texto ainda…</em>}
+        </p>
+      </div>
+
+      {/* Controls */}
+      <div className="cev-qitem__controls" onClick={(e) => e.stopPropagation()}>
+        <button
+          className="cev-qitem__ctrl"
+          aria-label="Mover para cima"
+          onClick={() => onMove(index, -1)}
+          disabled={index === 0}
+          tabIndex={-1}
+        >↑</button>
+        <button
+          className="cev-qitem__ctrl"
+          aria-label="Mover para baixo"
+          onClick={() => onMove(index, 1)}
+          disabled={index === total - 1}
+          tabIndex={-1}
+        >↓</button>
+        <button
+          className="cev-qitem__ctrl cev-qitem__ctrl--remove"
+          aria-label={`Remover pergunta ${index + 1}`}
+          onClick={() => onRemove(index)}
+          disabled={total === 1}
+          tabIndex={-1}
+        >🗑</button>
+      </div>
+    </div>
+  );
+}
+
+/* ── QuestionEditor ────────────────────────────────────────── */
+function QuestionEditor({ q, index, onUpdate }) {
+  const meta = TYPE_META[q.type] ?? TYPE_META.open;
+
+  return (
+    <div className="cev-editor" key={q.id}>
+
+      {/* Editor header */}
+      <div className="cev-editor__header">
+        <div className="cev-editor__num">{index + 1}</div>
+        <div>
+          <p className="cev-editor__heading">Editando pergunta {index + 1}</p>
+          <p className="cev-editor__sub">{meta.icon} {meta.label}</p>
+        </div>
+      </div>
+
+      {/* Type selector */}
+      <fieldset className="cev-type-fieldset">
+        <legend className="cev-label">Tipo de pergunta</legend>
+        <div className="cev-type-grid">
+          {QUESTION_TYPES.map((t) => {
+            const tm   = TYPE_META[t.value] ?? TYPE_META.open;
+            const isSel = q.type === t.value;
+            return (
+              <button
+                key={t.value}
+                type="button"
+                className={`cev-type-btn${isSel ? " cev-type-btn--active" : ""}`}
+                style={{ "--btn-accent": tm.color }}
+                onClick={() => onUpdate(index, "type", t.value)}
+                aria-pressed={isSel}
+              >
+                <span className="cev-type-btn__icon" aria-hidden="true">{tm.icon}</span>
+                <span className="cev-type-btn__label">{tm.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      {/* Question text */}
+      <div className="cev-field">
+        <label htmlFor={`q-text-${q.id}`} className="cev-label">
+          {q.type === "instruction" ? "Texto da instrução" : "Texto da pergunta"}
+        </label>
+        <textarea
+          id={`q-text-${q.id}`}
+          className="cev-input cev-input--textarea cev-input--question"
+          placeholder={
+            q.type === "instruction"
+              ? "Escreva a instrução para o paciente…"
+              : "Escreva a pergunta…"
+          }
+          value={q.text}
+          onChange={(e) => onUpdate(index, "text", e.target.value)}
+          rows={3}
+        />
+      </div>
+
+      {/* Hint */}
+      <p className="cev-type-hint">
+        <span aria-hidden="true">{meta.icon}</span> {TYPE_HINT[q.type]}
+      </p>
+
+      {/* Preview */}
+      {q.text && (
+        <div className="cev-preview">
+          <p className="cev-label">Pré-visualização</p>
+
+          {q.type === "instruction" && (
+            <div className="cev-preview__instruction">{q.text}</div>
+          )}
+
+          {q.type === "reflect" && (
+            <>
+              <p className="cev-preview__q-text">{q.text}</p>
+              <div className="cev-preview__placeholder" />
+            </>
+          )}
+
+          {q.type === "open" && (
+            <>
+              <p className="cev-preview__q-text">{q.text}</p>
+              <div className="cev-preview__placeholder cev-preview__placeholder--tall" />
+            </>
+          )}
+
+          {q.type === "scale" && (
+            <>
+              <p className="cev-preview__q-text">{q.text}</p>
+              <div className="cev-scale-dots">
+                {[0,1,2,3,4,5,6,7,8,9,10].map((n) => (
+                  <div key={n} className="cev-scale-dots__dot">{n}</div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── CreateExerciseView ────────────────────────────────────── */
 export default function CreateExerciseView({ session, onSaved, onCancel, initialExercise }) {
   const isEditing = !!initialExercise;
 
@@ -53,10 +217,20 @@ export default function CreateExerciseView({ session, onSaved, onCancel, initial
     return () => window.removeEventListener("resize", handler);
   }, []);
 
-  const addQ    = () => { setQuestions((qs) => [...qs, makeQuestion()]); setActiveQIdx(questions.length); };
-  const removeQ = (i) => { setQuestions((qs) => qs.filter((_, idx) => idx !== i)); setActiveQIdx((p) => Math.max(0, p - 1)); };
-  const updateQ = (i, field, val) => setQuestions((qs) => qs.map((q, idx) => idx === i ? { ...q, [field]: val } : q));
-  const moveQ   = (i, dir) => setQuestions((qs) => {
+  const addQ    = () => {
+    setQuestions((qs) => [...qs, makeQuestion()]);
+    setActiveQIdx(questions.length);
+  };
+
+  const removeQ = (i) => {
+    setQuestions((qs) => qs.filter((_, idx) => idx !== i));
+    setActiveQIdx((p) => Math.max(0, p - 1));
+  };
+
+  const updateQ = (i, field, val) =>
+    setQuestions((qs) => qs.map((q, idx) => idx === i ? { ...q, [field]: val } : q));
+
+  const moveQ = (i, dir) => setQuestions((qs) => {
     const arr = [...qs];
     const j   = i + dir;
     if (j < 0 || j >= arr.length) return arr;
@@ -102,21 +276,21 @@ export default function CreateExerciseView({ session, onSaved, onCancel, initial
   const activeQ = questions[activeQIdx] ?? null;
 
   return (
-    <div className={`page-fade-in cev-wrapper${isMobile ? " cev-wrapper--mobile" : ""}`}>
+    <div className={`page-fade-in cev-page${isMobile ? " cev-page--mobile" : ""}`}>
 
       {/* ── Top bar ── */}
       <div className="cev-topbar">
         <div className="cev-topbar__left">
           {onCancel && (
-            <button className="btn btn-outline btn-sm" onClick={onCancel}>
+            <button className="cev-back-btn" onClick={onCancel} aria-label="Voltar">
               ← Voltar
             </button>
           )}
-          <div className="cev-topbar__text">
+          <div>
             <h2 className="cev-topbar__title">
               {isEditing ? "Editar Exercício" : "Criar Exercício"}
             </h2>
-            <p className="cev-topbar__subtitle">
+            <p className="cev-topbar__sub">
               {isEditing
                 ? "Modifique as informações abaixo"
                 : "Monte um exercício personalizado para seus pacientes"}
@@ -126,25 +300,22 @@ export default function CreateExerciseView({ session, onSaved, onCancel, initial
 
         {!isMobile && (
           <button
-            className="btn btn-sage cev-topbar__save-btn"
+            className="cev-save-btn"
             onClick={save}
             disabled={saving}
             aria-busy={saving}
           >
-            {saving ? "Salvando..." : isEditing ? "💾 Atualizar" : "💾 Publicar exercício"}
+            {saving ? "Salvando…" : isEditing ? "💾 Atualizar" : "💾 Publicar exercício"}
           </button>
         )}
       </div>
 
-      {success && (
-        <div className="cev-alert cev-alert--success" role="status">{success}</div>
-      )}
-      {error && (
-        <div className="cev-alert cev-alert--error" role="alert">{error}</div>
-      )}
+      {/* Feedback banners */}
+      {success && <div className="cev-banner cev-banner--success" role="status">{success}</div>}
+      {error   && <div className="cev-banner cev-banner--error"   role="alert">{error}</div>}
 
       {isEditing && (
-        <div className="cev-warning" role="note">
+        <div className="cev-banner cev-banner--warn" role="note">
           ⚠️ Alterar a ordem ou excluir perguntas de um exercício já respondido pode desalinhar respostas antigas.
         </div>
       )}
@@ -152,18 +323,18 @@ export default function CreateExerciseView({ session, onSaved, onCancel, initial
       {/* ── Two-column layout ── */}
       <div className="cev-layout">
 
-        {/* ══ LEFT — general info + question list ══ */}
+        {/* ══ LEFT ══ */}
         <div className="cev-left">
 
-          {/* General info card */}
-          <div className="card cev-info-card">
-            <div className="cev-section-label">Informações gerais</div>
+          {/* General info */}
+          <section className="cev-card" aria-label="Informações gerais">
+            <h3 className="cev-card__title">Informações gerais</h3>
 
             <div className="cev-field">
-              <label htmlFor="ex-title" className="cev-field__label">Título</label>
+              <label htmlFor="ex-title" className="cev-label">Título</label>
               <input
                 id="ex-title"
-                className="cev-field__input"
+                className="cev-input"
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 placeholder="Ex: Diário das Emoções"
@@ -171,204 +342,91 @@ export default function CreateExerciseView({ session, onSaved, onCancel, initial
             </div>
 
             <div className="cev-field">
-              <label htmlFor="ex-category" className="cev-field__label">Categoria</label>
-              <select
-                id="ex-category"
-                className="cev-field__input cev-field__select"
-                value={form.category}
-                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-              >
-                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <label htmlFor="ex-category" className="cev-label">Categoria</label>
+              <div className="cev-select-wrap">
+                <select
+                  id="ex-category"
+                  className="cev-input cev-input--select"
+                  value={form.category}
+                  onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                >
+                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
             </div>
 
             <div className="cev-field">
-              <label htmlFor="ex-desc" className="cev-field__label">Descrição breve</label>
+              <label htmlFor="ex-desc" className="cev-label">
+                Descrição breve
+                <span className="cev-label__optional">opcional</span>
+              </label>
               <textarea
                 id="ex-desc"
-                className="cev-field__input cev-field__textarea"
+                className="cev-input cev-input--textarea"
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 placeholder="O que este exercício trabalha?"
+                rows={3}
               />
             </div>
-          </div>
+          </section>
 
-          {/* Questions list card */}
-          <div className="card cev-qlist-card">
-            <div className="cev-qlist-card__header">
-              <div className="cev-section-label">
-                Perguntas ({questions.length})
-              </div>
-              <button className="btn btn-sage btn-sm" onClick={addQ}>
+          {/* Questions list */}
+          <section className="cev-card" aria-label="Lista de perguntas">
+            <div className="cev-card__header">
+              <h3 className="cev-card__title">
+                Perguntas
+                <span className="cev-card__count">{questions.length}</span>
+              </h3>
+              <button className="cev-add-btn" onClick={addQ}>
                 + Adicionar
               </button>
             </div>
 
-            <div className="cev-qlist">
-              {questions.map((q, i) => {
-                const meta     = TYPE_META[q.type] ?? TYPE_META.open;
-                const isActive = activeQIdx === i;
-                return (
-                  <div
-                    key={q.id}
-                    onClick={() => selectQuestion(i)}
-                    className={`cev-qlist__item${isActive ? " cev-qlist__item--active" : ""}`}
-                  >
-                    <div className={`cev-qlist__num${isActive ? " cev-qlist__num--active" : ""}`}>
-                      {i + 1}
-                    </div>
+            <p className="cev-card__hint">
+              Clique em uma pergunta para editá-la no painel ao lado.
+            </p>
 
-                    <div className="cev-qlist__body">
-                      <div className="cev-qlist__type-row">
-                        <span aria-hidden="true">{meta.icon}</span>
-                        <span
-                          className="cev-qlist__type-label"
-                          style={{ color: meta.color }}
-                        >
-                          {meta.label}
-                        </span>
-                      </div>
-                      <div className="cev-qlist__preview">
-                        {q.text || <em>Sem texto ainda...</em>}
-                      </div>
-                    </div>
-
-                    <div className="cev-qlist__controls">
-                      <button
-                        aria-label="Mover para cima"
-                        className="cev-qlist__ctrl-btn"
-                        onClick={(e) => { e.stopPropagation(); moveQ(i, -1); }}
-                        disabled={i === 0}
-                      >↑</button>
-                      <button
-                        aria-label="Mover para baixo"
-                        className="cev-qlist__ctrl-btn"
-                        onClick={(e) => { e.stopPropagation(); moveQ(i, 1); }}
-                        disabled={i === questions.length - 1}
-                      >↓</button>
-                      <button
-                        aria-label={`Remover pergunta ${i + 1}`}
-                        className="cev-qlist__ctrl-btn cev-qlist__ctrl-btn--remove"
-                        onClick={(e) => { e.stopPropagation(); removeQ(i); }}
-                        disabled={questions.length === 1}
-                      >✕</button>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="cev-qlist" role="list">
+              {questions.map((q, i) => (
+                <div role="listitem" key={q.id}>
+                  <QuestionItem
+                    q={q}
+                    index={i}
+                    isActive={activeQIdx === i}
+                    total={questions.length}
+                    onSelect={selectQuestion}
+                    onMove={moveQ}
+                    onRemove={removeQ}
+                    onUpdate={updateQ}
+                  />
+                </div>
+              ))}
             </div>
-          </div>
+          </section>
         </div>
 
-        {/* ══ RIGHT — question editor ══ */}
+        {/* ══ RIGHT — editor ══ */}
         <div ref={editorRef} className="cev-right">
-
           {isMobile && (
-            <div className="cev-section-label cev-right__mobile-label">
+            <p className="cev-label cev-right__mobile-label">
               Editor da pergunta selecionada
-            </div>
+            </p>
           )}
 
           {activeQ ? (
-            <div className="card cev-editor" key={activeQ.id}>
-
-              <div className="cev-editor__header">
-                <div className="cev-editor__num">{activeQIdx + 1}</div>
-                <div>
-                  <div className="cev-editor__heading">
-                    Editando pergunta {activeQIdx + 1}
-                  </div>
-                  <div className="cev-editor__subheading">
-                    {TYPE_META[activeQ.type]?.icon} {TYPE_META[activeQ.type]?.label}
-                  </div>
-                </div>
-              </div>
-
-              {/* Type selector */}
-              <div className="cev-type-section">
-                <div className="cev-section-label">Tipo de pergunta</div>
-                <div className="cev-type-grid">
-                  {QUESTION_TYPES.map((t) => {
-                    const meta  = TYPE_META[t.value] ?? TYPE_META.open;
-                    const isSel = activeQ.type === t.value;
-                    return (
-                      <button
-                        key={t.value}
-                        onClick={() => updateQ(activeQIdx, "type", t.value)}
-                        className={`cev-type-btn${isSel ? " cev-type-btn--active" : ""}`}
-                      >
-                        <span aria-hidden="true">{meta.icon}</span>
-                        <span className="cev-type-btn__label">{meta.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Text / instruction textarea */}
-              <div className="cev-field">
-                <label htmlFor={`q-text-${activeQ.id}`} className="cev-field__label">
-                  {activeQ.type === "instruction" ? "Texto da instrução" : "Texto da pergunta"}
-                </label>
-                <textarea
-                  id={`q-text-${activeQ.id}`}
-                  className="cev-field__input cev-field__textarea cev-field__textarea--question"
-                  placeholder={
-                    activeQ.type === "instruction"
-                      ? "Escreva a instrução para o paciente..."
-                      : "Escreva a pergunta..."
-                  }
-                  value={activeQ.text}
-                  onChange={(e) => updateQ(activeQIdx, "text", e.target.value)}
-                />
-              </div>
-
-              <div className="cev-type-hint">
-                {TYPE_HINT[activeQ.type]}
-              </div>
-
-              {/* Preview */}
-              {activeQ.text && (
-                <div className="cev-preview">
-                  <div className="cev-section-label">Pré-visualização</div>
-
-                  {activeQ.type === "instruction" && (
-                    <div className="cev-preview__instruction">{activeQ.text}</div>
-                  )}
-
-                  {activeQ.type === "reflect" && (
-                    <div>
-                      <div className="cev-preview__reflect-text">{activeQ.text}</div>
-                      <div className="cev-preview__placeholder" />
-                    </div>
-                  )}
-
-                  {activeQ.type === "open" && (
-                    <div>
-                      <div className="cev-preview__q-text">{activeQ.text}</div>
-                      <div className="cev-preview__placeholder cev-preview__placeholder--tall" />
-                    </div>
-                  )}
-
-                  {activeQ.type === "scale" && (
-                    <div>
-                      <div className="cev-preview__q-text">{activeQ.text}</div>
-                      <div className="cev-scale-dots">
-                        {[0,1,2,3,4,5,6,7,8,9,10].map((n) => (
-                          <div key={n} className="cev-scale-dots__dot">{n}</div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            <section className="cev-card" aria-label={`Editor da pergunta ${activeQIdx + 1}`}>
+              <QuestionEditor
+                q={activeQ}
+                index={activeQIdx}
+                onUpdate={updateQ}
+              />
+            </section>
           ) : (
-            <div className="card cev-editor-empty">
-              <div className="cev-editor-empty__icon" aria-hidden="true">👆</div>
+            <div className="cev-card cev-editor-empty">
+              <span className="cev-editor-empty__icon" aria-hidden="true">👆</span>
               <p className="cev-editor-empty__text">
-                Seleciona uma pergunta acima para editá-la.
+                Seleciona uma pergunta para editá-la aqui.
               </p>
             </div>
           )}
@@ -379,17 +437,15 @@ export default function CreateExerciseView({ session, onSaved, onCancel, initial
       {isMobile && (
         <div className="cev-mobile-bar">
           {onCancel && (
-            <button className="btn btn-outline cev-mobile-bar__back" onClick={onCancel}>
-              ← Voltar
-            </button>
+            <button className="cev-back-btn" onClick={onCancel}>← Voltar</button>
           )}
           <button
-            className="btn btn-sage cev-mobile-bar__save"
+            className="cev-save-btn cev-save-btn--full"
             onClick={save}
             disabled={saving}
             aria-busy={saving}
           >
-            {saving ? "Salvando..." : isEditing ? "💾 Atualizar" : "💾 Publicar"}
+            {saving ? "Salvando…" : isEditing ? "💾 Atualizar" : "💾 Publicar"}
           </button>
         </div>
       )}

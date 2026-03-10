@@ -1,57 +1,22 @@
 /* ============================================================
-   CreateExerciseView.css — Exercise builder (split layout)
-   Mobile-first | BEM
+   CreateExerciseView.css
+   Mobile-first · CSS variables only · Dark mode ready
    ============================================================ */
 
-/* ---------- Alerts ---------- */
-.cev-alert {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  border-radius: var(--radius-sm, 8px);
-  padding: 10px 14px;
-  margin-bottom: 14px;
-  line-height: 1.5;
+/* ── Page wrapper ─────────────────────────────────────────── */
+.cev-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
-.cev-alert--success {
-  color: var(--sage-dark, #2d6a4f);
-  background: rgba(45, 106, 79, 0.08);
-  border: 1px solid rgba(45, 106, 79, 0.2);
+.cev-page--mobile {
+  padding-bottom: 100px; /* espaço para a barra fixa de salvar */
 }
 
-.cev-alert--error {
-  color: var(--error, #dc2626);
-  background: rgba(220, 38, 38, 0.06);
-  border: 1px solid rgba(220, 38, 38, 0.15);
-}
-
-/* ---------- Warning banner ---------- */
-.cev-warning {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  color: var(--warm-dark, #7a4800);
-  background: rgba(255, 189, 89, 0.15);
-  border: 1px solid rgba(255, 189, 89, 0.4);
-  border-radius: var(--radius-sm, 8px);
-  padding: 10px 14px;
-  margin-bottom: 18px;
-  line-height: 1.5;
-}
-
-/* ---------- Section label ---------- */
-.cev-section-label {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted, #6b7280);
-  margin-bottom: 12px;
-}
-
-/* ============================================================
+/* ════════════════════════════════════════════════════════════
    TOP BAR
-   ============================================================ */
+   ════════════════════════════════════════════════════════════ */
 .cev-topbar {
   display: flex;
   align-items: flex-start;
@@ -68,35 +33,141 @@
   flex-wrap: wrap;
 }
 
-.cev-topbar__text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
 .cev-topbar__title {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: clamp(18px, 3vw, 24px);
-  color: var(--blue-dark, #0a2e48);
-  margin: 0;
-  line-height: 1.2;
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  color: var(--text);
+  margin: 0 0 3px;
+  line-height: 1.25;
 }
 
-.cev-topbar__subtitle {
+.cev-topbar__sub {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ════════════════════════════════════════════════════════════
+   BUTTONS
+   ════════════════════════════════════════════════════════════ */
+.cev-back-btn {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: var(--radius-sm, 8px);
+  border: 1.5px solid var(--warm);
+  background: transparent;
+  color: var(--text-muted);
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  color: var(--text-muted, #6b7280);
-  margin: 0;
-}
-
-.cev-topbar__save-btn {
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
   white-space: nowrap;
-  min-height: 44px;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
 }
 
-/* ============================================================
-   TWO-COLUMN LAYOUT
-   ============================================================ */
+.cev-back-btn:hover {
+  background: var(--warm);
+  border-color: var(--blue-mid);
+  color: var(--text);
+}
+
+.cev-back-btn:focus-visible {
+  outline: 2px solid var(--blue-mid);
+  outline-offset: 2px;
+}
+
+.cev-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 24px;
+  border-radius: var(--radius-md, 12px);
+  border: none;
+  background: var(--blue-dark);
+  color: var(--text-on-dark);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 3px 12px rgba(23, 82, 124, 0.28);
+  transition: background 0.18s, box-shadow 0.18s, transform 0.15s;
+}
+
+.cev-save-btn:hover  { background: var(--blue-mid); box-shadow: var(--shadow-md); }
+.cev-save-btn:active { transform: scale(0.97); }
+.cev-save-btn--full  { flex: 1; justify-content: center; }
+
+.cev-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cev-save-btn:focus-visible {
+  outline: 2px solid var(--blue-mid);
+  outline-offset: 2px;
+}
+
+.cev-add-btn {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm, 8px);
+  border: 1.5px solid var(--blue-dark);
+  background: transparent;
+  color: var(--blue-dark);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s, color 0.18s;
+}
+
+.cev-add-btn:hover {
+  background: var(--blue-dark);
+  color: var(--text-on-dark);
+}
+
+.cev-add-btn:focus-visible {
+  outline: 2px solid var(--blue-mid);
+  outline-offset: 2px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   BANNERS
+   ════════════════════════════════════════════════════════════ */
+.cev-banner {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.83rem;
+  border-radius: var(--radius-sm, 8px);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  line-height: 1.55;
+}
+
+.cev-banner--success {
+  background: rgba(46, 127, 171, 0.08);
+  border: 1px solid rgba(46, 127, 171, 0.25);
+  color: var(--blue-dark);
+}
+
+.cev-banner--error {
+  background: var(--danger-soft, rgba(176, 48, 48, 0.06));
+  border: 1px solid rgba(176, 48, 48, 0.2);
+  color: var(--danger, #b03030);
+}
+
+.cev-banner--warn {
+  background: rgba(224, 120, 32, 0.07);
+  border: 1px solid rgba(224, 120, 32, 0.25);
+  color: var(--orange);
+}
+
+/* ════════════════════════════════════════════════════════════
+   LAYOUT — two-column split
+   ════════════════════════════════════════════════════════════ */
 .cev-layout {
   display: grid;
   grid-template-columns: 1fr;
@@ -106,216 +177,18 @@
 
 @media (min-width: 768px) {
   .cev-layout {
-    grid-template-columns: 1fr 1.4fr;
+    grid-template-columns: 1fr 1.45fr;
     gap: 20px;
-    max-width: 1160px;
   }
 }
 
-/* ============================================================
-   LEFT COLUMN
-   ============================================================ */
+/* ── Columns ──────────────────────────────────────────────── */
 .cev-left {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-/* ---------- Info card fields ---------- */
-.cev-field {
-  margin-bottom: 14px;
-}
-
-.cev-field:last-child {
-  margin-bottom: 0;
-}
-
-.cev-field__label {
-  display: block;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-muted, #6b7280);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 5px;
-}
-
-.cev-field__input {
-  width: 100%;
-  padding: 11px 14px;
-  min-height: 44px;
-  border: 1.5px solid var(--warm, #e8d5b7);
-  border-radius: var(--radius-sm, 8px);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  background: var(--cream, #fdf8f3);
-  color: var(--text, #1a1a2e);
-  outline: none;
-  box-sizing: border-box;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.cev-field__input:focus {
-  border-color: var(--blue-mid, #17527c);
-  box-shadow: 0 0 0 3px rgba(23, 82, 124, 0.1);
-}
-
-.cev-field__select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  padding-right: 36px;
-  cursor: pointer;
-}
-
-.cev-field__textarea {
-  min-height: 80px;
-  resize: vertical;
-  line-height: 1.5;
-}
-
-.cev-field__textarea--question {
-  min-height: 100px;
-}
-
-/* ---------- Questions list card ---------- */
-.cev-qlist-card__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.cev-qlist-card__header .cev-section-label {
-  margin-bottom: 0;
-}
-
-.cev-qlist {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.cev-qlist__item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  min-height: 52px;
-  border-radius: var(--radius-md, 10px);
-  border: 1.5px solid var(--warm, #e8d5b7);
-  background: var(--cream, #fdf8f3);
-  cursor: pointer;
-  margin-bottom: 8px;
-  transition: border-color 0.18s ease, background 0.18s ease;
-}
-
-.cev-qlist__item:last-child {
-  margin-bottom: 0;
-}
-
-.cev-qlist__item--active {
-  border-color: var(--blue-dark, #0a2e48);
-  background: rgba(23, 82, 124, 0.06);
-}
-
-.cev-qlist__num {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--warm, #e8d5b7);
-  color: var(--text-muted, #6b7280);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  transition: background 0.18s ease, color 0.18s ease;
-}
-
-.cev-qlist__num--active {
-  background: var(--blue-dark, #0a2e48);
-  color: #ffffff;
-}
-
-.cev-qlist__body {
-  flex: 1;
-  min-width: 0;
-}
-
-.cev-qlist__type-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  margin-bottom: 3px;
-}
-
-.cev-qlist__type-label {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.cev-qlist__preview {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  color: var(--text, #1a1a2e);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cev-qlist__controls {
-  flex-shrink: 0;
-  display: flex;
-  gap: 4px;
-}
-
-.cev-qlist__ctrl-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  min-height: 28px;
-  border: 1px solid var(--warm, #e8d5b7);
-  border-radius: 6px;
-  background: var(--white, #ffffff);
-  font-size: 12px;
-  color: var(--text-muted, #6b7280);
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.cev-qlist__ctrl-btn:hover:not(:disabled) {
-  background: var(--warm, #e8d5b7);
-  color: var(--text, #1a1a2e);
-}
-
-.cev-qlist__ctrl-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.cev-qlist__ctrl-btn--remove {
-  border-color: var(--danger, #e74c3c);
-  color: var(--danger, #e74c3c);
-}
-
-.cev-qlist__ctrl-btn--remove:hover:not(:disabled) {
-  background: rgba(231, 76, 60, 0.08);
-}
-
-/* ============================================================
-   RIGHT COLUMN — EDITOR
-   ============================================================ */
 .cev-right {
   position: static;
 }
@@ -331,12 +204,329 @@
   margin-bottom: 8px;
 }
 
-/* ---------- Editor card ---------- */
+/* ════════════════════════════════════════════════════════════
+   CARD — container base
+   ════════════════════════════════════════════════════════════ */
+.cev-card {
+  background: var(--card);
+  border-radius: var(--radius-lg, 16px);
+  border: 1px solid var(--warm);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+@media (min-width: 768px) {
+  .cev-card { padding: 24px; }
+}
+
+.cev-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.cev-card__title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cev-card__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--blue-dark);
+  color: var(--text-on-dark);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.cev-card__hint {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin: 0 0 14px;
+  font-style: italic;
+}
+
+/* ════════════════════════════════════════════════════════════
+   FORM FIELDS
+   ════════════════════════════════════════════════════════════ */
+.cev-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+.cev-field:last-child { margin-bottom: 0; }
+
+/* Shared label */
+.cev-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.cev-label__optional {
+  font-size: 0.7rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-muted);
+  opacity: 0.65;
+}
+
+/* Base input — aplicado a input, select e textarea */
+.cev-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--warm);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--cream);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+  -webkit-appearance: none;
+}
+
+.cev-input::placeholder { color: var(--text-muted); opacity: 0.6; }
+
+.cev-input:focus {
+  border-color: var(--blue-mid);
+  box-shadow: 0 0 0 3px rgba(46, 127, 171, 0.14);
+  background: var(--card);
+}
+
+.cev-input--textarea {
+  min-height: 80px;
+  resize: vertical;
+  line-height: 1.55;
+  padding-top: 12px;
+}
+
+.cev-input--question { min-height: 96px; }
+
+/* Select wrapper — seta customizada */
+.cev-select-wrap {
+  position: relative;
+}
+
+.cev-select-wrap::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 6px;
+  background: var(--text-muted);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  pointer-events: none;
+}
+
+.cev-input--select {
+  cursor: pointer;
+  padding-right: 36px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   QUESTION LIST ITEMS
+   ════════════════════════════════════════════════════════════
+
+   ERGONOMIA:
+   Cada pergunta vive no seu próprio sub-card com:
+   • Número destacado (pill azul quando activo)
+   • Badge de tipo colorido
+   • Preview do texto
+   • Controles de ordem e remoção isolados por stopPropagation
+
+   O estado activo usa border-left colorida + fundo tinted
+   para tornar imediatamente óbvio qual pergunta está
+   a ser editada no painel direito.
+   ════════════════════════════════════════════════════════════ */
+.cev-qlist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cev-qitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: var(--radius-md, 12px);
+  border: 1.5px solid var(--warm);
+  background: var(--cream);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+  position: relative;
+}
+
+.cev-qitem:hover {
+  border-color: var(--blue-mid);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Estado activo: linha lateral + fundo azul suave */
+.cev-qitem--active {
+  border-color: var(--blue-dark);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  border-left: 4px solid var(--blue-dark);
+}
+
+.cev-qitem:focus-visible {
+  outline: 2px solid var(--blue-mid);
+  outline-offset: 1px;
+}
+
+/* Número pill */
+.cev-qitem__num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--warm);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: background 0.18s, color 0.18s;
+}
+
+.cev-qitem__num--active {
+  background: var(--blue-dark);
+  color: var(--text-on-dark);
+}
+
+/* Body */
+.cev-qitem__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Badge de tipo — usa a cor via CSS custom property */
+.cev-qitem__type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--badge-color, var(--text-muted));
+}
+
+.cev-qitem__preview {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.83rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.cev-qitem__preview em {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Controles: mover + remover */
+.cev-qitem__controls {
+  flex-shrink: 0;
+  display: flex;
+  gap: 4px;
+}
+
+.cev-qitem__ctrl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm, 8px);
+  border: 1.5px solid var(--warm);
+  background: var(--card);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.cev-qitem__ctrl:hover:not(:disabled) {
+  background: var(--warm);
+  border-color: var(--blue-mid);
+  color: var(--text);
+}
+
+.cev-qitem__ctrl:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Botão de remover: vermelho suave */
+.cev-qitem__ctrl--remove {
+  border-color: var(--danger-soft, rgba(176, 48, 48, 0.2));
+  color: var(--danger, #b03030);
+}
+
+.cev-qitem__ctrl--remove:hover:not(:disabled) {
+  background: var(--danger-soft, rgba(176, 48, 48, 0.08));
+  border-color: var(--danger, #b03030);
+  color: var(--danger, #b03030);
+}
+
+/* ════════════════════════════════════════════════════════════
+   QUESTION EDITOR (painel direito)
+   ════════════════════════════════════════════════════════════ */
+.cev-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
 .cev-editor__header {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--warm);
 }
 
 .cev-editor__num {
@@ -344,39 +534,53 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--blue-dark, #0a2e48);
-  color: #ffffff;
+  background: var(--blue-dark);
+  color: var(--text-on-dark);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: 'DM Sans', sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
 }
 
 .cev-editor__heading {
   font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text, #1a1a2e);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 2px;
 }
 
-.cev-editor__subheading {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
-  color: var(--text-muted, #6b7280);
-  margin-top: 2px;
+.cev-editor__sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0;
 }
 
-/* ---------- Type selector ---------- */
-.cev-type-section {
-  margin-bottom: 16px;
+/* Type selector */
+.cev-type-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+
+.cev-type-fieldset legend {
+  /* usa .cev-label via className — esta regra é fallback */
+  float: left;
+  width: 100%;
+  margin-bottom: 8px;
 }
 
 .cev-type-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+  clear: both;
+}
+
+@media (max-width: 479px) {
+  .cev-type-grid { grid-template-columns: 1fr; }
 }
 
 .cev-type-btn {
@@ -385,177 +589,168 @@
   gap: 8px;
   padding: 10px 12px;
   min-height: 44px;
-  border: 1.5px solid var(--warm, #e8d5b7);
   border-radius: var(--radius-md, 10px);
-  background: var(--cream, #fdf8f3);
+  border: 1.5px solid var(--warm);
+  background: var(--cream);
   cursor: pointer;
-  transition: border-color 0.18s ease, background 0.18s ease;
   text-align: left;
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+  outline: none;
 }
 
+.cev-type-btn:hover {
+  border-color: var(--btn-accent, var(--blue-mid));
+  background: var(--card);
+}
+
+/* Estado activo: usa a cor do tipo via custom property */
 .cev-type-btn--active {
-  border-color: var(--blue-dark, #0a2e48);
-  background: rgba(23, 82, 124, 0.07);
+  border-color: var(--btn-accent, var(--blue-dark));
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--btn-accent, var(--blue-dark));
 }
 
+.cev-type-btn:focus-visible {
+  outline: 2px solid var(--blue-mid);
+  outline-offset: 2px;
+}
+
+.cev-type-btn__icon { font-size: 1.1rem; line-height: 1; flex-shrink: 0; }
 .cev-type-btn__label {
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  color: var(--text, #1a1a2e);
+  font-size: 0.82rem;
   font-weight: 500;
+  color: var(--text);
 }
 
-/* ---------- Type hint ---------- */
+/* Type hint */
 .cev-type-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
-  color: var(--text-muted, #6b7280);
-  background: var(--cream, #fdf8f3);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  background: var(--cream);
   border-radius: var(--radius-sm, 8px);
   padding: 8px 12px;
   margin: 0 0 16px;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
-/* ---------- Preview block ---------- */
+/* ════════════════════════════════════════════════════════════
+   PREVIEW
+   ════════════════════════════════════════════════════════════ */
 .cev-preview {
-  border-top: 1px dashed var(--warm, #e8d5b7);
+  border-top: 1px dashed var(--warm);
   padding-top: 16px;
   margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
+
+.cev-preview .cev-label { margin-bottom: 0; }
 
 .cev-preview__instruction {
   font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  color: var(--sage-dark, #2d6a4f);
-  background: rgba(45, 106, 79, 0.06);
-  border-left: 3px solid var(--sage-dark, #2d6a4f);
+  font-size: 0.875rem;
+  color: var(--sage-dark, #17527c);
+  background: rgba(46, 127, 171, 0.06);
+  border-left: 3px solid var(--sage, #2e7fab);
   border-radius: 0 var(--radius-sm, 8px) var(--radius-sm, 8px) 0;
   padding: 10px 14px;
   line-height: 1.6;
 }
 
-.cev-preview__reflect-text,
 .cev-preview__q-text {
   font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  color: var(--text, #1a1a2e);
+  font-size: 0.875rem;
+  color: var(--text);
   line-height: 1.6;
-  margin-bottom: 10px;
+  margin: 0;
 }
 
 .cev-preview__placeholder {
   height: 44px;
   border-radius: var(--radius-sm, 8px);
-  background: var(--white, #ffffff);
-  border: 1.5px dashed var(--warm, #e8d5b7);
+  background: var(--card);
+  border: 1.5px dashed var(--warm);
 }
 
-.cev-preview__placeholder--tall {
-  height: 72px;
-}
+.cev-preview__placeholder--tall { height: 72px; }
 
-/* Scale dots preview */
 .cev-scale-dots {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 8px;
 }
 
 .cev-scale-dots__dot {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 1.5px solid var(--warm, #e8d5b7);
-  background: var(--cream, #fdf8f3);
+  border: 1.5px solid var(--warm);
+  background: var(--cream);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-muted, #6b7280);
+  color: var(--text-muted);
 }
 
-/* ---------- Empty editor state ---------- */
+/* ════════════════════════════════════════════════════════════
+   EMPTY EDITOR STATE
+   ════════════════════════════════════════════════════════════ */
 .cev-editor-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 24px;
+  padding: 48px 24px;
   text-align: center;
+  gap: 12px;
 }
 
-.cev-editor-empty__icon {
-  font-size: 36px;
-  margin-bottom: 12px;
-}
-
+.cev-editor-empty__icon { font-size: 2.2rem; line-height: 1; }
 .cev-editor-empty__text {
   font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  color: var(--text-muted, #6b7280);
+  font-size: 0.875rem;
+  color: var(--text-muted);
   margin: 0;
+  line-height: 1.5;
 }
 
-/* ============================================================
+/* ════════════════════════════════════════════════════════════
    MOBILE FIXED SAVE BAR
-   ============================================================ */
+   ════════════════════════════════════════════════════════════ */
 .cev-mobile-bar {
   position: fixed;
-  bottom: 64px; /* clearance for BottomNav */
+  bottom: 64px; /* acima da BottomNav */
   left: 0;
   right: 0;
   display: flex;
   gap: 10px;
   padding: 12px 16px;
-  background: var(--white, #ffffff);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
-  z-index: 100;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  background: var(--card);
+  border-top: 1px solid var(--warm);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+  z-index: var(--z-fab, 40);
 }
 
-.cev-mobile-bar__back {
-  flex-shrink: 0;
-}
-
-.cev-mobile-bar__save {
-  flex: 1;
-  min-height: 44px;
-}
-
-/* ============================================================
-   MOBILE WRAPPER PADDING (space for fixed bar)
-   ============================================================ */
-.cev-wrapper--mobile {
-  padding-bottom: 96px;
-}
-
-/* ============================================================
-   RESPONSIVE TWEAKS
-   ============================================================ */
-@media (max-width: 479px) {
-  .cev-topbar__title {
-    font-size: 18px;
-  }
-
-  .cev-qlist__item {
-    padding: 8px 10px;
-  }
-
-  .cev-qlist__ctrl-btn {
-    width: 26px;
-    height: 26px;
-  }
-
-  .cev-type-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .cev-scale-dots__dot {
-    width: 28px;
-    height: 28px;
-    font-size: 11px;
+/* ════════════════════════════════════════════════════════════
+   REDUCED MOTION
+   ════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .cev-qitem,
+  .cev-input,
+  .cev-type-btn,
+  .cev-save-btn,
+  .cev-add-btn,
+  .cev-back-btn {
+    transition: none;
   }
 }

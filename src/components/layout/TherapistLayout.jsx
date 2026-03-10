@@ -1,19 +1,34 @@
-import { useState, useEffect, useRef } from "react";
-import Sidebar from "./Sidebar";
-import BottomNav from "./BottomNav";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import Sidebar        from "./Sidebar";
+import BottomNav      from "./BottomNav";
 import ToastContainer from "../ui/Toast";
-import TherapistDashboard  from "../../features/therapist/Dashboard";
-import PatientsView        from "../../features/therapist/PatientsView";
-import ExercisesView       from "../../features/therapist/ExercisesView";
-import CreateExerciseView  from "../../features/therapist/CreateExerciseView";
-import ResponsesView       from "../../features/therapist/ResponsesView";
-import TherapistProgress   from "../../features/therapist/TherapistProgress";
-import NotificationsView   from "../../features/therapist/NotificationsView";
-import ProfileModal        from "../shared/ProfileModal";
-import DeleteAccountModal  from "../shared/DeleteAccountModal";
+import ProfileModal      from "../shared/ProfileModal";
+import DeleteAccountModal from "../shared/DeleteAccountModal";
 import { useNotifications } from "../../hooks/useNotifications";
+import { useIsMobile }      from "../../hooks/useIsMobile";
+import {
+  THERAPIST_ROUTES,
+  PATH_TO_THERAPIST_VIEW,
+} from "../../App";
 import "./TherapistLayout.css";
 
+/* ════════════════════════════════════════════════════════════
+   MAPA DE NAVEGAÇÃO
+
+   Por que manter `id` e não usar as URLs diretamente no
+   Sidebar/BottomNav?
+   ─────────────────────────────────────────────────────────
+   Esses componentes foram construídos com a interface:
+     activeView: string (ex: "dashboard")
+     onNav:      (id: string) => void
+
+   Manter essa interface evita reescrever Sidebar e BottomNav.
+   A tradução id ↔ URL fica exclusivamente neste layout:
+
+     navigateTo("patients")         → navigate("/terapeuta/pacientes")
+     "/terapeuta/pacientes" no URL  → activeView = "patients"
+   ════════════════════════════════════════════════════════════ */
 const NAV_ITEMS = [
   { id: "dashboard",  icon: "🏠", label: "Início"     },
   { id: "patients",   icon: "👥", label: "Pacientes"  },
@@ -23,65 +38,83 @@ const NAV_ITEMS = [
   { id: "responses",  icon: "💬", label: "Respostas"  },
 ];
 
+/* ════════════════════════════════════════════════════════════
+   useBellState — física de pêndulo (inalterado)
+   ════════════════════════════════════════════════════════════ */
+function useBellState(unreadCount) {
+  const [animKey,  setAnimKey]  = useState(0);
+  const [animType, setAnimType] = useState(null);
+  const timerRef     = useRef(null);
+  const prevCountRef = useRef(unreadCount);
+
+  const fire = useCallback((type, ms) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setAnimType(type);
+    setAnimKey(k => k + 1);
+    timerRef.current = setTimeout(() => { setAnimType(null); timerRef.current = null; }, ms);
+  }, []);
+
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
+  useEffect(() => {
+    if (unreadCount > prevCountRef.current) fire('shake', 900);
+    prevCountRef.current = unreadCount;
+  }, [unreadCount, fire]);
+
+  useEffect(() => {
+    if (unreadCount === 0) return;
+    const id = setInterval(() => { if (timerRef.current === null) fire('idle', 750); }, 9000);
+    return () => clearInterval(id);
+  }, [unreadCount, fire]);
+
+  const triggerRing = useCallback(() => fire('ring', 480), [fire]);
+
+  const iconClass = [
+    'bell-icon',
+    animType === 'shake' ? 'bell-icon--shaking' : '',
+    animType === 'ring'  ? 'bell-icon--ringing' : '',
+    animType === 'idle'  ? 'bell-icon--idle'    : '',
+  ].filter(Boolean).join(' ');
+
+  return { animKey, iconClass, triggerRing };
+}
+
+/* ── LogoutDialog ─────────────────────────────────────────── */
 function LogoutDialog({ onConfirm, onCancel }) {
   return (
     <div className="logout-overlay" onClick={onCancel}>
-      <div
-        className="logout-modal"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-      >
+      <div className="logout-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="logout-modal__icon">👋</div>
         <div className="logout-modal__title">Sair da conta?</div>
-        <div className="logout-modal__desc">
-          Você precisará fazer login novamente para aceder à plataforma.
-        </div>
+        <div className="logout-modal__desc">Você precisará fazer login novamente para aceder à plataforma.</div>
         <div className="logout-modal__actions">
-          <button className="logout-modal__btn logout-modal__btn--cancel" onClick={onCancel}>
-            Cancelar
-          </button>
-          <button className="logout-modal__btn logout-modal__btn--confirm" onClick={onConfirm}>
-            Sair
-          </button>
+          <button className="logout-modal__btn logout-modal__btn--cancel"  onClick={onCancel}>Cancelar</button>
+          <button className="logout-modal__btn logout-modal__btn--confirm" onClick={onConfirm}>Sair</button>
         </div>
       </div>
     </div>
   );
 }
 
+/* ── FloatingBell ─────────────────────────────────────────── */
 function FloatingBell({ unreadCount, isActive, onClick }) {
-  const [shake, setShake] = useState(false);
-  const prevCount = useRef(unreadCount);
-
-  useEffect(() => {
-    if (unreadCount > prevCount.current) {
-      setShake(true);
-      const t = setTimeout(() => setShake(false), 700);
-      prevCount.current = unreadCount;
-      return () => clearTimeout(t);
-    }
-    prevCount.current = unreadCount;
-  }, [unreadCount]);
-
-  const wrapClass = [
+  const { animKey, iconClass, triggerRing } = useBellState(unreadCount);
+  const handleClick = () => { triggerRing(); onClick(); };
+  const containerClass = [
     "floating-bell",
-    isActive                     ? "floating-bell--active"  : "",
-    unreadCount > 0 && !isActive ? "floating-bell--unread"  : "",
-    shake                        ? "floating-bell--shaking" : "",
+    isActive                     ? "floating-bell--active" : "",
+    unreadCount > 0 && !isActive ? "floating-bell--unread" : "",
   ].filter(Boolean).join(" ");
 
   return (
-    <div className={wrapClass}>
+    <div className={containerClass}>
       <button
         className="floating-bell__btn"
-        aria-label={`Notificações${unreadCount > 0 ? ` (${unreadCount} não lidas)` : ""}${
-          isActive ? " — clique para fechar" : ""
-        }`}
+        aria-label={`Notificações${unreadCount > 0 ? ` (${unreadCount} não lidas)` : ""}${isActive ? " — clique para fechar" : ""}`}
         aria-pressed={isActive}
-        onClick={onClick}
+        onClick={handleClick}
       >
-        🔔
+        <span key={animKey} className={iconClass} aria-hidden="true">🔔</span>
         {unreadCount > 0 && (
           <span className="floating-bell__badge" aria-hidden="true">
             {unreadCount > 9 ? "9+" : unreadCount}
@@ -92,14 +125,18 @@ function FloatingBell({ unreadCount, isActive, onClick }) {
   );
 }
 
+/* ── SidebarBell ──────────────────────────────────────────── */
 function SidebarBell({ unreadCount, onClick }) {
+  const { animKey, iconClass, triggerRing } = useBellState(unreadCount);
+  const handleClick = () => { triggerRing(); onClick(); };
+
   return (
     <button
       className="sidebar-bell"
       aria-label={`Notificações${unreadCount > 0 ? ` (${unreadCount} não lidas)` : ""}`}
-      onClick={onClick}
+      onClick={handleClick}
     >
-      🔔
+      <span key={animKey} className={iconClass} aria-hidden="true">🔔</span>
       {unreadCount > 0 && (
         <span className="sidebar-bell__badge" aria-hidden="true">
           {unreadCount > 9 ? "9+" : unreadCount}
@@ -109,60 +146,59 @@ function SidebarBell({ unreadCount, onClick }) {
   );
 }
 
+/* ════════════════════════════════════════════════════════════
+   TherapistLayout
+   ════════════════════════════════════════════════════════════ */
 export default function TherapistLayout({ session, setSession, logout, theme, toggleTheme }) {
-  const [view,        setView]        = useState("dashboard");
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [showProfile, setShowProfile] = useState(false);
   const [showLogout,  setShowLogout]  = useState(false);
   const [showDelete,  setShowDelete]  = useState(false);
-  const [isMobile,    setIsMobile]    = useState(() => window.innerWidth < 768);
 
-  const prevViewRef = useRef("dashboard");
+  const isMobile    = useIsMobile();
+  const prevPathRef = useRef(location.pathname);
   const { unreadCount, markAllRead } = useNotifications(session.id);
 
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
-  }, []);
+  /*
+    navigateTo(id) — view ID → URL → navigate()
+    Interface compatível com Sidebar e BottomNav.
+  */
+  const navigateTo = useCallback((id) => {
+    const path = THERAPIST_ROUTES[id];
+    if (!path) return;
+    if (id !== "notifications") prevPathRef.current = location.pathname;
+    navigate(path);
+  }, [navigate, location.pathname]);
 
-  const navigateTo = (id) => {
-    if (id !== "notifications") prevViewRef.current = id;
-    setView(id);
-  };
+  /*
+    activeView — URL atual → view ID
+    Garante que o item correto fique destacado no Sidebar/BottomNav
+    mesmo após F5, link direto ou botão Voltar do browser.
+  */
+  const activeView = PATH_TO_THERAPIST_VIEW[location.pathname] ?? "dashboard";
 
+  /* Bell: toggle notificações ↔ tela anterior */
   const handleBellClick = () => {
-    if (view === "notifications") {
-      setView(prevViewRef.current);
+    if (activeView === "notifications") {
+      navigate(prevPathRef.current || THERAPIST_ROUTES.dashboard);
     } else {
-      prevViewRef.current = view;
-      setView("notifications");
+      prevPathRef.current = location.pathname;
+      navigate(THERAPIST_ROUTES.notifications);
       markAllRead();
-    }
-  };
-
-  const renderView = () => {
-    switch (view) {
-      case "dashboard":     return <TherapistDashboard session={session} setView={navigateTo} />;
-      case "patients":      return <PatientsView       session={session} />;
-      case "exercises":     return <ExercisesView      session={session} />;
-      case "create":        return <CreateExerciseView session={session} onSaved={() => navigateTo("exercises")} onCancel={() => navigateTo("exercises")} />;
-      case "progress":      return <TherapistProgress  session={session} />;
-      case "responses":     return <ResponsesView      session={session} />;
-      case "notifications": return <NotificationsView  session={session} onRead={markAllRead} />;
-      default:              return <TherapistDashboard session={session} setView={navigateTo} />;
     }
   };
 
   return (
     <div className="therapist-layout">
 
-      {/* Sidebar — desktop only */}
       {!isMobile && (
         <Sidebar
           brand="Equilibre"
           roleLabel="Psicóloga"
           navItems={NAV_ITEMS}
-          activeView={view}
+          activeView={activeView}
           onNav={navigateTo}
           session={session}
           theme={theme}
@@ -171,40 +207,38 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
           onLogout={() => setShowLogout(true)}
           onDeleteAccount={() => setShowDelete(true)}
           extraHeader={
-            <SidebarBell
-              unreadCount={unreadCount}
-              onClick={() => navigateTo("notifications")}
-            />
+            <SidebarBell unreadCount={unreadCount} onClick={handleBellClick} />
           }
         />
       )}
 
-      {/* Main content */}
+      {/*
+        <Outlet /> injeta a view filha correspondente à URL atual.
+        context disponibiliza session e navigateTo para as views
+        filhas via useOutletContext() se necessário.
+      */}
       <main className={`therapist-layout__main${isMobile ? " therapist-layout__main--mobile" : ""}`}>
-        {renderView()}
+        <Outlet context={{ session, setSession, navigateTo }} />
       </main>
 
-      {/* Floating bell — mobile only */}
       {isMobile && (
         <FloatingBell
           unreadCount={unreadCount}
-          isActive={view === "notifications"}
+          isActive={activeView === "notifications"}
           onClick={handleBellClick}
         />
       )}
 
-      {/* Bottom nav — mobile only */}
       {isMobile && (
         <BottomNav
           items={NAV_ITEMS}
-          activeView={view}
+          activeView={activeView}
           onNav={navigateTo}
           session={session}
           onAvatarClick={() => setShowProfile(true)}
         />
       )}
 
-      {/* Global modals */}
       {showProfile && (
         <ProfileModal
           session={session}
@@ -219,12 +253,7 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
         />
       )}
 
-      {showLogout && (
-        <LogoutDialog
-          onConfirm={logout}
-          onCancel={() => setShowLogout(false)}
-        />
-      )}
+      {showLogout && <LogoutDialog onConfirm={logout} onCancel={() => setShowLogout(false)} />}
 
       {showDelete && (
         <DeleteAccountModal

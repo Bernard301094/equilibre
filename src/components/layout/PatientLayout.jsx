@@ -1,19 +1,22 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import Sidebar            from "./Sidebar";
 import BottomNav          from "./BottomNav";
 import ToastContainer     from "../ui/Toast";
-import PatientHome        from "../../features/patient/Home";
-import PatientExercises   from "../../features/patient/PatientExercises";
-import ExercisePage       from "../../features/patient/ExercisePage";
-import PatientDiary       from "../../features/patient/DiaryView";
-import PatientRoutine     from "../../features/patient/RoutineView";
-import PatientProgress    from "../../features/patient/PatientProgress";
-import PatientHistory     from "../../features/patient/PatientHistory";
 import ProfileModal       from "../shared/ProfileModal";
 import DeleteAccountModal from "../shared/DeleteAccountModal";
+import { useIsMobile }    from "../../hooks/useIsMobile";
 import db                 from "../../services/db";
+import {
+  PATIENT_ROUTES,
+  PATH_TO_PATIENT_VIEW,
+} from "../../App";
 import "./PatientLayout.css";
 
+/* ════════════════════════════════════════════════════════════
+   NAV ITEMS
+   badge dinâmico para exercícios pendentes
+   ════════════════════════════════════════════════════════════ */
 const buildNavItems = (pendingCount) => [
   { id: "home",      icon: "🏠",  label: "Início"     },
   { id: "exercises", icon: "📋",  label: "Exercícios", badge: pendingCount },
@@ -23,58 +26,45 @@ const buildNavItems = (pendingCount) => [
   { id: "history",   icon: "🕰️", label: "Histórico"  },
 ];
 
+/* ── LogoutDialog ─────────────────────────────────────────── */
 function LogoutDialog({ onConfirm, onCancel }) {
   return (
     <div className="logout-overlay" onClick={onCancel}>
-      <div
-        className="logout-modal"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-      >
+      <div className="logout-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="logout-modal__icon">👋</div>
         <div className="logout-modal__title">Sair da conta?</div>
-        <div className="logout-modal__desc">
-          Você precisará fazer login novamente para aceder à plataforma.
-        </div>
+        <div className="logout-modal__desc">Você precisará fazer login novamente para aceder à plataforma.</div>
         <div className="logout-modal__actions">
-          <button
-            className="logout-modal__btn logout-modal__btn--cancel"
-            onClick={onCancel}
-          >
-            Cancelar
-          </button>
-          <button
-            className="logout-modal__btn logout-modal__btn--confirm"
-            onClick={onConfirm}
-          >
-            Sair
-          </button>
+          <button className="logout-modal__btn logout-modal__btn--cancel"  onClick={onCancel}>Cancelar</button>
+          <button className="logout-modal__btn logout-modal__btn--confirm" onClick={onConfirm}>Sair</button>
         </div>
       </div>
     </div>
   );
 }
 
+/* ════════════════════════════════════════════════════════════
+   PatientLayout
+   ════════════════════════════════════════════════════════════ */
 export default function PatientLayout({ session, setSession, logout, theme, toggleTheme }) {
-  const [view,           setView]           = useState("home");
-  const [activeExercise, setActiveExercise] = useState(null);
-  const [pendingCount,   setPendingCount]   = useState(0);
-  const [showProfile,    setShowProfile]    = useState(false);
-  const [showLogout,     setShowLogout]     = useState(false);
-  const [showDelete,     setShowDelete]     = useState(false);
-  const [isMobile,       setIsMobile]       = useState(() => window.innerWidth < 768);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [pendingCount, setPendingCount] = useState(0);
+  const [showProfile,  setShowProfile]  = useState(false);
+  const [showLogout,   setShowLogout]   = useState(false);
+  const [showDelete,   setShowDelete]   = useState(false);
+
+  /*
+    useIsMobile() — matchMedia('change') confiável em iOS Safari.
+    Evita a race condition de `resize` que causava navegação
+    invisível após rotação de tela.
+  */
+  const isMobile = useIsMobile();
 
   const prevTherapistRef = useRef(session.therapist_id);
 
-  /* ── Resize listener ── */
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
-  }, []);
-
-  /* ── Poll pending assignments for badge ── */
+  /* ── Poll de exercícios pendentes para badge ── */
   useEffect(() => {
     let active = true;
     const fetchPending = async () => {
@@ -88,11 +78,11 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
       } catch (_) {}
     };
     fetchPending();
-    const intervalId = setInterval(fetchPending, 30_000);
-    return () => { active = false; clearInterval(intervalId); };
+    const id = setInterval(fetchPending, 30_000);
+    return () => { active = false; clearInterval(id); };
   }, [session.id, session.access_token]);
 
-  /* ── Sync session when therapist links ── */
+  /* ── Sync quando terapeuta vincula ── */
   useEffect(() => {
     if (session.therapist_id === prevTherapistRef.current) return;
     prevTherapistRef.current = session.therapist_id;
@@ -101,48 +91,38 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
       { filter: { id: session.id }, select: "therapist_id,name,avatar_url" },
       session.access_token
     )
-      .then((r) => {
-        if (Array.isArray(r) && r.length > 0) setSession((s) => ({ ...s, ...r[0] }));
-      })
+      .then((r) => { if (Array.isArray(r) && r.length > 0) setSession((s) => ({ ...s, ...r[0] })); })
       .catch(() => {});
   }, [session.therapist_id, session.id, session.access_token, setSession]);
 
+  /*
+    navigateTo(id) — view ID → URL → navigate()
+    Mesma interface que Sidebar/BottomNav esperam.
+  */
+  const navigateTo = useCallback((id) => {
+    const path = PATIENT_ROUTES[id];
+    if (path) navigate(path);
+  }, [navigate]);
+
+  /*
+    activeView — URL atual → view ID
+    Correto após F5, link direto ou botão Voltar.
+  */
+  const activeView = PATH_TO_PATIENT_VIEW[location.pathname] ?? "home";
+
   const navItems = buildNavItems(pendingCount);
-
-  /* ── Full-screen exercise page (reemplaza todo el layout) ── */
-  if (activeExercise) {
-    return (
-      <ExercisePage
-        exercise={activeExercise}
-        session={session}
-        onBack={() => { setActiveExercise(null); setView("exercises"); }}
-      />
-    );
-  }
-
-  const renderView = () => {
-    switch (view) {
-      case "home":      return <PatientHome      session={session} setSession={setSession} setView={setView} />;
-      case "exercises": return <PatientExercises session={session} onStart={setActiveExercise} />;
-      case "diary":     return <PatientDiary     session={session} />;
-      case "routine":   return <PatientRoutine   session={session} />;
-      case "progress":  return <PatientProgress  session={session} />;
-      case "history":   return <PatientHistory   session={session} />;
-      default:          return <PatientHome      session={session} setSession={setSession} setView={setView} />;
-    }
-  };
 
   return (
     <div className="patient-layout">
 
-      {/* Sidebar — desktop only */}
+      {/* Sidebar — apenas desktop (≥ 768px) */}
       {!isMobile && (
         <Sidebar
           brand="Equilibre"
           roleLabel="Paciente"
           navItems={navItems}
-          activeView={view}
-          onNav={setView}
+          activeView={activeView}
+          onNav={navigateTo}
           session={session}
           theme={theme}
           toggleTheme={toggleTheme}
@@ -153,22 +133,26 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
         />
       )}
 
-      {/* Main content */}
+      {/*
+        <Outlet /> renderiza a view filha correspondente à URL.
+        context passa session e navigateTo para views filhas
+        que precisem navegar (ex: PatientHome → "Ir para exercícios").
+      */}
       <main
         className={[
           "patient-layout__main",
           isMobile ? "patient-layout__main--mobile" : "",
         ].filter(Boolean).join(" ")}
       >
-        {renderView()}
+        <Outlet context={{ session, setSession, navigateTo }} />
       </main>
 
-      {/* Bottom nav — mobile only */}
+      {/* BottomNav — apenas mobile */}
       {isMobile && (
         <BottomNav
           items={navItems}
-          activeView={view}
-          onNav={setView}
+          activeView={activeView}
+          onNav={navigateTo}
           session={session}
           onAvatarClick={() => setShowProfile(true)}
           theme={theme}
@@ -176,7 +160,6 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
         />
       )}
 
-      {/* Global modals */}
       {showProfile && (
         <ProfileModal
           session={session}
@@ -191,12 +174,7 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
         />
       )}
 
-      {showLogout && (
-        <LogoutDialog
-          onConfirm={logout}
-          onCancel={() => setShowLogout(false)}
-        />
-      )}
+      {showLogout && <LogoutDialog onConfirm={logout} onCancel={() => setShowLogout(false)} />}
 
       {showDelete && (
         <DeleteAccountModal

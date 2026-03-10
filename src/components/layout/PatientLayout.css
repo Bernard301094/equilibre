@@ -1,24 +1,23 @@
 /* ============================================================
    PATIENT LAYOUT — PatientLayout.css
-   Mobile-first: base = móvil, se expande a desktop
+   Mobile-first: base = móvil, se expande a desktop.
+
+   BREAKPOINTS — devem ser idênticos ao hook useIsMobile.js:
+     MOBILE_BREAKPOINT_PX = 767
+     CSS: @media (max-width: 767px)  →  mobile (sem sidebar)
+          @media (min-width: 768px)  →  desktop/tablet (com sidebar)
    ============================================================ */
 
 /* ── Contenedor raíz ──────────────────────────────────────── */
 .patient-layout {
   display: flex;
-
-  /* FIX · dvh en lugar de vh.
-     100vh en Chrome/Safari móvil incluye la barra de navegación
-     nativa del browser en su cálculo, provocando que el layout
-     sea más alto de lo visible y el contenido quede cortado.
-     100dvh se recalcula dinámicamente cuando esa barra aparece
-     o desaparece, garantizando que el layout ocupe exactamente
-     la altura visible real en todo momento. */
+  /* dvh: recalculado quando a barra do browser aparece/some
+     em mobile — evita layout cortado no Chrome/Safari móvil */
   min-height: 100dvh;
   background: var(--cream);
 }
 
-/* ── Sidebar variante paciente (gradiente más oscuro) ─────── */
+/* ── Sidebar variante paciente ────────────────────────────── */
 .patient-layout__sidebar {
   background: var(--sidebar-patient-bg, linear-gradient(180deg, #0f3d5c 0%, #17527c 100%));
 }
@@ -28,28 +27,32 @@
   flex: 1;
   width: 100%;
   box-sizing: border-box;
-
-  /* FIX · dvh por el mismo motivo que el contenedor raíz.
-     El área de contenido debe cubrir la pantalla visible,
-     no la pantalla teórica que incluye el chrome del browser. */
   min-height: 100dvh;
   background: var(--cream);
 
-  /* Mobile: espacio inferior para la BottomNav */
+  /* Mobile: espaço inferior para BottomNav */
   padding: 20px 16px calc(72px + env(safe-area-inset-bottom)) 16px;
 }
 
-/* Desktop: desplaza el contenido para no solapar la Sidebar */
+/*
+  Desktop/Tablet (≥ 768px): desloca o conteúdo para não sobrepor
+  a Sidebar. Breakpoint espelha exatamente MOBILE_BREAKPOINT_PX + 1.
+*/
 @media (min-width: 768px) {
   .patient-layout__main {
-    margin-left: 256px;
+    margin-left: 256px; /* = --sb-width-full da Sidebar */
     padding: var(--space-page-y, 32px) var(--space-page-x, 32px);
   }
 }
 
-/* Variante mobile explícita (por si se fuerza desde JSX) */
+/*
+  Variante mobile explícita — aplicada via JSX quando isMobile=true.
+  Garante margin-left:0 mesmo que o browser leia min-width:768px
+  antes do matchMedia ter disparado o evento 'change'.
+  Atua como safety-net durante os primeiros frames de render.
+*/
 .patient-layout__main--mobile {
-  margin-left: 0;
+  margin-left: 0 !important;
   padding: 20px 16px calc(72px + env(safe-area-inset-bottom)) 16px;
 }
 
@@ -63,16 +66,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-
-  /* FIX · Variable semántica en lugar del literal 500 */
   z-index: var(--z-logout-dialog);
-
   padding: 16px;
   box-sizing: border-box;
 }
 
 .logout-modal {
-  background: var(--surface, #fff);
+  background: var(--white, #fff);
   border-radius: 16px;
   padding: 32px 28px 24px;
   width: 100%;
@@ -94,12 +94,12 @@
 .logout-modal__title {
   font-size: 1.2rem;
   font-weight: 700;
-  color: var(--text-primary, #1a202c);
+  color: var(--text, #1a202c);
 }
 
 .logout-modal__desc {
   font-size: 0.9rem;
-  color: var(--text-secondary, #718096);
+  color: var(--text-muted, #718096);
   line-height: 1.5;
   margin-bottom: 8px;
 }
@@ -127,13 +127,13 @@
 }
 
 .logout-modal__btn--cancel {
-  background: var(--surface-alt, #f0f4f8);
-  color: var(--text-primary, #1a202c);
-  border: 1.5px solid var(--border, #e2e8f0);
+  background: var(--warm, #cddcea);
+  color: var(--text, #1a202c);
+  border: 1.5px solid var(--warm, #cddcea);
 }
 
 .logout-modal__btn--cancel:hover {
-  background: var(--border, #e2e8f0);
+  filter: brightness(0.95);
 }
 
 .logout-modal__btn--confirm {

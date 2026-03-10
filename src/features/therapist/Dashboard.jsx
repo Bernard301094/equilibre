@@ -24,6 +24,38 @@ const getGreetingSub = () => {
   return "Trabalhando tarde? Lembre-se de cuidar de si também.";
 };
 
+/* ── NavCard ───────────────────────────────────────────────
+   Wrapper acessível que transforma qualquer filho em
+   elemento navegável por clique e teclado.
+
+   Por que wrapper e não modificar StatCard diretamente?
+   StatCard é um componente compartilhado — modificá-lo
+   afetaria todas as instâncias no projeto. O wrapper
+   mantém o StatCard intacto e adiciona interatividade
+   apenas onde é necessário.
+   ─────────────────────────────────────────────────────── */
+function NavCard({ onClick, label, children }) {
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
+  return (
+    <div
+      className="dashboard__nav-card"
+      role="button"
+      tabIndex={0}
+      aria-label={label}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function TherapistDashboard({ session, setView }) {
   const [stats,    setStats]    = useState({ patients: 0, done: 0, pending: 0, recent: [] });
   const [redFlags, setRedFlags] = useState([]);
@@ -141,11 +173,31 @@ export default function TherapistDashboard({ session, setView }) {
         <p className="dashboard__greeting-sub">{getGreetingSub()}</p>
       </div>
 
-      {/* ── Stats ── */}
+      {/* ── Stats — cada card navega para a seção correspondente ── */}
       <div className="dashboard__stats-grid">
-        <StatCard icon="👥" value={stats.patients} label="Pacientes ativos"      />
-        <StatCard icon="✅" value={stats.done}     label="Exercícios concluídos" />
-        <StatCard icon="⏳" value={stats.pending}  label="Pendentes"             />
+        <NavCard
+          onClick={() => setView("patients")}
+          label={`${stats.patients} pacientes ativos — clique para ver todos`}
+        >
+          <StatCard icon="👥" value={stats.patients} label="Pacientes ativos" />
+          <span className="dashboard__nav-hint">Ver pacientes →</span>
+        </NavCard>
+
+        <NavCard
+          onClick={() => setView("exercises")}
+          label={`${stats.done} exercícios concluídos — clique para ver exercícios`}
+        >
+          <StatCard icon="✅" value={stats.done} label="Exercícios concluídos" />
+          <span className="dashboard__nav-hint">Ver exercícios →</span>
+        </NavCard>
+
+        <NavCard
+          onClick={() => setView("responses")}
+          label={`${stats.pending} pendentes — clique para ver respostas`}
+        >
+          <StatCard icon="⏳" value={stats.pending} label="Pendentes" />
+          <span className="dashboard__nav-hint">Ver respostas →</span>
+        </NavCard>
       </div>
 
       {/* ── Red Flags ── */}
@@ -232,7 +284,20 @@ export default function TherapistDashboard({ session, setView }) {
           <>
             <div className="dashboard__recent-list">
               {stats.recent.map((p) => (
-                <div key={p.id} className="dashboard__patient-row">
+                <div
+                  key={p.id}
+                  className="dashboard__patient-row"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Ver detalhes de ${p.name}`}
+                  onClick={() => setView("patients")}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setView("patients");
+                    }
+                  }}
+                >
                   <AvatarDisplay
                     name={p.name}
                     avatarUrl={p.avatar_url}
@@ -243,6 +308,7 @@ export default function TherapistDashboard({ session, setView }) {
                     <div className="dashboard__patient-name">{p.name}</div>
                     <div className="dashboard__patient-email">{p.email}</div>
                   </div>
+                  <span className="dashboard__patient-arrow" aria-hidden="true">→</span>
                 </div>
               ))}
             </div>
@@ -251,7 +317,7 @@ export default function TherapistDashboard({ session, setView }) {
               className="dashboard__see-all-btn"
               onClick={() => setView("patients")}
             >
-              Ver todos →
+              Ver todos os pacientes →
             </button>
           </>
         )}

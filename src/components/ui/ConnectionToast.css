@@ -1,0 +1,136 @@
+/* ── ConnectionToast.css ─────────────────────────────────────
+   Fixed bottom-center toast for connection / sync status.
+   Consistent with the Equilibre garden palette.
+───────────────────────────────────────────────────────────── */
+
+.ct-toast {
+  position:       fixed;
+  bottom:         calc(env(safe-area-inset-bottom, 0px) + 1.25rem);
+  left:           50%;
+  transform:      translateX(-50%);
+  z-index:        9500;
+
+  display:        flex;
+  align-items:    center;
+  gap:            .75rem;
+  padding:        .75rem 1.1rem;
+  border-radius:  14px;
+  min-width:      240px;
+  max-width:      min(92vw, 380px);
+
+  backdrop-filter: blur(12px) saturate(1.6);
+  box-shadow:      0 8px 32px rgba(0,0,0,.14), 0 2px 8px rgba(0,0,0,.08);
+
+  font-size:      .875rem;
+  line-height:    1.4;
+  pointer-events: auto;
+
+  /* default — overridden per type */
+  background: rgba(50, 70, 48, .88);
+  color:      #f0f8ee;
+}
+
+/* ── Type variants ── */
+.ct-toast--warn {
+  background: rgba(180, 100, 30, .90);
+  color:      #fff8f0;
+}
+
+.ct-toast--info {
+  background: rgba(40, 80, 120, .88);
+  color:      #f0f4ff;
+}
+
+.ct-toast--success {
+  background: rgba(60, 120, 55, .90);
+  color:      #f0faf0;
+}
+
+.ct-toast--error {
+  background: rgba(160, 40, 40, .90);
+  color:      #fff0f0;
+}
+
+/* ── Icon ── */
+.ct-toast__icon {
+  font-size:   1.35rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* spinning icon for syncing state */
+.ct-toast--info .ct-toast__icon {
+  display:   inline-block;
+  animation: ct-spin 1s linear infinite;
+}
+
+/* ── Body ── */
+.ct-toast__body {
+  display:        flex;
+  flex-direction: column;
+  gap:            .15rem;
+  flex:           1;
+}
+
+.ct-toast__label {
+  font-weight: 600;
+  font-size:   .875rem;
+}
+
+.ct-toast__sub {
+  font-size:  .78rem;
+  opacity:    .82;
+  line-height: 1.45;
+}
+
+/* ── Close button ── */
+.ct-toast__close {
+  background:  none;
+  border:      none;
+  color:       inherit;
+  opacity:     .7;
+  font-size:   1.25rem;
+  line-height: 1;
+  cursor:      pointer;
+  padding:     0 .1rem;
+  flex-shrink: 0;
+  transition:  opacity 150ms;
+}
+
+.ct-toast__close:hover { opacity: 1; }
+
+/* ── Animations ── */
+.ct-toast--enter {
+  animation: ct-slide-up 320ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.ct-toast--leave {
+  animation: ct-slide-down 320ms ease both;
+}
+
+@keyframes ct-slide-up {
+  from {
+    opacity:   0;
+    transform: translateX(-50%) translateY(20px) scale(.94);
+  }
+  to {
+    opacity:   1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes ct-slide-down {
+  from {
+    opacity:   1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  to {
+    opacity:   0;
+    transform: translateX(-50%) translateY(16px) scale(.94);
+  }
+}
+
+@keyframes ct-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

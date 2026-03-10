@@ -1,72 +1,199 @@
-/* ── Container ───────────────────────────────────────────────────────────── */
+/* ── EmptyState.css ──────────────────────────────────────────
+   Organic / garden aesthetic — soft sage greens, warm neutrals,
+   gentle keyframe animations. Zero harsh edges.
+───────────────────────────────────────────────────────────── */
+
+/* ── Design tokens ── */
 .empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  --es-leaf-a:   #7bb369;
+  --es-leaf-b:   #a8d5a2;
+  --es-stem:     #5a7a52;
+  --es-pot:      #c9956c;
+  --es-pot-rim:  #b07d55;
+  --es-soil:     #8b6347;
+  --es-spark:    #f4c542;
+  --es-bg:       rgba(235, 245, 230, 0.55);
+  --es-radius:   20px;
+  --es-text:     #3a4a36;
+  --es-sub:      #6b7f66;
+  --es-btn-bg:   #7bb369;
+  --es-btn-fg:   #fff;
+  --es-btn-hover:#5a9a50;
+  --es-glow:     radial-gradient(circle, rgba(123,179,105,.22) 0%, transparent 72%);
+}
+
+/* ── Container ── */
+.empty-state {
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
   justify-content: center;
-  text-align: center;
-  padding: 50px 20px;
-  color: var(--text-muted);
-  width: 100%;
+  gap:             1.4rem;
+  padding:         3rem 2rem 2.5rem;
+  text-align:      center;
+  background:      var(--es-bg);
+  border-radius:   var(--es-radius);
+  border:          1.5px dashed rgba(123, 179, 105, 0.35);
+  position:        relative;
+  overflow:        hidden;
 }
 
-/* ── Icon ────────────────────────────────────────────────────────────────── */
-.empty-state__icon {
-  font-size: 44px;
-  line-height: 1;
-  margin-bottom: 14px;
-  display: block;
-  /* Subtle entrance animation */
-  animation: empty-state-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+/* subtle noise texture overlay */
+.empty-state::before {
+  content:          "";
+  position:         absolute;
+  inset:            0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+  pointer-events:   none;
+  border-radius:    inherit;
 }
 
-/* ── Primary message ─────────────────────────────────────────────────────── */
+/* ── Illustration wrapper ── */
+.empty-state__illustration {
+  position:  relative;
+  width:     130px;
+  height:    130px;
+  flex-shrink: 0;
+}
+
+.empty-state__glow {
+  position:         absolute;
+  inset:            -10px;
+  background:       var(--es-glow);
+  border-radius:    50%;
+  animation:        es-glow-pulse 3.5s ease-in-out infinite;
+  pointer-events:   none;
+}
+
+/* ── SVG base ── */
+.es-svg {
+  width:     100%;
+  height:    100%;
+  filter:    drop-shadow(0 4px 12px rgba(90, 122, 82, .18));
+  animation: es-float 5s ease-in-out infinite;
+}
+
+/* ── SVG animated parts ── */
+.es-svg__sprout {
+  transform-origin: 60px 80px;
+  animation:        es-sway 4s ease-in-out infinite;
+}
+
+.es-svg__leaf {
+  transform-origin: 60px 100px;
+  animation:        es-sway 5s ease-in-out infinite;
+}
+
+.es-svg__sparkle {
+  animation: es-sparkle 2.5s ease-in-out infinite;
+}
+
+/* ── Copy ── */
+.empty-state__copy {
+  display:        flex;
+  flex-direction: column;
+  gap:            .5rem;
+  max-width:      300px;
+}
+
 .empty-state__message {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text-secondary, var(--text-muted));
-  line-height: 1.5;
-  margin: 0;
-  max-width: 280px;
+  font-size:   1.125rem;
+  font-weight: 650;
+  color:       var(--es-text);
+  line-height: 1.35;
+  margin:      0;
+  letter-spacing: -.01em;
 }
 
-/* ── Secondary / supporting text ────────────────────────────────────────── */
 .empty-state__sub {
-  font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.5;
-  margin: 4px 0 0;
-  max-width: 260px;
+  font-size:   .9rem;
+  color:       var(--es-sub);
+  line-height: 1.6;
+  margin:      0;
 }
 
-/* ── CTA button ──────────────────────────────────────────────────────────── */
+/* ── Action button ── */
 .empty-state__action {
-  margin-top: 16px;
+  display:         inline-flex;
+  align-items:     center;
+  gap:             .45rem;
+  padding:         .65rem 1.4rem;
+  background:      var(--es-btn-bg);
+  color:           var(--es-btn-fg);
+  border:          none;
+  border-radius:   50px;
+  font-size:       .875rem;
+  font-weight:     600;
+  cursor:          pointer;
+  letter-spacing:  .01em;
+  transition:      background 200ms, transform 150ms, box-shadow 200ms;
+  box-shadow:      0 4px 14px rgba(91, 154, 80, .28);
+  position:        relative;
+  overflow:        hidden;
 }
 
-/* ── Animation ───────────────────────────────────────────────────────────── */
-@keyframes empty-state-pop {
+.empty-state__action::after {
+  content:       "";
+  position:      absolute;
+  inset:         0;
+  background:    radial-gradient(circle at center, rgba(255,255,255,.22) 0%, transparent 70%);
+  opacity:       0;
+  transition:    opacity 200ms;
+}
+
+.empty-state__action:hover {
+  background:    var(--es-btn-hover);
+  transform:     translateY(-2px);
+  box-shadow:    0 6px 18px rgba(91, 154, 80, .36);
+}
+
+.empty-state__action:hover::after { opacity: 1; }
+
+.empty-state__action:active { transform: translateY(0); }
+
+.empty-state__action-icon {
+  font-size:   .75rem;
+  line-height: 1;
+  transition:  transform 200ms;
+}
+
+.empty-state__action:hover .empty-state__action-icon {
+  transform: rotate(45deg) scale(1.2);
+}
+
+/* ── Staggered entrance ── */
+.es-enter {
+  animation: es-rise 480ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+/* ── Keyframes ── */
+@keyframes es-float {
+  0%, 100% { transform: translateY(0);    }
+  50%       { transform: translateY(-7px); }
+}
+
+@keyframes es-sway {
+  0%, 100% { transform: rotate(-4deg); }
+  50%       { transform: rotate(4deg);  }
+}
+
+@keyframes es-sparkle {
+  0%, 100% { opacity: 1;   transform: scale(1);    }
+  50%       { opacity: .25; transform: scale(.55);  }
+}
+
+@keyframes es-glow-pulse {
+  0%, 100% { opacity: .6; transform: scale(1);    }
+  50%       { opacity: 1;  transform: scale(1.08); }
+}
+
+@keyframes es-rise {
   from {
-    opacity: 0;
-    transform: scale(0.7);
+    opacity:   0;
+    transform: translateY(18px);
   }
   to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* ── Mobile ──────────────────────────────────────────────────────────────── */
-@media (max-width: 767px) {
-  .empty-state {
-    padding: 40px 16px;
-  }
-
-  .empty-state__icon {
-    font-size: 38px;
-  }
-
-  .empty-state__message {
-    font-size: 14px;
+    opacity:   1;
+    transform: translateY(0);
   }
 }

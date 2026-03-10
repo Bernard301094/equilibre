@@ -1,0 +1,125 @@
+/* ── micro-interactions.css ──────────────────────────────────
+   Drop this into your global CSS or import in the component
+   that needs plant / goal micro-interactions.
+
+   Usage:
+     Plant pulse     →  add class `plant-pulse`   to .patient-home__plant-emoji
+     Streak level-up →  add class `streak-levelup` to .patient-home__plant-card
+     Goal reached    →  add class `goal-reached`   to .patient-home__goal-card
+     Stat pop        →  add class `stat-pop`        to any StatCard root
+───────────────────────────────────────────────────────────── */
+
+/* ── Plant pulse  (gentle heartbeat when streak increases) ── */
+@keyframes mi-plant-pulse {
+  0%   { transform: scale(1); }
+  18%  { transform: scale(1.18) rotate(-4deg); }
+  36%  { transform: scale(1.1)  rotate(4deg); }
+  52%  { transform: scale(1.15) rotate(-2deg); }
+  68%  { transform: scale(1.06) rotate(1deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+.plant-pulse {
+  animation: mi-plant-pulse 750ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+/* ── Streak level-up  (card glow + ripple) ── */
+@keyframes mi-levelup-glow {
+  0%   { box-shadow: 0 0  0px rgba(123, 179, 105, 0);   }
+  40%  { box-shadow: 0 0 28px rgba(123, 179, 105, .6);  }
+  100% { box-shadow: 0 0  0px rgba(123, 179, 105, 0);   }
+}
+
+@keyframes mi-levelup-ripple {
+  0%   { transform: scale(1);    opacity: .5; }
+  100% { transform: scale(2.2);  opacity: 0;  }
+}
+
+.streak-levelup {
+  position: relative;
+  animation: mi-levelup-glow 900ms ease both;
+}
+
+.streak-levelup::after {
+  content:       "";
+  position:      absolute;
+  inset:         0;
+  border-radius: inherit;
+  border:        2px solid rgba(123, 179, 105, .7);
+  animation:     mi-levelup-ripple 800ms ease both;
+  pointer-events: none;
+}
+
+/* ── Goal reached  (bar flash + checkmark pop) ── */
+@keyframes mi-goal-flash {
+  0%, 100% { background: transparent; }
+  30%       { background: rgba(123, 179, 105, .12); }
+  60%       { background: rgba(244, 197, 66, .1); }
+}
+
+@keyframes mi-goal-scale {
+  0%   { transform: scaleX(1); }
+  20%  { transform: scaleX(1.03); }
+  50%  { transform: scaleX(.98); }
+  100% { transform: scaleX(1); }
+}
+
+.goal-reached {
+  animation: mi-goal-flash 700ms ease both;
+}
+
+.goal-reached .week-goal-bar__fill {
+  animation: mi-goal-scale 600ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+/* ── Stat pop  (number count-up visual bounce) ── */
+@keyframes mi-stat-pop {
+  0%   { transform: scale(1);    }
+  40%  { transform: scale(1.22); }
+  65%  { transform: scale(.94);  }
+  82%  { transform: scale(1.07); }
+  100% { transform: scale(1);    }
+}
+
+.stat-pop .stat-card__value {
+  display:         inline-block;
+  animation:       mi-stat-pop 500ms cubic-bezier(.22, 1, .36, 1) both;
+  transform-origin: center bottom;
+}
+
+/* ── Streak value colour transition on growth ── */
+@keyframes mi-streak-color {
+  0%   { color: inherit; }
+  40%  { color: #f4c542; }
+  100% { color: inherit; }
+}
+
+.streak-levelup .patient-home__streak-val {
+  animation: mi-streak-color 900ms ease both;
+}
+
+/* ── Water drop bounce (already in Home, enhanced here) ── */
+@keyframes mi-water-bounce {
+  0%   { transform: translateY(0)  scale(1);    opacity: 1; }
+  35%  { transform: translateY(-16px) scale(1.15); }
+  70%  { transform: translateY(-24px) scale(.9); opacity: .8; }
+  100% { transform: translateY(-36px) scale(.7); opacity: 0; }
+}
+
+.patient-home__water-drop {
+  animation: mi-water-bounce 1.8s ease both !important;
+}
+
+/* ── Gentle CTA shimmer on all-done ── */
+@keyframes mi-all-done-float {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50%       { transform: translateY(-6px) rotate(1deg); }
+}
+
+.patient-home__all-done-icon {
+  display:   inline-block;
+  animation: mi-all-done-float 2.8s ease-in-out infinite;
+}
+
+/* ── Helper: run once, then settle ── */
+.run-once { animation-iteration-count: 1 !important; }

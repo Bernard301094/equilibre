@@ -47,7 +47,12 @@ export default function Sidebar({
               aria-hidden="true"
               className="sidebar__logo"
             />
-            {brand}
+            {/*
+              FIX · brand-text separado em <span> para que o CSS
+              do modo colapsado possa ocultar apenas o texto via
+              max-width:0 + opacity:0, mantendo o logo visível.
+            */}
+            <span className="sidebar__brand-text">{brand}</span>
           </div>
           {extraHeader && (
             <div className="sidebar__extra-header">{extraHeader}</div>
@@ -61,9 +66,20 @@ export default function Sidebar({
         {navItems.map((n) => (
           <button
             key={n.id}
-            className={["sidebar__nav-item", activeView === n.id ? "sidebar__nav-item--active" : ""].filter(Boolean).join(" ")}
+            className={[
+              "sidebar__nav-item",
+              activeView === n.id ? "sidebar__nav-item--active" : "",
+            ].filter(Boolean).join(" ")}
             onClick={() => onNav(n.id)}
             aria-current={activeView === n.id ? "page" : undefined}
+            /*
+              FIX · data-label alimenta o tooltip CSS puro definido
+              em Sidebar.css para o modo colapsado (768–1024px).
+              O atributo title garante fallback nativo em todos os
+              browsers e é lido por leitores de tela.
+            */
+            data-label={n.label}
+            title={n.label}
           >
             <span className="sidebar__nav-icon" aria-hidden="true">
               {n.icon}
@@ -85,12 +101,6 @@ export default function Sidebar({
       <div className="sidebar__footer">
         <div className="sidebar__user-pill">
 
-          {/*
-            FIX: AvatarDisplay recebe onClick, mas não há garantia de que
-            o componente interno propague o evento. Envolvemos num <button>
-            explícito para que o clique seja sempre captado, independente
-            da implementação interna do AvatarDisplay.
-          */}
           <button
             className="sidebar__avatar-btn"
             onClick={onAvatarClick}

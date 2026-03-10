@@ -1,0 +1,141 @@
+/* ── CelebrationOverlay.css ──────────────────────────────────
+   Full-screen leaf shower + affirming card animation
+───────────────────────────────────────────────────────────── */
+
+.cel-overlay {
+  position:        fixed;
+  inset:           0;
+  z-index:         8000;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  pointer-events:  none;
+  animation:       cel-in 350ms ease both;
+}
+
+.cel-overlay--fade { animation: cel-out 420ms ease both; }
+
+.cel-canvas {
+  position: absolute;
+  inset:    0;
+  z-index:  1;
+}
+
+/* ── Affirming card ── */
+.cel-card {
+  position:       relative;
+  z-index:        2;
+  background:     rgba(247, 250, 245, .96);
+  backdrop-filter: blur(10px);
+  border-radius:  22px;
+  padding:        2rem 2.2rem 1.8rem;
+  max-width:      320px;
+  text-align:     center;
+  box-shadow:     0 20px 50px rgba(30, 60, 26, .22), 0 4px 16px rgba(30,60,26,.1);
+  animation:      cel-card-pop 550ms cubic-bezier(.22, 1, .36, 1) both 100ms;
+  pointer-events: auto;
+}
+
+/* top gradient bar */
+.cel-card::before {
+  content:       "";
+  position:      absolute;
+  top:           0;
+  left:          0;
+  right:         0;
+  height:        4px;
+  background:    linear-gradient(90deg, #7bb369, #f4c542, #7bb369);
+  border-radius: 22px 22px 0 0;
+  background-size: 200% 100%;
+  animation:     cel-gradient-slide 2s linear infinite;
+}
+
+.cel-card__sparkles {
+  position: absolute;
+  top:      -18px;
+  left:     50%;
+  transform: translateX(-50%);
+  display:  flex;
+  gap:      .5rem;
+}
+
+.cel-spark {
+  font-size: 1.3rem;
+  animation: cel-spark-float 1.8s ease-in-out calc(var(--i) * 200ms) infinite;
+}
+
+.cel-card__icon {
+  font-size:  3.2rem;
+  line-height: 1;
+  margin-bottom: .6rem;
+  animation:  cel-icon-grow 600ms cubic-bezier(.22, 1, .36, 1) both 200ms;
+}
+
+.cel-card__title {
+  font-size:      1.15rem;
+  font-weight:    700;
+  color:          #2a3e28;
+  margin:         0 0 .5rem;
+  line-height:    1.3;
+  letter-spacing: -.02em;
+}
+
+.cel-card__sub {
+  font-size:   .875rem;
+  color:       #5a7055;
+  line-height: 1.6;
+  margin:      0 0 1.2rem;
+}
+
+/* ── Progress drain bar (visual timer) ── */
+.cel-card__bar {
+  height:        4px;
+  background:    rgba(123, 179, 105, .2);
+  border-radius: 4px;
+  overflow:      hidden;
+}
+
+.cel-card__bar-fill {
+  height:     100%;
+  background: #7bb369;
+  border-radius: 4px;
+  animation:  cel-bar-drain 2.8s linear both 200ms;
+}
+
+/* ── Keyframes ── */
+@keyframes cel-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes cel-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes cel-card-pop {
+  0%   { opacity: 0; transform: scale(.7) translateY(20px); }
+  65%  { transform: scale(1.04) translateY(-4px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes cel-icon-grow {
+  0%   { transform: scale(0) rotate(-30deg); }
+  70%  { transform: scale(1.2) rotate(8deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+@keyframes cel-spark-float {
+  0%, 100% { transform: translateY(0) scale(1);   opacity: 1; }
+  50%       { transform: translateY(-8px) scale(1.2); opacity: .7; }
+}
+
+@keyframes cel-gradient-slide {
+  0%   { background-position:  0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes cel-bar-drain {
+  from { width: 100%; }
+  to   { width: 0%; }
+}

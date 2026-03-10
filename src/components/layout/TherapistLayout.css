@@ -1,15 +1,10 @@
 /* ============================================================
    THERAPIST LAYOUT — TherapistLayout.css
-   Mobile-first: base = móvil, luego se expande a desktop
    ============================================================ */
 
 /* ── Contenedor raíz ──────────────────────────────────────── */
 .therapist-layout {
   display: flex;
-
-  /* FIX · dvh en lugar de vh.
-     Evita que la barra de navegación nativa del browser
-     (Chrome/Safari móvil) tape el fondo del layout. */
   min-height: 100dvh;
   background: var(--cream);
 }
@@ -19,38 +14,216 @@
   flex: 1;
   width: 100%;
   box-sizing: border-box;
-
-  /* FIX · dvh consistente con el contenedor raíz */
   min-height: 100dvh;
-
-  /* Mobile: padding generoso + espacio para BottomNav */
   padding: 20px 16px calc(72px + env(safe-area-inset-bottom)) 16px;
   background: var(--cream);
+  transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Desktop: desplaza el contenido para no solapar la Sidebar */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (max-width: 1024px) {
+  .therapist-layout__main {
+    margin-left: 68px;
+    padding: var(--space-page-y, 28px) var(--space-page-x, 24px);
+  }
+}
+
+@media (min-width: 1025px) {
   .therapist-layout__main {
     margin-left: 256px;
     padding: var(--space-page-y, 32px) var(--space-page-x, 32px);
   }
 }
 
-/* Variante explícita mobile (por si se necesita forzar desde JSX) */
 .therapist-layout__main--mobile {
-  margin-left: 0;
+  margin-left: 0 !important;
   padding: 20px 16px calc(72px + env(safe-area-inset-bottom)) 16px;
 }
 
-/* ── Floating bell (mobile) ───────────────────────────────── */
+/* ════════════════════════════════════════════════════════════
+   SISTEMA DE ANIMAÇÃO DE SINO — Física de pêndulo real
+   ════════════════════════════════════════════════════════════
+
+   TRANSFORM-ORIGIN: 50% 0% (topo central)
+   ─────────────────────────────────────────
+   O ponto de rotação fica no TOPO do emoji, simulando o
+   gancho de um sino real. Sem isso, o sino rotaciona pelo
+   centro — como uma moeda girando, não um pêndulo.
+
+   CURVA BEZIER: cubic-bezier(0.37, 0, 0.63, 1)
+   ─────────────────────────────────────────────
+   Aproxima a curva senoidal de um pêndulo real:
+     • Início lento  → inércia da massa em repouso
+     • Meio rápido   → velocidade máxima no centro
+     • Fim lento     → desaceleração natural no extremo
+   Resultado: peso e amortecimento orgânicos.
+
+   REINICIALIZAÇÃO GARANTIDA VIA key PROP (React)
+   ──────────────────────────────────────────────
+   O CSS não precisa de nenhum truque especial para reiniciar.
+   O React cuida disso incrementando o `key` do <span> a cada
+   disparo — o DOM desmonta o nó antigo e monta um novo,
+   zerando o estado de animação do browser completamente.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Elemento base do sino ────────────────────────────────── */
+.bell-icon {
+  display: inline-block;
+  line-height: 1;
+  transform-origin: 50% 0%;   /* ponto de suspensão: topo central */
+  will-change: transform;     /* hint de GPU para evitar jank */
+}
+
+/* ════════════════════════════════════════════════════════════
+   HOVER — CSS puro, zero JavaScript
+   ════════════════════════════════════════════════════════════
+   O seletor :not() garante que hover só ativa quando nenhuma
+   animação de estado está em curso. Assim hover e clique
+   nunca conflitam — quando animType !== null, as classes
+   bell-icon--* estão presentes e o :not() bloqueia o hover.
+   ════════════════════════════════════════════════════════════ */
+.floating-bell__btn:hover .bell-icon:not(.bell-icon--shaking):not(.bell-icon--ringing):not(.bell-icon--idle),
+.sidebar-bell:hover       .bell-icon:not(.bell-icon--shaking):not(.bell-icon--ringing):not(.bell-icon--idle) {
+  animation: bell-hover 0.65s cubic-bezier(0.37, 0, 0.63, 1) forwards;
+}
+
+/* ── Estados de animação disparados via React ─────────────── */
+.bell-icon--shaking {
+  animation: bell-swing 0.9s linear forwards;
+}
+
+.bell-icon--ringing {
+  animation: bell-tap 0.48s linear forwards;
+}
+
+.bell-icon--idle {
+  animation: bell-idle 0.75s linear forwards;
+}
+
+/* ════════════════════════════════════════════════════════════
+   @keyframes
+
+   ESTRUTURA DE AMORTECIMENTO (bell-swing):
+   Cada semi-oscilação perde ~45% da amplitude anterior,
+   modelando fricção do ar + gancho. Coef. ≈ 0.55.
+
+   animation-timing-function DENTRO do @keyframes:
+   Aplica a curva ao segmento que SAI daquele keyframe,
+   não ao que chegou. Permite impulso agressivo no início
+   e decay suave nas micro-oscilações finais.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Bell Swing: nova notificação (4 oscilações) ─────────── */
+@keyframes bell-swing {
+  0% {
+    transform: rotate(0deg);
+    animation-timing-function: cubic-bezier(0.36, 0.07, 0.19, 0.97); /* impulso brusco */
+  }
+  8%  {
+    transform: rotate(-22deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  18% {
+    transform: rotate(18deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  30% {
+    transform: rotate(-12deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  42% {
+    transform: rotate(8deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  54% {
+    transform: rotate(-4.5deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  64% {
+    transform: rotate(2.5deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  74% {
+    transform: rotate(-1.2deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  84% {
+    transform: rotate(0.5deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  100% { transform: rotate(0deg); }
+}
+
+/* ── Bell Tap: clique — 2 oscilações rápidas ─────────────── */
+@keyframes bell-tap {
+  0% {
+    transform: rotate(0deg);
+    animation-timing-function: cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+  20% {
+    transform: rotate(-15deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  48% {
+    transform: rotate(11deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  70% {
+    transform: rotate(-5deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  86% {
+    transform: rotate(2deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  100% { transform: rotate(0deg); }
+}
+
+/* ── Bell Idle: lembrete gentil (2 oscilações suaves) ─────── */
+@keyframes bell-idle {
+  0% {
+    transform: rotate(0deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  15% {
+    transform: rotate(-13deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  32% {
+    transform: rotate(11deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  48% {
+    transform: rotate(-6deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  62% {
+    transform: rotate(3.5deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  74% {
+    transform: rotate(-1.5deg);
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  100% { transform: rotate(0deg); }
+}
+
+/* ── Bell Hover: chamada de atenção (CSS puro) ────────────── */
+@keyframes bell-hover {
+  0%   { transform: rotate(0deg); }
+  28%  { transform: rotate(-8deg); }
+  62%  { transform: rotate(6deg); }
+  82%  { transform: rotate(-2.5deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   FLOATING BELL — mobile
+   ════════════════════════════════════════════════════════════ */
 .floating-bell {
   position: fixed;
   top: 14px;
   right: 14px;
-
-  /* FIX · Variable semántica en lugar del literal 200 */
   z-index: var(--z-fab);
-
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -69,7 +242,7 @@
 }
 
 .floating-bell--active {
-  background: var(--primary, #17527c);
+  background: var(--blue-dark, #17527c);
   box-shadow: 0 0 0 3px rgba(23, 82, 124, 0.35);
 }
 
@@ -77,22 +250,6 @@
   background: rgba(23, 82, 124, 0.95);
 }
 
-/* Animación de shake cuando llega una nueva notificación */
-.floating-bell--shaking {
-  animation: bell-shake 0.6s ease-in-out;
-}
-
-@keyframes bell-shake {
-  0%,  100% { transform: rotate(0deg);   }
-  15%        { transform: rotate(-14deg); }
-  30%        { transform: rotate(12deg);  }
-  45%        { transform: rotate(-10deg); }
-  60%        { transform: rotate(8deg);   }
-  75%        { transform: rotate(-5deg);  }
-  90%        { transform: rotate(3deg);   }
-}
-
-/* Botón interno del floating bell */
 .floating-bell__btn {
   position: relative;
   background: none;
@@ -108,7 +265,6 @@
   height: 100%;
   color: #fff;
   border-radius: 50%;
-  transition: transform 0.15s;
 }
 
 .floating-bell__btn:focus-visible {
@@ -117,10 +273,10 @@
 }
 
 .floating-bell__btn:active {
-  transform: scale(0.9);
+  /* Escala o container, não o sino — o sino tem sua própria animação */
+  transform: scale(0.92);
 }
 
-/* Badge de conteo */
 .floating-bell__badge {
   position: absolute;
   top: -4px;
@@ -140,7 +296,9 @@
   border: 1.5px solid #fff;
 }
 
-/* ── Sidebar bell (desktop, dentro del Sidebar) ───────────── */
+/* ════════════════════════════════════════════════════════════
+   SIDEBAR BELL — desktop
+   ════════════════════════════════════════════════════════════ */
 .sidebar-bell {
   position: relative;
   background: none;
@@ -162,7 +320,7 @@
 }
 
 .sidebar-bell:focus-visible {
-  outline: 2px solid var(--primary, #17527c);
+  outline: 2px solid var(--blue-dark, #17527c);
   outline-offset: 2px;
 }
 
@@ -185,7 +343,9 @@
   border: 1.5px solid #fff;
 }
 
-/* ── Logout Dialog ────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════
+   LOGOUT DIALOG
+   ════════════════════════════════════════════════════════════ */
 .logout-overlay {
   position: fixed;
   inset: 0;
@@ -195,15 +355,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-
-  /* FIX · Variable semántica en lugar del literal 500 */
   z-index: var(--z-logout-dialog);
-
   padding: 16px;
 }
 
 .logout-modal {
-  background: var(--surface, #fff);
+  background: var(--white, #fff);
   border-radius: 16px;
   padding: 32px 28px 24px;
   width: 100%;
@@ -217,23 +374,9 @@
   box-sizing: border-box;
 }
 
-.logout-modal__icon {
-  font-size: 2.5rem;
-  margin-bottom: 4px;
-}
-
-.logout-modal__title {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--text-primary, #1a202c);
-}
-
-.logout-modal__desc {
-  font-size: 0.9rem;
-  color: var(--text-secondary, #718096);
-  line-height: 1.5;
-  margin-bottom: 8px;
-}
+.logout-modal__icon  { font-size: 2.5rem; margin-bottom: 4px; }
+.logout-modal__title { font-size: 1.2rem; font-weight: 700; color: var(--text, #1a202c); }
+.logout-modal__desc  { font-size: 0.9rem; color: var(--text-muted, #718096); line-height: 1.5; margin-bottom: 8px; }
 
 .logout-modal__actions {
   display: flex;
@@ -253,37 +396,28 @@
   transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 
-.logout-modal__btn:active {
-  transform: scale(0.97);
-}
+.logout-modal__btn:active        { transform: scale(0.97); }
+.logout-modal__btn--cancel       { background: var(--warm, #cddcea); color: var(--text, #1a202c); border: 1.5px solid var(--warm, #cddcea); }
+.logout-modal__btn--cancel:hover { filter: brightness(0.95); }
+.logout-modal__btn--confirm      { background: #e53e3e; color: #fff; box-shadow: 0 4px 12px rgba(229,62,62,0.3); }
+.logout-modal__btn--confirm:hover{ background: #c53030; }
 
-.logout-modal__btn--cancel {
-  background: var(--surface-alt, #f0f4f8);
-  color: var(--text-primary, #1a202c);
-  border: 1.5px solid var(--border, #e2e8f0);
-}
-
-.logout-modal__btn--cancel:hover {
-  background: var(--border, #e2e8f0);
-}
-
-.logout-modal__btn--confirm {
-  background: #e53e3e;
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
-}
-
-.logout-modal__btn--confirm:hover {
-  background: #c53030;
-}
-
-/* ── Responsive fine-tuning ───────────────────────────────── */
 @media (max-width: 360px) {
-  .logout-modal {
-    padding: 24px 16px 20px;
+  .logout-modal { padding: 24px 16px 20px; }
+  .logout-modal__actions { flex-direction: column; }
+}
+
+/* ── Prefer reduced motion ────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .bell-icon,
+  .bell-icon--shaking,
+  .bell-icon--ringing,
+  .bell-icon--idle {
+    animation: none !important;
   }
 
-  .logout-modal__actions {
-    flex-direction: column;
+  .floating-bell__btn:hover .bell-icon,
+  .sidebar-bell:hover .bell-icon {
+    animation: none !important;
   }
 }

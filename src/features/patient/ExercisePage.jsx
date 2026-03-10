@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import db from "../../services/db";
 import { parseQuestions, serializeAnswers } from "../../utils/parsing";
 import { LOGO_PATH, LS_LAST_ACTION } from "../../utils/constants";
+import CelebrationOverlay from "../../components/ui/CelebrationOverlay";
 import "./ExercisePage.css";
 
 export default function ExercisePage({ exercise, session, onBack }) {
@@ -13,9 +14,10 @@ export default function ExercisePage({ exercise, session, onBack }) {
     return init;
   });
 
-  const [step,   setStep]   = useState(0);
-  const [done,   setDone]   = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [step,        setStep]        = useState(0);
+  const [done,        setDone]        = useState(false);
+  const [saving,      setSaving]      = useState(false);
+  const [celebrating, setCelebrating] = useState(false);
   const inflightRef = useRef(false);
 
   const q        = questions[step];
@@ -75,7 +77,14 @@ export default function ExercisePage({ exercise, session, onBack }) {
       }
 
       localStorage.setItem(LS_LAST_ACTION, String(Date.now()));
-      setDone(true);
+
+      // ── Trigger leaf shower, then reveal done screen ──
+      setCelebrating(true);
+      setTimeout(() => {
+        setCelebrating(false);
+        setDone(true);
+      }, 3400);
+
     } catch (e) {
       console.error("[ExercisePage]", e);
       alert("Erro ao salvar respostas: " + e.message);
@@ -121,145 +130,150 @@ export default function ExercisePage({ exercise, session, onBack }) {
   if (!q) return null;
 
   return (
-    <div className="exercise-page__wrapper">
-      <div className="exercise-page">
+    <>
+      {/* ── Celebration overlay — leaf shower on completion ── */}
+      <CelebrationOverlay active={celebrating} />
 
-        {/* ── Header ── */}
-        <header className="exercise-page__header">
-          <button
-            className="exercise-page__back-btn"
-            onClick={onBack}
-            aria-label="Voltar aos exercícios"
-          >
-            ← Voltar
-          </button>
-          <div className="exercise-page__title">{exercise.title}</div>
-          <div
-            className="exercise-page__counter"
-            aria-live="polite"
-            aria-label={`Pergunta ${step + 1} de ${questions.length}`}
-          >
-            {step + 1} / {questions.length}
-          </div>
-        </header>
+      <div className="exercise-page__wrapper">
+        <div className="exercise-page">
 
-        {/* ── Barra de progreso ── */}
-        <div
-          className="exercise-page__progress-track"
-          role="progressbar"
-          aria-valuenow={Math.round(progress)}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label="Progresso do exercício"
-        >
-          <div
-            className="exercise-page__progress-fill"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-
-        {/* ── Tarjeta de pregunta ── */}
-        <div className="exercise-page__question-card">
-          <div className="exercise-page__step-label">
-            Pergunta {step + 1}
-          </div>
-
-          {/* Instrucción */}
-          {q.type === "instruction" && (
-            <div className="exercise-page__instruction">{q.text}</div>
-          )}
-
-          {/* Reflexión */}
-          {q.type === "reflect" && (
-            <>
-              <div className="exercise-page__reflect-text">{q.text}</div>
-              <label htmlFor={`ans-${q.id}`} className="sr-only">
-                Reflexão (opcional)
-              </label>
-              <textarea
-                id={`ans-${q.id}`}
-                className="exercise-page__textarea"
-                placeholder="Escreva sua reflexão aqui... (opcional)"
-                value={answers[q.id]}
-                onChange={(e) => setAns(e.target.value)}
-              />
-            </>
-          )}
-
-          {/* Abierta */}
-          {q.type === "open" && (
-            <>
-              <div className="exercise-page__question-text">{q.text}</div>
-              <label htmlFor={`ans-${q.id}`} className="sr-only">
-                Sua resposta
-              </label>
-              <textarea
-                id={`ans-${q.id}`}
-                className="exercise-page__textarea"
-                placeholder="Escreva sua resposta aqui..."
-                value={answers[q.id]}
-                onChange={(e) => setAns(e.target.value)}
-              />
-            </>
-          )}
-
-          {/* Escala 0-10 */}
-          {q.type === "scale" && (
-            <>
-              <div className="exercise-page__question-text">{q.text}</div>
-              <fieldset className="exercise-page__scale-fieldset">
-                <legend className="sr-only">Escolha um valor de 0 a 10</legend>
-                <div className="exercise-page__scale-row">
-                  {Array.from({ length: 11 }, (_, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      className={[
-                        "exercise-page__scale-btn",
-                        answers[q.id] == i ? "exercise-page__scale-btn--selected" : "",
-                      ].filter(Boolean).join(" ")}
-                      onClick={() => setAns(String(i))}
-                      aria-pressed={answers[q.id] == i}
-                      aria-label={`${i}`}
-                    >
-                      {i}
-                    </button>
-                  ))}
-                </div>
-                <div className="exercise-page__scale-labels" aria-hidden="true">
-                  <span>Nenhum</span>
-                  <span>Máximo</span>
-                </div>
-              </fieldset>
-            </>
-          )}
-
-          {/* ── Navegación ── */}
-          <div className="exercise-page__nav">
+          {/* ── Header ── */}
+          <header className="exercise-page__header">
             <button
-              className="exercise-page__nav-btn exercise-page__nav-btn--prev"
-              onClick={() => setStep((s) => Math.max(0, s - 1))}
-              disabled={step === 0}
-              aria-disabled={step === 0}
+              className="exercise-page__back-btn"
+              onClick={onBack}
+              aria-label="Voltar aos exercícios"
             >
-              ← Anterior
+              ← Voltar
             </button>
-            <button
-              className="exercise-page__nav-btn exercise-page__nav-btn--next"
-              onClick={next}
-              disabled={!canAdvance || saving}
-              aria-busy={saving}
+            <div className="exercise-page__title">{exercise.title}</div>
+            <div
+              className="exercise-page__counter"
+              aria-live="polite"
+              aria-label={`Pergunta ${step + 1} de ${questions.length}`}
             >
-              {saving
-                ? "Salvando..."
-                : step === questions.length - 1
-                ? "Concluir ✓"
-                : "Próximo →"}
-            </button>
-          </div>
-        </div>
+              {step + 1} / {questions.length}
+            </div>
+          </header>
 
+          {/* ── Barra de progreso ── */}
+          <div
+            className="exercise-page__progress-track"
+            role="progressbar"
+            aria-valuenow={Math.round(progress)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Progresso do exercício"
+          >
+            <div
+              className="exercise-page__progress-fill"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          {/* ── Tarjeta de pregunta ── */}
+          <div className="exercise-page__question-card">
+            <div className="exercise-page__step-label">
+              Pergunta {step + 1}
+            </div>
+
+            {/* Instrucción */}
+            {q.type === "instruction" && (
+              <div className="exercise-page__instruction">{q.text}</div>
+            )}
+
+            {/* Reflexión */}
+            {q.type === "reflect" && (
+              <>
+                <div className="exercise-page__reflect-text">{q.text}</div>
+                <label htmlFor={`ans-${q.id}`} className="sr-only">
+                  Reflexão (opcional)
+                </label>
+                <textarea
+                  id={`ans-${q.id}`}
+                  className="exercise-page__textarea"
+                  placeholder="Escreva sua reflexão aqui... (opcional)"
+                  value={answers[q.id]}
+                  onChange={(e) => setAns(e.target.value)}
+                />
+              </>
+            )}
+
+            {/* Abierta */}
+            {q.type === "open" && (
+              <>
+                <div className="exercise-page__question-text">{q.text}</div>
+                <label htmlFor={`ans-${q.id}`} className="sr-only">
+                  Sua resposta
+                </label>
+                <textarea
+                  id={`ans-${q.id}`}
+                  className="exercise-page__textarea"
+                  placeholder="Escreva sua resposta aqui..."
+                  value={answers[q.id]}
+                  onChange={(e) => setAns(e.target.value)}
+                />
+              </>
+            )}
+
+            {/* Escala 0-10 */}
+            {q.type === "scale" && (
+              <>
+                <div className="exercise-page__question-text">{q.text}</div>
+                <fieldset className="exercise-page__scale-fieldset">
+                  <legend className="sr-only">Escolha um valor de 0 a 10</legend>
+                  <div className="exercise-page__scale-row">
+                    {Array.from({ length: 11 }, (_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        className={[
+                          "exercise-page__scale-btn",
+                          answers[q.id] == i ? "exercise-page__scale-btn--selected" : "",
+                        ].filter(Boolean).join(" ")}
+                        onClick={() => setAns(String(i))}
+                        aria-pressed={answers[q.id] == i}
+                        aria-label={`${i}`}
+                      >
+                        {i}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="exercise-page__scale-labels" aria-hidden="true">
+                    <span>Nenhum</span>
+                    <span>Máximo</span>
+                  </div>
+                </fieldset>
+              </>
+            )}
+
+            {/* ── Navegación ── */}
+            <div className="exercise-page__nav">
+              <button
+                className="exercise-page__nav-btn exercise-page__nav-btn--prev"
+                onClick={() => setStep((s) => Math.max(0, s - 1))}
+                disabled={step === 0}
+                aria-disabled={step === 0}
+              >
+                ← Anterior
+              </button>
+              <button
+                className="exercise-page__nav-btn exercise-page__nav-btn--next"
+                onClick={next}
+                disabled={!canAdvance || saving || celebrating}
+                aria-busy={saving}
+              >
+                {saving
+                  ? "Salvando..."
+                  : step === questions.length - 1
+                  ? "Concluir ✓"
+                  : "Próximo →"}
+              </button>
+            </div>
+          </div>
+
+        </div>
       </div>
-    </div>
+    </>
   );
 }

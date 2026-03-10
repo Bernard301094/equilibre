@@ -1,12 +1,29 @@
 /* ============================================================
    SIDEBAR — Sidebar.css
-   Fixed, full-height, desktop only.
-   Mobile: la Sidebar no se renderiza (gestionado por los Layouts).
+   Fixed, full-height.
+
+   3 modos:
+     ① Desktop  ≥ 1025px  →  largura completa 256px
+     ② Tablet   768–1024px →  colapsado 68px (só ícones + tooltip)
+     ③ Mobile   < 768px   →  oculto (usa BottomNav)
+
+   BREAKPOINTS — devem ser idênticos ao hook useIsMobile.js:
+     MOBILE_BREAKPOINT_PX = 767
+     JS:  matchMedia('(max-width: 767px)')
+     CSS: @media (max-width: 767px)   →  oculta sidebar
+          @media (min-width: 768px)   →  sidebar visível (tablet/desktop)
+          @media (min-width: 1025px)  →  sidebar completa
    ============================================================ */
+
+/* ── Variáveis locais ─────────────────────────────────────── */
+.sidebar {
+  --sb-width-full:      256px;
+  --sb-width-collapsed:  68px;
+}
 
 /* ── Contenedor principal ─────────────────────────────────── */
 .sidebar {
-  width: 256px;
+  width: var(--sb-width-full);
   background: linear-gradient(185deg, #0a2e48 0%, #17527c 100%);
   color: #ffffff;
   display: flex;
@@ -15,9 +32,10 @@
   top: 0;
   left: 0;
   height: 100vh;
-  z-index: 100;
+  z-index: var(--z-sidebar, 100);
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.18);
   overflow: hidden;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ── Header ───────────────────────────────────────────────── */
@@ -25,6 +43,7 @@
   padding: 26px 22px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .sidebar__header-row {
@@ -44,6 +63,15 @@
   letter-spacing: 0.01em;
   color: #fff;
   white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar__brand-text {
+  overflow: hidden;
+  white-space: nowrap;
+  transition: opacity 0.2s, max-width 0.25s;
+  max-width: 160px;
+  opacity: 1;
 }
 
 .sidebar__logo {
@@ -57,6 +85,10 @@
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  overflow: hidden;
+  transition: opacity 0.2s, max-width 0.25s;
+  max-width: 40px;
+  opacity: 1;
 }
 
 .sidebar__role {
@@ -66,6 +98,9 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 0.2s;
 }
 
 /* ── Nav ──────────────────────────────────────────────────── */
@@ -74,22 +109,10 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 16px 12px;
+  padding: 16px 8px 16px;
   overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-width: none;
-
-  /* FIX · Colchón visual al final del scroll.
-     Cuando la lista de ítems supera la altura disponible,
-     el último enlace queda pegado contra el borde del footer.
-     padding-bottom añade 16px de respiro en el interior del
-     scroll container, de modo que al llegar al fondo siempre
-     queda aire entre el último ítem y el separador del footer.
-
-     Nota: en contenedores con overflow-y: auto el padding-bottom
-     sí se respeta en todos los navegadores modernos cuando el
-     contenido desborda, a diferencia del margen del último hijo
-     que algunos engines colapsan o ignoran en este contexto. */
-  padding-bottom: 16px;
 }
 
 .sidebar__nav::-webkit-scrollbar {
@@ -112,6 +135,8 @@
   text-align: left;
   transition: background 0.18s, color 0.18s;
   white-space: nowrap;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .sidebar__nav-item:hover {
@@ -125,7 +150,6 @@
   font-weight: 700;
 }
 
-/* Indicador lateral del item activo */
 .sidebar__nav-item--active::before {
   content: "";
   position: absolute;
@@ -141,15 +165,21 @@
   font-size: 1.1rem;
   line-height: 1;
   flex-shrink: 0;
+  min-width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar__nav-label {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: opacity 0.2s, max-width 0.25s;
+  max-width: 160px;
+  opacity: 1;
 }
 
-/* Badge numérico en el nav item */
 .sidebar__nav-badge {
   min-width: 20px;
   height: 20px;
@@ -163,27 +193,53 @@
   text-align: center;
   box-sizing: border-box;
   flex-shrink: 0;
+  transition: opacity 0.2s, transform 0.2s;
 }
 
 /* ── Footer / User pill ───────────────────────────────────── */
 .sidebar__footer {
-  padding: 14px 12px calc(14px + env(safe-area-inset-bottom));
+  padding: 14px 8px calc(14px + env(safe-area-inset-bottom));
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .sidebar__user-pill {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 10px;
+  padding: 10px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.07);
   transition: background 0.2s;
+  overflow: hidden;
 }
 
 .sidebar__user-pill:hover {
   background: rgba(255, 255, 255, 0.12);
+}
+
+.sidebar__avatar-btn {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  min-height: 38px;
+  cursor: pointer;
+  border-radius: 50%;
+  outline-offset: 2px;
+  flex-shrink: 0;
+}
+
+.sidebar__avatar-btn:focus-visible {
+  outline: 2px solid var(--blue-mid, #2e7fab);
+}
+
+.sidebar__avatar-btn:hover .sidebar__avatar,
+.sidebar__avatar-btn:focus-visible .sidebar__avatar {
+  opacity: 0.82;
+  transition: opacity 0.15s ease;
 }
 
 .sidebar__avatar {
@@ -193,14 +249,13 @@
   transition: opacity 0.2s;
 }
 
-.sidebar__avatar:hover {
-  opacity: 0.85;
-}
-
 .sidebar__user-info {
   flex: 1;
   overflow: hidden;
   min-width: 0;
+  transition: opacity 0.2s, max-width 0.25s;
+  max-width: 120px;
+  opacity: 1;
 }
 
 .sidebar__user-name {
@@ -221,7 +276,6 @@
   margin-top: 1px;
 }
 
-/* ── Botones de acción del pill ───────────────────────────── */
 .sidebar__pill-actions {
   display: flex;
   align-items: center;
@@ -264,57 +318,208 @@
   color: #fc8181;
 }
 
-/* ── Variante paciente (se aplica desde PatientLayout via className) ── */
+/* ── Variante paciente ────────────────────────────────────── */
 .patient-layout__sidebar {
   background: linear-gradient(185deg, #0f3d5c 0%, #1a6090 100%);
 }
 
-/* ── PATCH: sidebar__avatar-btn ──────────────────────────────────────────────
-   Adicione este bloco ao seu Sidebar.css existente, na seção do footer/user-pill.
-   Garante que o botão ao redor do avatar não quebre o layout do user-pill e
-   que o cursor de mão sinalize a clicabilidade corretamente.
-   ─────────────────────────────────────────────────────────────────────────── */
+/* ============================================================
+   MODO COLAPSADO — Tablet 768–1024px
+   ============================================================ */
+@media (min-width: 768px) and (max-width: 1024px) {
 
-.sidebar__avatar-btn {
-  /* Reset completo de button para não herdar borda, fundo ou padding */
-  all: unset;
-
-  /* Manter o display inline-flex para não quebrar o alinhamento no flex do user-pill */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  /* Área de toque mínima (WCAG 2.5.5) */
-  min-width:  38px;
-  min-height: 38px;
-
-  cursor: pointer;
-  border-radius: 50%;
-
-  /* Anel de foco acessível — visível apenas via teclado */
-  outline-offset: 2px;
-}
-
-.sidebar__avatar-btn:focus-visible {
-  outline: 2px solid var(--blue-mid, #2e7fab);
-}
-
-.sidebar__avatar-btn:hover .sidebar__avatar,
-.sidebar__avatar-btn:focus-visible .sidebar__avatar {
-  opacity: 0.82;
-  transition: opacity 0.15s ease;
-}
-
-/* ── Responsive: la sidebar solo existe en desktop ────────── */
-@media (max-width: 767px) {
   .sidebar {
-    display: none;
+    width: var(--sb-width-collapsed);
+    overflow: visible;
+  }
+
+  .sidebar__header {
+    padding: 20px 0 16px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .sidebar__header-row {
+    justify-content: center;
+  }
+
+  .sidebar__brand-text,
+  .sidebar__extra-header,
+  .sidebar__role {
+    opacity: 0;
+    max-width: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .sidebar__nav {
+    padding: 12px 6px;
+    align-items: center;
+  }
+
+  .sidebar__nav-item {
+    padding: 11px 0;
+    justify-content: center;
+    border-radius: 10px;
+    width: 100%;
+    overflow: visible;
+  }
+
+  .sidebar__nav-label {
+    opacity: 0;
+    max-width: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .sidebar__nav-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-width: 16px;
+    height: 16px;
+    font-size: 0.6rem;
+    line-height: 16px;
+    padding: 0 3px;
+  }
+
+  /* Tooltip CSS puro via data-label */
+  .sidebar__nav-item[data-label]::after {
+    content: attr(data-label);
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(10, 46, 72, 0.97);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 8px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: var(--z-dropdown, 50);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  }
+
+  /* Triângulo do tooltip */
+  .sidebar__nav-item[data-label]::before {
+    content: "";
+    position: absolute;
+    left: calc(100% + 4px);
+    top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-right-color: rgba(10, 46, 72, 0.97);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+    z-index: var(--z-dropdown, 50);
+  }
+
+  /* Indicador ativo — sobrescreve ::before do tooltip */
+  .sidebar__nav-item--active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 25%;
+    bottom: 25%;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    background: var(--yellow, #f6c90e);
+    border: none;
+    opacity: 1;
+    transform: none;
+    z-index: 1;
+  }
+
+  .sidebar__nav-item:hover::after,
+  .sidebar__nav-item:hover::before {
+    opacity: 1;
+  }
+
+  /* Footer colapsado: avatar + botões em coluna */
+  .sidebar__footer {
+    padding: 12px 6px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .sidebar__user-pill {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 6px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  .sidebar__user-info {
+    opacity: 0;
+    max-width: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .sidebar__pill-actions {
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    align-items: center;
+  }
+
+  .sidebar__icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
   }
 }
 
-/* ── Sidebar más estrecha en tablets intermedias ──────────── */
-@media (min-width: 768px) and (max-width: 1024px) {
+/* ============================================================
+   MOBILE — < 768px
+   ──────────────────────────────────────────────────────────
+   FIX · visibility + translate em vez de display:none
+   ──────────────────────────────────────────────────────────
+   PROBLEMA COM display:none:
+     React controla a montagem da sidebar via {!isMobile && <Sidebar>}.
+     Se o listener JS falha em detectar a mudança de orientação
+     (ex: iOS Safari com `resize`), a sidebar permanece no DOM
+     com isMobile=false, mas o CSS aplica display:none.
+     O elemento fica num estado zumbi: existe no DOM, isMobile=false
+     (BottomNav também some), mas é invisível. Tela travada até F5.
+
+   SOLUÇÃO — duas camadas de proteção:
+
+   1. JS (useIsMobile): usa matchMedia('change') em vez de resize.
+      Agora o listener é confiável e React desmonta a sidebar
+      corretamente quando volta para portrait. Esta é a correção
+      principal.
+
+   2. CSS (esta regra): usa visibility:hidden + translate(-100%)
+      em vez de display:none como fallback defensivo.
+      - visibility:hidden preserva o flow e não "trava" o elemento
+        num estado irrecuperável pelo browser
+      - translate(-100%) move a sidebar para fora da viewport
+        sem alterar o modelo de layout
+      - O elemento continua "existindo" para o React no DOM,
+        mas é completamente imperceptível para o usuário
+      - Quando matchMedia re-dispara e React re-renderiza,
+        a transição de retorno funciona normalmente
+   ============================================================ */
+@media (max-width: 767px) {
   .sidebar {
-    width: 220px;
+    /* Desloca para fora da viewport — mais seguro que display:none */
+    transform: translateX(-100%);
+
+    /* Invisível e sem interação, mas não "travado" no DOM */
+    visibility: hidden;
+    pointer-events: none;
+
+    /* Transição suave — ao voltar para desktop/tablet
+       a sidebar desliza de volta em 250ms */
+    transition:
+      transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+      visibility 0s linear 0.25s;
   }
 }
