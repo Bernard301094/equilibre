@@ -6,10 +6,12 @@
  *  • Auto-sync when connection is restored
  *  • Dispatches "equilibre-sync-status" events for UI feedback
  *
- * CORREÇÃO: insert/update/delete agora tentam a rede diretamente.
- * O IndexedDB só é usado como fallback quando a requisição falha
- * por erro de rede real ("Failed to fetch"). Isso evita o falso
- * positivo de navigator.onLine em ambiente de desenvolvimento.
+ * CORREÇÃO CRÍTICA (makeHeaders):
+ *  Authorization: `Bearer ${token || SUPA_KEY}` causava fallback silencioso
+ *  para a anon key quando token era null/undefined. O Supabase recebia a anon
+ *  key como Bearer → auth.uid() = null → RLS bloqueava INSERT/UPDATE sem erro.
+ *  Fix: mutations (insert/update/delete) exigem token explícito e lançam erro
+ *  claro se ausente. Queries públicas mantêm o fallback para a anon key.
  */
 
 const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -173,10 +175,45 @@ function hasEmptyFilterIn(options = {}) {
   );
 }
 
-function makeHeaders(token, extra = {}) {
+/**
+ * Headers para queries públicas (SELECT sem RLS restritivo).
+ * Mantém fallback para anon key quando token está ausente.
+ */
+function makeQueryHeaders(token, extra = {}) {
   return {
     apikey:         SUPA_KEY,
     Authorization:  `Bearer ${token || SUPA_KEY}`,
+    "Content-Type": "application/json",
+    ...extra,
+  };
+}
+
+/**
+ * ✅ CORRIGIDO — Headers para mutations (INSERT / UPDATE / DELETE).
+ *
+ * PROBLEMA ANTERIOR:
+ *   Authorization: `Bearer ${token || SUPA_KEY}`
+ *   → Quando token era null/undefined, usava a anon key como Bearer.
+ *   → Supabase interpretava auth.uid() = null.
+ *   → RLS: `auth.uid() = therapist_id` → false → INSERT bloqueado sem erro HTTP.
+ *   → db.insert devolvia null, FeedbackTab lançava "Insert bloqueado" genérico.
+ *
+ * SOLUÇÃO:
+ *   Mutations exigem sempre um token de utilizador autenticado.
+ *   Se token estiver ausente, lança erro imediatamente com mensagem clara,
+ *   em vez de deixar o Supabase falhar silenciosamente por RLS.
+ */
+function makeMutationHeaders(token, extra = {}) {
+  if (!token) {
+    throw new Error(
+      "[db] access_token ausente numa operação de escrita. " +
+      "Certifica-te de que session.access_token está a ser passado ao chamar " +
+      "db.insert / db.update / db.delete."
+    );
+  }
+  return {
+    apikey:         SUPA_KEY,
+    Authorization:  `Bearer ${token}`,   // ← nunca faz fallback para anon key
     "Content-Type": "application/json",
     ...extra,
   };
@@ -205,13 +242,14 @@ async function handleResponse(res, context) {
 const db = {
   /**
    * Leituras sempre vão para a rede (não são enfileiradas offline).
+   * Usa makeQueryHeaders — mantém fallback para anon key em queries públicas.
    */
   async query(table, options = {}, token = null) {
     if (hasEmptyFilterIn(options)) return [];
     const url = buildUrl(table, options);
     const res = await fetch(url, {
       cache:   "no-store",
-      headers: makeHeaders(token),
+      headers: makeQueryHeaders(token),
     });
     await handleResponse(res, "query");
     return res.json();
@@ -219,13 +257,14 @@ const db = {
 
   /**
    * Insert: tenta sempre a rede primeiro.
+   * Usa makeMutationHeaders — falha imediatamente se token ausente.
    * Só enfileira no IndexedDB se for erro de rede real.
    */
   async insert(table, data, token = null) {
     try {
       const res = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
         method:  "POST",
-        headers: makeHeaders(token, { Prefer: "return=representation" }),
+        headers: makeMutationHeaders(token, { Prefer: "return=representation" }),
         body:    JSON.stringify(data),
       });
       await handleResponse(res, "insert");
@@ -243,6 +282,7 @@ const db = {
 
   /**
    * Update: tenta sempre a rede primeiro.
+   * Usa makeMutationHeaders — falha imediatamente se token ausente.
    * Só enfileira no IndexedDB se for erro de rede real.
    */
   async update(table, filter, data, token = null) {
@@ -250,7 +290,7 @@ const db = {
       const url = buildUrl(table, { filter });
       const res = await fetch(url, {
         method:  "PATCH",
-        headers: makeHeaders(token, { Prefer: "return=representation" }),
+        headers: makeMutationHeaders(token, { Prefer: "return=representation" }),
         body:    JSON.stringify(data),
       });
       await handleResponse(res, "update");
@@ -269,6 +309,7 @@ const db = {
 
   /**
    * Delete: tenta sempre a rede primeiro.
+   * Usa makeMutationHeaders — falha imediatamente se token ausente.
    * Só enfileira no IndexedDB se for erro de rede real.
    */
   async delete(table, filter, token = null) {
@@ -276,7 +317,7 @@ const db = {
       const url = buildUrl(table, { filter });
       const res = await fetch(url, {
         method:  "DELETE",
-        headers: makeHeaders(token),
+        headers: makeMutationHeaders(token),
       });
       await handleResponse(res, "delete");
       return true;
@@ -290,14 +331,10 @@ const db = {
     }
   },
 
-  /**
-   * Expõe flush manual para debugging / pull-to-refresh.
-   */
+  /** Expõe flush manual para debugging / pull-to-refresh. */
   flushQueue,
 
-  /**
-   * Retorna o número de itens pendentes na fila offline.
-   */
+  /** Retorna o número de itens pendentes na fila offline. */
   async getPendingCount() {
     const items = await idbGetAll();
     return items.length;

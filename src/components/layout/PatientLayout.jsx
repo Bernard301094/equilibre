@@ -18,12 +18,13 @@ import "./PatientLayout.css";
    badge dinâmico para exercícios pendentes
    ════════════════════════════════════════════════════════════ */
 const buildNavItems = (pendingCount) => [
-  { id: "home",      icon: "🏠",  label: "Início"     },
-  { id: "exercises", icon: "📋",  label: "Exercícios", badge: pendingCount },
-  { id: "diary",     icon: "📓",  label: "Diário"     },
-  { id: "routine",   icon: "🗓️",  label: "Rotina"     },
-  { id: "progress",  icon: "📈",  label: "Progresso"  },
-  { id: "history",   icon: "🕰️", label: "Histórico"  },
+  { id: "home",        icon: "🏠",  label: "Início"      },
+  { id: "exercises",   icon: "📋",  label: "Exercícios",  badge: pendingCount },
+  { id: "diary",       icon: "📓",  label: "Diário"      },
+  { id: "routine",     icon: "🗓️",  label: "Rotina"      },
+  { id: "progress",    icon: "📈",  label: "Progresso"   },
+  { id: "history",     icon: "🕰️", label: "Histórico"   },
+  { id: "orientacoes", icon: "📬",  label: "Orientações" }, // ← NOVO
 ];
 
 /* ── LogoutDialog ─────────────────────────────────────────── */
@@ -55,13 +56,7 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
   const [showLogout,   setShowLogout]   = useState(false);
   const [showDelete,   setShowDelete]   = useState(false);
 
-  /*
-    useIsMobile() — matchMedia('change') confiável em iOS Safari.
-    Evita a race condition de `resize` que causava navegação
-    invisível após rotação de tela.
-  */
   const isMobile = useIsMobile();
-
   const prevTherapistRef = useRef(session.therapist_id);
 
   /* ── Poll de exercícios pendentes para badge ── */
@@ -95,19 +90,11 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
       .catch(() => {});
   }, [session.therapist_id, session.id, session.access_token, setSession]);
 
-  /*
-    navigateTo(id) — view ID → URL → navigate()
-    Mesma interface que Sidebar/BottomNav esperam.
-  */
   const navigateTo = useCallback((id) => {
     const path = PATIENT_ROUTES[id];
     if (path) navigate(path);
   }, [navigate]);
 
-  /*
-    activeView — URL atual → view ID
-    Correto após F5, link direto ou botão Voltar.
-  */
   const activeView = PATH_TO_PATIENT_VIEW[location.pathname] ?? "home";
 
   const navItems = buildNavItems(pendingCount);
@@ -115,7 +102,6 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
   return (
     <div className="patient-layout">
 
-      {/* Sidebar — apenas desktop (≥ 768px) */}
       {!isMobile && (
         <Sidebar
           brand="Equilibre"
@@ -133,11 +119,6 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
         />
       )}
 
-      {/*
-        <Outlet /> renderiza a view filha correspondente à URL.
-        context passa session e navigateTo para views filhas
-        que precisem navegar (ex: PatientHome → "Ir para exercícios").
-      */}
       <main
         className={[
           "patient-layout__main",
@@ -147,7 +128,6 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
         <Outlet context={{ session, setSession, navigateTo }} />
       </main>
 
-      {/* BottomNav — apenas mobile */}
       {isMobile && (
         <BottomNav
           items={navItems}

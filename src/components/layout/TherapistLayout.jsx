@@ -13,33 +13,18 @@ import {
 } from "../../App";
 import "./TherapistLayout.css";
 
-/* ════════════════════════════════════════════════════════════
-   MAPA DE NAVEGAÇÃO
-
-   Por que manter `id` e não usar as URLs diretamente no
-   Sidebar/BottomNav?
-   ─────────────────────────────────────────────────────────
-   Esses componentes foram construídos com a interface:
-     activeView: string (ex: "dashboard")
-     onNav:      (id: string) => void
-
-   Manter essa interface evita reescrever Sidebar e BottomNav.
-   A tradução id ↔ URL fica exclusivamente neste layout:
-
-     navigateTo("patients")         → navigate("/terapeuta/pacientes")
-     "/terapeuta/pacientes" no URL  → activeView = "patients"
-   ════════════════════════════════════════════════════════════ */
 const NAV_ITEMS = [
-  { id: "dashboard",  icon: "🏠", label: "Início"     },
-  { id: "patients",   icon: "👥", label: "Pacientes"  },
-  { id: "exercises",  icon: "📚", label: "Exercícios" },
-  { id: "create",     icon: "✏️",  label: "Criar"      },
-  { id: "progress",   icon: "📈", label: "Progresso"  },
-  { id: "responses",  icon: "💬", label: "Respostas"  },
+  { id: "dashboard",   icon: "🏠",  label: "Início"       },
+  { id: "patients",    icon: "👥",  label: "Pacientes"    },
+  { id: "exercises",   icon: "📚",  label: "Exercícios"   },
+  { id: "create",      icon: "✏️",  label: "Criar"        },
+  { id: "progress",    icon: "📈",  label: "Progresso"    },
+  { id: "responses",   icon: "💬",  label: "Respostas"    },
+  { id: "orientacoes", icon: "📬",  label: "Orientações"  }, // ← NOVO
 ];
 
 /* ════════════════════════════════════════════════════════════
-   useBellState — física de pêndulo (inalterado)
+   useBellState — física de pêndulo
    ════════════════════════════════════════════════════════════ */
 function useBellState(unreadCount) {
   const [animKey,  setAnimKey]  = useState(0);
@@ -161,10 +146,6 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
   const prevPathRef = useRef(location.pathname);
   const { unreadCount, markAllRead } = useNotifications(session.id);
 
-  /*
-    navigateTo(id) — view ID → URL → navigate()
-    Interface compatível com Sidebar e BottomNav.
-  */
   const navigateTo = useCallback((id) => {
     const path = THERAPIST_ROUTES[id];
     if (!path) return;
@@ -172,14 +153,8 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
     navigate(path);
   }, [navigate, location.pathname]);
 
-  /*
-    activeView — URL atual → view ID
-    Garante que o item correto fique destacado no Sidebar/BottomNav
-    mesmo após F5, link direto ou botão Voltar do browser.
-  */
   const activeView = PATH_TO_THERAPIST_VIEW[location.pathname] ?? "dashboard";
 
-  /* Bell: toggle notificações ↔ tela anterior */
   const handleBellClick = () => {
     if (activeView === "notifications") {
       navigate(prevPathRef.current || THERAPIST_ROUTES.dashboard);
@@ -212,11 +187,6 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
         />
       )}
 
-      {/*
-        <Outlet /> injeta a view filha correspondente à URL atual.
-        context disponibiliza session e navigateTo para as views
-        filhas via useOutletContext() se necessário.
-      */}
       <main className={`therapist-layout__main${isMobile ? " therapist-layout__main--mobile" : ""}`}>
         <Outlet context={{ session, setSession, navigateTo }} />
       </main>

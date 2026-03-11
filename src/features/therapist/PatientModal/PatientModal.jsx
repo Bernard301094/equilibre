@@ -5,15 +5,16 @@ import AssignTab from "./AssignTab";
 import RoutineTab from "./RoutineTab";
 import ClinicalNotesTab from "./ClinicalNotesTab";
 import WellbeingTab from "./WellbeingTab";
-import FeedbackTab from "./FeedbackTab";          // ← NEW
 import "./PatientModal.css";
+
+// ← FeedbackTab removida: as orientações agora vivem em MessagesView (/orientacoes)
 
 const TABS = [
   { id: "assign",    label: "📋 Exercícios"  },
   { id: "routine",   label: "🗓️ Rotina (BA)" },
   { id: "wellbeing", label: "🌱 Bem-estar"   },
-  { id: "feedback",  label: "💬 Feedback"    }, // ← NEW
   { id: "notes",     label: "🔒 Prontuário"  },
+  // "💬 Feedback" removida — acesse via Mural de Orientações
 ];
 
 export default function PatientModal({ patient, session, onClose }) {
@@ -34,7 +35,7 @@ export default function PatientModal({ patient, session, onClose }) {
     let active = true;
     (async () => {
       try {
-        const [ex, assign, goals, notes, acts, diary, feedbacks] = await Promise.all([
+        const [ex, assign, goals, notes, acts, diary] = await Promise.all([
           db.query("exercises", {}, session.access_token),
           db.query("assignments",    { filter: { patient_id: patient.id } }, session.access_token),
           db.query("goals",          { filter: { patient_id: patient.id } }, session.access_token),
@@ -51,11 +52,7 @@ export default function PatientModal({ patient, session, onClose }) {
             select: "id,date,mood,energy,anxiety,motivation,created_at",
             order:  "date.desc",
           }, session.access_token).catch(() => []),
-          // ── NEW: load therapist feedback for this patient ──
-          db.query("therapist_feedback", {
-            filter: { patient_id: patient.id, therapist_id: session.id },
-            order:  "created_at.desc",
-          }, session.access_token).catch(() => []),
+          // therapist_feedback removida daqui — gerida em MessagesView
         ]);
 
         if (!active) return;
@@ -69,7 +66,6 @@ export default function PatientModal({ patient, session, onClose }) {
           notes:        Array.isArray(notes)     ? notes     : [],
           activities:   Array.isArray(acts)      ? acts      : [],
           diaryEntries: Array.isArray(diary)     ? diary     : [],
-          feedbacks:    Array.isArray(feedbacks) ? feedbacks : [], // ← NEW
         });
       } catch (e) {
         console.error("[PatientModal]", e);
@@ -185,25 +181,6 @@ export default function PatientModal({ patient, session, onClose }) {
                     diaryEntries={data.diaryEntries}
                     goal={data.goal}
                     assignments={data.assignments}
-                  />
-                )}
-              </div>
-
-              {/* ── NEW: Feedback tab panel ── */}
-              <div
-                role="tabpanel"
-                id="tabpanel-feedback"
-                hidden={tab !== "feedback"}
-                className="patient-modal__panel"
-              >
-                {tab === "feedback" && (
-                  <FeedbackTab
-                    patient={patient}
-                    session={session}
-                    feedbacks={data.feedbacks}
-                    onFeedbacksChange={(feedbacks) =>
-                      setData((d) => ({ ...d, feedbacks }))
-                    }
                   />
                 )}
               </div>

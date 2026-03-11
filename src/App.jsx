@@ -50,26 +50,23 @@ async function resolveLogin({ email, password, role }) {
   const userId = authData.user?.id;
   let userRow  = null;
 
-  // Busca por id primeiro
   try {
     const byId = await db.query("users", { filter: { id: userId } }, token);
     if (Array.isArray(byId) && byId.length > 0) userRow = byId[0];
   } catch (e) {
-    console.warn("[resolveLogin] query por id falhou:", e.message); // ← agora loga
+    console.warn("[resolveLogin] query por id falhou:", e.message);
   }
 
-  // Fallback: busca por email
   if (!userRow) {
     try {
       const byEmail = await db.query("users", { filter: { email } }, token);
       if (Array.isArray(byEmail) && byEmail.length > 0) userRow = byEmail[0];
     } catch (e) {
-      console.warn("[resolveLogin] query por email falhou:", e.message); // ← agora loga
+      console.warn("[resolveLogin] query por email falhou:", e.message);
     }
   }
 
   if (!userRow) {
-    // ── Diagnóstico: tenta sem token para ver se é problema de RLS ──
     try {
       const debug = await db.query("users", { filter: { email } });
       console.warn("[resolveLogin] DEBUG sem token:", debug);
@@ -215,15 +212,17 @@ export const THERAPIST_ROUTES = {
   progress:      "/terapeuta/progresso",
   responses:     "/terapeuta/respostas",
   notifications: "/terapeuta/notificacoes",
+  orientacoes:   "/terapeuta/orientacoes",   // ← NOVO: Mural de Orientações
 };
 
 export const PATIENT_ROUTES = {
-  home:      "/paciente/inicio",
-  exercises: "/paciente/exercicios",
-  diary:     "/paciente/diario",
-  routine:   "/paciente/rotina",
-  progress:  "/paciente/progresso",
-  history:   "/paciente/historico",
+  home:        "/paciente/inicio",
+  exercises:   "/paciente/exercicios",
+  diary:       "/paciente/diario",
+  routine:     "/paciente/rotina",
+  progress:    "/paciente/progresso",
+  history:     "/paciente/historico",
+  orientacoes: "/paciente/orientacoes",      // ← NOVO: Mural de Orientações
 };
 
 export const PATH_TO_THERAPIST_VIEW = Object.fromEntries(
@@ -306,6 +305,11 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
         <Route path="progresso"    element={<TherapistProgress  session={session} />} />
         <Route path="respostas"    element={<ResponsesView      session={session} />} />
         <Route path="notificacoes" element={<NotificationsView  session={session} />} />
+        {/* ← NOVO: Mural de Orientações do terapeuta */}
+        <Route
+          path="orientacoes"
+          element={<MessagesView session={session} />}
+        />
         <Route path="*" element={<Navigate to={THERAPIST_ROUTES.dashboard} replace />} />
       </Route>
 
@@ -319,12 +323,17 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
         }
       >
         <Route index element={<Navigate to={PATIENT_ROUTES.home} replace />} />
-        <Route path="inicio"     element={<PatientHome      session={session} setSession={setSession} />} />
-        <Route path="exercicios" element={<PatientExercises session={session} />} />
-        <Route path="diario"     element={<PatientDiary     session={session} />} />
-        <Route path="rotina"     element={<PatientRoutine   session={session} />} />
-        <Route path="progresso"  element={<PatientProgress  session={session} />} />
-        <Route path="historico"  element={<PatientHistory   session={session} />} />
+        <Route path="inicio"       element={<PatientHome      session={session} setSession={setSession} />} />
+        <Route path="exercicios"   element={<PatientExercises session={session} />} />
+        <Route path="diario"       element={<PatientDiary     session={session} />} />
+        <Route path="rotina"       element={<PatientRoutine   session={session} />} />
+        <Route path="progresso"    element={<PatientProgress  session={session} />} />
+        <Route path="historico"    element={<PatientHistory   session={session} />} />
+        {/* ← NOVO: Mural de Orientações do paciente */}
+        <Route
+          path="orientacoes"
+          element={<MessagesView session={session} />}
+        />
         <Route path="*" element={<Navigate to={PATIENT_ROUTES.home} replace />} />
       </Route>
 
@@ -347,6 +356,7 @@ import PatientDiary        from "./features/patient/DiaryView";
 import PatientRoutine      from "./features/patient/RoutineView";
 import PatientProgress     from "./features/patient/PatientProgress";
 import PatientHistory      from "./features/patient/PatientHistory";
+import MessagesView        from "./components/shared/MessagesView"; // ← NOVO
 
 /* ── App root ─────────────────────────────────────────────── */
 export default function App() {
@@ -372,9 +382,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      {/* ── Toast de conexão — visível em todas as telas ── */}
       <ConnectionToast />
-
       <AppRoutes
         session={session}
         setSession={setSession}

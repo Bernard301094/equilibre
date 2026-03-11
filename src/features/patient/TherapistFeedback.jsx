@@ -1,181 +1,239 @@
 // src/components/patient/TherapistFeedback.jsx
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import db from "../../services/db";
 import { formatDateTime } from "../../utils/dates";
 import "./TherapistFeedback.css";
 
+const POLL_INTERVAL_MS = 2 * 60 * 1000;
+
+/** Formata apenas o horário curto para a bolha de chat */
+function formatTime(isoString) {
+  if (!isoString) return "";
+  return new Date(isoString).toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Formata a data do separador de dia */
+function formatDayLabel(isoString) {
+  if (!isoString) return "";
+  const d = new Date(isoString);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  if (d.toDateString() === today.toDateString()) return "Hoje";
+  if (d.toDateString() === yesterday.toDateString()) return "Ontem";
+  return d.toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
 /**
- * TherapistFeedback
- * Exibido na visão do paciente.
- * Busca todas as mensagens escritas pelo terapeuta vinculado
- * e marca as não-lidas como lidas automaticamente.
+ * Agrupa as mensagens inserindo separadores de data quando o dia muda.
+ * Retorna um array misto: { type: 'day', label } | { type: 'msg', ...fb }
  */
-export default function TherapistFeedback({ session }) {
-  const [feedbacks, setFeedbacks] = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState("");
-
-  /* ── Fetch + auto-mark-as-read ── */
-  const loadFeedbacks = useCallback(async () => {
-    // CORREÇÃO: guard aprimorado com log de diagnóstico
-    if (!session?.therapist_id) {
-      console.warn(
-        "[TherapistFeedback] Abortando: session.therapist_id está ausente.\n" +
-        "Verifique se hydrateSession() foi chamado após o login.\n" +
-        "session atual:", session
-      );
-      setLoading(false);
-      return;
+function groupByDay(feedbacks) {
+  const result = [];
+  let lastDay = null;
+  // feedbacks vêm desc → invertemos para exibir cronologicamente
+  const asc = [...feedbacks].reverse();
+  for (const fb of asc) {
+    const day = new Date(fb.created_at).toDateString();
+    if (day !== lastDay) {
+      result.push({ type: "day", label: formatDayLabel(fb.created_at), key: `day-${day}` });
+      lastDay = day;
     }
+    result.push({ type: "msg", ...fb });
+  }
+  return result;
+}
 
-    if (!session?.id) {
-      console.warn("[TherapistFeedback] Abortando: session.id (patient_id) está ausente.");
-      setLoading(false);
-      return;
-    }
+export default function TherapistFeedback({ session, setView }) {
+  const [feedbacks,   setFeedbacks]   = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [refreshing,  setRefreshing]  = useState(false);
+  const [error,       setError]       = useState("");
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const pollingRef  = useRef(null);
+  const bottomRef   = useRef(null);
 
-    setLoading(true);
-    setError("");
+  const scrollToBottom = (behavior = "smooth") => {
+    bottomRef.current?.scrollIntoView({ behavior });
+  };
 
-    try {
-      const rows = await db.query(
-        "therapist_feedback",
-        {
-          filter: {
-            patient_id:   session.id,
-            therapist_id: session.therapist_id,
-          },
-          order: "created_at.desc",
-        },
-        session.access_token
-      );
+  const markUnreadAsRead = useCallback(async (unreadList, accessToken) => {
+    if (unreadList.length === 0) return;
+    const results = await Promise.all(
+      unreadList.map((fb) =>
+        db.update("therapist_feedback", { id: fb.id }, { read: true }, accessToken)
+          .catch((e) => {
+            console.warn(`[TherapistFeedback] Falha ao marcar ${fb.id}:`, e.message);
+            return null;
+          })
+      )
+    );
+    const failed = results.filter((r) => r === null).length;
+    if (failed > 0) console.warn(`[TherapistFeedback] ${failed}/${unreadList.length} updates falharam.`);
+  }, []);
 
-      const list = Array.isArray(rows) ? rows : [];
-      setFeedbacks(list);
-
-      // Marca não-lidas como lidas (fire-and-forget, não bloqueia a UI)
-      const unread = list.filter((fb) => !fb.read);
-      if (unread.length > 0) {
-        unread.forEach((fb) => {
-          db.update(
-            "therapist_feedback",
-            { id: fb.id },
-            { read: true },
-            session.access_token
-          ).catch((e) => {
-            // Não é crítico, mas loga para detectar falhas de RLS
-            console.warn("[TherapistFeedback] Falha ao marcar feedback como lido:", e.message);
-          });
-        });
-        // Atualização otimista local
-        setFeedbacks((prev) =>
-          prev.map((fb) => (!fb.read ? { ...fb, read: true } : fb))
+  const loadFeedbacks = useCallback(
+    async ({ silent = false } = {}) => {
+      if (!session?.therapist_id || !session?.id) { setLoading(false); return; }
+      silent ? setRefreshing(true) : setLoading(true);
+      setError("");
+      try {
+        const rows = await db.query(
+          "therapist_feedback",
+          { filter: { patient_id: session.id }, order: "created_at.desc" },
+          session.access_token
         );
+        const list = Array.isArray(rows) ? rows : [];
+        setFeedbacks(list);
+        setLastUpdated(new Date());
+        const unread = list.filter((fb) => !fb.read);
+        if (unread.length > 0) {
+          setFeedbacks((prev) => prev.map((fb) => (!fb.read ? { ...fb, read: true } : fb)));
+          markUnreadAsRead(unread, session.access_token);
+        }
+        // Scroll após atualização
+        setTimeout(() => scrollToBottom(silent ? "smooth" : "auto"), 80);
+      } catch (e) {
+        console.error("[TherapistFeedback] Erro:", e);
+        setError("Não foi possível carregar as mensagens.");
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-    } catch (e) {
-      console.error("[TherapistFeedback] Erro ao carregar mensagens:", e);
-      setError("Não foi possível carregar as mensagens.");
-    } finally {
-      setLoading(false);
-    }
-  }, [session?.id, session?.therapist_id, session?.access_token]);
+    },
+    [session?.id, session?.therapist_id, session?.access_token, markUnreadAsRead]
+  );
 
   useEffect(() => {
     loadFeedbacks();
-  }, [loadFeedbacks]);
+    if (session?.therapist_id) {
+      pollingRef.current = setInterval(() => loadFeedbacks({ silent: true }), POLL_INTERVAL_MS);
+    }
+    return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
+  }, [loadFeedbacks, session?.therapist_id]);
 
-  /* ── Sem terapeuta vinculado: não renderiza nada ── */
-  if (!session?.therapist_id) return null;
-
-  /* ── Carregando ── */
-  if (loading) {
+  /* ── Sem terapeuta vinculado ── */
+  if (!session?.therapist_id) {
     return (
-      <section className="tf-section" aria-label="Mensagens do terapeuta">
-        <h2 className="tf-section__title">💬 Mensagens do Terapeuta</h2>
-        <div className="tf-loading" aria-live="polite">
-          <span className="tf-loading__spinner" aria-hidden="true" />
-          Carregando mensagens…
+      <section className="tf-chat" aria-label="Mensagens do terapeuta">
+        <div className="tf-chat__topbar">
+          <div className="tf-chat__topbar-avatar" aria-hidden="true">🧑‍⚕️</div>
+          <div className="tf-chat__topbar-info">
+            <span className="tf-chat__topbar-name">Seu Terapeuta</span>
+            <span className="tf-chat__topbar-status">Nenhum profissional vinculado</span>
+          </div>
+        </div>
+        <div className="tf-chat__body tf-chat__body--centered">
+          <div className="tf-empty-state" role="status">
+            <span className="tf-empty-state__icon" aria-hidden="true">🔗</span>
+            <p className="tf-empty-state__title">Nenhum profissional vinculado</p>
+            <p className="tf-empty-state__desc">
+              Insira o seu código de convite para começar a receber mensagens.
+            </p>
+            {typeof setView === "function" && (
+              <button className="tf-empty-state__btn" onClick={() => setView("home")}>
+                🏠 Ir para o início
+              </button>
+            )}
+          </div>
         </div>
       </section>
     );
   }
 
-  /* ── Erro ── */
-  if (error) {
-    return (
-      <section className="tf-section" aria-label="Mensagens do terapeuta">
-        <h2 className="tf-section__title">💬 Mensagens do Terapeuta</h2>
-        <div className="tf-error" role="alert">
-          <span aria-hidden="true">⚠️</span> {error}
-          <button className="tf-retry-btn" onClick={loadFeedbacks}>
-            Tentar novamente
-          </button>
-        </div>
-      </section>
-    );
-  }
-
-  /* ── Sem mensagens ainda ── */
-  if (feedbacks.length === 0) {
-    return (
-      <section className="tf-section" aria-label="Mensagens do terapeuta">
-        <h2 className="tf-section__title">💬 Mensagens do Terapeuta</h2>
-        <div className="tf-empty">
-          <span className="tf-empty__icon" aria-hidden="true">📭</span>
-          <p>Ainda não há mensagens do seu terapeuta.</p>
-        </div>
-      </section>
-    );
-  }
-
+  const grouped = groupByDay(feedbacks);
   const unreadCount = feedbacks.filter((fb) => !fb.read).length;
 
   return (
-    <section className="tf-section" aria-label="Mensagens do terapeuta">
-      <div className="tf-section__header">
-        <h2 className="tf-section__title">
-          💬 Mensagens do Terapeuta
-        </h2>
-        {unreadCount > 0 && (
-          <span
-            className="tf-unread-badge"
-            aria-label={`${unreadCount} não lidas`}
-          >
-            {unreadCount} nova{unreadCount > 1 ? "s" : ""}
+    <section className="tf-chat" aria-label="Chat com terapeuta">
+
+      {/* ── Topbar estilo messenger ── */}
+      <div className="tf-chat__topbar">
+        <div className="tf-chat__topbar-avatar" aria-hidden="true">🧑‍⚕️</div>
+        <div className="tf-chat__topbar-info">
+          <span className="tf-chat__topbar-name">Seu Terapeuta</span>
+          <span className="tf-chat__topbar-status">
+            {refreshing ? "Atualizando…" : "Online"}
           </span>
-        )}
+        </div>
+        <div className="tf-chat__topbar-actions">
+          {unreadCount > 0 && (
+            <span className="tf-chat__badge" aria-label={`${unreadCount} não lidas`}>
+              {unreadCount}
+            </span>
+          )}
+          <button
+            className="tf-chat__refresh-btn"
+            onClick={() => loadFeedbacks({ silent: true })}
+            disabled={refreshing}
+            aria-label="Atualizar mensagens"
+            title={lastUpdated ? `Atualizado: ${formatDateTime(lastUpdated.toISOString())}` : "Atualizar"}
+          >
+            {refreshing ? "⏳" : "🔄"}
+          </button>
+        </div>
       </div>
 
-      <div className="tf-list" aria-label="Mensagens recebidas">
-        {feedbacks.map((fb, index) => (
-          <article
-            key={fb.id}
-            className={[
-              "tf-card",
-              index === 0 && !fb.read ? "tf-card--highlight" : "",
-            ].filter(Boolean).join(" ")}
-            aria-label={`Mensagem de ${formatDateTime(fb.created_at)}`}
-          >
-            {/* Ponto indicador de não-lida */}
-            {!fb.read && (
-              <span className="tf-card__unread-dot" aria-label="Não lida" />
-            )}
+      {/* ── Área de mensagens ── */}
+      <div className="tf-chat__body" role="log" aria-live="polite" aria-label="Mensagens">
 
-            <div className="tf-card__avatar" aria-hidden="true">
-              🧑‍⚕️
-            </div>
+        {loading && (
+          <div className="tf-chat__loader">
+            <span className="tf-chat__loader-dot" />
+            <span className="tf-chat__loader-dot" />
+            <span className="tf-chat__loader-dot" />
+          </div>
+        )}
 
-            <div className="tf-card__content">
-              <div className="tf-card__meta">
-                <span className="tf-card__author">Seu Terapeuta</span>
-                <span className="tf-card__date">
-                  {formatDateTime(fb.created_at)}
-                </span>
+        {error && (
+          <div className="tf-chat__error" role="alert">
+            <span>⚠️ {error}</span>
+            <button onClick={() => loadFeedbacks()}>Tentar novamente</button>
+          </div>
+        )}
+
+        {!loading && !error && feedbacks.length === 0 && (
+          <div className="tf-chat__empty" role="status">
+            <span aria-hidden="true">💬</span>
+            <p>Ainda não há mensagens do seu terapeuta.</p>
+            <p className="tf-chat__empty-sub">Quando ele enviar uma mensagem, ela aparecerá aqui.</p>
+          </div>
+        )}
+
+        {/* Mensagens agrupadas por dia */}
+        {grouped.map((item) => {
+          if (item.type === "day") {
+            return (
+              <div key={item.key} className="tf-chat__day-label" aria-label={`Mensagens de ${item.label}`}>
+                <span>{item.label}</span>
               </div>
-              <p className="tf-card__message">{fb.message}</p>
+            );
+          }
+
+          return (
+            <div
+              key={item.id}
+              className="tf-chat__message tf-chat__message--incoming"
+              aria-label={`Mensagem de ${formatTime(item.created_at)}`}
+            >
+              <div className="tf-chat__bubble tf-chat__bubble--incoming">
+                <p className="tf-chat__bubble-text">{item.message}</p>
+                <span className="tf-chat__bubble-time">{formatTime(item.created_at)}</span>
+              </div>
             </div>
-          </article>
-        ))}
+          );
+        })}
+
+        {/* Âncora de scroll */}
+        <div ref={bottomRef} />
       </div>
     </section>
   );

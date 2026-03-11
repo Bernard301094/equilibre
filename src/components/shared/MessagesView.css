@@ -1,0 +1,352 @@
+/* ================================================================
+   MessagesView.css — Mural de Orientações Clínicas
+   Design: canal assíncrono profissional, NÃO um chat informal.
+   Mobile-first · BEM · Clínica Natural Design System
+   ================================================================ */
+
+/* ── Loading ──────────────────────────────────────────────────── */
+.mv-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 60px 24px;
+  color: var(--pt-text-muted, #718096);
+  font-size: 0.9rem;
+}
+
+.mv-loading__spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--pt-border, #dde5ed);
+  border-top-color: var(--pt-blue-500, #2e7fab);
+  border-radius: 50%;
+  animation: mv-spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes mv-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Cabeçalho de página (compartilhado terapeuta e paciente) ─ */
+.mv-page-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1.5px solid var(--pt-border, #dde5ed);
+}
+
+.mv-page-header__icon {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+  /* Fundo oval sutil */
+  background: var(--pt-blue-050, #eef6fc);
+  border: 1.5px solid var(--pt-blue-100, #ddedf9);
+  border-radius: var(--pt-r-md, 14px);
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mv-page-header__title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.2rem, 3.5vw, 1.5rem);
+  font-weight: 700;
+  color: var(--pt-text, #1a202c);
+  margin: 0 0 4px;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.mv-page-header__sub {
+  font-size: 0.8125rem;
+  color: var(--pt-text-muted, #718096);
+  margin: 0;
+  line-height: 1.55;
+  max-width: 56ch;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TERAPEUTA — layout de duas colunas
+   ═══════════════════════════════════════════════════════════════ */
+.mv-therapist {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mv-therapist__layout {
+  display: flex;
+  flex: 1;
+  gap: 0;
+  min-height: 0;
+  border: 1.5px solid var(--pt-border, #dde5ed);
+  border-radius: var(--pt-r-lg, 20px);
+  overflow: hidden;
+  background: var(--pt-surface, #fff);
+  box-shadow: var(--pt-shadow-sm);
+}
+
+/* ── Lista de pacientes (coluna esquerda) ─────────────────────── */
+.mv-patient-list {
+  width: 260px;
+  flex-shrink: 0;
+  border-right: 1.5px solid var(--pt-border, #dde5ed);
+  display: flex;
+  flex-direction: column;
+  background: var(--pt-surface-alt, #f7f9fc);
+  overflow-y: auto;
+}
+
+.mv-patient-list__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--pt-border, #dde5ed);
+  position: sticky;
+  top: 0;
+  background: var(--pt-surface-alt, #f7f9fc);
+  z-index: 1;
+}
+
+.mv-patient-list__title {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--pt-text-muted, #718096);
+}
+
+.mv-patient-list__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  background: var(--pt-blue-050, #eef6fc);
+  border: 1px solid var(--pt-blue-100, #ddedf9);
+  border-radius: 99px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--pt-blue-700, #17527c);
+}
+
+.mv-patient-list__empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: var(--pt-text-muted, #718096);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+.mv-patient-list__ul {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+  flex: 1;
+}
+
+/* ── Item de paciente ─────────────────────────────────────────── */
+.mv-patient-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+  position: relative;
+}
+
+.mv-patient-item:hover {
+  background: var(--pt-border, #dde5ed);
+}
+
+.mv-patient-item--active {
+  background: var(--pt-blue-050, #eef6fc);
+}
+
+.mv-patient-item--active:hover {
+  background: var(--pt-blue-050, #eef6fc);
+}
+
+.mv-patient-item__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mv-patient-item__name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--pt-text, #1a202c);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mv-patient-item__email {
+  font-size: 0.6875rem;
+  color: var(--pt-text-muted, #718096);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ponto indicador de seleção */
+.mv-patient-item__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pt-blue-500, #2e7fab);
+  flex-shrink: 0;
+}
+
+/* ── Área de feedbacks (coluna direita) ──────────────────────── */
+.mv-feedback-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.mv-feedback-area__empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--pt-text-muted, #718096);
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 40px 24px;
+}
+
+.mv-feedback-area__empty span {
+  font-size: 2rem;
+}
+
+/* Sub-header do paciente selecionado */
+.mv-feedback-area__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1.5px solid var(--pt-border, #dde5ed);
+  background: var(--pt-surface, #fff);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.mv-feedback-area__patient-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--pt-text, #1a202c);
+  margin: 0 0 2px;
+}
+
+.mv-feedback-area__patient-label {
+  font-size: 0.6875rem;
+  color: var(--pt-text-muted, #718096);
+  margin: 0;
+  font-style: italic;
+}
+
+.mv-feedback-area__body {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PACIENTE — tela cheia
+   ═══════════════════════════════════════════════════════════════ */
+.mv-patient {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ── Responsividade ──────────────────────────────────────────── */
+
+/* Mobile: empilha colunas */
+@media (max-width: 767px) {
+  .mv-therapist__layout {
+    flex-direction: column;
+    border-radius: var(--pt-r-md, 14px);
+  }
+
+  .mv-patient-list {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1.5px solid var(--pt-border, #dde5ed);
+    max-height: 220px;
+  }
+
+  .mv-patient-list__ul {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .mv-patient-item {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-width: 80px;
+    max-width: 90px;
+    padding: 10px 8px;
+    border-radius: var(--pt-r-sm, 10px);
+    gap: 6px;
+  }
+
+  .mv-patient-item--active {
+    background: var(--pt-blue-050, #eef6fc);
+    border: 1.5px solid var(--pt-blue-100, #ddedf9);
+  }
+
+  .mv-patient-item__email { display: none; }
+  .mv-patient-item__dot   { display: none; }
+
+  .mv-feedback-area__body {
+    padding: 14px;
+  }
+}
+
+/* Tablet e acima: duas colunas */
+@media (min-width: 768px) {
+  .mv-therapist__layout {
+    min-height: calc(100vh - 200px);
+  }
+}
+
+/* Desktop largo */
+@media (min-width: 1024px) {
+  .mv-patient-list {
+    width: 280px;
+  }
+}

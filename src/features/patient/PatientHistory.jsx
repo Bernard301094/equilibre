@@ -73,6 +73,9 @@ export default function PatientHistory({ session }) {
           const catClass  = ex?.category ? (CATEGORY_CLASS[ex.category] || "ph-cat--outro") : "ph-cat--outro";
           const answeredQs = questions.filter((q) => q.type !== "instruction" && answerMap[q.id]);
 
+          // Verifica se há avaliação do terapeuta
+          const hasTherapistEval = r.therapist_stamp || r.therapist_note;
+
           return (
             <article key={r.id} className="ph-entry" role="listitem">
 
@@ -103,7 +106,7 @@ export default function PatientHistory({ session }) {
                 <hr className="ph-entry__divider" aria-hidden="true" />
               )}
 
-              {/* Respostas */}
+              {/* Respostas do paciente */}
               {answeredQs.length > 0 && (
                 <div className="ph-entry__answers">
                   {answeredQs.map((q) => {
@@ -120,6 +123,62 @@ export default function PatientHistory({ session }) {
                     );
                   })}
                 </div>
+              )}
+
+              {/* ── Avaliação do Terapeuta ── */}
+              {hasTherapistEval && (
+                <>
+                  <hr className="ph-entry__divider" aria-hidden="true" />
+                  <div
+                    className="ph-therapist-eval"
+                    role="region"
+                    aria-label="Avaliação do terapeuta"
+                  >
+                    {/* Header da avaliação */}
+                    <div className="ph-therapist-eval__header">
+                      <span className="ph-therapist-eval__avatar" aria-hidden="true">
+                        🧑‍⚕️
+                      </span>
+                      <div className="ph-therapist-eval__meta">
+                        <span className="ph-therapist-eval__label">
+                          Avaliação do Terapeuta
+                        </span>
+                        {r.noted_at && (
+                          <span className="ph-therapist-eval__date">
+                            {new Date(r.noted_at).toLocaleDateString("pt-BR", {
+                              day: "numeric", month: "short", year: "numeric",
+                            })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Sello / Stamp */}
+                    {r.therapist_stamp && (
+                      <div
+                        className="ph-therapist-eval__stamp"
+                        aria-label={`Selo do terapeuta: ${r.therapist_stamp}`}
+                      >
+                        <span className="ph-therapist-eval__stamp-icon" aria-hidden="true">
+                          🏅
+                        </span>
+                        <span className="ph-therapist-eval__stamp-text">
+                          {r.therapist_stamp}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Nota / Comentario */}
+                    {r.therapist_note && (
+                      <div className="ph-therapist-eval__note">
+                        <p className="ph-therapist-eval__note-label">Comentário</p>
+                        <p className="ph-therapist-eval__note-text">
+                          {r.therapist_note}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
 
             </article>
