@@ -1,5 +1,5 @@
 /* ============================================================
-   MiniLineChart.css — SVG line chart with hover tooltip
+   MiniLineChart.css — Gráfico de Linhas SVG com Tooltip
    ============================================================ */
 
 /* ---------- Wrapper ---------- */
@@ -16,27 +16,27 @@
   margin-top: 28px;
 }
 
-/* ---------- Hit areas ---------- */
+/* ---------- Hit areas (Áreas de toque) ---------- */
 .mlc__hit-area {
   cursor: crosshair;
 }
 
-/* ---------- Data points ---------- */
+/* ---------- Data points (Pontos de dados) ---------- */
 .mlc__point {
   transition: r 0.15s ease;
 }
 
-/* ---------- X-axis labels ---------- */
+/* ---------- X-axis labels (Rótulos do eixo X) ---------- */
 .mlc__x-label {
   transition: fill 0.15s ease;
 }
 
-/* ---------- Tooltip ---------- */
+/* ---------- Tooltip (Caixa de Informação) ---------- */
 .mlc__tooltip {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
-  background: var(--blue-dark, #0a2e48);
+  background: var(--blue-dark, #0a2e48); /* Fundo escuro no modo claro */
   color: #ffffff;
   border-radius: 10px;
   padding: 6px 12px;
@@ -61,7 +61,7 @@
   opacity: 0.75;
 }
 
-/* Caret arrow */
+/* Seta da Tooltip */
 .mlc__tooltip-arrow {
   position: absolute;
   bottom: -6px;
@@ -72,4 +72,21 @@
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
   border-top: 6px solid var(--blue-dark, #0a2e48);
+}
+
+/* ════════════════════════════════════════════════════════════
+   DARK MODE - Adaptação Automática
+   ════════════════════════════════════════════════════════════ */
+
+body.dark-mode .mlc__tooltip {
+  /* No modo escuro, o fundo usa o azul profundo dos cards e o texto a cor clara */
+  background: var(--white); 
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--warm); /* Borda sutil para destacar do fundo */
+}
+
+body.dark-mode .mlc__tooltip-arrow {
+  /* A seta acompanha a cor de fundo do card no modo escuro */
+  border-top-color: var(--white);
 }

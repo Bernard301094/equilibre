@@ -332,79 +332,39 @@
 /* ════════════════════════════════════════════════════════════
    DARK MODE
    ════════════════════════════════════════════════════════════ */
-.dark .rv__controls {
-  background: #0f172a;
-  border-bottom-color: #334155;
+/* A maior parte das cores já se adapta automaticamente graças ao 
+   uso do var(--card), var(--cream), etc., no código principal. 
+   Aqui corrigimos apenas elementos com opacidades fixas ou contrastes. */
+
+body.dark-mode .rv-card__badge {
+  background: rgba(111, 184, 222, 0.15);
+  color: var(--blue-dark);
 }
 
-.dark .rv__search {
-  background: #1e293b;
-  border-color: #334155;
-  color: #e2e8f0;
-}
-.dark .rv__search::placeholder { color: #64748b; }
-.dark .rv__search:focus { border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15); }
-
-.dark .rv__chip {
-  background: #1e293b;
-  border-color: #334155;
-  color: #94a3b8;
-}
-.dark .rv__chip:hover { border-color: #60a5fa; color: #e2e8f0; }
-.dark .rv__chip-count { background: #334155; color: #94a3b8; }
-
-.dark .rv__count { color: #64748b; }
-
-.dark .rv-card {
-  background: #1e293b;
-  border-color: #334155;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
-}
-.dark .rv-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
-
-.dark .rv-card__header { border-bottom-color: #334155; }
-.dark .rv-card__exercise-name { color: #e2e8f0; }
-.dark .rv-card__patient-name  { color: #93c5fd; }
-.dark .rv-card__date          { color: #64748b; }
-
-.dark .rv-card__badge {
-  background: rgba(147, 197, 253, 0.15);
-  color: #93c5fd;
+body.dark-mode .fp__toggle--has {
+  background: rgba(111, 184, 222, 0.15);
+  border-color: var(--blue-dark);
 }
 
-.dark .rv-qa__question { color: #64748b; }
-.dark .rv-qa__answer {
-  background: #0f172a;
-  border-left-color: #3b82f6;
-  color: #cbd5e1;
+body.dark-mode .fp__btn--danger {
+  border-color: rgba(224, 112, 112, 0.25);
 }
 
-.dark .rv-card__footer { background: #0f172a; border-top-color: #334155; }
-
-.dark .fp__summary { background: #1e293b; border-color: #334155; }
-.dark .fp__summary-stamp { color: #93c5fd; }
-.dark .fp__summary-note  { color: #64748b; }
-
-.dark .fp__edit-btn { border-color: #334155; color: #94a3b8; }
-.dark .fp__edit-btn:hover { border-color: #60a5fa; color: #93c5fd; background: #1e293b; }
-
-.dark .fp__toggle { border-color: #334155; color: #94a3b8; }
-.dark .fp__toggle:hover { border-color: #60a5fa; color: #93c5fd; background: #1e293b; }
-.dark .fp__toggle--has  { border-color: #3b82f6; color: #93c5fd; background: rgba(59, 130, 246, 0.1); }
-
-.dark .fp__section-label { color: #64748b; }
-
-.dark .fp__stamp-btn { background: #1e293b; border-color: #334155; color: #94a3b8; }
-.dark .fp__stamp-btn:hover { border-color: #60a5fa; color: #93c5fd; }
-
-.dark .fp__textarea {
-  background: #1e293b;
-  border-color: #334155;
-  color: #e2e8f0;
+body.dark-mode .fp__btn--danger:hover {
+  background: rgba(224, 112, 112, 0.15);
 }
-.dark .fp__textarea:focus { border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.12); }
 
-.dark .fp__btn--ghost { background: #334155; color: #94a3b8; border-color: #334155; }
-.dark .fp__btn--ghost:hover { background: #475569; color: #e2e8f0; }
-.dark .fp__btn--danger { color: #f87171; border-color: rgba(248, 113, 113, 0.3); }
-.dark .fp__btn--danger:hover { background: rgba(248, 113, 113, 0.1); }
+body.dark-mode .rv__chip--active .rv__chip-count {
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text);
+}
+
+body.dark-mode .fp__btn--ghost:hover {
+  background: var(--warm);
+}
+
+/* Garante que o input de texto do feedback tenha a borda certa ao focar */
+body.dark-mode .fp__textarea:focus,
+body.dark-mode .rv__search:focus {
+  box-shadow: 0 0 0 3px rgba(111, 184, 222, 0.15);
+}

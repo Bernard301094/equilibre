@@ -1,40 +1,79 @@
-import { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import db from "../../../services/db";
 import { formatDateTime } from "../../../utils/dates";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import "./ClinicalNotesTab.css";
 
 export default function ClinicalNotesTab({
-  patient, session, notes, onNotesChange, onClose,
+  patient,
+  session,
+  notes,
+  onNotesChange,
+  onClose,
 }) {
-  const [isWriting, setIsWriting] = useState(false);
-  const [newText,   setNewText]   = useState("");
-  const [saving,    setSaving]    = useState(false);
-  const [error,     setError]     = useState("");
+  const [activeAction, setActiveAction] = useState({ type: null, id: null });
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, noteId: null });
   const inflightRef = useRef(false);
 
-  const cancelWriting = () => {
-    setIsWriting(false);
-    setNewText("");
+  // Organizar notas em árvore infinita usando useMemo
+  const threadedNotes = useMemo(() => {
+    const map = {};
+    const roots = [];
+
+    notes.forEach(note => {
+      map[note.id] = { ...note, children: [] };
+    });
+
+    notes.forEach(note => {
+      if (note.parent_id && map[note.parent_id]) {
+        map[note.parent_id].children.push(map[note.id]);
+      } else {
+        roots.push(map[note.id]);
+      }
+    });
+
+    const sortNodes = (nodes) => {
+      nodes.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      nodes.forEach(n => sortNodes(n.children));
+    };
+    sortNodes(roots);
+
+    return roots;
+  }, [notes]);
+
+  const resetForm = () => {
+    setActiveAction({ type: null, id: null });
+    setText("");
     setError("");
   };
 
-  const saveNote = async () => {
-    if (!newText.trim() || inflightRef.current) return;
+  const handleSave = async (parentId = null, editId = null) => {
+    if (!text.trim() || inflightRef.current) return;
     inflightRef.current = true;
     setSaving(true);
     setError("");
+
     try {
-      const obj = {
-        id:           "cn" + Date.now(),
-        patient_id:   patient.id,
-        therapist_id: session.id,
-        notes:        newText.trim(),
-        created_at:   new Date().toISOString(),
-      };
-      await db.insert("clinical_notes", obj, session.access_token);
-      onNotesChange([obj, ...notes]);
-      setNewText("");
-      setIsWriting(false);
+      if (editId) {
+        await db.update("clinical_notes", { id: editId }, { notes: text.trim() }, session.access_token);
+        onNotesChange(notes.map(n => n.id === editId ? { ...n, notes: text.trim() } : n));
+      } else {
+        const obj = {
+          id: "cn" + Date.now(),
+          patient_id: patient.id,
+          therapist_id: session.id,
+          notes: text.trim(),
+          parent_id: parentId,
+          created_at: new Date().toISOString(),
+        };
+        await db.insert("clinical_notes", obj, session.access_token);
+        onNotesChange([...notes, obj]);
+      }
+      resetForm();
     } catch (e) {
       setError("Erro ao salvar: " + e.message);
     } finally {
@@ -43,100 +82,132 @@ export default function ClinicalNotesTab({
     }
   };
 
-  return (
-    <div className="clinical-notes">
+  const executeDelete = async () => {
+    const id = confirmDelete.noteId;
+    try {
+      await db.delete("clinical_notes", { id }, session.access_token);
+      
+      const getIdsToRemove = (parentId, allNotes) => {
+        let ids = [parentId];
+        const children = allNotes.filter(n => n.parent_id === parentId);
+        children.forEach(c => {
+          ids = [...ids, ...getIdsToRemove(c.id, allNotes)];
+        });
+        return ids;
+      };
+      
+      const idsToRemove = getIdsToRemove(id, notes);
+      onNotesChange(notes.filter(n => !idsToRemove.includes(n.id)));
+    } catch (e) {
+      alert("Erro ao excluir: " + e.message);
+    } finally {
+      setConfirmDelete({ isOpen: false, noteId: null });
+    }
+  };
 
-      {/* ── Aviso de privacidad ── */}
-      <div className="clinical-notes__privacy-banner" role="note">
-        <span className="clinical-notes__privacy-icon" aria-hidden="true">🔒</span>
-        <span className="clinical-notes__privacy-text">
-          Anotações privadas.{" "}
-          <strong>O paciente não tem acesso a este campo.</strong>
-        </span>
-      </div>
-
-      {/* ── Botón nueva anotación ── */}
-      {!isWriting && (
-        <button
-          className="clinical-notes__new-btn"
-          onClick={() => setIsWriting(true)}
+  const renderNoteForm = (parentId = null, editId = null) => (
+    <div className="cn-form">
+      <textarea
+        className="cn-textarea"
+        placeholder={editId ? "A editar anotação..." : "Escreva a sua anotação verde..."}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        autoFocus
+      />
+      {error && <p className="cn-error">{error}</p>}
+      <div className="cn-form-actions">
+        <button className="btn-organic btn-cancel" onClick={resetForm}>Cancelar</button>
+        <button 
+          className="btn-organic btn-save" 
+          onClick={() => handleSave(parentId, editId)}
+          disabled={saving || !text.trim()}
         >
-          + Nova Anotação
+          {saving ? "A guardar..." : "Guardar"}
         </button>
-      )}
+      </div>
+    </div>
+  );
 
-      {/* ── Formulario de nueva anotación ── */}
-      {isWriting && (
-        <div className="clinical-notes__form">
-          <label
-            htmlFor="new-note-textarea"
-            className="sr-only"
-          >
-            Nova anotação clínica
-          </label>
-          <textarea
-            id="new-note-textarea"
-            className="clinical-notes__textarea"
-            placeholder="Ex: O paciente apresentou melhora na ansiedade..."
-            value={newText}
-            onChange={(e) => setNewText(e.target.value)}
-            autoFocus
-          />
+  // Função de renderização (em vez de componente interno) para evitar re-renders destrutivos
+  const renderNoteNode = (note, level = 0) => {
+    const isEditing = activeAction.type === 'edit' && activeAction.id === note.id;
+    const isReplying = activeAction.type === 'reply' && activeAction.id === note.id;
+    const isChild = level > 0;
 
-          {error && (
-            <p className="clinical-notes__error" role="alert">{error}</p>
+    return (
+      <div key={note.id} className={`cn-node-wrapper ${isChild ? 'cn-child-node' : ''}`}>
+        <div className={`cn-card ${isChild ? 'cn-card--child' : ''}`}>
+          {isEditing ? (
+            renderNoteForm(null, note.id)
+          ) : (
+            <>
+              <div className="cn-card-header">
+                <span className="cn-date">🕒 {formatDateTime(note.created_at)}</span>
+                <div className="cn-actions">
+                  <button onClick={() => { setActiveAction({ type: 'reply', id: note.id }); setText(""); }} title="Responder">💬</button>
+                  <button onClick={() => { setActiveAction({ type: 'edit', id: note.id }); setText(note.notes); }} title="Editar">✏️</button>
+                  <button onClick={() => setConfirmDelete({ isOpen: true, noteId: note.id })} className="btn-delete-icon" title="Excluir">🗑️</button>
+                </div>
+              </div>
+              <div className="cn-body">{note.notes}</div>
+            </>
           )}
-
-          <div className="clinical-notes__form-actions">
-            <button
-              className="clinical-notes__btn clinical-notes__btn--cancel"
-              onClick={cancelWriting}
-            >
-              Cancelar
-            </button>
-            <button
-              className="clinical-notes__btn clinical-notes__btn--save"
-              onClick={saveNote}
-              disabled={saving || !newText.trim()}
-              aria-busy={saving}
-            >
-              {saving ? "Salvando..." : "Salvar"}
-            </button>
-          </div>
         </div>
-      )}
 
-      {/* ── Estado vacío ── */}
-      {notes.length === 0 && !isWriting && (
-        <p className="clinical-notes__empty">
-          Nenhuma anotação ainda.
-        </p>
-      )}
-
-      {/* ── Lista de notas ── */}
-      <div className="clinical-notes__list">
-        {notes.map((note) => (
-          <div key={note.id} className="clinical-notes__note-card">
-            <div className="clinical-notes__note-date">
-              📅 {formatDateTime(note.created_at)}
-            </div>
-            <div className="clinical-notes__note-body">
-              {note.notes}
-            </div>
+        {isReplying && (
+          <div className="cn-reply-form-wrapper">
+            {renderNoteForm(note.id)}
           </div>
-        ))}
+        )}
+
+        {/* Chama a função recursivamente */}
+        {note.children && note.children.length > 0 && (
+          <div className="cn-children-container">
+            {note.children.map(child => renderNoteNode(child, level + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="clinical-notes-container">
+      <div className="cn-privacy-banner">
+        <span className="cn-privacy-icon">🔒</span>
+        <p>Anotações privadas. <strong>O paciente não tem acesso.</strong></p>
       </div>
 
-      {/* ── Footer ── */}
-      <div className="clinical-notes__footer">
-        <button
-          className="clinical-notes__btn clinical-notes__btn--close"
-          onClick={onClose}
-        >
-          Fechar
+      {activeAction.type !== 'reply' && activeAction.type !== 'edit' && !activeAction.id && (
+        <button className="btn-organic btn-new" onClick={() => { setActiveAction({ type: 'new', id: 'root' }); setText(""); }}>
+          <span className="cn-plus-icon">+</span> Nova Anotação
         </button>
+      )}
+
+      {activeAction.type === 'new' && renderNoteForm()}
+
+      <div className="cn-list">
+        {threadedNotes.length === 0 && !activeAction.type && (
+          <div className="cn-empty">O jardim está vazio. Comece a anotar.</div>
+        )}
+        
+        {/* Renderiza as notas base usando a função */}
+        {threadedNotes.map(rootNote => renderNoteNode(rootNote, 0))}
       </div>
 
+      <div className="cn-footer">
+        <button className="btn-organic btn-close" onClick={onClose}>Fechar</button>
+      </div>
+
+      <ConfirmDialog
+        isOpen={confirmDelete.isOpen}
+        title="Excluir anotação?"
+        message="Esta ação apagará esta anotação e todas as suas respostas. Não pode ser desfeita."
+        type="danger"
+        confirmLabel="Sim, excluir"
+        cancelLabel="Cancelar"
+        onConfirm={executeDelete}
+        onCancel={() => setConfirmDelete({ isOpen: false, noteId: null })}
+      />
     </div>
   );
 }

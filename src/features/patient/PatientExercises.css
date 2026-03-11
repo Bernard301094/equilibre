@@ -245,7 +245,7 @@
   font-size: 0.8125rem;
   font-weight: 700;
   background: var(--pt-blue-700, #17527c);
-  color: #fff;
+  color: var(--text-on-accent, #fff); /* <-- CORREGIDO PARA DARK MODE */
   border: none;
   cursor: pointer;
   transition: background var(--pt-t-fast, .15s), transform var(--pt-t-fast, .15s);

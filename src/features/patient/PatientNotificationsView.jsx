@@ -21,23 +21,31 @@ export default function PatientNotificationsView() {
 
     (async () => {
       try {
-        /* ── 1. Mensagens não lidas do terapeuta ── */
+        /* ── 1. Mensagens não lidas do terapeuta ──────────────────
+           FIX: inclui "therapist_id" para filtrar o remetente.
+           ⚠️  Ajusta o nome do campo se a tua tabela usar outro
+               (ex: "sender_id", "author_id", etc.).
+           ──────────────────────────────────────────────────────── */
         const feedbackRaw = await db.query(
           "therapist_feedback",
           { filter: { patient_id: session.id, read: false }, order: "created_at.desc" },
           session.access_token
         ).catch(() => []);
 
-        const feedbackList = (Array.isArray(feedbackRaw) ? feedbackRaw : []).map((f) => ({
-          id:          `feedback-${f.id}`,
-          _raw_id:     f.id,
-          type:        "feedback",
-          icon:        "💬",
-          title:       "Nova mensagem do terapeuta",
-          description: f.message ?? f.content ?? "",
-          date:        f.created_at,
-          read:        false,
-        }));
+        // FIX: exclui mensagens enviadas pelo próprio utilizador da sessão.
+        // Garante que o paciente não vê (nem ouve) as suas próprias mensagens.
+        const feedbackList = (Array.isArray(feedbackRaw) ? feedbackRaw : [])
+          .filter((f) => f.therapist_id !== session.id)
+          .map((f) => ({
+            id:          `feedback-${f.id}`,
+            _raw_id:     f.id,
+            type:        "feedback",
+            icon:        "💬",
+            title:       "Nova mensagem do terapeuta",
+            description: f.message ?? f.content ?? "",
+            date:        f.created_at,
+            read:        false,
+          }));
 
         /* ── 2. Exercícios pendentes ── */
         const assignRaw = await db.query(
@@ -66,10 +74,12 @@ export default function PatientNotificationsView() {
 
         setNotifs(merged);
 
-        /* ── 4. Marca mensagens do terapeuta como lidas ── */
-        const unreadFeedback = feedbackList.map((f) => f._raw_id);
+        /* ── 4. Marca mensagens recebidas como lidas ──────────────
+           Usa feedbackList (já filtrado) — não marca as próprias.
+           ──────────────────────────────────────────────────────── */
+        const unreadIds = feedbackList.map((f) => f._raw_id);
         await Promise.allSettled(
-          unreadFeedback.map((fid) =>
+          unreadIds.map((fid) =>
             db.update("therapist_feedback", { id: fid }, { read: true }, session.access_token)
           )
         );

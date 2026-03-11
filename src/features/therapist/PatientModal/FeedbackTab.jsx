@@ -347,9 +347,6 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
       onFeedbacksChange([saved, ...feedbacks]);
       setText("");
       if (textareaRef.current) textareaRef.current.style.height = "auto";
-
-      /* Som de confirmação de envio */
-      playNotificationSound();
       showToast("success", "Mensagem enviada ✅");
     } catch (e) {
       console.error("[FeedbackTab] Erro:", e.message);

@@ -43,7 +43,8 @@ export default function TherapistProgress({ session }) {
       const rList  = Array.isArray(responses)  ? responses  : [];
       const goal   = Array.isArray(goals) && goals.length > 0 ? goals[0].weekly_target : null;
 
-      const scalePts = rList
+      // 1. Obtém os pontos brutos de cada exercício
+      const rawScalePts = rList
         .map((r) => {
           const ex  = exList.find((e) => e.id === r.exercise_id);
           const qs  = ex ? parseQuestions(ex) : [];
@@ -62,6 +63,19 @@ export default function TherapistProgress({ session }) {
         })
         .filter(Boolean);
 
+      // 2. Agrupa por data para calcular a MÉDIA DIÁRIA (evita pontos amontoados)
+      const groupedByDate = rawScalePts.reduce((acc, curr) => {
+        if (!acc[curr.date]) acc[curr.date] = [];
+        acc[curr.date].push(curr.avg);
+        return acc;
+      }, {});
+
+      const scalePts = Object.keys(groupedByDate).map(date => {
+        const vals = groupedByDate[date];
+        const dailyAvg = vals.reduce((a, b) => a + b, 0) / vals.length;
+        return { date, avg: Math.round(dailyAvg * 10) / 10 };
+      });
+
       const doneThisWeek = rList.filter((r) => isThisWeek(r.completed_at)).length;
       setChart({ scalePts, doneThisWeek, weeklyTarget: goal, totalDone: rList.length });
     })();
@@ -78,7 +92,7 @@ export default function TherapistProgress({ session }) {
         <p>Acompanhe a evolução das respostas ao longo do tempo</p>
       </div>
 
-      {/* ── Patient selector ── */}
+      {/* ── Seletor de Paciente ── */}
       <div className="tp-patient-selector">
         {patients.map((p) => (
           <button
@@ -94,18 +108,18 @@ export default function TherapistProgress({ session }) {
         )}
       </div>
 
-      {/* ── Dashboard for selected patient ── */}
+      {/* ── Dashboard do Paciente Selecionado ── */}
       {selPat && chart && (
         <div className="tp-dashboard">
 
-          {/* Stats row */}
+          {/* Grid de Estatísticas */}
           <div className="tp-stats-grid">
             <StatCard icon="✅" value={chart.totalDone}           label="Exercícios concluídos" />
             <StatCard icon="📅" value={chart.doneThisWeek}        label="Esta semana" />
             <StatCard icon="🎯" value={chart.weeklyTarget ?? "—"} label="Meta semanal" />
           </div>
 
-          {/* Weekly goal bar */}
+          {/* Barra de meta semanal */}
           {chart.weeklyTarget && (
             <div className="card tp-goal-card">
               <h3 className="tp-card-title">
@@ -115,17 +129,18 @@ export default function TherapistProgress({ session }) {
             </div>
           )}
 
-          {/* Scale evolution chart */}
+          {/* Gráfico de evolução em LARANJA */}
           <div className="card tp-chart-card">
             <h3 className="tp-card-title">Evolução das respostas de escala</h3>
             <p className="tp-chart-desc">
-              Média das escalas (0–10) por exercício respondido
+              Média diária das escalas (0–10) de exercícios concluídos
             </p>
             {chart.scalePts.length >= 2 ? (
               <MiniLineChart
                 points={chart.scalePts.map((p) => p.avg)}
                 labels={chart.scalePts.map((p) => p.date)}
                 height={100}
+                color="var(--pt-amber-500, #e8941a)" 
               />
             ) : (
               <EmptyState

@@ -404,3 +404,21 @@
     max-width: 64ch;
   }
 }
+
+/* ════════════════════════════════════════════════════════════
+   DARK MODE
+   ════════════════════════════════════════════════════════════ */
+body.dark-mode .mv-patient-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+body.dark-mode .mv-patient-item--active {
+  background: rgba(111, 184, 222, 0.15); 
+}
+body.dark-mode .mv-patient-item--active:hover {
+  background: rgba(111, 184, 222, 0.20);
+}
+body.dark-mode .mv-patient-list__count {
+  background: var(--pt-blue-100);
+  color: var(--pt-text);
+  border-color: var(--pt-border);
+}

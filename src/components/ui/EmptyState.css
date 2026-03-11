@@ -159,11 +159,11 @@
 /* ════════════════════════════════════════════════════════════
    DARK MODE
    ════════════════════════════════════════════════════════════ */
-.dark .empty-state {
-  --es-bg:    rgba(30, 41, 59, 0.7);
-  --es-text:  #e2e8f0;
-  --es-sub:   #94a3b8;
-  border-color: rgba(100, 148, 93, 0.25);
+body.dark-mode .empty-state {
+  --es-bg:    rgba(30, 41, 59, 0.4);
+  --es-text:  var(--text);
+  --es-sub:   var(--text-muted);
+  border-color: rgba(123, 179, 105, 0.2);
   background: var(--es-bg);
 }
 

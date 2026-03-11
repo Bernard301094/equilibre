@@ -1,260 +1,234 @@
-/* ============================================================
-   CLINICAL NOTES TAB — ClinicalNotesTab.css
-   Mobile-first
-   ============================================================ */
-
-.clinical-notes {
+.clinical-notes-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  animation: fadeIn 0.3s ease both;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ── Banner de privacidad ─────────────────────────────────── */
-.clinical-notes__privacy-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  background: #fff8e6;
-  border: 1.5px solid #ffe0a0;
-  border-radius: 10px;
-  padding: 10px 14px;
-}
-
-.clinical-notes__privacy-icon {
-  font-size: 1rem;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.clinical-notes__privacy-text {
-  font-size: 0.775rem;
-  color: #7a5800;
-  line-height: 1.5;
-}
-
-/* ── Botón "Nueva anotación" ──────────────────────────────── */
-.clinical-notes__new-btn {
-  align-self: flex-start;
-  height: 38px;
-  padding: 0 18px;
-  border-radius: 10px;
-  border: none;
-  background: var(--sage, #6b9e78);
-  color: #fff;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.15s;
-}
-
-.clinical-notes__new-btn:hover {
-  background: #5a8a67;
-}
-
-.clinical-notes__new-btn:active {
-  transform: scale(0.97);
-}
-
-@media (max-width: 480px) {
-  .clinical-notes__new-btn {
-    width: 100%;
-    height: 44px;
-  }
-}
-
-/* ── Formulario de nueva nota ─────────────────────────────── */
-.clinical-notes__form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: var(--surface, #fff);
-  border: 1.5px solid var(--warm, #e8e0d5);
-  border-radius: 14px;
+  gap: 20px;
   padding: 16px;
+  background: var(--cream);
+  border-radius: 28px;
 }
 
-.clinical-notes__textarea {
-  width: 100%;
-  min-height: 120px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1.5px solid var(--warm, #e8e0d5);
-  background: var(--cream, #faf8f5);
-  font-size: 0.875rem;
-  color: var(--text-primary, #1a202c);
-  line-height: 1.6;
-  resize: vertical;
-  box-sizing: border-box;
-  font-family: inherit;
-  transition: border-color 0.18s;
-}
-
-.clinical-notes__textarea:focus {
-  outline: none;
-  border-color: var(--primary, #17527c);
-  background: var(--surface, #fff);
-}
-
-.clinical-notes__textarea::placeholder {
-  color: var(--text-muted, #9ca3af);
-}
-
-/* ── Error ────────────────────────────────────────────────── */
-.clinical-notes__error {
-  font-size: 0.825rem;
-  color: var(--danger, #ef4444);
-  background: rgba(239, 68, 68, 0.07);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin: 0;
-}
-
-/* ── Acciones del formulario ──────────────────────────────── */
-.clinical-notes__form-actions {
+.cn-privacy-banner {
   display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  background: var(--warm);
+  padding: 14px 20px;
+  border-radius: 24px;
+  color: var(--text-muted);
+  font-size: 14px;
 }
 
-/* ── Botones genéricos ────────────────────────────────────── */
-.clinical-notes__btn {
-  height: 40px;
-  padding: 0 20px;
-  border-radius: 10px;
-  font-size: 0.875rem;
+/* Botões Orgânicos */
+.btn-organic {
+  border: none;
+  border-radius: 24px;
+  padding: 12px 24px;
+  font-family: 'DM Sans', sans-serif;
   font-weight: 600;
   cursor: pointer;
-  border: none;
-  transition: background 0.2s, transform 0.15s, opacity 0.2s;
-  white-space: nowrap;
+  transition: all 0.3s ease;
 }
 
-.clinical-notes__btn:active:not(:disabled) {
-  transform: scale(0.97);
-}
-
-.clinical-notes__btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.clinical-notes__btn--cancel {
-  background: var(--surface-alt, #f0f4f8);
-  color: var(--text-primary, #1a202c);
-  border: 1.5px solid var(--border, #e2e8f0);
-}
-
-.clinical-notes__btn--cancel:hover:not(:disabled) {
-  background: var(--border, #e2e8f0);
-}
-
-.clinical-notes__btn--save {
-  background: var(--sage, #6b9e78);
-  color: #fff;
-  box-shadow: 0 4px 10px rgba(107, 158, 120, 0.28);
-}
-
-.clinical-notes__btn--save:hover:not(:disabled) {
-  background: #5a8a67;
-}
-
-.clinical-notes__btn--close {
-  background: var(--surface-alt, #f0f4f8);
-  color: var(--text-primary, #1a202c);
-  border: 1.5px solid var(--border, #e2e8f0);
-}
-
-.clinical-notes__btn--close:hover {
-  background: var(--border, #e2e8f0);
-}
-
-@media (max-width: 400px) {
-  .clinical-notes__form-actions {
-    flex-direction: column-reverse;
-  }
-
-  .clinical-notes__btn {
-    width: 100%;
-    height: 44px;
-  }
-}
-
-/* ── Estado vacío ─────────────────────────────────────────── */
-.clinical-notes__empty {
-  text-align: center;
-  padding: 40px 20px;
-  font-size: 0.85rem;
-  font-style: italic;
-  color: var(--text-muted, #9ca3af);
-  margin: 0;
-}
-
-/* ── Lista de notas ───────────────────────────────────────── */
-.clinical-notes__list {
+/* Botão Nova Anotação (Light Mode) */
+.btn-new { 
+  background: var(--sage); 
+  color: #ffffff; 
+  width: fit-content; /* Ocupa apenas o espaço do texto/ícone */
+  align-self: flex-start; /* Alinha o botão do lado esquerdo */
+  padding: 14px 24px; /* Padding ligeiramente mais compacto */
+  font-size: 16px;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* ── Tarjeta de nota individual ───────────────────────────── */
-.clinical-notes__note-card {
-  background: var(--surface, #fff);
-  border-radius: 12px;
-  border: 1px solid var(--warm, #e8e0d5);
-  border-left: 4px solid var(--sage, #6b9e78);
-  padding: 14px 18px;
-  display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 8px;
-  transition: box-shadow 0.18s;
+  box-shadow: var(--shadow-sm); 
+  border: 1px solid transparent;
 }
 
-.clinical-notes__note-card:hover {
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+.btn-new:hover { 
+  transform: translateY(-2px); 
+  box-shadow: var(--shadow-md); 
+  filter: brightness(1.05);
 }
 
-.clinical-notes__note-date {
-  font-size: 0.7rem;
+/* Ícone de + no botão Nova Anotação */
+.cn-plus-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
   font-weight: 700;
-  color: var(--text-muted, #9ca3af);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  line-height: 1;
+  margin-right: 2px;
 }
 
-.clinical-notes__note-body {
-  font-size: 0.875rem;
-  color: var(--text-primary, #1a202c);
-  line-height: 1.65;
-  white-space: pre-wrap;
-  word-break: break-word;
+.btn-close { background: var(--warm); color: var(--text); width: 100%; }
+
+/* Formulário */
+.cn-form {
+  background: var(--white);
+  padding: 16px;
+  border-radius: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--warm);
 }
 
-/* ── Footer ───────────────────────────────────────────────── */
-.clinical-notes__footer {
+.cn-textarea {
+  width: 100%;
+  min-height: 100px;
+  border: none;
+  background: transparent;
+  resize: vertical;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  outline: none;
+  margin-bottom: 12px;
+}
+
+.cn-form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.btn-save { background: var(--sage); color: #fff; padding: 8px 16px; font-size: 14px; }
+.btn-cancel { background: transparent; color: var(--text-muted); padding: 8px 16px; }
+
+/* Árvore de Notas */
+.cn-list {
   display: flex;
-  justify-content: flex-end;
-  padding-top: 4px;
-  border-top: 1px solid var(--warm, #e8e0d5);
-  margin-top: 4px;
+  flex-direction: column;
+  gap: 24px;
 }
 
-/* ── sr-only ──────────────────────────────────────────────── */
-.sr-only {
+.cn-card {
+  background: var(--white);
+  padding: 18px 20px;
+  border-radius: 24px; /* Raio grande orgânico */
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.cn-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--warm);
+}
+
+.cn-card--child {
+  padding: 14px 16px; /* Levemente menor para filhos */
+  font-size: 0.95em;
+}
+
+.cn-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.cn-date {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Interatividade das Ações: Esconde até o hover */
+.cn-actions {
+  display: flex;
+  gap: 6px;
+  opacity: 0.2; /* Opacidade baixa por padrão */
+  transition: opacity 0.3s ease;
+}
+
+.cn-card:hover .cn-actions,
+.cn-actions:focus-within {
+  opacity: 1; /* Visível no hover ou foco */
+}
+
+.cn-actions button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 6px;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.cn-actions button:hover { background: var(--warm); }
+.cn-actions .btn-delete-icon:hover { background: var(--danger-soft, #fde8e8); }
+
+/* ==== HIERARQUIA EM "L" (Recursiva) ==== */
+.cn-children-container {
+  margin-left: 28px; /* Recuo para os filhos */
+  padding-left: 12px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* Linha vertical que conecta as sub-notas (fica no container pai) */
+.cn-children-container::before {
+  content: '';
   position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
+  top: -12px;
+  bottom: 24px; /* Para não descer abaixo do último filho */
+  left: 0;
+  width: 2px;
+  background: var(--warm);
+  border-radius: 2px;
+}
+
+.cn-child-node {
+  position: relative;
+}
+
+/* A curva em "L" para cada filho */
+.cn-child-node::before {
+  content: '';
+  position: absolute;
+  top: 24px; /* Metade da altura do header do card filho */
+  left: -12px; /* Vai de encontro à linha vertical do container */
+  width: 12px;
+  height: 2px;
+  background: var(--warm);
+  border-bottom-left-radius: 12px; /* A curva suave */
+}
+
+.cn-reply-form-wrapper {
+  margin-top: 12px;
+  margin-left: 28px;
+}
+
+/* =========================================
+   DARK MODE ADAPTAÇÕES
+   ========================================= */
+body.dark-mode .clinical-notes-container { background: var(--cream); }
+body.dark-mode .cn-card, body.dark-mode .cn-form { background: var(--card); }
+body.dark-mode .cn-privacy-banner { background: var(--warm); }
+body.dark-mode .cn-textarea { color: var(--text); }
+body.dark-mode .cn-children-container::before,
+body.dark-mode .cn-child-node::before {
+  background: var(--text-muted);
+  opacity: 0.3;
+}
+
+/* Botão Nova Anotação - Efeito Glass/Neon para Dark Mode */
+body.dark-mode .btn-new {
+  background: rgba(90, 176, 122, 0.12);
+  color: var(--sage);
+  border: 1px solid rgba(90, 176, 122, 0.25);
+  box-shadow: none;
+}
+
+body.dark-mode .btn-new:hover {
+  background: var(--sage);
+  color: var(--text-on-accent, #0c1923);
+  border-color: var(--sage);
+  box-shadow: 0 4px 16px rgba(90, 176, 122, 0.25);
+  filter: brightness(1.1);
+}
+
+/* Ajustes Mobile */
+@media (max-width: 600px) {
+  .cn-children-container { margin-left: 16px; padding-left: 8px; }
+  .cn-actions { opacity: 1; } /* Em mobile, ações ficam sempre visíveis */
 }

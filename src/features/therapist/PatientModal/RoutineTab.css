@@ -187,6 +187,33 @@
 .cat-trabalho   { background: #ede9fe; color: #5b21b6; }
 .cat-autocuidado{ background: #fce7f3; color: #9d174d; }
 
+/* ════════════════════════════════════════════════════════════
+   DARK MODE
+   ════════════════════════════════════════════════════════════ */
+body.dark-mode .routine-tab__stat--done {
+  background: rgba(74, 125, 87, 0.15);
+  border-color: rgba(74, 125, 87, 0.3);
+}
+
+body.dark-mode .routine-tab__stat--avoided {
+  background: rgba(192, 68, 74, 0.15);
+  border-color: rgba(192, 68, 74, 0.3);
+}
+
+body.dark-mode .routine-tab__activity-card {
+  background: var(--cream);
+  border-color: var(--warm);
+}
+
+body.dark-mode .routine-tab__status-detail {
+  background: var(--white);
+}
+
+body.dark-mode .cat-badge {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 360px) {
   .routine-tab__stats {

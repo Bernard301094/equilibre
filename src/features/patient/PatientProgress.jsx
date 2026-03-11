@@ -43,7 +43,8 @@ export default function PatientProgress({ session }) {
         const dList  = Array.isArray(diary)     ? diary     : [];
         const g      = Array.isArray(goals) && goals.length > 0 ? goals[0] : null;
 
-        const scalePts = rList
+        // 1. Pega os pontos brutos (calculando a média dentro de cada exercício)
+        const rawScalePts = rList
           .map((r) => {
             const ex   = exList.find((e) => e.id === r.exercise_id);
             const qs   = ex ? parseQuestions(ex) : [];
@@ -61,6 +62,19 @@ export default function PatientProgress({ session }) {
             };
           })
           .filter(Boolean);
+
+        // 2. Agrupa por data e tira a média diária (Evita pontos amontoados no mesmo dia)
+        const groupedByDate = rawScalePts.reduce((acc, curr) => {
+          if (!acc[curr.date]) acc[curr.date] = [];
+          acc[curr.date].push(curr.avg);
+          return acc;
+        }, {});
+
+        const scalePts = Object.keys(groupedByDate).map(date => {
+          const vals = groupedByDate[date];
+          const dailyAvg = vals.reduce((a, b) => a + b, 0) / vals.length;
+          return { date, avg: Math.round(dailyAvg * 10) / 10 };
+        });
 
         const moodPts = dList.map((d) => ({
           date: new Date(d.date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
@@ -135,7 +149,7 @@ export default function PatientProgress({ session }) {
           {hasScale && (
             <div className={`pp-chart-card pp-chart-card--scale${onlyOneChart ? " pp-chart-card--full" : ""}`}>
               <h3 className="pp-section-title">📈 Escalas dos Exercícios</h3>
-              <p className="pp-section-desc">Média das escalas (0–10) por exercício concluído</p>
+              <p className="pp-section-desc">Média diária das escalas (0–10) de exercícios concluídos</p>
               <div className="pp-chart-card__inner">
                 <MiniLineChart
                   points={data.scalePts.map((p) => p.avg)}

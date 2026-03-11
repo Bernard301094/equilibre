@@ -523,3 +523,20 @@
       visibility 0s linear 0.25s;
   }
 }
+
+/* ════════════════════════════════════════════════════════════
+   DARK MODE
+   ════════════════════════════════════════════════════════════ */
+body.dark-mode .sidebar {
+  background: var(--white); 
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4);
+}
+body.dark-mode .sidebar__header {
+  border-bottom-color: var(--warm);
+}
+body.dark-mode .sidebar__footer {
+  border-top-color: var(--warm);
+}
+body.dark-mode .patient-layout__sidebar {
+  background: var(--white);
+}

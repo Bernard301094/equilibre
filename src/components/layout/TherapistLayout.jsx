@@ -5,6 +5,7 @@ import BottomNav      from "./BottomNav";
 import ToastContainer from "../ui/Toast";
 import ProfileModal      from "../shared/ProfileModal";
 import DeleteAccountModal from "../shared/DeleteAccountModal";
+import PatientModal from "../../features/therapist/PatientModal/PatientModal";
 // ↓ Importa o teu modal de paciente aqui — ajusta o caminho conforme o teu projeto
 // import PatientModal from "../shared/PatientModal";
 import { useNotifications } from "../../hooks/useNotifications";
@@ -276,18 +277,13 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
         />
       )}
 
-      {/*
-        ── Modal de paciente ──────────────────────────────────
-        Descomenta e ajusta quando tiveres o componente pronto:
-
-        {isPatientModalOpen && selectedPatient && (
-          <PatientModal
-            patient={selectedPatient}
-            session={session}
-            onClose={handleClosePatient}
-          />
-        )}
-      */}
+      {isPatientModalOpen && selectedPatient && (
+        <PatientModal
+          patient={selectedPatient}
+          session={session}
+          onClose={handleClosePatient}
+        />
+      )}
 
       <ToastContainer />
     </div>

@@ -1,156 +1,106 @@
-/* ============================================================
-   ConfirmDialog.css — Generic confirmation dialog
-   Mobile-first | BEM
-   ============================================================ */
-
-/* ---------- Overlay ---------- */
 .cd-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.48);
+  background: rgba(15, 30, 42, 0.4);
+  backdrop-filter: blur(5px); /* Efeito Blur solicitado */
+  -webkit-backdrop-filter: blur(5px);
+  z-index: var(--z-modal-backdrop, 100);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 300;
-  padding: 16px;
+  padding: var(--space-page-x);
+  animation: fadeIn 0.3s ease-out forwards;
 }
 
-/* ---------- Modal ---------- */
 .cd-modal {
-  background: var(--white, #ffffff);
-  border-radius: var(--radius-xl, 20px);
-  padding: 32px 24px 24px;
+  background: var(--white);
+  border-radius: 28px; /* Estética Orgânica */
+  padding: 32px 24px;
   width: 100%;
-  max-width: 420px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  max-width: 400px;
+  box-shadow: var(--shadow-lg);
   text-align: center;
-  animation: fadeUp 0.25s ease;
-  box-sizing: border-box;
+  animation: scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-/* ---------- Icon ---------- */
-.cd-modal__icon {
-  font-size: 42px;
-  line-height: 1;
+.cd-icon {
+  font-size: 32px;
   margin-bottom: 16px;
-  display: block;
-}
-
-/* ---------- Title ---------- */
-.cd-modal__title {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 20px;
-  color: var(--blue-dark, #0a2e48);
-  margin-bottom: 12px;
-}
-
-/* ---------- Description ---------- */
-.cd-modal__desc {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  color: var(--text-muted, #6b7280);
-  line-height: 1.6;
-  margin-bottom: 16px;
-  text-align: left;
-}
-
-/* Extra bottom space when there's no keyword input below */
-.cd-modal__desc--spacious {
-  margin-bottom: 24px;
-}
-
-/* ---------- Error ---------- */
-.cd-modal__error {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  color: var(--error, #c0444a);
-  background: rgba(192, 68, 74, 0.06);
-  border-radius: var(--radius-sm, 8px);
-  padding: 8px 12px;
-  margin: 0 0 14px;
-  text-align: left;
-}
-
-/* ---------- Actions ---------- */
-.cd-modal__actions {
-  display: flex;
-  gap: 10px;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
 }
 
-.cd-modal__actions .btn,
-.cd-modal__actions .btn-danger,
-.cd-modal__actions .btn-sage {
-  flex: 1;
-  min-width: 110px;
-  min-height: 44px;
+.cd-icon--danger { background: var(--danger-soft, #fde8e8); }
+.cd-icon--success { background: var(--sage-light, #cddcea); }
+
+.cd-title {
+  color: var(--text);
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  margin-bottom: 8px;
 }
 
-/* ============================================================
-   KEYWORD BLOCK
-   ============================================================ */
-.cd-keyword-block {
+.cd-message {
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.5;
   margin-bottom: 24px;
-  text-align: left;
 }
 
-.cd-keyword-block__hint {
+.cd-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.cd-btn {
+  border: none;
+  border-radius: 20px;
+  padding: 12px 24px;
+  font-weight: 600;
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  color: var(--text-muted, #6b7280);
-  margin: 0 0 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
 }
 
-.cd-keyword-block__hint strong {
-  color: var(--text, #1a1a2e);
+.cd-btn--cancel {
+  background: var(--warm);
+  color: var(--text);
 }
 
-.cd-keyword-block__input {
-  width: 100%;
-  padding: 10px 14px;
-  min-height: 44px;
-  border: 1.5px solid var(--warm, #e8d5b7);
-  border-radius: var(--radius-md, 10px);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  background: var(--cream, #fdf8f3);
-  color: var(--text, #1a1a2e);
-  outline: none;
-  box-sizing: border-box;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+.cd-btn--cancel:hover { background: var(--pt-border, #dde5ed); }
+
+.cd-btn--danger {
+  background: var(--danger, #b03030);
+  color: #fff;
 }
 
-.cd-keyword-block__input:focus {
-  border-color: var(--blue-mid, #17527c);
-  box-shadow: 0 0 0 3px rgba(23, 82, 124, 0.1);
+.cd-btn--success {
+  background: var(--sage, #2e7fab);
+  color: #fff;
 }
 
-/* Valid state — keyword matches */
-.cd-keyword-block__input--valid {
-  border-color: var(--sage, #52b788);
-  box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.12);
+.cd-btn:hover { transform: translateY(-2px); }
+
+/* Animações */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
-@media (max-width: 479px) {
-  .cd-modal {
-    padding: 24px 16px 20px;
-  }
-
-  .cd-modal__title {
-    font-size: 18px;
-  }
-
-  .cd-modal__actions {
-    flex-direction: column;
-  }
-
-  .cd-modal__actions .btn,
-  .cd-modal__actions .btn-danger,
-  .cd-modal__actions .btn-sage {
-    width: 100%;
-  }
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
+
+/* Dark Mode Suporte */
+body.dark-mode .cd-modal {
+  background: var(--card);
+}
+body.dark-mode .cd-icon--danger { background: rgba(224, 112, 112, 0.14); }
+body.dark-mode .cd-icon--success { background: rgba(90, 176, 122, 0.14); }

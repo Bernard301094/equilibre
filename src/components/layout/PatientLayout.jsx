@@ -170,7 +170,12 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
   const notifCount = unreadFeedback + pendingCount;
 
   /* ── Poll: pendentes + feedback não lido ─────────────────────
-     Intervalo de 30s. Toca som quando unreadFeedback aumenta.
+     Intervalo de 30s. Toca som apenas quando o REMETENTE é
+     outro utilizador (não o próprio paciente da sessão).
+
+     ⚠️  IMPORTANTE: ajusta o nome da coluna "therapist_id" se a
+         tua tabela usar outro campo para identificar o remetente
+         (ex: "sender_id", "author_id", etc.).
      ──────────────────────────────────────────────────────── */
   useEffect(() => {
     let active = true;
@@ -185,15 +190,25 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
           ).catch(() => []),
           db.query(
             "therapist_feedback",
-            { filter: { patient_id: session.id, read: false }, select: "id" },
+            {
+              filter: { patient_id: session.id, read: false },
+              // FIX: inclui o campo do remetente para poder filtrar
+              select: "id,therapist_id",
+            },
             session.access_token
           ).catch(() => []),
         ]);
 
         if (!active) return;
 
-        const newPending  = Array.isArray(assignRaw)   ? assignRaw.length   : 0;
-        const newFeedback = Array.isArray(feedbackRaw) ? feedbackRaw.length : 0;
+        const newPending = Array.isArray(assignRaw) ? assignRaw.length : 0;
+
+        // FIX: exclui mensagens onde o remetente é o próprio utilizador da sessão.
+        // Assim o som e o badge só disparam para mensagens RECEBIDAS, nunca enviadas.
+        const receivedFeedback = Array.isArray(feedbackRaw)
+          ? feedbackRaw.filter((f) => f.therapist_id !== session.id)
+          : [];
+        const newFeedback = receivedFeedback.length;
 
         /* Som apenas quando chega mensagem nova (não no mount inicial) */
         if (newFeedback > prevFeedbackRef.current && prevFeedbackRef.current !== -1) {
