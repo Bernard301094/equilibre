@@ -51,18 +51,77 @@
 .fb-chat__banner {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  padding: 9px 16px;
+  padding: 8px 16px;
   background: var(--pt-blue-050, #eef6fc);
   border-bottom: 1px solid var(--pt-blue-100, #ddedf9);
   font-size: 0.78rem;
   color: var(--pt-blue-700, #17527c);
   line-height: 1.45;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  row-gap: 6px;
 }
 
 .fb-chat__banner strong {
   font-weight: 700;
+}
+
+.fb-chat__banner-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Indicador de presença do paciente ───────────────────── */
+.fb-presence {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.fb-presence--online {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.fb-presence--offline {
+  background: var(--pt-surface-alt, #f7f9fc);
+  color: var(--pt-text-muted, #718096);
+  border: 1px solid var(--pt-border, #dde5ed);
+}
+
+.fb-presence__dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fb-presence--online .fb-presence__dot {
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+  animation: fb-pulse 2s ease-in-out infinite;
+}
+
+.fb-presence--offline .fb-presence__dot {
+  background: var(--pt-border, #cbd5e1);
+}
+
+@keyframes fb-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25); }
+  50%       { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);  }
 }
 
 /* ── Área de mensagens (scroll interno) ───────────────────── */

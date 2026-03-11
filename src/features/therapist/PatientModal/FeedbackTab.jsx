@@ -1,5 +1,5 @@
 // src/features/therapist/PatientModal/FeedbackTab.jsx
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import db from "../../../services/db";
 import "./FeedbackTab.css";
 
@@ -15,7 +15,7 @@ function formatTime(isoString) {
 function groupByDay(feedbacks) {
   const result  = [];
   let   lastDay = null;
-  const asc = [...feedbacks].reverse(); // feedbacks vêm desc → exibir asc
+  const asc = [...feedbacks].reverse();
   for (const fb of asc) {
     const day = new Date(fb.created_at).toDateString();
     if (day !== lastDay) {
@@ -37,6 +37,12 @@ function groupByDay(feedbacks) {
   return result;
 }
 
+/** Paciente é considerado online se last_active < 2 minutos atrás */
+function isPatientOnline(lastActive) {
+  if (!lastActive) return false;
+  return (Date.now() - new Date(lastActive).getTime()) < 2 * 60 * 1000;
+}
+
 /* ── ReadCheck (estilo WhatsApp) ──────────────────────────── */
 function ReadCheck({ read }) {
   return (
@@ -49,7 +55,7 @@ function ReadCheck({ read }) {
   );
 }
 
-/* ── Ícones SVG inline (sem dependência extra) ────────────── */
+/* ── Ícones SVG inline ────────────────────────────────────── */
 function IconEdit() {
   return (
     <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="fb-icon">
@@ -81,6 +87,20 @@ function IconSend() {
   );
 }
 
+/* ── Indicador de presença do paciente ───────────────────── */
+function PatientPresence({ lastActive }) {
+  const online = isPatientOnline(lastActive);
+  return (
+    <span
+      className={`fb-presence ${online ? "fb-presence--online" : "fb-presence--offline"}`}
+      aria-label={online ? "Paciente online agora" : "Paciente offline"}
+    >
+      <span className="fb-presence__dot" aria-hidden="true" />
+      {online ? "Online agora" : "Offline"}
+    </span>
+  );
+}
+
 /* ── Bolha de mensagem com controles de edição/deleção ───── */
 function MessageBubble({ item, session, onEdit, onDelete, onError }) {
   const [hovered,    setHovered]    = useState(false);
@@ -90,10 +110,8 @@ function MessageBubble({ item, session, onEdit, onDelete, onError }) {
   const [confirmDel, setConfirmDel] = useState(false);
   const editRef = useRef(null);
 
-  /* Autor do mensaje — só o terapeuta que enviou vê os controles */
   const isAuthor = item.therapist_id === session.id;
 
-  /* Auto-resize na edição */
   useEffect(() => {
     if (editing && editRef.current) {
       editRef.current.focus();
@@ -111,13 +129,14 @@ function MessageBubble({ item, session, onEdit, onDelete, onError }) {
       await db.update(
         "therapist_feedback",
         { id: item.id },
-        { message: trimmed },
+        { message: trimmed, edited: true },
         session.access_token
       );
       onEdit(item.id, trimmed);
       setEditing(false);
     } catch (e) {
       console.error("[FeedbackTab] Erro ao editar:", e.message);
+      if (onError) onError("Erro ao editar: " + e.message);
     } finally {
       setSaving(false);
     }
@@ -132,12 +151,9 @@ function MessageBubble({ item, session, onEdit, onDelete, onError }) {
   const handleDelete = async () => {
     setSaving(true);
     try {
-      // 1. Executa DELETE no Supabase
       await db.delete("therapist_feedback", { id: item.id }, session.access_token);
 
-      // 2. Verifica se o registo foi mesmo apagado do BD.
-      //    Se a policy RLS de DELETE estiver em falta, o Supabase retorna 200
-      //    mas não apaga — o query ainda encontra o registo.
+      /* Verifica se o RLS bloqueou silenciosamente */
       const check = await db.query(
         "therapist_feedback",
         { filter: { id: item.id } },
@@ -146,13 +162,10 @@ function MessageBubble({ item, session, onEdit, onDelete, onError }) {
       if (Array.isArray(check) && check.length > 0) {
         throw new Error(
           "O Supabase não apagou o registo. " +
-          "Verifica se existe uma policy RLS de DELETE para therapist_feedback. " +
-          "Executa no SQL Editor: CREATE POLICY \"therapist_delete_own\" ON therapist_feedback " +
-          "FOR DELETE USING (auth.uid()::text = therapist_id::text);"
+          "Verifica se existe a policy RLS de DELETE para therapist_feedback."
         );
       }
 
-      // 3. Só remove da UI depois de confirmado no BD
       onDelete(item.id);
     } catch (e) {
       console.error("[FeedbackTab] Erro ao deletar:", e.message);
@@ -170,7 +183,6 @@ function MessageBubble({ item, session, onEdit, onDelete, onError }) {
       onMouseLeave={() => { setHovered(false); setConfirmDel(false); }}
       aria-label={`Mensagem enviada às ${formatTime(item.created_at)}`}
     >
-      {/* Controles (lápis + lixeira) — apenas para o autor, visíveis no hover */}
       {isAuthor && !editing && (
         <div className={`fb-msg-controls ${hovered ? "fb-msg-controls--visible" : ""}`}>
           <button
@@ -215,11 +227,8 @@ function MessageBubble({ item, session, onEdit, onDelete, onError }) {
         </div>
       )}
 
-      {/* Bolha */}
       <div className={`fb-chat__bubble fb-chat__bubble--outgoing ${editing ? "fb-chat__bubble--editing" : ""}`}>
-
         {editing ? (
-          /* ── Modo edição inline ── */
           <div className="fb-edit-area">
             <textarea
               ref={editRef}
@@ -253,7 +262,6 @@ function MessageBubble({ item, session, onEdit, onDelete, onError }) {
             </div>
           </div>
         ) : (
-          /* ── Modo leitura ── */
           <>
             <p className="fb-chat__bubble-text">{item.message}</p>
             <div className="fb-chat__bubble-footer">
@@ -274,24 +282,47 @@ function MessageBubble({ item, session, onEdit, onDelete, onError }) {
 
 /* ── Componente principal ─────────────────────────────────── */
 export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksChange }) {
-  const [text,   setText]   = useState("");
-  const [saving, setSaving] = useState(false);
-  const [toast,  setToast]  = useState(null);
-  const inflightRef = useRef(false);
-  const textareaRef = useRef(null);
-  const bottomRef   = useRef(null);
+  const [text,       setText]       = useState("");
+  const [saving,     setSaving]     = useState(false);
+  const [toast,      setToast]      = useState(null);
+  const [lastActive, setLastActive] = useState(null);
+
+  const inflightRef  = useRef(false);
+  const textareaRef  = useRef(null);
+  const bottomRef    = useRef(null);
+  const presenceRef  = useRef(null);
 
   const showToast = (type, msg) => {
     setToast({ type, msg });
     setTimeout(() => setToast(null), 3500);
   };
 
-  /* Scroll to bottom quando feedbacks mudam */
+  /* ── Presença: busca last_active do paciente a cada 30s ── */
+  const fetchPresence = useCallback(async () => {
+    try {
+      const rows = await db.query(
+        "users",
+        { filter: { id: patient.id }, select: "last_active" },
+        session.access_token
+      );
+      if (Array.isArray(rows) && rows.length > 0) {
+        setLastActive(rows[0].last_active ?? null);
+      }
+    } catch (_) {}
+  }, [patient.id, session.access_token]);
+
+  useEffect(() => {
+    fetchPresence();
+    presenceRef.current = setInterval(fetchPresence, 30_000);
+    return () => clearInterval(presenceRef.current);
+  }, [fetchPresence]);
+
+  /* ── Scroll to bottom quando feedbacks mudam ── */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [feedbacks.length]);
 
-  /* Auto-resize do textarea */
+  /* ── Auto-resize do textarea ── */
   const handleTextChange = (e) => {
     setText(e.target.value);
     const ta = textareaRef.current;
@@ -353,8 +384,8 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
     showToast("success", "Mensagem excluída 🗑️");
   };
 
-  const grouped    = groupByDay(feedbacks);
-  const firstName  = patient.name.split(" ")[0];
+  const grouped   = groupByDay(feedbacks);
+  const firstName = patient.name.split(" ")[0];
 
   return (
     <div className="fb-chat">
@@ -366,13 +397,16 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
         </div>
       )}
 
-      {/* ── Info banner ── */}
+      {/* ── Banner: informação + indicador de presença ── */}
       <div className="fb-chat__banner" role="note">
-        <span aria-hidden="true">💬</span>
-        <span>
-          Mensagens visíveis pelo paciente.{" "}
-          <strong>Use para elogios, orientações e motivação.</strong>
-        </span>
+        <div className="fb-chat__banner-left">
+          <span aria-hidden="true">💬</span>
+          <span>
+            Mensagens visíveis pelo paciente.{" "}
+            <strong>Use para elogios, orientações e motivação.</strong>
+          </span>
+        </div>
+        <PatientPresence lastActive={lastActive} />
       </div>
 
       {/* ── Área de mensagens (scrollável) ── */}
@@ -382,7 +416,6 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
         aria-label={`Conversa com ${firstName}`}
         aria-live="polite"
       >
-        {/* Estado vazio */}
         {feedbacks.length === 0 && (
           <div className="fb-chat__empty" role="status">
             <span aria-hidden="true">📭</span>
@@ -393,7 +426,6 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
           </div>
         )}
 
-        {/* Mensagens agrupadas por dia */}
         {grouped.map((item) => {
           if (item.type === "day") {
             return (
@@ -414,7 +446,6 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
           );
         })}
 
-        {/* Âncora de scroll */}
         <div ref={bottomRef} />
       </div>
 

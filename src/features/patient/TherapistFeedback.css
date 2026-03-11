@@ -48,6 +48,26 @@
   font-size: 1.25rem;
   flex-shrink: 0;
   box-shadow: 0 1px 4px rgba(46, 127, 171, 0.12);
+  overflow: hidden;
+}
+
+/* Foto real do terapeuta */
+.tf-chat__topbar-avatar--img {
+  object-fit: cover;
+  font-size: 0; /* esconde alt text enquanto carrega */
+}
+
+/* Fallback com iniciais */
+.tf-chat__topbar-avatar--initials {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--pt-blue-600, #2e7fab);
+  letter-spacing: 0.03em;
+}
+
+/* Wrapper para o componente AvatarDisplay no topbar */
+.tf-chat__topbar-avatar-img {
+  flex-shrink: 0;
 }
 
 .tf-chat__topbar-info {
@@ -68,16 +88,11 @@
   text-overflow: ellipsis;
 }
 
-.tf-chat__topbar-status {
+.tf-chat__topbar-sub {
   font-size: 0.72rem;
   color: var(--pt-text-muted, #718096);
-  font-weight: 500;
-  transition: color 0.3s ease;
-}
-
-/* Indicador "● Ao vivo" quando o Realtime está conectado */
-.tf-chat__topbar-status--live {
-  color: var(--pt-green-600, #2f9e6e);
+  font-weight: 400;
+  font-style: italic;
 }
 
 .tf-chat__topbar-actions {

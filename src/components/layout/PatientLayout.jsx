@@ -24,7 +24,7 @@ const buildNavItems = (pendingCount) => [
   { id: "routine",     icon: "🗓️",  label: "Rotina"      },
   { id: "progress",    icon: "📈",  label: "Progresso"   },
   { id: "history",     icon: "🕰️", label: "Histórico"   },
-  { id: "orientacoes", icon: "📬",  label: "Orientações" }, // ← NOVO
+  { id: "orientacoes", icon: "📬",  label: "Orientações" },
 ];
 
 /* ── LogoutDialog ─────────────────────────────────────────── */
@@ -45,37 +45,173 @@ function LogoutDialog({ onConfirm, onCancel }) {
 }
 
 /* ════════════════════════════════════════════════════════════
+   useBellState — física de pêndulo (idêntico ao TherapistLayout)
+   ════════════════════════════════════════════════════════════ */
+function useBellState(unreadCount) {
+  const [animKey,  setAnimKey]  = useState(0);
+  const [animType, setAnimType] = useState(null);
+  const timerRef     = useRef(null);
+  const prevCountRef = useRef(unreadCount);
+
+  const fire = useCallback((type, ms) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setAnimType(type);
+    setAnimKey((k) => k + 1);
+    timerRef.current = setTimeout(() => { setAnimType(null); timerRef.current = null; }, ms);
+  }, []);
+
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
+  useEffect(() => {
+    if (unreadCount > prevCountRef.current) fire("shake", 900);
+    prevCountRef.current = unreadCount;
+  }, [unreadCount, fire]);
+
+  useEffect(() => {
+    if (unreadCount === 0) return;
+    const id = setInterval(() => { if (timerRef.current === null) fire("idle", 750); }, 9000);
+    return () => clearInterval(id);
+  }, [unreadCount, fire]);
+
+  const triggerRing = useCallback(() => fire("ring", 480), [fire]);
+
+  const iconClass = [
+    "bell-icon",
+    animType === "shake" ? "bell-icon--shaking" : "",
+    animType === "ring"  ? "bell-icon--ringing" : "",
+    animType === "idle"  ? "bell-icon--idle"    : "",
+  ].filter(Boolean).join(" ");
+
+  return { animKey, iconClass, triggerRing };
+}
+
+/* ── FloatingBell (mobile) ────────────────────────────────── */
+function FloatingBell({ unreadCount, isActive, onClick }) {
+  const { animKey, iconClass, triggerRing } = useBellState(unreadCount);
+  const handleClick = () => { triggerRing(); onClick(); };
+
+  const containerClass = [
+    "floating-bell",
+    isActive                     ? "floating-bell--active" : "",
+    unreadCount > 0 && !isActive ? "floating-bell--unread" : "",
+  ].filter(Boolean).join(" ");
+
+  return (
+    <div className={containerClass}>
+      <button
+        className="floating-bell__btn"
+        aria-label={`Notificações${unreadCount > 0 ? ` (${unreadCount} novas)` : ""}${isActive ? " — clique para fechar" : ""}`}
+        aria-pressed={isActive}
+        onClick={handleClick}
+      >
+        <span key={animKey} className={iconClass} aria-hidden="true">🔔</span>
+        {unreadCount > 0 && (
+          <span className="floating-bell__badge" aria-hidden="true">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
+      </button>
+    </div>
+  );
+}
+
+/* ── SidebarBell (desktop) ────────────────────────────────── */
+function SidebarBell({ unreadCount, onClick }) {
+  const { animKey, iconClass, triggerRing } = useBellState(unreadCount);
+  const handleClick = () => { triggerRing(); onClick(); };
+
+  return (
+    <button
+      className="sidebar-bell"
+      aria-label={`Notificações${unreadCount > 0 ? ` (${unreadCount} novas)` : ""}`}
+      onClick={handleClick}
+    >
+      <span key={animKey} className={iconClass} aria-hidden="true">🔔</span>
+      {unreadCount > 0 && (
+        <span className="sidebar-bell__badge" aria-hidden="true">
+          {unreadCount > 9 ? "9+" : unreadCount}
+        </span>
+      )}
+    </button>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
    PatientLayout
    ════════════════════════════════════════════════════════════ */
 export default function PatientLayout({ session, setSession, logout, theme, toggleTheme }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [pendingCount, setPendingCount] = useState(0);
-  const [showProfile,  setShowProfile]  = useState(false);
-  const [showLogout,   setShowLogout]   = useState(false);
-  const [showDelete,   setShowDelete]   = useState(false);
+  const [pendingCount,    setPendingCount]    = useState(0);
+  const [unreadFeedback,  setUnreadFeedback]  = useState(0);
+  const [showProfile,     setShowProfile]     = useState(false);
+  const [showLogout,      setShowLogout]      = useState(false);
+  const [showDelete,      setShowDelete]      = useState(false);
 
-  const isMobile = useIsMobile();
+  const isMobile         = useIsMobile();
+  const prevPathRef      = useRef(location.pathname);
   const prevTherapistRef = useRef(session.therapist_id);
 
-  /* ── Poll de exercícios pendentes para badge ── */
+  /* Contagem total para o badge do sino */
+  const notifCount = unreadFeedback + pendingCount;
+
+  /* ── Poll de exercícios pendentes (badge nav) + feedback não lido (badge sino) ── */
   useEffect(() => {
     let active = true;
-    const fetchPending = async () => {
+
+    const fetchCounts = async () => {
       try {
-        const r = await db.query(
-          "assignments",
-          { filter: { patient_id: session.id, status: "pending" }, select: "id" },
-          session.access_token
-        );
-        if (active) setPendingCount(Array.isArray(r) ? r.length : 0);
+        const [assignRaw, feedbackRaw] = await Promise.all([
+          db.query(
+            "assignments",
+            { filter: { patient_id: session.id, status: "pending" }, select: "id" },
+            session.access_token
+          ).catch(() => []),
+          db.query(
+            "therapist_feedback",
+            { filter: { patient_id: session.id, read: false }, select: "id" },
+            session.access_token
+          ).catch(() => []),
+        ]);
+
+        if (!active) return;
+        setPendingCount(Array.isArray(assignRaw)   ? assignRaw.length   : 0);
+        setUnreadFeedback(Array.isArray(feedbackRaw) ? feedbackRaw.length : 0);
       } catch (_) {}
     };
-    fetchPending();
-    const id = setInterval(fetchPending, 30_000);
+
+    fetchCounts();
+    const id = setInterval(fetchCounts, 30_000);
     return () => { active = false; clearInterval(id); };
   }, [session.id, session.access_token]);
+
+  /* ── Ping de presença — last_active ── */
+  useEffect(() => {
+    if (!session?.id || !session?.access_token) return;
+
+    const ping = () => {
+      db.update(
+        "users",
+        { id: session.id },
+        { last_active: new Date().toISOString() },
+        session.access_token
+      ).catch(() => {});
+    };
+
+    ping();
+    const interval = setInterval(ping, 60_000);
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") ping();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [session?.id, session?.access_token]);
 
   /* ── Sync quando terapeuta vincula ── */
   useEffect(() => {
@@ -92,12 +228,25 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
 
   const navigateTo = useCallback((id) => {
     const path = PATIENT_ROUTES[id];
-    if (path) navigate(path);
-  }, [navigate]);
+    if (!path) return;
+    if (id !== "notifications") prevPathRef.current = location.pathname;
+    navigate(path);
+  }, [navigate, location.pathname]);
 
   const activeView = PATH_TO_PATIENT_VIEW[location.pathname] ?? "home";
+  const navItems   = buildNavItems(pendingCount);
 
-  const navItems = buildNavItems(pendingCount);
+  /* ── Toggle sino: abre/fecha notificações ── */
+  const handleBellClick = () => {
+    if (activeView === "notifications") {
+      navigate(prevPathRef.current || PATIENT_ROUTES.home);
+    } else {
+      prevPathRef.current = location.pathname;
+      navigate(PATIENT_ROUTES.notifications);
+      /* Limpa o badge de feedback após abrir (a view marcará como lido na BD) */
+      setUnreadFeedback(0);
+    }
+  };
 
   return (
     <div className="patient-layout">
@@ -116,6 +265,9 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
           onLogout={() => setShowLogout(true)}
           onDeleteAccount={() => setShowDelete(true)}
           className="patient-layout__sidebar"
+          extraHeader={
+            <SidebarBell unreadCount={notifCount} onClick={handleBellClick} />
+          }
         />
       )}
 
@@ -127,6 +279,15 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
       >
         <Outlet context={{ session, setSession, navigateTo }} />
       </main>
+
+      {/* Sino flutuante no mobile (mesmo padrão do TherapistLayout) */}
+      {isMobile && (
+        <FloatingBell
+          unreadCount={notifCount}
+          isActive={activeView === "notifications"}
+          onClick={handleBellClick}
+        />
+      )}
 
       {isMobile && (
         <BottomNav

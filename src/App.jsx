@@ -212,17 +212,18 @@ export const THERAPIST_ROUTES = {
   progress:      "/terapeuta/progresso",
   responses:     "/terapeuta/respostas",
   notifications: "/terapeuta/notificacoes",
-  orientacoes:   "/terapeuta/orientacoes",   // ← NOVO: Mural de Orientações
+  orientacoes:   "/terapeuta/orientacoes",
 };
 
 export const PATIENT_ROUTES = {
-  home:        "/paciente/inicio",
-  exercises:   "/paciente/exercicios",
-  diary:       "/paciente/diario",
-  routine:     "/paciente/rotina",
-  progress:    "/paciente/progresso",
-  history:     "/paciente/historico",
-  orientacoes: "/paciente/orientacoes",      // ← NOVO: Mural de Orientações
+  home:          "/paciente/inicio",
+  exercises:     "/paciente/exercicios",
+  diary:         "/paciente/diario",
+  routine:       "/paciente/rotina",
+  progress:      "/paciente/progresso",
+  history:       "/paciente/historico",
+  orientacoes:   "/paciente/orientacoes",
+  notifications: "/paciente/notificacoes", // ← NOVO
 };
 
 export const PATH_TO_THERAPIST_VIEW = Object.fromEntries(
@@ -305,11 +306,7 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
         <Route path="progresso"    element={<TherapistProgress  session={session} />} />
         <Route path="respostas"    element={<ResponsesView      session={session} />} />
         <Route path="notificacoes" element={<NotificationsView  session={session} />} />
-        {/* ← NOVO: Mural de Orientações do terapeuta */}
-        <Route
-          path="orientacoes"
-          element={<MessagesView session={session} />}
-        />
+        <Route path="orientacoes"  element={<MessagesView       session={session} />} />
         <Route path="*" element={<Navigate to={THERAPIST_ROUTES.dashboard} replace />} />
       </Route>
 
@@ -323,17 +320,14 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
         }
       >
         <Route index element={<Navigate to={PATIENT_ROUTES.home} replace />} />
-        <Route path="inicio"       element={<PatientHome      session={session} setSession={setSession} />} />
-        <Route path="exercicios"   element={<PatientExercises session={session} />} />
-        <Route path="diario"       element={<PatientDiary     session={session} />} />
-        <Route path="rotina"       element={<PatientRoutine   session={session} />} />
-        <Route path="progresso"    element={<PatientProgress  session={session} />} />
-        <Route path="historico"    element={<PatientHistory   session={session} />} />
-        {/* ← NOVO: Mural de Orientações do paciente */}
-        <Route
-          path="orientacoes"
-          element={<MessagesView session={session} />}
-        />
+        <Route path="inicio"         element={<PatientHome          session={session} setSession={setSession} />} />
+        <Route path="exercicios"     element={<PatientExercises     session={session} />} />
+        <Route path="diario"         element={<PatientDiary         session={session} />} />
+        <Route path="rotina"         element={<PatientRoutine       session={session} />} />
+        <Route path="progresso"      element={<PatientProgress      session={session} />} />
+        <Route path="historico"      element={<PatientHistory       session={session} />} />
+        <Route path="orientacoes"    element={<MessagesView         session={session} />} />
+        <Route path="notificacoes"   element={<PatientNotificationsView />} /> {/* ← NOVO */}
         <Route path="*" element={<Navigate to={PATIENT_ROUTES.home} replace />} />
       </Route>
 
@@ -343,20 +337,21 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
 }
 
 /* ── Imports das views ───────────────────────────────────── */
-import TherapistDashboard  from "./features/therapist/Dashboard";
-import PatientsView        from "./features/therapist/PatientsView";
-import ExercisesView       from "./features/therapist/ExercisesView";
-import CreateExerciseView  from "./features/therapist/CreateExerciseView";
-import ResponsesView       from "./features/therapist/ResponsesView";
-import TherapistProgress   from "./features/therapist/TherapistProgress";
-import NotificationsView   from "./features/therapist/NotificationsView";
-import PatientHome         from "./features/patient/Home";
-import PatientExercises    from "./features/patient/PatientExercises";
-import PatientDiary        from "./features/patient/DiaryView";
-import PatientRoutine      from "./features/patient/RoutineView";
-import PatientProgress     from "./features/patient/PatientProgress";
-import PatientHistory      from "./features/patient/PatientHistory";
-import MessagesView        from "./components/shared/MessagesView"; // ← NOVO
+import TherapistDashboard        from "./features/therapist/Dashboard";
+import PatientsView              from "./features/therapist/PatientsView";
+import ExercisesView             from "./features/therapist/ExercisesView";
+import CreateExerciseView        from "./features/therapist/CreateExerciseView";
+import ResponsesView             from "./features/therapist/ResponsesView";
+import TherapistProgress         from "./features/therapist/TherapistProgress";
+import NotificationsView         from "./features/therapist/NotificationsView";
+import PatientHome               from "./features/patient/Home";
+import PatientExercises          from "./features/patient/PatientExercises";
+import PatientDiary              from "./features/patient/DiaryView";
+import PatientRoutine            from "./features/patient/RoutineView";
+import PatientProgress           from "./features/patient/PatientProgress";
+import PatientHistory            from "./features/patient/PatientHistory";
+import PatientNotificationsView  from "./features/patient/PatientNotificationsView"; // ← NOVO
+import MessagesView              from "./components/shared/MessagesView";
 
 /* ── App root ─────────────────────────────────────────────── */
 export default function App() {

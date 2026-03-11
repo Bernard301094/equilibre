@@ -1,27 +1,16 @@
 // src/features/patient/TherapistFeedback.jsx
-/**
- * Sincronização em tempo real via WebSocket nativo do Supabase Realtime.
- * Zero dependências novas — não usa @supabase/supabase-js.
- *
- * Eventos escutados na tabela therapist_feedback (filtrado por patient_id):
- *   INSERT → nova mensagem aparece instantaneamente
- *   UPDATE → edição reflete imediatamente (incluindo flag "editada")
- *   DELETE → mensagem apagada pelo terapeuta desaparece sem refresh
- *
- * Fallback: polling silencioso a cada 3 min + reconexão ao foco da aba.
- */
 import { useState, useEffect, useCallback, useRef } from "react";
 import db from "../../services/db";
 import "./TherapistFeedback.css";
 
 /* ── Configuração ─────────────────────────────────────────── */
-const SUPA_URL     = import.meta.env.VITE_SUPABASE_URL;
-const SUPA_KEY     = import.meta.env.VITE_SUPABASE_ANON_KEY
-                     ?? import.meta.env.VITE_SUPABASE_KEY;
-const POLL_MS      = 3 * 60 * 1000; // polling de segurança: 3 min
-const WS_RETRY_MS  = 5_000;          // delay antes de reconectar o WS
+const SUPA_URL    = import.meta.env.VITE_SUPABASE_URL;
+const SUPA_KEY    = import.meta.env.VITE_SUPABASE_ANON_KEY
+                    ?? import.meta.env.VITE_SUPABASE_KEY;
+const POLL_MS     = 3 * 60 * 1000;
+const WS_RETRY_MS = 5_000;
 
-/* ── Helpers ──────────────────────────────────────────────── */
+/* ── Helpers de formatação ────────────────────────────────── */
 function formatTime(iso) {
   if (!iso) return "";
   return new Date(iso).toLocaleTimeString("pt-BR", {
@@ -45,7 +34,7 @@ function formatDayLabel(iso) {
 function groupByDay(feedbacks) {
   const result  = [];
   let   lastDay = null;
-  const asc = [...feedbacks].reverse(); // lista vem desc → exibir asc
+  const asc = [...feedbacks].reverse();
   for (const fb of asc) {
     const day = new Date(fb.created_at).toDateString();
     if (day !== lastDay) {
@@ -57,18 +46,39 @@ function groupByDay(feedbacks) {
   return result;
 }
 
+/* ── Avatar inline (sem dependência externa) ──────────────── */
+function TherapistAvatar({ name, avatarUrl }) {
+  const [imgError, setImgError] = useState(false);
+  const initials = (name || "T")
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+
+  if (avatarUrl && !imgError) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name || "Terapeuta"}
+        className="tf-chat__topbar-avatar tf-chat__topbar-avatar--img"
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+  return (
+    <div className="tf-chat__topbar-avatar tf-chat__topbar-avatar--initials" aria-hidden="true">
+      {initials}
+    </div>
+  );
+}
+
 /* ── Hook: Realtime via WebSocket nativo ──────────────────── */
-/**
- * Conecta ao endpoint Realtime do Supabase sem SDK.
- * Protocolo: Phoenix channels over WebSocket.
- * Reconecta automaticamente se o WS fechar.
- */
 function useSupabaseRealtime({ table, patientId, onInsert, onUpdate, onDelete, enabled }) {
   const wsRef        = useRef(null);
   const heartbeatRef = useRef(null);
   const retryRef     = useRef(null);
   const unmountedRef = useRef(false);
-  const [connected, setConnected] = useState(false);
 
   const connect = useCallback(() => {
     if (!enabled || !SUPA_URL || !SUPA_KEY) return;
@@ -86,16 +96,14 @@ function useSupabaseRealtime({ table, patientId, onInsert, onUpdate, onDelete, e
 
     ws.onopen = () => {
       if (unmountedRef.current) { ws.close(); return; }
-      setConnected(true);
 
-      /* Entra no canal com filtro por patient_id */
       ws.send(JSON.stringify({
         topic: `realtime:public:${table}:patient_id=eq.${patientId}`,
         event: "phx_join",
         payload: {
           config: {
-            broadcast:  { self: false },
-            presence:   { key: "" },
+            broadcast: { self: false },
+            presence:  { key: "" },
             postgres_changes: [
               { event: "INSERT", schema: "public", table, filter: `patient_id=eq.${patientId}` },
               { event: "UPDATE", schema: "public", table, filter: `patient_id=eq.${patientId}` },
@@ -106,7 +114,6 @@ function useSupabaseRealtime({ table, patientId, onInsert, onUpdate, onDelete, e
         ref: "join-1",
       }));
 
-      /* Heartbeat a cada 25 s */
       heartbeatRef.current = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({
@@ -119,27 +126,19 @@ function useSupabaseRealtime({ table, patientId, onInsert, onUpdate, onDelete, e
     ws.onmessage = (evt) => {
       let msg;
       try { msg = JSON.parse(evt.data); } catch { return; }
-
       const { event, payload } = msg;
-      if (!payload?.data) return;
-
+      if (!payload?.data || event !== "postgres_changes") return;
       const { type, record, old_record } = payload.data;
-      if (event !== "postgres_changes") return;
-
       if (type === "INSERT" && record)     onInsert?.(record);
       if (type === "UPDATE" && record)     onUpdate?.(record);
       if (type === "DELETE" && old_record) onDelete?.(old_record);
     };
 
-    ws.onerror = () => {
-      /* onclose dispara a seguir e trata a reconexão */
-    };
+    ws.onerror = () => {};
 
     ws.onclose = () => {
       if (unmountedRef.current) return;
-      setConnected(false);
       clearInterval(heartbeatRef.current);
-      /* Tenta reconectar após WS_RETRY_MS */
       retryRef.current = setTimeout(connect, WS_RETRY_MS);
     };
   }, [enabled, table, patientId, onInsert, onUpdate, onDelete]);
@@ -152,25 +151,39 @@ function useSupabaseRealtime({ table, patientId, onInsert, onUpdate, onDelete, e
       clearTimeout(retryRef.current);
       clearInterval(heartbeatRef.current);
       if (wsRef.current) {
-        wsRef.current.onclose = null; // evita loop de reconexão no unmount
+        wsRef.current.onclose = null;
         wsRef.current.close();
       }
     };
   }, [connect]);
-
-  return connected;
 }
 
 /* ── Componente principal ─────────────────────────────────── */
 export default function TherapistFeedback({ session, setView }) {
-  const [feedbacks,   setFeedbacks]   = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState("");
+  const [feedbacks,        setFeedbacks]        = useState([]);
+  const [loading,          setLoading]          = useState(true);
+  const [error,            setError]            = useState("");
+  const [therapistProfile, setTherapistProfile] = useState(null);
+
   const pollingRef = useRef(null);
   const bottomRef  = useRef(null);
 
   const scrollToBottom = (behavior = "smooth") =>
     bottomRef.current?.scrollIntoView({ behavior });
+
+  /* ── Busca nome e avatar reais do terapeuta ── */
+  useEffect(() => {
+    if (!session?.therapist_id || !session?.access_token) return;
+    db.query(
+      "users",
+      { filter: { id: session.therapist_id }, select: "id,name,avatar_url" },
+      session.access_token
+    )
+      .then((rows) => {
+        if (Array.isArray(rows) && rows.length > 0) setTherapistProfile(rows[0]);
+      })
+      .catch(() => {});
+  }, [session?.therapist_id, session?.access_token]);
 
   /* ── Marca não-lidas como lidas ── */
   const markUnreadAsRead = useCallback(async (unread) => {
@@ -183,10 +196,10 @@ export default function TherapistFeedback({ session, setView }) {
     );
   }, [session.access_token]);
 
-  /* ── Carga de dados ── */
+  /* ── Carga de mensagens ── */
   const loadFeedbacks = useCallback(async ({ silent = false } = {}) => {
     if (!session?.therapist_id || !session?.id) { setLoading(false); return; }
-    setLoading(true);
+    if (!silent) setLoading(true);
     setError("");
     try {
       const rows = await db.query(
@@ -196,7 +209,6 @@ export default function TherapistFeedback({ session, setView }) {
       );
       const list = Array.isArray(rows) ? rows : [];
       setFeedbacks(list);
-
       const unread = list.filter((fb) => !fb.read);
       if (unread.length) {
         setFeedbacks((prev) => prev.map((fb) => fb.read ? fb : { ...fb, read: true }));
@@ -215,7 +227,7 @@ export default function TherapistFeedback({ session, setView }) {
   const handleInsert = useCallback((record) => {
     setFeedbacks((prev) => {
       if (prev.some((fb) => fb.id === record.id)) return prev;
-      return [record, ...prev]; // lista desc
+      return [record, ...prev];
     });
     db.update("therapist_feedback", { id: record.id }, { read: true }, session.access_token)
       .catch(() => {});
@@ -233,7 +245,7 @@ export default function TherapistFeedback({ session, setView }) {
   }, []);
 
   /* ── Realtime hook ── */
-  const realtimeOk = useSupabaseRealtime({
+  useSupabaseRealtime({
     table:     "therapist_feedback",
     patientId: session?.id,
     onInsert:  handleInsert,
@@ -242,7 +254,7 @@ export default function TherapistFeedback({ session, setView }) {
     enabled:   !!session?.therapist_id && !!session?.id,
   });
 
-  /* ── Bootstrap ── */
+  /* ── Bootstrap + polling de segurança ── */
   useEffect(() => {
     if (!session?.therapist_id) { setLoading(false); return; }
     loadFeedbacks();
@@ -255,15 +267,16 @@ export default function TherapistFeedback({ session, setView }) {
     };
   }, [loadFeedbacks, session?.therapist_id]);
 
-  /* ── Sem terapeuta vinculado ── */
+  /* ── Estado: sem terapeuta vinculado ── */
   if (!session?.therapist_id) {
     return (
       <section className="tf-chat" aria-label="Mensagens do terapeuta">
         <div className="tf-chat__topbar">
-          <div className="tf-chat__topbar-avatar" aria-hidden="true">🧑‍⚕️</div>
+          <div className="tf-chat__topbar-avatar tf-chat__topbar-avatar--initials" aria-hidden="true">
+            🧑‍⚕️
+          </div>
           <div className="tf-chat__topbar-info">
             <span className="tf-chat__topbar-name">Seu Terapeuta</span>
-            <span className="tf-chat__topbar-status">Nenhum profissional vinculado</span>
           </div>
         </div>
         <div className="tf-chat__body tf-chat__body--centered">
@@ -286,18 +299,20 @@ export default function TherapistFeedback({ session, setView }) {
 
   const grouped     = groupByDay(feedbacks);
   const unreadCount = feedbacks.filter((fb) => !fb.read).length;
+  const therapistName = therapistProfile?.name ?? "Seu Terapeuta";
 
   return (
     <section className="tf-chat" aria-label="Chat com terapeuta">
 
-      {/* ── Topbar ── */}
+      {/* ── Topbar com foto e nome reais ── */}
       <div className="tf-chat__topbar">
-        <div className="tf-chat__topbar-avatar" aria-hidden="true">🧑‍⚕️</div>
+        <TherapistAvatar
+          name={therapistName}
+          avatarUrl={therapistProfile?.avatar_url ?? null}
+        />
         <div className="tf-chat__topbar-info">
-          <span className="tf-chat__topbar-name">Seu Terapeuta</span>
-          <span className={`tf-chat__topbar-status${realtimeOk ? " tf-chat__topbar-status--live" : ""}`}>
-            {realtimeOk ? "● Ao vivo" : "Online"}
-          </span>
+          <span className="tf-chat__topbar-name">{therapistName}</span>
+          <span className="tf-chat__topbar-sub">Profissional de saúde</span>
         </div>
         {unreadCount > 0 && (
           <span className="tf-chat__badge" aria-label={`${unreadCount} não lidas`}>
@@ -306,7 +321,7 @@ export default function TherapistFeedback({ session, setView }) {
         )}
       </div>
 
-      {/* ── Mensagens ── */}
+      {/* ── Área de mensagens ── */}
       <div className="tf-chat__body" role="log" aria-live="polite" aria-label="Mensagens">
 
         {loading && (

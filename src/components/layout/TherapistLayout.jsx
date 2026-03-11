@@ -5,6 +5,8 @@ import BottomNav      from "./BottomNav";
 import ToastContainer from "../ui/Toast";
 import ProfileModal      from "../shared/ProfileModal";
 import DeleteAccountModal from "../shared/DeleteAccountModal";
+// ↓ Importa o teu modal de paciente aqui — ajusta o caminho conforme o teu projeto
+// import PatientModal from "../shared/PatientModal";
 import { useNotifications } from "../../hooks/useNotifications";
 import { useIsMobile }      from "../../hooks/useIsMobile";
 import {
@@ -20,7 +22,7 @@ const NAV_ITEMS = [
   { id: "create",      icon: "✏️",  label: "Criar"        },
   { id: "progress",    icon: "📈",  label: "Progresso"    },
   { id: "responses",   icon: "💬",  label: "Respostas"    },
-  { id: "orientacoes", icon: "📬",  label: "Orientações"  }, // ← NOVO
+  { id: "orientacoes", icon: "📬",  label: "Orientações"  },
 ];
 
 /* ════════════════════════════════════════════════════════════
@@ -142,6 +144,22 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
   const [showLogout,  setShowLogout]  = useState(false);
   const [showDelete,  setShowDelete]  = useState(false);
 
+  /* ── Estado do modal de paciente ── */
+  const [selectedPatient,    setSelectedPatient]    = useState(null);
+  const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
+
+  /* Abre o modal para um paciente específico */
+  const handleOpenPatient = useCallback((patient) => {
+    setSelectedPatient(patient);
+    setIsPatientModalOpen(true);
+  }, []);
+
+  /* Fecha o modal e limpa a seleção */
+  const handleClosePatient = useCallback(() => {
+    setIsPatientModalOpen(false);
+    setSelectedPatient(null);
+  }, []);
+
   const isMobile    = useIsMobile();
   const prevPathRef = useRef(location.pathname);
   const { unreadCount, markAllRead } = useNotifications(session.id);
@@ -188,7 +206,13 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
       )}
 
       <main className={`therapist-layout__main${isMobile ? " therapist-layout__main--mobile" : ""}`}>
-        <Outlet context={{ session, setSession, navigateTo }} />
+        {/*
+          Passa onOpenPatient via outlet context.
+          No componente filho (ex: TherapistDashboard), recebe com:
+            const { onOpenPatient } = useOutletContext();
+          ou, se o teu router passar props diretamente, adiciona onOpenPatient={handleOpenPatient}.
+        */}
+        <Outlet context={{ session, setSession, navigateTo, onOpenPatient: handleOpenPatient }} />
       </main>
 
       {isMobile && (
@@ -232,6 +256,19 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
           onDeleted={logout}
         />
       )}
+
+      {/*
+        ── Modal de paciente ──────────────────────────────────
+        Descomenta e ajusta quando tiveres o componente pronto:
+
+        {isPatientModalOpen && selectedPatient && (
+          <PatientModal
+            patient={selectedPatient}
+            session={session}
+            onClose={handleClosePatient}
+          />
+        )}
+      */}
 
       <ToastContainer />
     </div>
