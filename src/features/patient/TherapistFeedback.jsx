@@ -1,3 +1,4 @@
+// src/components/patient/TherapistFeedback.jsx
 import { useState, useEffect, useCallback } from "react";
 import db from "../../services/db";
 import { formatDateTime } from "../../utils/dates";
@@ -5,23 +6,37 @@ import "./TherapistFeedback.css";
 
 /**
  * TherapistFeedback
- * Shown in the patient's view (e.g. inside PatientProgress or Home).
- * Fetches all feedback written by the patient's therapist and marks
- * unread ones as read automatically.
+ * Exibido na visão do paciente.
+ * Busca todas as mensagens escritas pelo terapeuta vinculado
+ * e marca as não-lidas como lidas automaticamente.
  */
 export default function TherapistFeedback({ session }) {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState("");
 
-  /* ── Fetch & auto-mark-as-read ── */
+  /* ── Fetch + auto-mark-as-read ── */
   const loadFeedbacks = useCallback(async () => {
+    // CORREÇÃO: guard aprimorado com log de diagnóstico
     if (!session?.therapist_id) {
+      console.warn(
+        "[TherapistFeedback] Abortando: session.therapist_id está ausente.\n" +
+        "Verifique se hydrateSession() foi chamado após o login.\n" +
+        "session atual:", session
+      );
       setLoading(false);
       return;
     }
+
+    if (!session?.id) {
+      console.warn("[TherapistFeedback] Abortando: session.id (patient_id) está ausente.");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError("");
+
     try {
       const rows = await db.query(
         "therapist_feedback",
@@ -38,7 +53,7 @@ export default function TherapistFeedback({ session }) {
       const list = Array.isArray(rows) ? rows : [];
       setFeedbacks(list);
 
-      // Mark every unread message as read (fire-and-forget)
+      // Marca não-lidas como lidas (fire-and-forget, não bloqueia a UI)
       const unread = list.filter((fb) => !fb.read);
       if (unread.length > 0) {
         unread.forEach((fb) => {
@@ -47,15 +62,18 @@ export default function TherapistFeedback({ session }) {
             { id: fb.id },
             { read: true },
             session.access_token
-          ).catch(() => {}); // silent — not critical
+          ).catch((e) => {
+            // Não é crítico, mas loga para detectar falhas de RLS
+            console.warn("[TherapistFeedback] Falha ao marcar feedback como lido:", e.message);
+          });
         });
-        // Optimistic local update
+        // Atualização otimista local
         setFeedbacks((prev) =>
           prev.map((fb) => (!fb.read ? { ...fb, read: true } : fb))
         );
       }
     } catch (e) {
-      console.error("[TherapistFeedback]", e);
+      console.error("[TherapistFeedback] Erro ao carregar mensagens:", e);
       setError("Não foi possível carregar as mensagens.");
     } finally {
       setLoading(false);
@@ -66,10 +84,10 @@ export default function TherapistFeedback({ session }) {
     loadFeedbacks();
   }, [loadFeedbacks]);
 
-  /* ── No therapist linked ── */
+  /* ── Sem terapeuta vinculado: não renderiza nada ── */
   if (!session?.therapist_id) return null;
 
-  /* ── Loading ── */
+  /* ── Carregando ── */
   if (loading) {
     return (
       <section className="tf-section" aria-label="Mensagens do terapeuta">
@@ -82,7 +100,7 @@ export default function TherapistFeedback({ session }) {
     );
   }
 
-  /* ── Error ── */
+  /* ── Erro ── */
   if (error) {
     return (
       <section className="tf-section" aria-label="Mensagens do terapeuta">
@@ -97,7 +115,7 @@ export default function TherapistFeedback({ session }) {
     );
   }
 
-  /* ── No messages yet ── */
+  /* ── Sem mensagens ainda ── */
   if (feedbacks.length === 0) {
     return (
       <section className="tf-section" aria-label="Mensagens do terapeuta">
@@ -119,7 +137,10 @@ export default function TherapistFeedback({ session }) {
           💬 Mensagens do Terapeuta
         </h2>
         {unreadCount > 0 && (
-          <span className="tf-unread-badge" aria-label={`${unreadCount} não lidas`}>
+          <span
+            className="tf-unread-badge"
+            aria-label={`${unreadCount} não lidas`}
+          >
             {unreadCount} nova{unreadCount > 1 ? "s" : ""}
           </span>
         )}
@@ -135,7 +156,7 @@ export default function TherapistFeedback({ session }) {
             ].filter(Boolean).join(" ")}
             aria-label={`Mensagem de ${formatDateTime(fb.created_at)}`}
           >
-            {/* Unread dot */}
+            {/* Ponto indicador de não-lida */}
             {!fb.read && (
               <span className="tf-card__unread-dot" aria-label="Não lida" />
             )}

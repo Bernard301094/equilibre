@@ -63,7 +63,7 @@ function FeedbackPanel({ response, session, onSaved }) {
       await db.update(
         "responses",
         { id: response.id },
-        { therapist_note: null, therapist_stamp: null, noted_at_at: null },
+        { therapist_note: null, therapist_stamp: null, noted_at: null },
         session.access_token
       );
       setText("");

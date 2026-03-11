@@ -5,6 +5,11 @@
  *  • IndexedDB queue for insert/update/delete mutations
  *  • Auto-sync when connection is restored
  *  • Dispatches "equilibre-sync-status" events for UI feedback
+ *
+ * CORREÇÃO: insert/update/delete agora tentam a rede diretamente.
+ * O IndexedDB só é usado como fallback quando a requisição falha
+ * por erro de rede real ("Failed to fetch"). Isso evita o falso
+ * positivo de navigator.onLine em ambiente de desenvolvimento.
  */
 
 const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -27,7 +32,6 @@ function openIDB() {
     req.onupgradeneeded = (e) => {
       const db = e.target.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
-        // auto-increment key; createdAt for ordering
         db.createObjectStore(STORE_NAME, { keyPath: "queueId", autoIncrement: true });
       }
     };
@@ -70,12 +74,23 @@ async function idbGetAll() {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   Helper: detecta erro de rede real (sem conexão)
+───────────────────────────────────────────────────────────── */
+function isNetworkError(e) {
+  return (
+    !navigator.onLine ||
+    e.message === "Failed to fetch" ||
+    e.message === "Network request failed" ||
+    e.name    === "NetworkError"
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
    Sync engine — replays queued mutations against Supabase
 ───────────────────────────────────────────────────────────── */
 let syncInProgress = false;
 
 function emitSyncStatus(status, count = 0) {
-  // status: "syncing" | "synced" | "error"
   window.dispatchEvent(new CustomEvent("equilibre-sync-status", {
     detail: { status, count },
   }));
@@ -113,19 +128,17 @@ async function replayMutation({ method, table, filter, data, token }) {
   }
 }
 
-// Listen for connectivity restoration
 window.addEventListener("online", () => {
   console.info("[db] Conexão restaurada — sincronizando fila offline…");
   flushQueue();
 });
 
-// Also attempt flush on page focus (handles background reconnects)
 window.addEventListener("focus", () => {
   if (navigator.onLine) flushQueue();
 });
 
 /* ─────────────────────────────────────────────────────────────
-   Core helpers (unchanged from original)
+   Core helpers
 ───────────────────────────────────────────────────────────── */
 function fireUnauthorized() {
   window.dispatchEvent(new Event("equilibre-unauthorized"));
@@ -162,8 +175,8 @@ function hasEmptyFilterIn(options = {}) {
 
 function makeHeaders(token, extra = {}) {
   return {
-    apikey:        SUPA_KEY,
-    Authorization: `Bearer ${token || SUPA_KEY}`,
+    apikey:         SUPA_KEY,
+    Authorization:  `Bearer ${token || SUPA_KEY}`,
     "Content-Type": "application/json",
     ...extra,
   };
@@ -191,7 +204,7 @@ async function handleResponse(res, context) {
 ───────────────────────────────────────────────────────────── */
 const db = {
   /**
-   * Always goes to network (reads are not queued offline).
+   * Leituras sempre vão para a rede (não são enfileiradas offline).
    */
   async query(table, options = {}, token = null) {
     if (hasEmptyFilterIn(options)) return [];
@@ -205,72 +218,85 @@ const db = {
   },
 
   /**
-   * Offline-safe insert.
-   * If offline → enqueues in IndexedDB and returns a synthetic object.
+   * Insert: tenta sempre a rede primeiro.
+   * Só enfileira no IndexedDB se for erro de rede real.
    */
   async insert(table, data, token = null) {
-    if (!navigator.onLine) {
-      await idbEnqueue({ method: "insert", table, data, token });
-      console.info(`[db] Offline — insert em "${table}" enfileirado.`);
-      // Return the data itself as a stand-in so callers don't crash
-      return data;
+    try {
+      const res = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
+        method:  "POST",
+        headers: makeHeaders(token, { Prefer: "return=representation" }),
+        body:    JSON.stringify(data),
+      });
+      await handleResponse(res, "insert");
+      const json = await res.json();
+      return Array.isArray(json) ? json[0] : json;
+    } catch (e) {
+      if (isNetworkError(e)) {
+        await idbEnqueue({ method: "insert", table, data, token });
+        console.info(`[db] Offline — insert em "${table}" enfileirado.`);
+        return data;
+      }
+      throw e;
     }
-    const res = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
-      method:  "POST",
-      headers: makeHeaders(token, { Prefer: "return=representation" }),
-      body:    JSON.stringify(data),
-    });
-    await handleResponse(res, "insert");
-    const json = await res.json();
-    return Array.isArray(json) ? json[0] : json;
   },
 
   /**
-   * Offline-safe update.
+   * Update: tenta sempre a rede primeiro.
+   * Só enfileira no IndexedDB se for erro de rede real.
    */
   async update(table, filter, data, token = null) {
-    if (!navigator.onLine) {
-      await idbEnqueue({ method: "update", table, filter, data, token });
-      console.info(`[db] Offline — update em "${table}" enfileirado.`);
-      return data;
+    try {
+      const url = buildUrl(table, { filter });
+      const res = await fetch(url, {
+        method:  "PATCH",
+        headers: makeHeaders(token, { Prefer: "return=representation" }),
+        body:    JSON.stringify(data),
+      });
+      await handleResponse(res, "update");
+      const json = await res.json();
+      if (Array.isArray(json)) return json[0] ?? null;
+      return json ?? null;
+    } catch (e) {
+      if (isNetworkError(e)) {
+        await idbEnqueue({ method: "update", table, filter, data, token });
+        console.info(`[db] Offline — update em "${table}" enfileirado.`);
+        return data;
+      }
+      throw e;
     }
-    const url = buildUrl(table, { filter });
-    const res = await fetch(url, {
-      method:  "PATCH",
-      headers: makeHeaders(token, { Prefer: "return=representation" }),
-      body:    JSON.stringify(data),
-    });
-    await handleResponse(res, "update");
-    const json = await res.json();
-    if (Array.isArray(json)) return json[0] ?? null;
-    return json ?? null;
   },
 
   /**
-   * Offline-safe delete.
+   * Delete: tenta sempre a rede primeiro.
+   * Só enfileira no IndexedDB se for erro de rede real.
    */
   async delete(table, filter, token = null) {
-    if (!navigator.onLine) {
-      await idbEnqueue({ method: "delete", table, filter, token });
-      console.info(`[db] Offline — delete em "${table}" enfileirado.`);
+    try {
+      const url = buildUrl(table, { filter });
+      const res = await fetch(url, {
+        method:  "DELETE",
+        headers: makeHeaders(token),
+      });
+      await handleResponse(res, "delete");
       return true;
+    } catch (e) {
+      if (isNetworkError(e)) {
+        await idbEnqueue({ method: "delete", table, filter, token });
+        console.info(`[db] Offline — delete em "${table}" enfileirado.`);
+        return true;
+      }
+      throw e;
     }
-    const url = buildUrl(table, { filter });
-    const res = await fetch(url, {
-      method:  "DELETE",
-      headers: makeHeaders(token),
-    });
-    await handleResponse(res, "delete");
-    return true;
   },
 
   /**
-   * Expose manual flush for debugging / pull-to-refresh scenarios.
+   * Expõe flush manual para debugging / pull-to-refresh.
    */
   flushQueue,
 
   /**
-   * Returns the number of pending items in the offline queue.
+   * Retorna o número de itens pendentes na fila offline.
    */
   async getPendingCount() {
     const items = await idbGetAll();

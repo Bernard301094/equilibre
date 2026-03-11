@@ -1,5 +1,7 @@
+// src/hooks/useSession.js
 import { useState, useEffect, useCallback, useRef } from "react";
 import auth from "../services/auth";
+import { hydrateSession } from "../services/profile";
 import {
   LS_SESSION_KEY,
   LS_THEME_PREFIX,
@@ -7,8 +9,8 @@ import {
 } from "../utils/constants";
 
 /**
- * Reads the persisted session from localStorage.
- * Returns null if absent or unparseable.
+ * Lê a sessão persistida do localStorage.
+ * Retorna null se ausente ou se o JSON for inválido.
  */
 function readPersistedSession() {
   try {
@@ -20,16 +22,17 @@ function readPersistedSession() {
 }
 
 /**
- * Central session hook.
+ * Hook central de sessão.
  *
- * Responsibilities:
- *  - Load session from localStorage on mount
- *  - Attempt a preventive token refresh on mount (to catch expired sessions early)
- *  - Persist session to localStorage on every change
- *  - Periodic token refresh every TOKEN_REFRESH_INTERVAL_MS
- *  - Listen for the "equilibre-unauthorized" event to force logout
- *  - Expose `logout()` for explicit sign-out
- *  - Expose `updateSession()` for partial session updates (e.g. new avatar_url)
+ * Responsabilidades:
+ *  - Carregar sessão do localStorage na montagem
+ *  - Tentar refresh preventivo na montagem (detecta sessões expiradas cedo)
+ *  - Re-hidratar perfil na montagem caso therapist_id/role estejam ausentes
+ *  - Persistir sessão no localStorage a cada mudança
+ *  - Refresh periódico a cada TOKEN_REFRESH_INTERVAL_MS
+ *  - Escutar o evento "equilibre-unauthorized" para forçar logout
+ *  - Expor logout() para sign-out explícito
+ *  - Expor updateSession() para atualizações parciais (ex: novo avatar_url)
  *
  * @returns {{
  *   session: object|null,
@@ -40,11 +43,11 @@ function readPersistedSession() {
  * }}
  */
 export function useSession() {
-  const [session, setSessionRaw] = useState(null);
+  const [session,      setSessionRaw]  = useState(null);
   const [sessionReady, setSessionReady] = useState(false);
   const refreshingRef = useRef(false);
 
-  // ── Wrap setSession so every update also persists to localStorage ──────────
+  // ── Wraps setSession: toda atualização persiste no localStorage ────────────
   const setSession = useCallback((valueOrUpdater) => {
     setSessionRaw((prev) => {
       const next =
@@ -61,16 +64,15 @@ export function useSession() {
     });
   }, []);
 
-  // ── Convenience: merge partial data into the current session ───────────────
+  // ── Mescla dados parciais na sessão atual ─────────────────────────────────
   const updateSession = useCallback((partial) => {
     setSession((prev) => (prev ? { ...prev, ...partial } : prev));
   }, [setSession]);
 
-  // ── Logout: clear state + server-side invalidation (best-effort) ──────────
+  // ── Logout: limpa estado + invalida server-side (best-effort) ────────────
   const logout = useCallback(async () => {
     setSessionRaw((prev) => {
       if (prev?.access_token) {
-        // fire-and-forget — don't await inside setState
         import("../services/auth").then(({ default: a }) =>
           a.signOut(prev.access_token).catch(() => {})
         );
@@ -80,7 +82,11 @@ export function useSession() {
     localStorage.removeItem(LS_SESSION_KEY);
   }, []);
 
-  // ── Helper: try to refresh tokens, update session if successful ───────────
+  // ── Refresh de token: preserva campos de perfil do prev ──────────────────
+  //
+  // CORREÇÃO: não re-hidrata no refresh (seria uma query extra a cada ciclo).
+  // Os campos de perfil (therapist_id, role, name) mudam raramente e já estão
+  // no session persistido. Apenas os tokens são substituídos.
   const tryRefresh = useCallback(
     async (currentSession) => {
       if (!currentSession?.refresh_token) return;
@@ -92,15 +98,15 @@ export function useSession() {
           setSession((prev) =>
             prev
               ? {
-                  ...prev,
-                  access_token: data.access_token,
-                  refresh_token: data.refresh_token,
+                  ...prev,                                          // ← preserva therapist_id, role, name, etc.
+                  access_token:  data.access_token,
+                  refresh_token: data.refresh_token ?? prev.refresh_token,
                 }
               : prev
           );
         }
       } catch (e) {
-        console.warn("[useSession] Refresh failed, logging out:", e.message);
+        console.warn("[useSession] Refresh falhou, deslogando:", e.message);
         setSession(null);
       } finally {
         refreshingRef.current = false;
@@ -109,31 +115,51 @@ export function useSession() {
     [setSession]
   );
 
-  // ── On mount: load persisted session + preventive refresh ─────────────────
+  // ── Na montagem: carrega sessão persistida + refresh preventivo ──────────
   useEffect(() => {
     const persisted = readPersistedSession();
+
     if (persisted) {
-      // Optimistically restore so the UI renders immediately
+      // Restaura otimisticamente para que a UI renderize imediatamente
       setSessionRaw(persisted);
       localStorage.setItem(LS_SESSION_KEY, JSON.stringify(persisted));
-      // Then validate/refresh asynchronously
-      tryRefresh(persisted).finally(() => setSessionReady(true));
+
+      const needsHydration =
+        !persisted.therapist_id && !persisted.role;
+
+      // Se os campos de perfil estiverem ausentes (ex: sessão antiga salva
+      // antes desta correção), re-hidrata uma única vez.
+      if (needsHydration) {
+        hydrateSession(persisted)
+          .then((hydrated) => {
+            setSession(hydrated);
+          })
+          .catch(() => {})
+          .finally(() => {
+            tryRefresh(persisted).finally(() => setSessionReady(true));
+          });
+      } else {
+        tryRefresh(persisted).finally(() => setSessionReady(true));
+      }
     } else {
       setSessionReady(true);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Periodic refresh ───────────────────────────────────────────────────────
+  // ── Refresh periódico ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!session?.refresh_token) return;
-    const id = setInterval(() => tryRefresh(session), TOKEN_REFRESH_INTERVAL_MS);
+    const id = setInterval(
+      () => tryRefresh(session),
+      TOKEN_REFRESH_INTERVAL_MS
+    );
     return () => clearInterval(id);
   }, [session?.refresh_token, tryRefresh]);
 
-  // ── Listen for 401 events from db.js ─────────────────────────────────────
+  // ── Escuta eventos 401 emitidos por db.js ─────────────────────────────────
   useEffect(() => {
     const handle = () => {
-      console.warn("[useSession] equilibre-unauthorized — forcing logout");
+      console.warn("[useSession] equilibre-unauthorized — forçando logout");
       setSession(null);
     };
     window.addEventListener("equilibre-unauthorized", handle);
@@ -144,8 +170,8 @@ export function useSession() {
 }
 
 /**
- * Returns the persisted theme for the given userId,
- * defaulting to 'light'.
+ * Retorna o tema persistido para o userId fornecido.
+ * Padrão: 'light'.
  *
  * @param {string|null} userId
  * @returns {'light'|'dark'}

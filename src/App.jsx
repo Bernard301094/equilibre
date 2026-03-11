@@ -46,48 +46,73 @@ async function resolveLogin({ email, password, role }) {
     );
   }
 
-  const token = authData.access_token;
-  let userRow = null;
+  const token  = authData.access_token;
+  const userId = authData.user?.id;
+  let userRow  = null;
 
+  // Busca por id primeiro
   try {
-    const byId = await db.query("users", { filter: { id: authData.user.id } }, token);
+    const byId = await db.query("users", { filter: { id: userId } }, token);
     if (Array.isArray(byId) && byId.length > 0) userRow = byId[0];
-  } catch (_) {}
+  } catch (e) {
+    console.warn("[resolveLogin] query por id falhou:", e.message); // ← agora loga
+  }
 
+  // Fallback: busca por email
   if (!userRow) {
     try {
       const byEmail = await db.query("users", { filter: { email } }, token);
       if (Array.isArray(byEmail) && byEmail.length > 0) userRow = byEmail[0];
-    } catch (_) {}
+    } catch (e) {
+      console.warn("[resolveLogin] query por email falhou:", e.message); // ← agora loga
+    }
   }
 
   if (!userRow) {
+    // ── Diagnóstico: tenta sem token para ver se é problema de RLS ──
+    try {
+      const debug = await db.query("users", { filter: { email } });
+      console.warn("[resolveLogin] DEBUG sem token:", debug);
+    } catch (e) {
+      console.warn("[resolveLogin] DEBUG sem token falhou:", e.message);
+    }
+
     if (role === ROLE.PATIENT) {
       throw new Error(
-        "Conta não encontrada. Para aceder, solicite um novo convite à sua profissional."
+        "Perfil não encontrado no banco. Verifique o console para mais detalhes."
       );
     }
     const meta     = authData.user?.user_metadata || {};
     const metaRole = meta.role || role;
     if (metaRole !== role) throw new Error("Conta não encontrada para este perfil.");
     return {
-      id: authData.user.id,
-      email: authData.user.email,
-      name: meta.name || authData.user.email,
-      role: metaRole,
-      access_token: token,
+      id:            authData.user.id,
+      email:         authData.user.email,
+      name:          meta.name || authData.user.email,
+      role:          metaRole,
+      therapist_id:  null,
+      access_token:  token,
       refresh_token: authData.refresh_token,
     };
   }
 
-  if (userRow.role !== role) throw new Error("Conta não encontrada para este perfil.");
+  if (userRow.role !== role) {
+    throw new Error(
+      `Você selecionou "${role === ROLE.PATIENT ? "Paciente" : "Psicóloga"}" mas esta conta é "${userRow.role === ROLE.PATIENT ? "Paciente" : "Psicóloga"}".`
+    );
+  }
+
   if (userRow.deleted_at) {
     throw new Error(
       "Esta conta foi encerrada. Para voltar a aceder, solicite um novo convite à sua profissional."
     );
   }
 
-  return { ...userRow, access_token: token, refresh_token: authData.refresh_token };
+  return {
+    ...userRow,
+    access_token:  token,
+    refresh_token: authData.refresh_token,
+  };
 }
 
 /* ── resolveRegister ──────────────────────────────────────── */

@@ -160,6 +160,11 @@
   --pt-t-slow:   0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Agrega esto para evitar que la pantalla se recargue al deslizar hacia abajo en móviles */
+html, body {
+  overscroll-behavior-y: none;
+}
+
 /* ============================================================
    DARK MODE — paleta "Noite Terapêutica" v2
    ──────────────────────────────────────────────────────────
