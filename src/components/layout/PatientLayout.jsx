@@ -13,9 +13,20 @@ import {
 } from "../../App";
 import "./PatientLayout.css";
 
+/* ── Utilitário de som ─────────────────────────────────────
+   Coloca /notification.wav na pasta /public do projeto.
+   Falha silenciosamente se o browser bloquear autoplay.
+   ──────────────────────────────────────────────────────── */
+function playNotificationSound() {
+  try {
+    const audio = new Audio("/notification.wav");
+    audio.volume = 0.5;
+    audio.play().catch((e) => console.log("[PatientLayout] Áudio bloqueado:", e.message));
+  } catch (_) {}
+}
+
 /* ════════════════════════════════════════════════════════════
-   NAV ITEMS
-   badge dinâmico para exercícios pendentes
+   NAV ITEMS — badge dinâmico para exercícios pendentes
    ════════════════════════════════════════════════════════════ */
 const buildNavItems = (pendingCount) => [
   { id: "home",        icon: "🏠",  label: "Início"      },
@@ -45,7 +56,7 @@ function LogoutDialog({ onConfirm, onCancel }) {
 }
 
 /* ════════════════════════════════════════════════════════════
-   useBellState — física de pêndulo (idêntico ao TherapistLayout)
+   useBellState — física de pêndulo
    ════════════════════════════════════════════════════════════ */
 function useBellState(unreadCount) {
   const [animKey,  setAnimKey]  = useState(0);
@@ -89,7 +100,6 @@ function useBellState(unreadCount) {
 function FloatingBell({ unreadCount, isActive, onClick }) {
   const { animKey, iconClass, triggerRing } = useBellState(unreadCount);
   const handleClick = () => { triggerRing(); onClick(); };
-
   const containerClass = [
     "floating-bell",
     isActive                     ? "floating-bell--active" : "",
@@ -143,20 +153,25 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [pendingCount,    setPendingCount]    = useState(0);
-  const [unreadFeedback,  setUnreadFeedback]  = useState(0);
-  const [showProfile,     setShowProfile]     = useState(false);
-  const [showLogout,      setShowLogout]      = useState(false);
-  const [showDelete,      setShowDelete]      = useState(false);
+  const [pendingCount,   setPendingCount]   = useState(0);
+  const [unreadFeedback, setUnreadFeedback] = useState(0);
+  const [showProfile,    setShowProfile]    = useState(false);
+  const [showLogout,     setShowLogout]     = useState(false);
+  const [showDelete,     setShowDelete]     = useState(false);
 
   const isMobile         = useIsMobile();
   const prevPathRef      = useRef(location.pathname);
   const prevTherapistRef = useRef(session.therapist_id);
 
-  /* Contagem total para o badge do sino */
+  /* Ref para comparar contagem anterior e disparar som */
+  const prevFeedbackRef = useRef(0);
+
+  /* Badge total do sino */
   const notifCount = unreadFeedback + pendingCount;
 
-  /* ── Poll de exercícios pendentes (badge nav) + feedback não lido (badge sino) ── */
+  /* ── Poll: pendentes + feedback não lido ─────────────────────
+     Intervalo de 30s. Toca som quando unreadFeedback aumenta.
+     ──────────────────────────────────────────────────────── */
   useEffect(() => {
     let active = true;
 
@@ -176,17 +191,34 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
         ]);
 
         if (!active) return;
-        setPendingCount(Array.isArray(assignRaw)   ? assignRaw.length   : 0);
-        setUnreadFeedback(Array.isArray(feedbackRaw) ? feedbackRaw.length : 0);
+
+        const newPending  = Array.isArray(assignRaw)   ? assignRaw.length   : 0;
+        const newFeedback = Array.isArray(feedbackRaw) ? feedbackRaw.length : 0;
+
+        /* Som apenas quando chega mensagem nova (não no mount inicial) */
+        if (newFeedback > prevFeedbackRef.current && prevFeedbackRef.current !== -1) {
+          playNotificationSound();
+        }
+        /* -1 marca o primeiro fetch (sem som) */
+        if (prevFeedbackRef.current === -1) prevFeedbackRef.current = newFeedback;
+        else prevFeedbackRef.current = newFeedback;
+
+        setPendingCount(newPending);
+        setUnreadFeedback(newFeedback);
       } catch (_) {}
     };
 
+    /* Primeiro fetch não deve tocar som — sinaliza com -1 */
+    prevFeedbackRef.current = -1;
     fetchCounts();
     const id = setInterval(fetchCounts, 30_000);
     return () => { active = false; clearInterval(id); };
   }, [session.id, session.access_token]);
 
-  /* ── Ping de presença — last_active ── */
+  /* ── Ping de presença — last_active ─────────────────────────
+     Atualiza a cada 60s e ao recuperar foco.
+     O terapeuta usa isto para mostrar "🟢 Online / ⚪ Offline".
+     ──────────────────────────────────────────────────────── */
   useEffect(() => {
     if (!session?.id || !session?.access_token) return;
 
@@ -236,15 +268,16 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
   const activeView = PATH_TO_PATIENT_VIEW[location.pathname] ?? "home";
   const navItems   = buildNavItems(pendingCount);
 
-  /* ── Toggle sino: abre/fecha notificações ── */
+  /* ── Abre / fecha notificações ── */
   const handleBellClick = () => {
     if (activeView === "notifications") {
       navigate(prevPathRef.current || PATIENT_ROUTES.home);
     } else {
       prevPathRef.current = location.pathname;
       navigate(PATIENT_ROUTES.notifications);
-      /* Limpa o badge de feedback após abrir (a view marcará como lido na BD) */
+      /* Zera o badge após abrir (a view marca como lido na BD) */
       setUnreadFeedback(0);
+      prevFeedbackRef.current = 0;
     }
   };
 
@@ -280,7 +313,6 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
         <Outlet context={{ session, setSession, navigateTo }} />
       </main>
 
-      {/* Sino flutuante no mobile (mesmo padrão do TherapistLayout) */}
       {isMobile && (
         <FloatingBell
           unreadCount={notifCount}

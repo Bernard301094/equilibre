@@ -3,6 +3,17 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import db from "../../../services/db";
 import "./FeedbackTab.css";
 
+/* ── Utilitário de som ────────────────────────────────────────
+   Coloca /notification.wav na pasta /public do projecto.
+   ──────────────────────────────────────────────────────────── */
+function playNotificationSound() {
+  try {
+    const audio = new Audio("/notification.wav");
+    audio.volume = 0.5;
+    audio.play().catch((e) => console.log("[FeedbackTab] Áudio bloqueado:", e.message));
+  } catch (_) {}
+}
+
 /* ── Helpers ──────────────────────────────────────────────── */
 function formatTime(isoString) {
   if (!isoString) return "";
@@ -37,7 +48,11 @@ function groupByDay(feedbacks) {
   return result;
 }
 
-/** Paciente é considerado online se last_active < 2 minutos atrás */
+/**
+ * Paciente é considerado online se last_active < 2 minutos atrás.
+ * O PatientLayout envia um ping a cada 60s, portanto 2min é uma
+ * janela segura para detetar presença real.
+ */
 function isPatientOnline(lastActive) {
   if (!lastActive) return false;
   return (Date.now() - new Date(lastActive).getTime()) < 2 * 60 * 1000;
@@ -59,10 +74,8 @@ function ReadCheck({ read }) {
 function IconEdit() {
   return (
     <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="fb-icon">
-      <path
-        d="M14.85 2.85a2 2 0 0 1 2.83 2.83L6.5 16.8l-3.5.7.7-3.5L14.85 2.85Z"
-        stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
-      />
+      <path d="M14.85 2.85a2 2 0 0 1 2.83 2.83L6.5 16.8l-3.5.7.7-3.5L14.85 2.85Z"
+        stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -70,10 +83,8 @@ function IconEdit() {
 function IconTrash() {
   return (
     <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="fb-icon">
-      <path
-        d="M3 5h14M8 5V3h4v2M6 5l1 12h6l1-12"
-        stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
-      />
+      <path d="M3 5h14M8 5V3h4v2M6 5l1 12h6l1-12"
+        stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -87,7 +98,10 @@ function IconSend() {
   );
 }
 
-/* ── Indicador de presença do paciente ───────────────────── */
+/* ── Indicador de presença do paciente ───────────────────────
+   🟢 Online agora  → last_active < 2 minutos
+   ⚪ Offline       → caso contrário
+   ──────────────────────────────────────────────────────────── */
 function PatientPresence({ lastActive }) {
   const online = isPatientOnline(lastActive);
   return (
@@ -101,7 +115,7 @@ function PatientPresence({ lastActive }) {
   );
 }
 
-/* ── Bolha de mensagem com controles de edição/deleção ───── */
+/* ── Bolha de mensagem ────────────────────────────────────── */
 function MessageBubble({ item, session, onEdit, onDelete, onError }) {
   const [hovered,    setHovered]    = useState(false);
   const [editing,    setEditing]    = useState(false);
@@ -120,7 +134,6 @@ function MessageBubble({ item, session, onEdit, onDelete, onError }) {
     }
   }, [editing]);
 
-  /* ── Salvar edição ── */
   const handleSaveEdit = async () => {
     const trimmed = editText.trim();
     if (!trimmed || trimmed === item.message) { setEditing(false); return; }
@@ -147,13 +160,10 @@ function MessageBubble({ item, session, onEdit, onDelete, onError }) {
     if (e.key === "Escape") { setEditing(false); setEditText(item.message); }
   };
 
-  /* ── Deletar ── */
   const handleDelete = async () => {
     setSaving(true);
     try {
       await db.delete("therapist_feedback", { id: item.id }, session.access_token);
-
-      /* Verifica se o RLS bloqueou silenciosamente */
       const check = await db.query(
         "therapist_feedback",
         { filter: { id: item.id } },
@@ -165,7 +175,6 @@ function MessageBubble({ item, session, onEdit, onDelete, onError }) {
           "Verifica se existe a policy RLS de DELETE para therapist_feedback."
         );
       }
-
       onDelete(item.id);
     } catch (e) {
       console.error("[FeedbackTab] Erro ao deletar:", e.message);
@@ -197,19 +206,10 @@ function MessageBubble({ item, session, onEdit, onDelete, onError }) {
 
           {confirmDel ? (
             <span className="fb-msg-confirm">
-              <button
-                className="fb-msg-btn fb-msg-btn--confirm-yes"
-                onClick={handleDelete}
-                disabled={saving}
-                aria-label="Confirmar exclusão"
-              >
+              <button className="fb-msg-btn fb-msg-btn--confirm-yes" onClick={handleDelete} disabled={saving} aria-label="Confirmar exclusão">
                 {saving ? "…" : "Excluir"}
               </button>
-              <button
-                className="fb-msg-btn fb-msg-btn--confirm-no"
-                onClick={() => setConfirmDel(false)}
-                aria-label="Cancelar"
-              >
+              <button className="fb-msg-btn fb-msg-btn--confirm-no" onClick={() => setConfirmDel(false)} aria-label="Cancelar">
                 Cancelar
               </button>
             </span>
@@ -245,20 +245,8 @@ function MessageBubble({ item, session, onEdit, onDelete, onError }) {
               aria-label="Editar texto da mensagem"
             />
             <div className="fb-edit-actions">
-              <button
-                className="fb-edit-btn fb-edit-btn--cancel"
-                onClick={() => { setEditing(false); setEditText(item.message); }}
-                disabled={saving}
-              >
-                Cancelar
-              </button>
-              <button
-                className="fb-edit-btn fb-edit-btn--save"
-                onClick={handleSaveEdit}
-                disabled={saving || !editText.trim()}
-              >
-                {saving ? "Salvando…" : "Salvar"}
-              </button>
+              <button className="fb-edit-btn fb-edit-btn--cancel" onClick={() => { setEditing(false); setEditText(item.message); }} disabled={saving}>Cancelar</button>
+              <button className="fb-edit-btn fb-edit-btn--save"   onClick={handleSaveEdit} disabled={saving || !editText.trim()}>{saving ? "Salvando…" : "Salvar"}</button>
             </div>
           </div>
         ) : (
@@ -266,9 +254,7 @@ function MessageBubble({ item, session, onEdit, onDelete, onError }) {
             <p className="fb-chat__bubble-text">{item.message}</p>
             <div className="fb-chat__bubble-footer">
               {item.edited && (
-                <span className="fb-chat__edited-label" aria-label="Mensagem editada">
-                  editada
-                </span>
+                <span className="fb-chat__edited-label" aria-label="Mensagem editada">editada</span>
               )}
               <span className="fb-chat__bubble-time">{formatTime(item.created_at)}</span>
               <ReadCheck read={item.read} />
@@ -280,7 +266,9 @@ function MessageBubble({ item, session, onEdit, onDelete, onError }) {
   );
 }
 
-/* ── Componente principal ─────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════
+   FeedbackTab — componente principal
+   ════════════════════════════════════════════════════════════ */
 export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksChange }) {
   const [text,       setText]       = useState("");
   const [saving,     setSaving]     = useState(false);
@@ -339,7 +327,7 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
     }
   };
 
-  /* ── Enviar ── */
+  /* ── Enviar mensagem ── */
   const saveFeedback = async () => {
     if (!text.trim() || inflightRef.current) return;
     inflightRef.current = true;
@@ -359,6 +347,9 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
       onFeedbacksChange([saved, ...feedbacks]);
       setText("");
       if (textareaRef.current) textareaRef.current.style.height = "auto";
+
+      /* Som de confirmação de envio */
+      playNotificationSound();
       showToast("success", "Mensagem enviada ✅");
     } catch (e) {
       console.error("[FeedbackTab] Erro:", e.message);
@@ -369,13 +360,8 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
     }
   };
 
-  /* ── Callbacks de edição e deleção ── */
-  const handleEdit = (id, newMessage) => {
-    onFeedbacksChange(
-      feedbacks.map((fb) =>
-        fb.id === id ? { ...fb, message: newMessage, edited: true } : fb
-      )
-    );
+  const handleEdit   = (id, newMessage) => {
+    onFeedbacksChange(feedbacks.map((fb) => fb.id === id ? { ...fb, message: newMessage, edited: true } : fb));
     showToast("success", "Mensagem atualizada ✏️");
   };
 
@@ -397,7 +383,7 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
         </div>
       )}
 
-      {/* ── Banner: informação + indicador de presença ── */}
+      {/* ── Banner: info + indicador de presença ── */}
       <div className="fb-chat__banner" role="note">
         <div className="fb-chat__banner-left">
           <span aria-hidden="true">💬</span>
@@ -409,7 +395,7 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
         <PatientPresence lastActive={lastActive} />
       </div>
 
-      {/* ── Área de mensagens (scrollável) ── */}
+      {/* ── Área de mensagens ── */}
       <div
         className="fb-chat__messages"
         role="log"
@@ -420,9 +406,7 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
           <div className="fb-chat__empty" role="status">
             <span aria-hidden="true">📭</span>
             <p>Nenhuma mensagem enviada ainda.</p>
-            <p className="fb-chat__empty-sub">
-              Escreva algo motivador para {firstName}!
-            </p>
+            <p className="fb-chat__empty-sub">Escreva algo motivador para {firstName}!</p>
           </div>
         )}
 
@@ -449,7 +433,7 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
         <div ref={bottomRef} />
       </div>
 
-      {/* ── Composer fixo na parte inferior ── */}
+      {/* ── Composer ── */}
       <div className="fb-chat__composer" role="form" aria-label="Escrever mensagem">
         <textarea
           ref={textareaRef}

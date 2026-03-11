@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
 import db from "../../services/db";
 import { calcStreak, localDateOffset, isOverdue } from "../../utils/dates";
 import { getPlantStage } from "../../utils/constants";
@@ -24,7 +25,10 @@ const getGreetingSub = () => {
   return "Trabalhando tarde? Lembre-se de cuidar de si também.";
 };
 
-export default function TherapistDashboard({ session, setView, onOpenPatient }) {
+export default function TherapistDashboard({ session, setView }) {
+  /* ── onOpenPatient vem do TherapistLayout via Outlet context ── */
+  const outletCtx     = useOutletContext() ?? {};
+  const onOpenPatient = outletCtx.onOpenPatient ?? (() => {});
   const [stats,    setStats]    = useState({ patients: 0, done: 0, pending: 0, recent: [] });
   const [redFlags, setRedFlags] = useState([]);
   const [loading,  setLoading]  = useState(true);

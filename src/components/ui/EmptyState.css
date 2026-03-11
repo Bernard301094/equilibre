@@ -3,7 +3,6 @@
    gentle keyframe animations. Zero harsh edges.
 ───────────────────────────────────────────────────────────── */
 
-/* ── Design tokens ── */
 .empty-state {
   --es-leaf-a:   #7bb369;
   --es-leaf-b:   #a8d5a2;
@@ -22,7 +21,6 @@
   --es-glow:     radial-gradient(circle, rgba(123,179,105,.22) 0%, transparent 72%);
 }
 
-/* ── Container ── */
 .empty-state {
   display:         flex;
   flex-direction:  column;
@@ -38,7 +36,6 @@
   overflow:        hidden;
 }
 
-/* subtle noise texture overlay */
 .empty-state::before {
   content:          "";
   position:         absolute;
@@ -48,7 +45,6 @@
   border-radius:    inherit;
 }
 
-/* ── Illustration wrapper ── */
 .empty-state__illustration {
   position:  relative;
   width:     130px;
@@ -65,7 +61,6 @@
   pointer-events:   none;
 }
 
-/* ── SVG base ── */
 .es-svg {
   width:     100%;
   height:    100%;
@@ -73,7 +68,6 @@
   animation: es-float 5s ease-in-out infinite;
 }
 
-/* ── SVG animated parts ── */
 .es-svg__sprout {
   transform-origin: 60px 80px;
   animation:        es-sway 4s ease-in-out infinite;
@@ -88,7 +82,6 @@
   animation: es-sparkle 2.5s ease-in-out infinite;
 }
 
-/* ── Copy ── */
 .empty-state__copy {
   display:        flex;
   flex-direction: column;
@@ -112,7 +105,6 @@
   margin:      0;
 }
 
-/* ── Action button ── */
 .empty-state__action {
   display:         inline-flex;
   align-items:     center;
@@ -146,54 +138,34 @@
   transform:     translateY(-2px);
   box-shadow:    0 6px 18px rgba(91, 154, 80, .36);
 }
-
 .empty-state__action:hover::after { opacity: 1; }
-
-.empty-state__action:active { transform: translateY(0); }
+.empty-state__action:active       { transform: translateY(0); }
 
 .empty-state__action-icon {
   font-size:   .75rem;
   line-height: 1;
   transition:  transform 200ms;
 }
+.empty-state__action:hover .empty-state__action-icon { transform: rotate(45deg) scale(1.2); }
 
-.empty-state__action:hover .empty-state__action-icon {
-  transform: rotate(45deg) scale(1.2);
+.es-enter { animation: es-rise 480ms cubic-bezier(.22, 1, .36, 1) both; }
+
+@keyframes es-float   { 0%, 100% { transform: translateY(0);    } 50% { transform: translateY(-7px); } }
+@keyframes es-sway    { 0%, 100% { transform: rotate(-4deg); }   50% { transform: rotate(4deg);  } }
+@keyframes es-sparkle { 0%, 100% { opacity: 1;   transform: scale(1);   } 50% { opacity: .25; transform: scale(.55); } }
+@keyframes es-glow-pulse { 0%, 100% { opacity: .6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
+@keyframes es-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ════════════════════════════════════════════════════════════
+   DARK MODE
+   ════════════════════════════════════════════════════════════ */
+.dark .empty-state {
+  --es-bg:    rgba(30, 41, 59, 0.7);
+  --es-text:  #e2e8f0;
+  --es-sub:   #94a3b8;
+  border-color: rgba(100, 148, 93, 0.25);
+  background: var(--es-bg);
 }
 
-/* ── Staggered entrance ── */
-.es-enter {
-  animation: es-rise 480ms cubic-bezier(.22, 1, .36, 1) both;
-}
-
-/* ── Keyframes ── */
-@keyframes es-float {
-  0%, 100% { transform: translateY(0);    }
-  50%       { transform: translateY(-7px); }
-}
-
-@keyframes es-sway {
-  0%, 100% { transform: rotate(-4deg); }
-  50%       { transform: rotate(4deg);  }
-}
-
-@keyframes es-sparkle {
-  0%, 100% { opacity: 1;   transform: scale(1);    }
-  50%       { opacity: .25; transform: scale(.55);  }
-}
-
-@keyframes es-glow-pulse {
-  0%, 100% { opacity: .6; transform: scale(1);    }
-  50%       { opacity: 1;  transform: scale(1.08); }
-}
-
-@keyframes es-rise {
-  from {
-    opacity:   0;
-    transform: translateY(18px);
-  }
-  to {
-    opacity:   1;
-    transform: translateY(0);
-  }
-}
+.dark .empty-state__message { color: #e2e8f0; }
+.dark .empty-state__sub     { color: #94a3b8; }

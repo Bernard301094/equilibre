@@ -1,5 +1,28 @@
-import { memo, useState } from "react";
+import { memo, useState, useEffect } from "react";
 import "./MiniLineChart.css";
+
+/* ── Hook: detecta a classe .dark no <body> em tempo real ── */
+function useIsDark() {
+  const [isDark, setIsDark] = useState(() =>
+    document.body.classList.contains("dark") ||
+    document.documentElement.getAttribute("data-theme") === "dark"
+  );
+
+  useEffect(() => {
+    const check = () =>
+      setIsDark(
+        document.body.classList.contains("dark") ||
+        document.documentElement.getAttribute("data-theme") === "dark"
+      );
+
+    const mo = new MutationObserver(check);
+    mo.observe(document.body,           { attributes: true, attributeFilter: ["class", "data-theme"] });
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme"] });
+    return () => mo.disconnect();
+  }, []);
+
+  return isDark;
+}
 
 const MiniLineChart = memo(function MiniLineChart({
   points = [],
@@ -8,6 +31,14 @@ const MiniLineChart = memo(function MiniLineChart({
   height = 140,
 }) {
   const [hovered, setHovered] = useState(null);
+  const isDark = useIsDark();
+
+  /* Cores adaptadas ao tema */
+  const strokeColor = isDark ? "#6ee7b7" : color;
+  const gridColor   = isDark ? "#334155" : "var(--warm)";
+  const axisColor   = isDark ? "#94a3b8" : "var(--text-muted)";
+  const areaAlpha   = isDark ? "0.18"    : "0.22";
+  const areaAlphaEnd = "0";
 
   if (!points || points.length < 2) return null;
 
@@ -29,9 +60,8 @@ const MiniLineChart = memo(function MiniLineChart({
   const smoothPath = points.reduce((path, v, i) => {
     if (i === 0) return `M ${cx(0).toFixed(1)},${cy(v).toFixed(1)}`;
     const prev = points[i - 1];
-    const cpx1 = (cx(i - 1) + cx(i)) / 2;
-    const cpx2 = cpx1;
-    return `${path} C ${cpx1.toFixed(1)},${cy(prev).toFixed(1)} ${cpx2.toFixed(1)},${cy(v).toFixed(1)} ${cx(i).toFixed(1)},${cy(v).toFixed(1)}`;
+    const cpx  = (cx(i - 1) + cx(i)) / 2;
+    return `${path} C ${cpx.toFixed(1)},${cy(prev).toFixed(1)} ${cpx.toFixed(1)},${cy(v).toFixed(1)} ${cx(i).toFixed(1)},${cy(v).toFixed(1)}`;
   }, "");
 
   const areaPath =
@@ -44,8 +74,10 @@ const MiniLineChart = memo(function MiniLineChart({
     (i) => i % step === 0 || i === points.length - 1
   );
 
-  const gradId = `grad-${Math.abs(color.split("").reduce((a, c) => a + c.charCodeAt(0), 0))}`;
-  const glowId = `glow-${gradId}`;
+  /* IDs únicos por cor para não colidir entre múltiplos charts */
+  const uid    = Math.abs((strokeColor + height).split("").reduce((a, c) => a + c.charCodeAt(0), 0));
+  const gradId = `grad-${uid}`;
+  const glowId = `glow-${uid}`;
 
   return (
     <div className="mlc">
@@ -73,8 +105,8 @@ const MiniLineChart = memo(function MiniLineChart({
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor={color} stopOpacity="0.22" />
-            <stop offset="100%" stopColor={color} stopOpacity="0"    />
+            <stop offset="0%"   stopColor={strokeColor} stopOpacity={areaAlpha} />
+            <stop offset="100%" stopColor={strokeColor} stopOpacity={areaAlphaEnd} />
           </linearGradient>
           <filter id={glowId}>
             <feGaussianBlur stdDeviation="3" result="blur" />
@@ -93,19 +125,19 @@ const MiniLineChart = memo(function MiniLineChart({
             <g key={t}>
               <line
                 x1={paddingX} y1={y} x2={W - paddingX} y2={y}
-                stroke="var(--warm)"
+                stroke={gridColor}
                 strokeWidth="1"
                 strokeDasharray="4 6"
-                opacity="0.5"
+                opacity="0.6"
               />
               <text
                 x={paddingX - 6}
                 y={y + 4}
                 textAnchor="end"
                 fontSize="9"
-                fill="var(--text-muted)"
+                fill={axisColor}
                 fontFamily="DM Sans, sans-serif"
-                opacity="0.7"
+                opacity="0.85"
               >
                 {v}
               </text>
@@ -120,7 +152,7 @@ const MiniLineChart = memo(function MiniLineChart({
         <path
           d={smoothPath}
           fill="none"
-          stroke={color}
+          stroke={strokeColor}
           strokeWidth="4"
           strokeLinejoin="round"
           strokeLinecap="round"
@@ -132,7 +164,7 @@ const MiniLineChart = memo(function MiniLineChart({
         <path
           d={smoothPath}
           fill="none"
-          stroke={color}
+          stroke={strokeColor}
           strokeWidth="2.5"
           strokeLinejoin="round"
           strokeLinecap="round"
@@ -157,7 +189,7 @@ const MiniLineChart = memo(function MiniLineChart({
           <line
             x1={cx(hovered)} y1={paddingTop}
             x2={cx(hovered)} y2={paddingTop + chartH}
-            stroke={color}
+            stroke={strokeColor}
             strokeWidth="1.5"
             strokeDasharray="4 4"
             opacity="0.5"
@@ -168,16 +200,13 @@ const MiniLineChart = memo(function MiniLineChart({
         {points.map((v, i) => (
           <g key={`pt-${i}`}>
             {hovered === i && (
-              <circle
-                cx={cx(i)} cy={cy(v)} r="10"
-                fill={color} opacity="0.12"
-              />
+              <circle cx={cx(i)} cy={cy(v)} r="10" fill={strokeColor} opacity="0.12" />
             )}
             <circle
               cx={cx(i)} cy={cy(v)}
               r={hovered === i ? 5.5 : 4}
-              fill="white"
-              stroke={color}
+              fill={isDark ? "#1e293b" : "white"}
+              stroke={strokeColor}
               strokeWidth="2.5"
               className="mlc__point"
             />
@@ -192,7 +221,7 @@ const MiniLineChart = memo(function MiniLineChart({
             y={H - 6}
             textAnchor="middle"
             fontSize="10"
-            fill={hovered === i ? color : "var(--text-muted)"}
+            fill={hovered === i ? strokeColor : axisColor}
             fontFamily="DM Sans, sans-serif"
             fontWeight={hovered === i ? "700" : "400"}
             className="mlc__x-label"

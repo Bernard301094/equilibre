@@ -15,6 +15,17 @@ import {
 } from "../../App";
 import "./TherapistLayout.css";
 
+/* ── Utilitário de som ─────────────────────────────────────
+   Coloca /notification.wav na pasta /public do projeto.
+   ──────────────────────────────────────────────────────── */
+function playNotificationSound() {
+  try {
+    const audio = new Audio("/notification.wav");
+    audio.volume = 0.5;
+    audio.play().catch((e) => console.log("[TherapistLayout] Áudio bloqueado:", e.message));
+  } catch (_) {}
+}
+
 const NAV_ITEMS = [
   { id: "dashboard",   icon: "🏠",  label: "Início"       },
   { id: "patients",    icon: "👥",  label: "Pacientes"    },
@@ -163,6 +174,14 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
   const isMobile    = useIsMobile();
   const prevPathRef = useRef(location.pathname);
   const { unreadCount, markAllRead } = useNotifications(session.id);
+
+  /* ── Som quando chega nova notificação ── */
+  const prevUnreadRef = useRef(-1); // -1 = primeiro render, sem som
+  useEffect(() => {
+    if (prevUnreadRef.current === -1) { prevUnreadRef.current = unreadCount; return; }
+    if (unreadCount > prevUnreadRef.current) playNotificationSound();
+    prevUnreadRef.current = unreadCount;
+  }, [unreadCount]);
 
   const navigateTo = useCallback((id) => {
     const path = THERAPIST_ROUTES[id];
