@@ -70,8 +70,14 @@
 
 .tf-chat__topbar-status {
   font-size: 0.72rem;
-  color: var(--pt-green-600, #2f9e6e);
+  color: var(--pt-text-muted, #718096);
   font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+/* Indicador "● Ao vivo" quando o Realtime está conectado */
+.tf-chat__topbar-status--live {
+  color: var(--pt-green-600, #2f9e6e);
 }
 
 .tf-chat__topbar-actions {
@@ -102,31 +108,6 @@
   to   { transform: scale(1);   opacity: 1; }
 }
 
-/* Botão de refresh */
-.tf-chat__refresh-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1.5px solid var(--pt-border, #dde5ed);
-  background: var(--pt-surface-alt, #f7f9fc);
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: background 0.15s ease, border-color 0.15s ease;
-  color: var(--pt-text-muted, #718096);
-}
-
-.tf-chat__refresh-btn:hover:not(:disabled) {
-  background: var(--pt-blue-050, #eef6fc);
-  border-color: var(--pt-blue-200, #c3dff5);
-}
-
-.tf-chat__refresh-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 /* ════════════════════════════════════════════════════════════
    ÁREA DE MENSAGENS
@@ -321,11 +302,23 @@
   white-space: pre-wrap;
 }
 
+.tf-chat__bubble-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 4px;
+}
+
 .tf-chat__bubble-time {
-  display: block;
   font-size: 0.67rem;
   color: var(--pt-text-muted, #718096);
-  text-align: right;
+}
+
+.tf-chat__bubble-edited {
+  font-size: 0.63rem;
+  color: var(--pt-text-muted, #718096);
+  font-style: italic;
 }
 
 /* ════════════════════════════════════════════════════════════

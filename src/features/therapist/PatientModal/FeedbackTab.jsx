@@ -132,10 +132,28 @@ function MessageBubble({ item, session, onEdit, onDelete, onError }) {
   const handleDelete = async () => {
     setSaving(true);
     try {
-      // db.delete é chamado ANTES de atualizar o estado local.
-      // A mensagem só sai da UI após confirmação do Supabase.
+      // 1. Executa DELETE no Supabase
       await db.delete("therapist_feedback", { id: item.id }, session.access_token);
-      onDelete(item.id); // remove da UI apenas após sucesso no BD
+
+      // 2. Verifica se o registo foi mesmo apagado do BD.
+      //    Se a policy RLS de DELETE estiver em falta, o Supabase retorna 200
+      //    mas não apaga — o query ainda encontra o registo.
+      const check = await db.query(
+        "therapist_feedback",
+        { filter: { id: item.id } },
+        session.access_token
+      );
+      if (Array.isArray(check) && check.length > 0) {
+        throw new Error(
+          "O Supabase não apagou o registo. " +
+          "Verifica se existe uma policy RLS de DELETE para therapist_feedback. " +
+          "Executa no SQL Editor: CREATE POLICY \"therapist_delete_own\" ON therapist_feedback " +
+          "FOR DELETE USING (auth.uid()::text = therapist_id::text);"
+        );
+      }
+
+      // 3. Só remove da UI depois de confirmado no BD
+      onDelete(item.id);
     } catch (e) {
       console.error("[FeedbackTab] Erro ao deletar:", e.message);
       if (onError) onError("Erro ao excluir: " + e.message);
