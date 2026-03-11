@@ -5,8 +5,10 @@ import { calcStreak, isThisWeek } from "../../utils/dates";
 import WeekGoalBar from "../../components/ui/WeekGoalBar";
 import MiniLineChart from "../../components/ui/MiniLineChart";
 import EmptyState from "../../components/ui/EmptyState";
-import TherapistFeedback from "./TherapistFeedback"; // ← NEW
 import "./PatientProgress.css";
+
+// TherapistFeedback removido daqui — o paciente acessa as orientações
+// diretamente na secção "Orientações" (MessagesView / /orientacoes).
 
 /* ── Stat card inline ─────────────────────────────────────── */
 function StatCard({ icon, value, label }) {
@@ -172,9 +174,6 @@ export default function PatientProgress({ session }) {
           />
         </div>
       )}
-
-      {/* ── NEW: Therapist feedback section ── */}
-      <TherapistFeedback session={session} />
 
     </div>
   );

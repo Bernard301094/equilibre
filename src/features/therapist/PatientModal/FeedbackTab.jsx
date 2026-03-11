@@ -1,10 +1,9 @@
-// src/components/therapist/tabs/FeedbackTab.jsx
+// src/features/therapist/PatientModal/FeedbackTab.jsx
 import { useState, useRef, useEffect } from "react";
 import db from "../../../services/db";
-import { formatDateTime } from "../../../utils/dates";
 import "./FeedbackTab.css";
 
-/** Formata apenas o horário curto para a bolha */
+/* ── Helpers ──────────────────────────────────────────────── */
 function formatTime(isoString) {
   if (!isoString) return "";
   return new Date(isoString).toLocaleTimeString("pt-BR", {
@@ -13,22 +12,23 @@ function formatTime(isoString) {
   });
 }
 
-/** Agrupa mensagens por dia — igual ao lado do paciente */
 function groupByDay(feedbacks) {
-  const result = [];
-  let lastDay = null;
+  const result  = [];
+  let   lastDay = null;
   const asc = [...feedbacks].reverse(); // feedbacks vêm desc → exibir asc
   for (const fb of asc) {
     const day = new Date(fb.created_at).toDateString();
     if (day !== lastDay) {
-      const d = new Date(fb.created_at);
-      const today = new Date();
+      const d         = new Date(fb.created_at);
+      const today     = new Date();
       const yesterday = new Date();
       yesterday.setDate(today.getDate() - 1);
       let label;
-      if (d.toDateString() === today.toDateString()) label = "Hoje";
+      if      (d.toDateString() === today.toDateString())     label = "Hoje";
       else if (d.toDateString() === yesterday.toDateString()) label = "Ontem";
-      else label = d.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+      else label = d.toLocaleDateString("pt-BR", {
+        weekday: "long", day: "numeric", month: "long",
+      });
       result.push({ type: "day", label, key: `day-${day}` });
       lastDay = day;
     }
@@ -37,11 +37,7 @@ function groupByDay(feedbacks) {
   return result;
 }
 
-/**
- * CheckMark — sistema visual de leitura estilo WhatsApp
- *   ✓   cinza  → enviado (não lido)
- *   ✓✓  azul   → lido
- */
+/* ── ReadCheck (estilo WhatsApp) ──────────────────────────── */
 function ReadCheck({ read }) {
   return (
     <span
@@ -53,6 +49,212 @@ function ReadCheck({ read }) {
   );
 }
 
+/* ── Ícones SVG inline (sem dependência extra) ────────────── */
+function IconEdit() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="fb-icon">
+      <path
+        d="M14.85 2.85a2 2 0 0 1 2.83 2.83L6.5 16.8l-3.5.7.7-3.5L14.85 2.85Z"
+        stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="fb-icon">
+      <path
+        d="M3 5h14M8 5V3h4v2M6 5l1 12h6l1-12"
+        stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconSend() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+/* ── Bolha de mensagem com controles de edição/deleção ───── */
+function MessageBubble({ item, session, onEdit, onDelete, onError }) {
+  const [hovered,    setHovered]    = useState(false);
+  const [editing,    setEditing]    = useState(false);
+  const [editText,   setEditText]   = useState(item.message);
+  const [saving,     setSaving]     = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+  const editRef = useRef(null);
+
+  /* Autor do mensaje — só o terapeuta que enviou vê os controles */
+  const isAuthor = item.therapist_id === session.id;
+
+  /* Auto-resize na edição */
+  useEffect(() => {
+    if (editing && editRef.current) {
+      editRef.current.focus();
+      editRef.current.style.height = "auto";
+      editRef.current.style.height = editRef.current.scrollHeight + "px";
+    }
+  }, [editing]);
+
+  /* ── Salvar edição ── */
+  const handleSaveEdit = async () => {
+    const trimmed = editText.trim();
+    if (!trimmed || trimmed === item.message) { setEditing(false); return; }
+    setSaving(true);
+    try {
+      await db.update(
+        "therapist_feedback",
+        { id: item.id },
+        { message: trimmed },
+        session.access_token
+      );
+      onEdit(item.id, trimmed);
+      setEditing(false);
+    } catch (e) {
+      console.error("[FeedbackTab] Erro ao editar:", e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSaveEdit(); }
+    if (e.key === "Escape") { setEditing(false); setEditText(item.message); }
+  };
+
+  /* ── Deletar ── */
+  const handleDelete = async () => {
+    setSaving(true);
+    try {
+      // db.delete é chamado ANTES de atualizar o estado local.
+      // A mensagem só sai da UI após confirmação do Supabase.
+      await db.delete("therapist_feedback", { id: item.id }, session.access_token);
+      onDelete(item.id); // remove da UI apenas após sucesso no BD
+    } catch (e) {
+      console.error("[FeedbackTab] Erro ao deletar:", e.message);
+      if (onError) onError("Erro ao excluir: " + e.message);
+    } finally {
+      setSaving(false);
+      setConfirmDel(false);
+    }
+  };
+
+  return (
+    <div
+      className="fb-chat__message fb-chat__message--outgoing"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setConfirmDel(false); }}
+      aria-label={`Mensagem enviada às ${formatTime(item.created_at)}`}
+    >
+      {/* Controles (lápis + lixeira) — apenas para o autor, visíveis no hover */}
+      {isAuthor && !editing && (
+        <div className={`fb-msg-controls ${hovered ? "fb-msg-controls--visible" : ""}`}>
+          <button
+            className="fb-msg-btn fb-msg-btn--edit"
+            onClick={() => { setEditing(true); setEditText(item.message); }}
+            aria-label="Editar mensagem"
+            title="Editar"
+            disabled={saving}
+          >
+            <IconEdit />
+          </button>
+
+          {confirmDel ? (
+            <span className="fb-msg-confirm">
+              <button
+                className="fb-msg-btn fb-msg-btn--confirm-yes"
+                onClick={handleDelete}
+                disabled={saving}
+                aria-label="Confirmar exclusão"
+              >
+                {saving ? "…" : "Excluir"}
+              </button>
+              <button
+                className="fb-msg-btn fb-msg-btn--confirm-no"
+                onClick={() => setConfirmDel(false)}
+                aria-label="Cancelar"
+              >
+                Cancelar
+              </button>
+            </span>
+          ) : (
+            <button
+              className="fb-msg-btn fb-msg-btn--delete"
+              onClick={() => setConfirmDel(true)}
+              aria-label="Excluir mensagem"
+              title="Excluir"
+              disabled={saving}
+            >
+              <IconTrash />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Bolha */}
+      <div className={`fb-chat__bubble fb-chat__bubble--outgoing ${editing ? "fb-chat__bubble--editing" : ""}`}>
+
+        {editing ? (
+          /* ── Modo edição inline ── */
+          <div className="fb-edit-area">
+            <textarea
+              ref={editRef}
+              className="fb-edit-textarea"
+              value={editText}
+              onChange={(e) => {
+                setEditText(e.target.value);
+                e.target.style.height = "auto";
+                e.target.style.height = e.target.scrollHeight + "px";
+              }}
+              onKeyDown={handleEditKeyDown}
+              rows={1}
+              disabled={saving}
+              aria-label="Editar texto da mensagem"
+            />
+            <div className="fb-edit-actions">
+              <button
+                className="fb-edit-btn fb-edit-btn--cancel"
+                onClick={() => { setEditing(false); setEditText(item.message); }}
+                disabled={saving}
+              >
+                Cancelar
+              </button>
+              <button
+                className="fb-edit-btn fb-edit-btn--save"
+                onClick={handleSaveEdit}
+                disabled={saving || !editText.trim()}
+              >
+                {saving ? "Salvando…" : "Salvar"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* ── Modo leitura ── */
+          <>
+            <p className="fb-chat__bubble-text">{item.message}</p>
+            <div className="fb-chat__bubble-footer">
+              {item.edited && (
+                <span className="fb-chat__edited-label" aria-label="Mensagem editada">
+                  editada
+                </span>
+              )}
+              <span className="fb-chat__bubble-time">{formatTime(item.created_at)}</span>
+              <ReadCheck read={item.read} />
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Componente principal ─────────────────────────────────── */
 export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksChange }) {
   const [text,   setText]   = useState("");
   const [saving, setSaving] = useState(false);
@@ -69,7 +271,7 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
   /* Scroll to bottom quando feedbacks mudam */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [feedbacks]);
+  }, [feedbacks.length]);
 
   /* Auto-resize do textarea */
   const handleTextChange = (e) => {
@@ -81,7 +283,6 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
     }
   };
 
-  /* Enviar com Enter (Shift+Enter = nova linha) */
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -89,6 +290,7 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
     }
   };
 
+  /* ── Enviar ── */
   const saveFeedback = async () => {
     if (!text.trim() || inflightRef.current) return;
     inflightRef.current = true;
@@ -118,18 +320,30 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
     }
   };
 
-  const grouped = groupByDay(feedbacks);
-  const firstName = patient.name.split(" ")[0];
+  /* ── Callbacks de edição e deleção ── */
+  const handleEdit = (id, newMessage) => {
+    onFeedbacksChange(
+      feedbacks.map((fb) =>
+        fb.id === id ? { ...fb, message: newMessage, edited: true } : fb
+      )
+    );
+    showToast("success", "Mensagem atualizada ✏️");
+  };
+
+  const handleDelete = (id) => {
+    onFeedbacksChange(feedbacks.filter((fb) => fb.id !== id));
+    showToast("success", "Mensagem excluída 🗑️");
+  };
+
+  const grouped    = groupByDay(feedbacks);
+  const firstName  = patient.name.split(" ")[0];
 
   return (
     <div className="fb-chat">
 
       {/* ── Toast ── */}
       {toast && (
-        <div
-          role="alert"
-          className={`fb-chat__toast fb-chat__toast--${toast.type}`}
-        >
+        <div role="alert" className={`fb-chat__toast fb-chat__toast--${toast.type}`}>
           {toast.msg}
         </div>
       )}
@@ -170,23 +384,15 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
               </div>
             );
           }
-
           return (
-            <div
+            <MessageBubble
               key={item.id}
-              className="fb-chat__message fb-chat__message--outgoing"
-              aria-label={`Você enviou às ${formatTime(item.created_at)}`}
-            >
-              <div className="fb-chat__bubble fb-chat__bubble--outgoing">
-                <p className="fb-chat__bubble-text">{item.message}</p>
-                <div className="fb-chat__bubble-footer">
-                  <span className="fb-chat__bubble-time">
-                    {formatTime(item.created_at)}
-                  </span>
-                  <ReadCheck read={item.read} />
-                </div>
-              </div>
-            </div>
+              item={item}
+              session={session}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onError={(msg) => showToast("error", msg)}
+            />
           );
         })}
 
@@ -217,10 +423,7 @@ export default function FeedbackTab({ patient, session, feedbacks, onFeedbacksCh
           {saving ? (
             <span className="fb-chat__send-spinner" aria-hidden="true" />
           ) : (
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <IconSend />
           )}
         </button>
       </div>

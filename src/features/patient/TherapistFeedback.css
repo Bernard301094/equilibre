@@ -1,70 +1,76 @@
 /* ================================================================
-   TherapistFeedback.css — Chat Interface (Visão do Paciente)
-   "Clínica Natural" Design System · Mobile-first
+   TherapistFeedback.css — Mural de Orientações (visão do PACIENTE)
+   Classes mapeadas ao TherapistFeedback.jsx real.
+   Estilo messenger: topbar, bolhas recebidas, separadores de data.
+   BEM · Mobile-first · Design System Equilibre
    ================================================================ */
 
-/* ── Container principal ─────────────────────────────────────── */
+/* ── Container raiz ───────────────────────────────────────── */
 .tf-chat {
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 420px;
-  max-height: 70vh;
-  background: #f5f1ec;           /* pergaminho suave — chá quente */
+  min-height: 400px;
+  background: var(--pt-surface, #fff);
   border-radius: var(--pt-r-lg, 20px);
-  overflow: hidden;
   border: 1.5px solid var(--pt-border, #dde5ed);
-  box-shadow: var(--pt-shadow-sm);
-
-  /* Padrão sutil de fundo — sensação de textura */
-  background-image:
-    radial-gradient(circle at 20% 80%, rgba(124, 92, 191, 0.04) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(45, 158, 114, 0.04) 0%, transparent 50%);
+  overflow: hidden;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
-/* ── Topbar ──────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════
+   TOPBAR — estilo messenger
+   ════════════════════════════════════════════════════════════ */
 .tf-chat__topbar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 12px 16px;
-  background: #fff;
-  border-bottom: 1px solid var(--pt-border, #dde5ed);
+  background: var(--pt-surface, #fff);
+  border-bottom: 1.5px solid var(--pt-border, #dde5ed);
   flex-shrink: 0;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .tf-chat__topbar-avatar {
-  font-size: 1.5rem;
   width: 40px;
   height: 40px;
+  border-radius: 50%;
+  background: var(--pt-blue-050, #eef6fc);
+  border: 1.5px solid var(--pt-blue-100, #ddedf9);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: #d1f0e3;
-  border: 2px solid #b8e0ce;
+  font-size: 1.25rem;
   flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(46, 127, 171, 0.12);
 }
 
 .tf-chat__topbar-info {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .tf-chat__topbar-name {
   font-size: 0.9375rem;
   font-weight: 700;
   color: var(--pt-text, #1a202c);
-  line-height: 1.2;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tf-chat__topbar-status {
-  font-size: 0.75rem;
-  color: #2d9e72;
+  font-size: 0.72rem;
+  color: var(--pt-green-600, #2f9e6e);
   font-weight: 500;
 }
 
@@ -75,240 +81,348 @@
   flex-shrink: 0;
 }
 
+/* Badge de não lidas */
 .tf-chat__badge {
-  background: #ef4444;
-  color: #fff;
-  font-size: 0.7rem;
-  font-weight: 800;
-  min-width: 20px;
-  height: 20px;
-  border-radius: 99px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 20px;
+  height: 20px;
   padding: 0 5px;
+  background: var(--pt-blue-500, #2e7fab);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  border-radius: 999px;
+  animation: tf-badge-pop 0.2s ease;
 }
 
+@keyframes tf-badge-pop {
+  from { transform: scale(0.6); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* Botão de refresh */
 .tf-chat__refresh-btn {
-  background: none;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--pt-border, #dde5ed);
+  background: var(--pt-surface-alt, #f7f9fc);
   cursor: pointer;
-  font-size: 1rem;
-  padding: 4px;
-  border-radius: 6px;
-  transition: background 0.15s;
-  line-height: 1;
+  font-size: 0.875rem;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  color: var(--pt-text-muted, #718096);
 }
 
-.tf-chat__refresh-btn:hover  { background: #f3f4f6; }
-.tf-chat__refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.tf-chat__refresh-btn:hover:not(:disabled) {
+  background: var(--pt-blue-050, #eef6fc);
+  border-color: var(--pt-blue-200, #c3dff5);
+}
 
-/* ── Área de mensagens (scrollável) ─────────────────────────── */
+.tf-chat__refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ════════════════════════════════════════════════════════════
+   ÁREA DE MENSAGENS
+   ════════════════════════════════════════════════════════════ */
 .tf-chat__body {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 14px;
+  padding: 16px 20px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   scroll-behavior: smooth;
+  /* Fundo levemente diferente para contrastar com as bolhas brancas */
+  background: var(--pt-surface-alt, #f7f9fc);
+  scrollbar-width: thin;
+  scrollbar-color: var(--pt-border, #dde5ed) transparent;
 }
 
+.tf-chat__body::-webkit-scrollbar { width: 5px; }
+.tf-chat__body::-webkit-scrollbar-thumb {
+  background: var(--pt-border, #dde5ed);
+  border-radius: 99px;
+}
+
+/* Variante centrada (empty / sem terapeuta) */
 .tf-chat__body--centered {
   align-items: center;
   justify-content: center;
 }
 
-/* Scrollbar discreta */
-.tf-chat__body::-webkit-scrollbar { width: 4px; }
-.tf-chat__body::-webkit-scrollbar-track { background: transparent; }
-.tf-chat__body::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.12);
-  border-radius: 99px;
-}
-
-/* ── Separador de dia ────────────────────────────────────────── */
-.tf-chat__day-label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 10px 0 6px;
-}
-
-.tf-chat__day-label span {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--pt-text-muted, #718096);
-  background: rgba(255,255,255,0.75);
-  border: 1px solid rgba(0,0,0,0.08);
-  border-radius: 99px;
-  padding: 3px 12px;
-  backdrop-filter: blur(4px);
-  text-transform: capitalize;
-}
-
-/* ── Linha de mensagem ───────────────────────────────────────── */
-.tf-chat__message {
-  display: flex;
-  margin-bottom: 2px;
-  animation: tf-msg-in 0.2s ease both;
-}
-
-@keyframes tf-msg-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.tf-chat__message--incoming {
-  justify-content: flex-start;
-  padding-left: 0;
-}
-
-/* ── Bolha de mensagem ───────────────────────────────────────── */
-.tf-chat__bubble {
-  max-width: 80%;
-  padding: 9px 13px 7px;
-  border-radius: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  position: relative;
-}
-
-/* Mensagens recebidas (terapeuta → paciente): fundo branco, esquerda */
-.tf-chat__bubble--incoming {
-  background: #ffffff;
-  border-radius: 4px 18px 18px 18px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  border: 1px solid rgba(0,0,0,0.06);
-}
-
-.tf-chat__bubble-text {
-  font-size: 0.9375rem;
-  color: var(--pt-text, #1a202c);
-  line-height: 1.55;
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.tf-chat__bubble-time {
-  font-size: 0.6875rem;
-  color: var(--pt-text-muted, #9ca3af);
-  align-self: flex-end;
-  letter-spacing: 0.01em;
-}
-
-/* ── Estados ─────────────────────────────────────────────────── */
+/* ── Loader de três pontos ────────────────────────────────── */
 .tf-chat__loader {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 24px;
+  padding: 40px 0;
+  flex-shrink: 0;
 }
 
 .tf-chat__loader-dot {
+  display: inline-block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--pt-violet-500, #7c5cbf);
-  animation: tf-dot-bounce 1.2s ease-in-out infinite;
+  background: var(--pt-blue-300, #7ac3e8);
+  animation: tf-dot-pulse 1.2s ease-in-out infinite;
 }
 
 .tf-chat__loader-dot:nth-child(2) { animation-delay: 0.2s; }
 .tf-chat__loader-dot:nth-child(3) { animation-delay: 0.4s; }
 
-@keyframes tf-dot-bounce {
+@keyframes tf-dot-pulse {
   0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
-  40%            { transform: scale(1);   opacity: 1; }
+  40%           { transform: scale(1);   opacity: 1;   }
 }
 
+/* ── Estado de erro ───────────────────────────────────────── */
 .tf-chat__error {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 20px;
+  gap: 10px;
+  padding: 20px 24px;
+  color: var(--pt-red-600, #b83030);
   font-size: 0.875rem;
-  color: #991b1b;
   text-align: center;
+  background: #fff5f5;
+  border-radius: var(--pt-r-md, 14px);
+  border: 1px solid #fecaca;
+  margin: 12px 0;
 }
 
 .tf-chat__error button {
-  font-size: 0.8rem;
-  padding: 5px 14px;
-  border-radius: 8px;
-  border: 1px solid #fca5a5;
-  background: #fee2e2;
-  color: #991b1b;
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1.5px solid currentColor;
+  background: none;
+  color: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
   cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
 }
 
+.tf-chat__error button:hover {
+  background: #fee2e2;
+}
+
+/* ── Estado vazio ─────────────────────────────────────────── */
 .tf-chat__empty {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  padding: 48px 24px;
   text-align: center;
-  color: var(--pt-text-muted, #718096);
-  padding: 32px 20px;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  flex: 1;
 }
 
-.tf-chat__empty span { font-size: 2.5rem; }
+.tf-chat__empty span {
+  font-size: 2.5rem;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.tf-chat__empty p {
+  margin: 0;
+  font-weight: 600;
+  color: var(--pt-text, #1a202c);
+}
 
 .tf-chat__empty-sub {
-  font-size: 0.8rem;
-  color: var(--pt-text-muted, #9ca3af);
-  max-width: 220px;
+  font-size: 0.8rem !important;
+  color: var(--pt-text-muted, #718096) !important;
+  font-weight: 400 !important;
+  max-width: 34ch;
+  line-height: 1.55;
+  margin-top: 2px;
 }
 
-/* ── Empty state (sem terapeuta) ─────────────────────────────── */
+/* ── Separador de data ────────────────────────────────────── */
+.tf-chat__day-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 14px 0 10px;
+  gap: 10px;
+}
+
+.tf-chat__day-label::before,
+.tf-chat__day-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--pt-border, #dde5ed);
+}
+
+.tf-chat__day-label span {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--pt-text-muted, #718096);
+  background: var(--pt-surface-alt, #f7f9fc);
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
+/* ════════════════════════════════════════════════════════════
+   BOLHAS DE MENSAGEM
+   ════════════════════════════════════════════════════════════ */
+.tf-chat__message {
+  display: flex;
+  margin-bottom: 6px;
+  animation: tf-msg-in 0.2s ease both;
+}
+
+@keyframes tf-msg-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* Mensagem recebida → alinhada à esquerda */
+.tf-chat__message--incoming {
+  justify-content: flex-start;
+}
+
+.tf-chat__bubble {
+  max-width: min(75%, 520px);
+  padding: 10px 14px;
+  border-radius: 18px;
+  word-break: break-word;
+  line-height: 1.55;
+}
+
+/* Bolha recebida: branca com borda, "rabo" no canto inferior esquerdo */
+.tf-chat__bubble--incoming {
+  background: var(--pt-surface, #fff);
+  border: 1px solid var(--pt-border, #dde5ed);
+  border-bottom-left-radius: 5px;
+  color: var(--pt-text, #1a202c);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+}
+
+.tf-chat__bubble-text {
+  margin: 0 0 5px;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+}
+
+.tf-chat__bubble-time {
+  display: block;
+  font-size: 0.67rem;
+  color: var(--pt-text-muted, #718096);
+  text-align: right;
+}
+
+/* ════════════════════════════════════════════════════════════
+   EMPTY-STATE (sem terapeuta vinculado)
+   ════════════════════════════════════════════════════════════ */
 .tf-empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  padding: 40px 24px;
   text-align: center;
-  padding: 20px;
+  max-width: 360px;
 }
 
-.tf-empty-state__icon { font-size: 2.5rem; }
+.tf-empty-state__icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  background: var(--pt-surface-alt, #f7f9fc);
+  border: 1.5px solid var(--pt-border, #dde5ed);
+  border-radius: 50%;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
 
 .tf-empty-state__title {
-  font-size: 1rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: var(--pt-text, #1a202c);
   margin: 0;
 }
 
 .tf-empty-state__desc {
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
   color: var(--pt-text-muted, #718096);
-  max-width: 240px;
-  line-height: 1.5;
   margin: 0;
+  line-height: 1.55;
+  max-width: 30ch;
 }
 
 .tf-empty-state__btn {
-  margin-top: 4px;
-  background: var(--pt-violet-500, #7c5cbf);
-  color: #fff;
+  margin-top: 8px;
+  padding: 10px 22px;
+  border-radius: 999px;
   border: none;
-  border-radius: 10px;
-  padding: 9px 20px;
+  background: var(--pt-blue-500, #2e7fab);
+  color: #fff;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  font-family: inherit;
+  transition: background 0.18s ease, transform 0.12s ease;
+  box-shadow: 0 2px 8px rgba(46, 127, 171, 0.25);
 }
 
-.tf-empty-state__btn:hover { background: #6a4daa; }
+.tf-empty-state__btn:hover {
+  background: var(--pt-blue-600, #2062a3);
+  transform: translateY(-1px);
+}
 
-/* ── Desktop ─────────────────────────────────────────────────── */
-@media (min-width: 640px) {
-  .tf-chat { max-height: 65vh; }
-  .tf-chat__bubble { max-width: 70%; }
-  .tf-chat__body { padding: 20px 20px; }
+.tf-empty-state__btn:active {
+  transform: translateY(0);
+}
+
+/* ── Responsividade ───────────────────────────────────────── */
+@media (max-width: 600px) {
+  .tf-chat {
+    border-radius: var(--pt-r-md, 14px);
+    min-height: 320px;
+  }
+
+  .tf-chat__body {
+    padding: 12px 12px 8px;
+  }
+
+  .tf-chat__bubble {
+    max-width: 88%;
+  }
+
+  .tf-chat__topbar {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .tf-chat__topbar-avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 1.1rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .tf-chat__body {
+    padding: 20px 24px 16px;
+  }
 }
