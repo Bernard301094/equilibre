@@ -2,8 +2,11 @@
   "id": "/",
   "short_name": "Equilibre",
   "name": "Equilibre - Terapia Digital",
+  "description": "Plataforma digital para el seguimiento de rutinas y bienestar entre pacientes y psicólogos.",
+  "categories": ["medical", "health", "lifestyle"],
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "theme_color": "#17527c",
   "background_color": "#f4f8fc",
   "icons": [
@@ -11,13 +14,13 @@
       "src": "icon-192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "icon-512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }
