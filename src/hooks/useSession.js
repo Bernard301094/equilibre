@@ -25,21 +25,21 @@ function readPersistedSession() {
  * Hook central de sessão.
  *
  * Responsabilidades:
- *  - Carregar sessão do localStorage na montagem
- *  - Tentar refresh preventivo na montagem (detecta sessões expiradas cedo)
- *  - Re-hidratar perfil na montagem caso therapist_id/role estejam ausentes
- *  - Persistir sessão no localStorage a cada mudança
- *  - Refresh periódico a cada TOKEN_REFRESH_INTERVAL_MS
- *  - Escutar o evento "equilibre-unauthorized" para forçar logout
- *  - Expor logout() para sign-out explícito
- *  - Expor updateSession() para atualizações parciais (ex: novo avatar_url)
+ * - Carregar sessão do localStorage na montagem
+ * - Tentar refresh preventivo na montagem (detecta sessões expiradas cedo)
+ * - Re-hidratar perfil na montagem caso therapist_id/role estejam ausentes
+ * - Persistir sessão no localStorage a cada mudança
+ * - Refresh periódico a cada TOKEN_REFRESH_INTERVAL_MS
+ * - Escutar o evento "equilibre-unauthorized" para forçar logout
+ * - Expor logout() para sign-out explícito
+ * - Expor updateSession() para atualizações parciais (ex: novo avatar_url)
  *
  * @returns {{
- *   session: object|null,
- *   setSession: Function,
- *   updateSession: Function,
- *   logout: Function,
- *   sessionReady: boolean,
+ * session: object|null,
+ * setSession: Function,
+ * updateSession: Function,
+ * logout: Function,
+ * sessionReady: boolean,
  * }}
  */
 export function useSession() {
@@ -106,6 +106,12 @@ export function useSession() {
           );
         }
       } catch (e) {
+        // CORREÇÃO: Verifica se é um erro de falta de internet ou falha de rede do fetch
+        if (!navigator.onLine || e.message === "Failed to fetch" || e.name === "TypeError") {
+          console.warn("[useSession] Sem conexão de rede no arranque. A manter a sessão offline.");
+          return; // Interrompe a função sem apagar o login do utilizador
+        }
+        
         console.warn("[useSession] Refresh falhou, deslogando:", e.message);
         setSession(null);
       } finally {

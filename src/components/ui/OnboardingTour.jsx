@@ -6,37 +6,44 @@ const TOUR_KEY = "equilibre_tour_done";
 const STEPS = [
   {
     icon: "🌱",
-    title: "Bem-vinda ao seu jardim",
-    body:
-      "Este é o seu espaço de cuidado. Tudo aqui foi pensado para te ajudar a crescer — no seu ritmo, do seu jeito.",
+    title: "Bem-vinda ao Equilibre",
+    body: "Este é o seu espaço de cuidado digital. Tudo aqui foi pensado para te ajudar a crescer — no seu ritmo, do seu jeito.",
     hint: null,
   },
   {
     icon: "🪴",
     title: "Sua planta de autocuidado",
-    body:
-      "Cada vez que você registar como está se sentindo ou completar um exercício, sua planta cresce. Quanto mais constante, mais ela floresce.",
-    hint: "Ela reflete a sua sequência de dias ativos.",
+    body: "Na tela de Início, você verá uma planta. Cada vez que você faz o check-in emocional ou completa atividades, ela cresce e floresce.",
+    hint: "Ela reflete a sua sequência de dias ativos no aplicativo.",
   },
   {
     icon: "📓",
-    title: "O Diário Emocional",
-    body:
-      "É o lugar para registar o que você está sentindo hoje — sem julgamento, sem pressão. Algumas linhas já fazem diferença.",
-    hint: 'Toque em "Vamos regar agora?" na tela inicial para começar.',
+    title: "Diário Emocional",
+    body: "Use a aba 'Diário' no menu inferior para registrar como você está se sentindo hoje — sem julgamento e sem pressão.",
+    hint: "Escrever algumas linhas diariamente faz uma grande diferença no seu processo.",
+  },
+  {
+    icon: "✅",
+    title: "Sua Rotina",
+    body: "Na aba 'Rotina', você pode marcar os hábitos e tarefas do dia a dia combinados com sua psicóloga, como beber água, meditar ou tomar medicação.",
+    hint: "Manter a rotina em dia ajuda a estabilizar seu bem-estar.",
   },
   {
     icon: "📋",
-    title: "Seus Exercícios",
-    body:
-      "Sua psicóloga pode enviar exercícios personalizados. Você os encontra na aba 'Exercícios' e pode fazer no seu tempo.'",
-    hint: "Nenhum exercício aparecerá aqui até que sua psicóloga envie um.",
+    title: "Exercícios Terapêuticos",
+    body: "Sua psicóloga enviará tarefas personalizadas para você. Elas ficarão na aba 'Exercícios' para você responder no seu tempo.",
+    hint: "Nenhum exercício aparecerá aqui até que sua psicóloga envie o primeiro.",
+  },
+  {
+    icon: "📈",
+    title: "Evolução e Orientações",
+    body: "Acompanhe seus gráficos na aba 'Progresso' e leia as mensagens deixadas pela sua profissional na aba 'Orientações'.",
+    hint: "Fique de olho no sininho de Notificações para não perder novidades.",
   },
   {
     icon: "✨",
     title: "Tudo pronto!",
-    body:
-      "Você está pronta para começar. Respire fundo e dê o primeiro passo — mesmo que seja pequeno.",
+    body: "Você está pronta para começar a explorar o Equilibre. Respire fundo e dê o primeiro passo — mesmo que seja pequeno.",
     hint: null,
     cta: "Começar agora",
   },
@@ -46,8 +53,8 @@ const STEPS = [
  * OnboardingTour
  *
  * Props:
- *   onDone — callback fired when tour is dismissed
- *   force  — bool, show tour regardless of localStorage (for testing)
+ * onDone — callback fired when tour is dismissed
+ * force  — bool, show tour regardless of localStorage (for testing)
  */
 export default function OnboardingTour({ onDone, force = false }) {
   const [visible, setVisible] = useState(false);

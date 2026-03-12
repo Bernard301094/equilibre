@@ -1,7 +1,7 @@
 // public/sw.js — Equilibre Service Worker
 // Handles: static caching, offline fallback, Web Push notifications
 
-const CACHE_NAME    = "equilibre-v1";
+const CACHE_NAME    = "equilibre-v2";
 const OFFLINE_URL   = "/offline.html";
 
 // Assets to pre-cache on install
