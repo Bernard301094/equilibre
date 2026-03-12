@@ -2,16 +2,16 @@
  * db.js — Equilibre data layer
  *
  * Offline-first enhancements:
- *  • IndexedDB queue for insert/update/delete mutations
- *  • Auto-sync when connection is restored
- *  • Dispatches "equilibre-sync-status" events for UI feedback
+ * • IndexedDB queue for insert/update/delete mutations
+ * • Auto-sync when connection is restored
+ * • Dispatches "equilibre-sync-status" events for UI feedback
  *
  * CORREÇÃO CRÍTICA (makeHeaders):
- *  Authorization: `Bearer ${token || SUPA_KEY}` causava fallback silencioso
- *  para a anon key quando token era null/undefined. O Supabase recebia a anon
- *  key como Bearer → auth.uid() = null → RLS bloqueava INSERT/UPDATE sem erro.
- *  Fix: mutations (insert/update/delete) exigem token explícito e lançam erro
- *  claro se ausente. Queries públicas mantêm o fallback para a anon key.
+ * Authorization: `Bearer ${token || SUPA_KEY}` causava fallback silencioso
+ * para a anon key quando token era null/undefined. O Supabase recebia a anon
+ * key como Bearer → auth.uid() = null → RLS bloqueava INSERT/UPDATE sem erro.
+ * Fix: mutations (insert/update/delete) exigem token explícito e lançam erro
+ * claro se ausente. Queries públicas mantêm o fallback para a anon key.
  */
 
 const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -110,10 +110,20 @@ async function flushQueue() {
   for (const item of pending) {
     try {
       await replayMutation(item);
+      // Éxito: se procesó correctamente, lo quitamos de la cola
       await idbDequeue(item.queueId);
     } catch (e) {
       console.warn("[db] Sync falhou para item", item.queueId, e);
-      failed++;
+      
+      // SOLUCIÓN: Si no es un error de red (el servidor rechazó la petición por RLS, token, etc.),
+      // obligatoriamente lo sacamos de la cola para evitar el bucle infinito.
+      if (!isNetworkError(e)) {
+        console.warn("[db] Erro definitivo do servidor. Removendo item corrompido da fila offline para evitar loop.");
+        await idbDequeue(item.queueId);
+      } else {
+        // Es una falla real de conexión. Se queda en la cola para el próximo intento.
+        failed++;
+      }
     }
   }
 
@@ -190,18 +200,6 @@ function makeQueryHeaders(token, extra = {}) {
 
 /**
  * ✅ CORRIGIDO — Headers para mutations (INSERT / UPDATE / DELETE).
- *
- * PROBLEMA ANTERIOR:
- *   Authorization: `Bearer ${token || SUPA_KEY}`
- *   → Quando token era null/undefined, usava a anon key como Bearer.
- *   → Supabase interpretava auth.uid() = null.
- *   → RLS: `auth.uid() = therapist_id` → false → INSERT bloqueado sem erro HTTP.
- *   → db.insert devolvia null, FeedbackTab lançava "Insert bloqueado" genérico.
- *
- * SOLUÇÃO:
- *   Mutations exigem sempre um token de utilizador autenticado.
- *   Se token estiver ausente, lança erro imediatamente com mensagem clara,
- *   em vez de deixar o Supabase falhar silenciosamente por RLS.
  */
 function makeMutationHeaders(token, extra = {}) {
   if (!token) {
@@ -242,7 +240,6 @@ async function handleResponse(res, context) {
 const db = {
   /**
    * Leituras sempre vão para a rede (não são enfileiradas offline).
-   * Usa makeQueryHeaders — mantém fallback para anon key em queries públicas.
    */
   async query(table, options = {}, token = null) {
     if (hasEmptyFilterIn(options)) return [];
@@ -257,8 +254,6 @@ const db = {
 
   /**
    * Insert: tenta sempre a rede primeiro.
-   * Usa makeMutationHeaders — falha imediatamente se token ausente.
-   * Só enfileira no IndexedDB se for erro de rede real.
    */
   async insert(table, data, token = null) {
     try {
@@ -282,8 +277,6 @@ const db = {
 
   /**
    * Update: tenta sempre a rede primeiro.
-   * Usa makeMutationHeaders — falha imediatamente se token ausente.
-   * Só enfileira no IndexedDB se for erro de rede real.
    */
   async update(table, filter, data, token = null) {
     try {
@@ -309,8 +302,6 @@ const db = {
 
   /**
    * Delete: tenta sempre a rede primeiro.
-   * Usa makeMutationHeaders — falha imediatamente se token ausente.
-   * Só enfileira no IndexedDB se for erro de rede real.
    */
   async delete(table, filter, token = null) {
     try {
