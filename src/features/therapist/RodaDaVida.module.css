@@ -1,0 +1,138 @@
+.wrapper {
+  background: var(--bg-card, #fff);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 860px;
+  margin: 0 auto;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+.header {
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary, #1a1a1a);
+  margin: 0 0 4px;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: var(--text-secondary, #666);
+  margin: 0;
+}
+
+.content {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.chartWrapper {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+}
+
+.sliders {
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sliderRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.areaLabel {
+  width: 160px;
+  font-size: 0.875rem;
+  color: var(--text-primary, #333);
+  flex-shrink: 0;
+}
+
+.range {
+  flex: 1;
+  accent-color: #6a997c;
+  cursor: pointer;
+  height: 4px;
+}
+
+.score {
+  width: 24px;
+  text-align: right;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6a997c;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btnReset {
+  padding: 9px 20px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: transparent;
+  color: var(--text-secondary, #666);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btnReset:hover {
+  background: #f5f5f5;
+}
+
+.btnPdf {
+  padding: 9px 22px;
+  border-radius: 8px;
+  border: none;
+  background: #6a997c;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.btnPdf:hover {
+  background: #5a8a6c;
+}
+
+.btnPdf:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .content {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .areaLabel {
+    width: 130px;
+    font-size: 0.8rem;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .btnPdf, .btnReset {
+    width: 100%;
+    text-align: center;
+  }
+}
