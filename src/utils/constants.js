@@ -31,15 +31,13 @@ export const CATEGORY_CLASS = {
 };
 
 // ─── Question types ───────────────────────────────────────────────────────────────
+// slider_emoji e breathing NÃO aparecem aqui — só estão disponíveis nos Modelos Equilibre
 
 export const QUESTION_TYPES = [
-  { value: "open",         label: "Resposta aberta" },
-  { value: "scale",        label: "Escala (0–10)" },
-  { value: "reflect",      label: "Reflexão (opcional)" },
-  { value: "instruction",  label: "Instrução (sem resposta)" },
-  // ✨ Tipos dinâmicos
-  { value: "slider_emoji", label: "Slider emocional 😄" },
-  { value: "breathing",    label: "Respiração animada 🌬️" },
+  { value: "open",        label: "Resposta aberta" },
+  { value: "scale",       label: "Escala (0–10)" },
+  { value: "reflect",     label: "Reflexão (opcional)" },
+  { value: "instruction", label: "Instrução (sem resposta)" },
 ];
 
 // ─── Diary moods — FONTE ÚNCIA DA VERDADE ─────────────────────────────────────────────
