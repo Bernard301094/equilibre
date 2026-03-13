@@ -1,32 +1,32 @@
 import { useRef, useState } from "react";
 import styles from "./RodaDaVida.module.css";
 
-const AREAS = [
-  "Saúde",
-  "Família",
-  "Relacionamento",
-  "Finanças",
-  "Carreira",
-  "Desenvolvimento Pessoal",
-  "Lazer",
-  "Espiritualidade",
+const DEFAULT_AREAS = [
+  { key: "0", label: "Saúde" },
+  { key: "1", label: "Família" },
+  { key: "2", label: "Relacionamento" },
+  { key: "3", label: "Finanças" },
+  { key: "4", label: "Carreira" },
+  { key: "5", label: "Desenvolvimento Pessoal" },
+  { key: "6", label: "Lazer" },
+  { key: "7", label: "Espiritualidade" },
 ];
 
-const DEFAULT_VALUES = Object.fromEntries(AREAS.map((a) => [a, 5]));
+const AREA_COLORS = [
+  "#6a997c", "#7b9fd4", "#e07b7b", "#e0b96a",
+  "#9b7be0", "#5bb8b8", "#e07bb8", "#a0b86a",
+];
 
 function polarToCartesian(cx, cy, r, angleDeg) {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
-  return {
-    x: cx + r * Math.cos(rad),
-    y: cy + r * Math.sin(rad),
-  };
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
 }
 
-function buildPolygon(values, cx, cy, maxR, total) {
-  return values
-    .map((v, i) => {
-      const angle = (360 / total) * i;
-      const r = (v / 10) * maxR;
+function buildPolygonPoints(values, areas, cx, cy, maxR) {
+  return areas
+    .map((a, i) => {
+      const angle = (360 / areas.length) * i;
+      const r = (values[a.key] / 10) * maxR;
       const p = polarToCartesian(cx, cy, r, angle);
       return `${p.x},${p.y}`;
     })
@@ -34,29 +34,33 @@ function buildPolygon(values, cx, cy, maxR, total) {
 }
 
 export default function RodaDaVida({ patientName = "Paciente" }) {
-  const [values, setValues] = useState(DEFAULT_VALUES);
+  const [areas, setAreas] = useState(DEFAULT_AREAS);
+  const [values, setValues] = useState(
+    Object.fromEntries(DEFAULT_AREAS.map((a) => [a.key, 5]))
+  );
+  const [editingKey, setEditingKey] = useState(null);
   const [downloading, setDownloading] = useState(false);
   const svgRef = useRef(null);
 
-  const cx = 200;
-  const cy = 200;
-  const maxR = 160;
-  const total = AREAS.length;
-  const numericValues = AREAS.map((a) => values[a]);
+  const cx = 190; const cy = 190; const maxR = 145;
+  const total = areas.length;
 
-  const handleChange = (area, val) => {
-    setValues((prev) => ({ ...prev, [area]: Number(val) }));
+  const handleValueChange = (key, val) =>
+    setValues((prev) => ({ ...prev, [key]: Number(val) }));
+
+  const handleLabelChange = (key, newLabel) =>
+    setAreas((prev) => prev.map((a) => a.key === key ? { ...a, label: newLabel } : a));
+
+  const handleReset = () => {
+    setAreas(DEFAULT_AREAS);
+    setValues(Object.fromEntries(DEFAULT_AREAS.map((a) => [a.key, 5])));
+    setEditingKey(null);
   };
-
-  const handleReset = () => setValues(DEFAULT_VALUES);
 
   const handleDownloadPDF = async () => {
     setDownloading(true);
     try {
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import("html2canvas"),
-        import("jspdf"),
-      ]);
+      const { default: jsPDF } = await import("jspdf");
 
       const svg = svgRef.current;
       const serializer = new XMLSerializer();
@@ -67,81 +71,83 @@ export default function RodaDaVida({ patientName = "Paciente" }) {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        canvas.width = 400;
-        canvas.height = 400;
+        canvas.width = 380; canvas.height = 380;
         const ctx = canvas.getContext("2d");
         ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, 400, 400);
-        ctx.drawImage(img, 0, 0, 400, 400);
+        ctx.fillRect(0, 0, 380, 380);
+        ctx.drawImage(img, 0, 0, 380, 380);
         URL.revokeObjectURL(url);
 
         const imgData = canvas.toDataURL("image/png");
         const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
         const pageW = pdf.internal.pageSize.getWidth();
-
-        // Header
-        pdf.setFillColor(106, 153, 124);
-        pdf.rect(0, 0, pageW, 28, "F");
-        pdf.setTextColor(255, 255, 255);
-        pdf.setFontSize(18);
-        pdf.setFont("helvetica", "bold");
-        pdf.text("Roda da Vida", pageW / 2, 12, { align: "center" });
-        pdf.setFontSize(11);
-        pdf.setFont("helvetica", "normal");
-        pdf.text(`Paciente: ${patientName}`, pageW / 2, 21, { align: "center" });
-
-        // Date
-        pdf.setTextColor(100, 100, 100);
-        pdf.setFontSize(9);
         const today = new Date().toLocaleDateString("pt-BR");
-        pdf.text(`Data: ${today}`, pageW / 2, 33, { align: "center" });
+
+        // Header gradient simulation
+        pdf.setFillColor(90, 140, 110);
+        pdf.rect(0, 0, pageW, 32, "F");
+        pdf.setFillColor(106, 153, 124);
+        pdf.rect(0, 16, pageW, 16, "F");
+
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(20);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Roda da Vida", pageW / 2, 13, { align: "center" });
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`Paciente: ${patientName}  ·  Data: ${today}`, pageW / 2, 24, { align: "center" });
 
         // Chart
-        const imgSize = 110;
-        const imgX = (pageW - imgSize) / 2;
-        pdf.addImage(imgData, "PNG", imgX, 38, imgSize, imgSize);
+        const imgSize = 108;
+        pdf.addImage(imgData, "PNG", (pageW - imgSize) / 2, 36, imgSize, imgSize);
 
-        // Scores table
-        const tableY = 155;
-        pdf.setFontSize(11);
+        // Section title
+        pdf.setFontSize(10);
         pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(50, 50, 50);
-        pdf.text("Pontuações por Área", pageW / 2, tableY, { align: "center" });
+        pdf.setTextColor(60, 60, 60);
+        pdf.text("Pontuações por Área", 14, 150);
+        pdf.setDrawColor(200, 200, 200);
+        pdf.line(14, 152, pageW - 14, 152);
 
-        const colW = (pageW - 20) / 2;
-        AREAS.forEach((area, i) => {
+        // Score bars
+        const colW = (pageW - 28) / 2;
+        areas.forEach((area, i) => {
           const col = i % 2;
           const row = Math.floor(i / 2);
-          const x = 10 + col * colW;
-          const y = tableY + 8 + row * 10;
-          const score = values[area];
-          const barMaxW = colW - 30;
+          const x = 14 + col * (colW + 4);
+          const y = 158 + row * 13;
+          const score = values[area.key];
+          const barMaxW = colW - 18;
           const barW = (score / 10) * barMaxW;
+          const color = AREA_COLORS[i] || "#6a997c";
+          const rgb = hexToRgb(color);
 
           pdf.setFont("helvetica", "normal");
-          pdf.setFontSize(9);
+          pdf.setFontSize(8);
           pdf.setTextColor(60, 60, 60);
-          pdf.text(area, x, y);
+          pdf.text(area.label, x, y);
 
-          // bar background
-          pdf.setFillColor(230, 230, 230);
-          pdf.roundedRect(x, y + 1, barMaxW, 3.5, 1, 1, "F");
+          pdf.setFillColor(235, 235, 235);
+          pdf.roundedRect(x, y + 1.5, barMaxW, 4, 1.5, 1.5, "F");
 
-          // bar fill
-          const color = score >= 7 ? [76, 175, 80] : score >= 4 ? [255, 193, 7] : [244, 67, 54];
-          pdf.setFillColor(...color);
-          if (barW > 0) pdf.roundedRect(x, y + 1, barW, 3.5, 1, 1, "F");
+          if (barW > 0) {
+            pdf.setFillColor(rgb.r, rgb.g, rgb.b);
+            pdf.roundedRect(x, y + 1.5, barW, 4, 1.5, 1.5, "F");
+          }
 
-          // score label
-          pdf.setTextColor(60, 60, 60);
-          pdf.setFontSize(9);
-          pdf.text(`${score}/10`, x + barMaxW + 2, y + 4);
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(8);
+          pdf.setTextColor(rgb.r, rgb.g, rgb.b);
+          pdf.text(`${score}`, x + barMaxW + 2, y + 5);
         });
 
         // Footer
-        pdf.setFontSize(8);
-        pdf.setTextColor(160, 160, 160);
-        pdf.text("Gerado por Equilibre · equilibre.app", pageW / 2, 285, { align: "center" });
+        pdf.setFillColor(245, 245, 245);
+        pdf.rect(0, 278, pageW, 20, "F");
+        pdf.setFontSize(7.5);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(150, 150, 150);
+        pdf.text("Gerado por Equilibre · Plataforma de Acompanhamento Psicológico", pageW / 2, 286, { align: "center" });
 
         const safeName = patientName.replace(/\s+/g, "_");
         pdf.save(`roda_da_vida_${safeName}_${today.replace(/\//g, "-")}.pdf`);
@@ -156,9 +162,17 @@ export default function RodaDaVida({ patientName = "Paciente" }) {
 
   return (
     <div className={styles.wrapper}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>🌀 Roda da Vida</h2>
-        <p className={styles.subtitle}>{patientName}</p>
+      <div className={styles.topBar}>
+        <div>
+          <h2 className={styles.title}>🌀 Roda da Vida</h2>
+          <p className={styles.subtitle}>Clique nos rótulos para editar as áreas</p>
+        </div>
+        <div className={styles.actions}>
+          <button onClick={handleReset} className={styles.btnReset}>Resetar</button>
+          <button onClick={handleDownloadPDF} disabled={downloading} className={styles.btnPdf}>
+            {downloading ? "Gerando..." : "⬇ Baixar PDF"}
+          </button>
+        </div>
       </div>
 
       <div className={styles.content}>
@@ -166,75 +180,94 @@ export default function RodaDaVida({ patientName = "Paciente" }) {
         <div className={styles.chartWrapper}>
           <svg
             ref={svgRef}
-            viewBox="0 0 400 400"
-            width="320"
-            height="320"
+            viewBox="0 0 380 380"
+            width="360"
+            height="360"
             xmlns="http://www.w3.org/2000/svg"
           >
-            {/* Background circles */}
-            {[2, 4, 6, 8, 10].map((level) => (
+            <defs>
+              {areas.map((a, i) => (
+                <radialGradient key={a.key} id={`grad${a.key}`} cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor={AREA_COLORS[i]} stopOpacity="0.55" />
+                  <stop offset="100%" stopColor={AREA_COLORS[i]} stopOpacity="0.15" />
+                </radialGradient>
+              ))}
+            </defs>
+
+            {/* Background fills per level */}
+            {[10, 8, 6, 4, 2].map((level, li) => (
               <circle
                 key={level}
-                cx={cx}
-                cy={cy}
+                cx={cx} cy={cy}
                 r={(level / 10) * maxR}
-                fill="none"
-                stroke="#e0e0e0"
-                strokeWidth="1"
+                fill={li === 0 ? "#f9fafb" : "none"}
+                stroke="#e2e8e4"
+                strokeWidth="0.8"
               />
             ))}
 
+            {/* Level labels */}
+            {[2, 4, 6, 8, 10].map((level) => (
+              <text
+                key={level}
+                x={cx + 4}
+                y={cy - (level / 10) * maxR + 4}
+                fontSize="8"
+                fill="#aaa"
+                fontFamily="sans-serif"
+              >{level}</text>
+            ))}
+
             {/* Axis lines */}
-            {AREAS.map((_, i) => {
+            {areas.map((_, i) => {
               const angle = (360 / total) * i;
               const end = polarToCartesian(cx, cy, maxR, angle);
               return (
-                <line
-                  key={i}
-                  x1={cx}
-                  y1={cy}
-                  x2={end.x}
-                  y2={end.y}
-                  stroke="#e0e0e0"
-                  strokeWidth="1"
-                />
+                <line key={i} x1={cx} y1={cy} x2={end.x} y2={end.y}
+                  stroke="#d0d8d3" strokeWidth="1" strokeDasharray="3,3" />
               );
             })}
 
-            {/* Filled polygon */}
+            {/* Filled polygon with gradient */}
             <polygon
-              points={buildPolygon(numericValues, cx, cy, maxR, total)}
-              fill="rgba(106,153,124,0.35)"
+              points={buildPolygonPoints(values, areas, cx, cy, maxR)}
+              fill="rgba(106,153,124,0.22)"
               stroke="#6a997c"
               strokeWidth="2"
+              strokeLinejoin="round"
             />
 
-            {/* Dots */}
-            {numericValues.map((v, i) => {
+            {/* Dots with color per area */}
+            {areas.map((a, i) => {
               const angle = (360 / total) * i;
-              const r = (v / 10) * maxR;
+              const r = (values[a.key] / 10) * maxR;
               const p = polarToCartesian(cx, cy, r, angle);
               return (
-                <circle key={i} cx={p.x} cy={p.y} r={4} fill="#6a997c" stroke="#fff" strokeWidth="1.5" />
+                <g key={a.key}>
+                  <circle cx={p.x} cy={p.y} r={6} fill={AREA_COLORS[i]} stroke="#fff" strokeWidth="2" />
+                  <text x={p.x} y={p.y + 1} textAnchor="middle" dominantBaseline="middle"
+                    fontSize="7" fill="#fff" fontFamily="sans-serif" fontWeight="bold">
+                    {values[a.key]}
+                  </text>
+                </g>
               );
             })}
 
-            {/* Labels */}
-            {AREAS.map((area, i) => {
+            {/* Labels outside */}
+            {areas.map((a, i) => {
               const angle = (360 / total) * i;
-              const p = polarToCartesian(cx, cy, maxR + 22, angle);
+              const p = polarToCartesian(cx, cy, maxR + 24, angle);
+              const words = a.label.split(" ");
               return (
-                <text
-                  key={i}
-                  x={p.x}
-                  y={p.y}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize="11"
-                  fill="#444"
-                  fontFamily="sans-serif"
-                >
-                  {area}
+                <text key={a.key} x={p.x} y={p.y} textAnchor="middle"
+                  dominantBaseline="middle" fontSize="10" fill="#3a3a3a"
+                  fontFamily="sans-serif" fontWeight="500">
+                  {words.length > 2 ? (
+                    <>
+                      <tspan x={p.x} dy="-6">{words.slice(0, Math.ceil(words.length/2)).join(" ")}</tspan>
+                      <tspan x={p.x} dy="12">{words.slice(Math.ceil(words.length/2)).join(" ")}</tspan>
+                    </>
+                  ) : a.label}
                 </text>
               );
             })}
@@ -243,36 +276,56 @@ export default function RodaDaVida({ patientName = "Paciente" }) {
 
         {/* Sliders */}
         <div className={styles.sliders}>
-          {AREAS.map((area) => (
-            <div key={area} className={styles.sliderRow}>
-              <span className={styles.areaLabel}>{area}</span>
-              <input
-                type="range"
-                min={0}
-                max={10}
-                step={1}
-                value={values[area]}
-                onChange={(e) => handleChange(area, e.target.value)}
-                className={styles.range}
-              />
-              <span className={styles.score}>{values[area]}</span>
+          {areas.map((area, i) => (
+            <div key={area.key} className={styles.sliderRow}>
+              <div className={styles.labelWrapper}>
+                <span
+                  className={styles.colorDot}
+                  style={{ background: AREA_COLORS[i] }}
+                />
+                {editingKey === area.key ? (
+                  <input
+                    autoFocus
+                    className={styles.labelInput}
+                    value={area.label}
+                    onChange={(e) => handleLabelChange(area.key, e.target.value)}
+                    onBlur={() => setEditingKey(null)}
+                    onKeyDown={(e) => e.key === "Enter" && setEditingKey(null)}
+                    maxLength={24}
+                  />
+                ) : (
+                  <span
+                    className={styles.areaLabel}
+                    onClick={() => setEditingKey(area.key)}
+                    title="Clique para editar"
+                  >
+                    {area.label} <span className={styles.editHint}>✏️</span>
+                  </span>
+                )}
+              </div>
+              <div className={styles.rangeWrapper}>
+                <input
+                  type="range" min={0} max={10} step={1}
+                  value={values[area.key]}
+                  onChange={(e) => handleValueChange(area.key, e.target.value)}
+                  className={styles.range}
+                  style={{ accentColor: AREA_COLORS[i] }}
+                />
+                <span className={styles.score} style={{ color: AREA_COLORS[i] }}>
+                  {values[area.key]}
+                </span>
+              </div>
             </div>
           ))}
         </div>
       </div>
-
-      <div className={styles.actions}>
-        <button onClick={handleReset} className={styles.btnReset}>
-          Resetar
-        </button>
-        <button
-          onClick={handleDownloadPDF}
-          disabled={downloading}
-          className={styles.btnPdf}
-        >
-          {downloading ? "Gerando PDF..." : "⬇ Baixar PDF"}
-        </button>
-      </div>
     </div>
   );
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return { r, g, b };
 }
