@@ -6,7 +6,7 @@ import { CATEGORY_CLASS } from "../../utils/constants";
 import EmptyState from "../../components/ui/EmptyState";
 import "./PatientExercises.css";
 
-/* ── Due date chip ───────────────────────────────────────────── */
+/* ─ Due date chip ──────────────────────────────────────────── */
 function DueChip({ dueDate }) {
   const days = daysUntil(dueDate);
   if (days === null) return null;
@@ -19,13 +19,12 @@ function DueChip({ dueDate }) {
   );
 }
 
-/* ── Exercise card ───────────────────────────────────────────── */
+/* ─ Exercise card ──────────────────────────────────────────── */
 function ExCard({ assign, isDone, exercises, onStart }) {
   const ex = exercises.find((e) => e.id === assign.exercise_id);
   if (!ex) return null;
 
   const qs       = parseQuestions(ex).filter((q) => q.type !== "instruction");
-  /* CATEGORY_CLASS mapeia categorias para classes CSS do sistema */
   const catClass = CATEGORY_CLASS[ex.category] || "cat-outro";
 
   return (
@@ -43,24 +42,19 @@ function ExCard({ assign, isDone, exercises, onStart }) {
         ? (e) => (e.key === "Enter" || e.key === " ") && onStart(ex)
         : undefined}
     >
-      {/* Categoria */}
       <span className={`ex-cat ${catClass}`}>{ex.category}</span>
 
-      {/* Título + descrição */}
       <h3 className="ex-card__title">{ex.title}</h3>
       {ex.description && (
         <p className="ex-card__desc">{ex.description}</p>
       )}
 
-      {/* Footer */}
       <div className="ex-card__footer">
         <span className="ex-card__question-count">
           {qs.length} {qs.length === 1 ? "pergunta" : "perguntas"}
         </span>
-
         <div className="ex-card__actions">
           {!isDone && <DueChip dueDate={assign.due_date} />}
-
           {isDone ? (
             <span className="response-badge badge-done">✅ Concluído</span>
           ) : (
@@ -74,7 +68,7 @@ function ExCard({ assign, isDone, exercises, onStart }) {
   );
 }
 
-/* ── Section label com linha decorativa ─────────────────────── */
+/* ─ Section label ──────────────────────────────────────────── */
 function SectionLabel({ children }) {
   return (
     <div className="pex-section__label" aria-hidden="true">
@@ -84,7 +78,7 @@ function SectionLabel({ children }) {
   );
 }
 
-/* ── Main ────────────────────────────────────────────────────── */
+/* ─ Main ────────────────────────────────────────────────── */
 export default function PatientExercises({ session, onStart }) {
   const [pending,   setPending]   = useState([]);
   const [done,      setDone]      = useState([]);
@@ -95,15 +89,37 @@ export default function PatientExercises({ session, onStart }) {
     let active = true;
     (async () => {
       try {
-        const [pend, don, ex] = await Promise.all([
+        // 1️⃣ Busca assignments do paciente
+        const [pend, don] = await Promise.all([
           db.query("assignments", { filter: { patient_id: session.id, status: "pending" } }, session.access_token),
           db.query("assignments", { filter: { patient_id: session.id, status: "done"    } }, session.access_token),
-          db.query("exercises",   {},                                                          session.access_token),
         ]);
+
         if (!active) return;
-        setPending(Array.isArray(pend) ? pend : []);
-        setDone(Array.isArray(don)     ? don  : []);
-        setExercises(Array.isArray(ex) ? ex   : []);
+
+        const pendArr = Array.isArray(pend) ? pend : [];
+        const donArr  = Array.isArray(don)  ? don  : [];
+
+        // 2️⃣ Coleta todos os exercise_ids únicos das assignments
+        const allAssigns   = [...pendArr, ...donArr];
+        const exerciseIds  = [...new Set(allAssigns.map((a) => a.exercise_id).filter(Boolean))];
+
+        let exArr = [];
+        if (exerciseIds.length > 0) {
+          // Busca cada exercício individualmente para contornar limitações de RLS
+          // (o paciente pode não ter permissão de listar todos os exercises,
+          //  mas consegue ler os que estão linkados às suas assignments)
+          const results = await Promise.all(
+            exerciseIds.map((id) =>
+              db.query("exercises", { filter: { id } }, session.access_token).catch(() => [])
+            )
+          );
+          exArr = results.flat().filter(Boolean);
+        }
+
+        setPending(pendArr);
+        setDone(donArr);
+        setExercises(exArr);
       } catch (e) {
         console.error("[PatientExercises]", e);
       } finally {
@@ -127,7 +143,6 @@ export default function PatientExercises({ session, onStart }) {
   return (
     <div className="pex-page page-fade-in">
 
-      {/* ── Header ── */}
       <header className="pex-header">
         <h2 className="pex-header__title">📚 Meus Exercícios</h2>
         <p className="pex-header__sub">
@@ -135,7 +150,6 @@ export default function PatientExercises({ session, onStart }) {
         </p>
       </header>
 
-      {/* ── Para fazer ── */}
       {pending.length > 0 && (
         <section className="pex-section" aria-label="Exercícios para fazer">
           <SectionLabel>Para fazer · {pending.length}</SectionLabel>
@@ -154,7 +168,6 @@ export default function PatientExercises({ session, onStart }) {
         </section>
       )}
 
-      {/* ── Concluídos ── */}
       {done.length > 0 && (
         <section className="pex-section" aria-label="Exercícios concluídos">
           <SectionLabel>Concluídos · {done.length}</SectionLabel>
@@ -173,7 +186,6 @@ export default function PatientExercises({ session, onStart }) {
         </section>
       )}
 
-      {/* ── Empty state ── */}
       {!hasContent && (
         <div className="pex-empty">
           <EmptyState
