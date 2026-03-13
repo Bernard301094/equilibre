@@ -17,24 +17,37 @@ const AREA_COLORS = [
   "#9b7be0", "#5bb8b8", "#e07bb8", "#a0b86a",
 ];
 
+const CX = 190, CY = 190, MAX_R = 145;
+
 function polarToCartesian(cx, cy, r, angleDeg) {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
 }
 
-function buildPolygonPoints(values, areas, cx, cy, maxR) {
-  return areas
-    .map((a, i) => {
-      const angle = (360 / areas.length) * i;
-      const r = (values[a.key] / 10) * maxR;
-      const p = polarToCartesian(cx, cy, r, angle);
-      return `${p.x},${p.y}`;
-    })
-    .join(" ");
+/** Retorna o path SVG de uma fatia de pizza entre dois ângulos, do centro até o raio r */
+function slicePath(cx, cy, r, startAngle, endAngle) {
+  if (r <= 0) return "";
+  const start = polarToCartesian(cx, cy, r, startAngle);
+  const end   = polarToCartesian(cx, cy, r, endAngle);
+  const large = endAngle - startAngle > 180 ? 1 : 0;
+  return [
+    `M ${cx} ${cy}`,
+    `L ${start.x} ${start.y}`,
+    `A ${r} ${r} 0 ${large} 1 ${end.x} ${end.y}`,
+    "Z",
+  ].join(" ");
+}
+
+function hexToRgb(hex) {
+  return {
+    r: parseInt(hex.slice(1, 3), 16),
+    g: parseInt(hex.slice(3, 5), 16),
+    b: parseInt(hex.slice(5, 7), 16),
+  };
 }
 
 export default function RodaDaVida({ patientName = "Paciente" }) {
-  const [areas, setAreas] = useState(DEFAULT_AREAS);
+  const [areas, setAreas]   = useState(DEFAULT_AREAS);
   const [values, setValues] = useState(
     Object.fromEntries(DEFAULT_AREAS.map((a) => [a.key, 5]))
   );
@@ -42,8 +55,8 @@ export default function RodaDaVida({ patientName = "Paciente" }) {
   const [downloading, setDownloading] = useState(false);
   const svgRef = useRef(null);
 
-  const cx = 190; const cy = 190; const maxR = 145;
   const total = areas.length;
+  const sliceAngle = 360 / total;
 
   const handleValueChange = (key, val) =>
     setValues((prev) => ({ ...prev, [key]: Number(val) }));
@@ -83,12 +96,10 @@ export default function RodaDaVida({ patientName = "Paciente" }) {
         const pageW = pdf.internal.pageSize.getWidth();
         const today = new Date().toLocaleDateString("pt-BR");
 
-        // Header gradient simulation
         pdf.setFillColor(90, 140, 110);
         pdf.rect(0, 0, pageW, 32, "F");
         pdf.setFillColor(106, 153, 124);
         pdf.rect(0, 16, pageW, 16, "F");
-
         pdf.setTextColor(255, 255, 255);
         pdf.setFontSize(20);
         pdf.setFont("helvetica", "bold");
@@ -97,11 +108,9 @@ export default function RodaDaVida({ patientName = "Paciente" }) {
         pdf.setFont("helvetica", "normal");
         pdf.text(`Paciente: ${patientName}  ·  Data: ${today}`, pageW / 2, 24, { align: "center" });
 
-        // Chart
         const imgSize = 108;
         pdf.addImage(imgData, "PNG", (pageW - imgSize) / 2, 36, imgSize, imgSize);
 
-        // Section title
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(60, 60, 60);
@@ -109,7 +118,6 @@ export default function RodaDaVida({ patientName = "Paciente" }) {
         pdf.setDrawColor(200, 200, 200);
         pdf.line(14, 152, pageW - 14, 152);
 
-        // Score bars
         const colW = (pageW - 28) / 2;
         areas.forEach((area, i) => {
           const col = i % 2;
@@ -126,22 +134,18 @@ export default function RodaDaVida({ patientName = "Paciente" }) {
           pdf.setFontSize(8);
           pdf.setTextColor(60, 60, 60);
           pdf.text(area.label, x, y);
-
           pdf.setFillColor(235, 235, 235);
           pdf.roundedRect(x, y + 1.5, barMaxW, 4, 1.5, 1.5, "F");
-
           if (barW > 0) {
             pdf.setFillColor(rgb.r, rgb.g, rgb.b);
             pdf.roundedRect(x, y + 1.5, barW, 4, 1.5, 1.5, "F");
           }
-
           pdf.setFont("helvetica", "bold");
           pdf.setFontSize(8);
           pdf.setTextColor(rgb.r, rgb.g, rgb.b);
           pdf.text(`${score}`, x + barMaxW + 2, y + 5);
         });
 
-        // Footer
         pdf.setFillColor(245, 245, 245);
         pdf.rect(0, 278, pageW, 20, "F");
         pdf.setFontSize(7.5);
@@ -176,7 +180,6 @@ export default function RodaDaVida({ patientName = "Paciente" }) {
       </div>
 
       <div className={styles.content}>
-        {/* SVG Chart */}
         <div className={styles.chartWrapper}>
           <svg
             ref={svgRef}
@@ -186,65 +189,93 @@ export default function RodaDaVida({ patientName = "Paciente" }) {
             xmlns="http://www.w3.org/2000/svg"
           >
             <defs>
-              {areas.map((a, i) => (
-                <radialGradient key={a.key} id={`grad${a.key}`} cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor={AREA_COLORS[i]} stopOpacity="0.55" />
-                  <stop offset="100%" stopColor={AREA_COLORS[i]} stopOpacity="0.15" />
-                </radialGradient>
-              ))}
+              {areas.map((a, i) => {
+                const color = AREA_COLORS[i];
+                const startAngle = sliceAngle * i;
+                const endAngle   = sliceAngle * (i + 1);
+                const midAngle   = (startAngle + endAngle) / 2;
+                const x1 = ((polarToCartesian(CX, CY, MAX_R, startAngle).x - CX) / MAX_R + 1) / 2;
+                const y1 = ((polarToCartesian(CX, CY, MAX_R, startAngle).y - CY) / MAX_R + 1) / 2;
+                const x2 = ((polarToCartesian(CX, CY, MAX_R, midAngle).x - CX) / MAX_R + 1) / 2;
+                const y2 = ((polarToCartesian(CX, CY, MAX_R, midAngle).y - CY) / MAX_R + 1) / 2;
+                return (
+                  <linearGradient key={a.key} id={`sliceGrad${a.key}`}
+                    x1={`${x1 * 100}%`} y1={`${y1 * 100}%`}
+                    x2={`${x2 * 100}%`} y2={`${y2 * 100}%`}
+                    gradientUnits="objectBoundingBox">
+                    <stop offset="0%"   stopColor={color} stopOpacity="0.15" />
+                    <stop offset="100%" stopColor={color} stopOpacity="0.55" />
+                  </linearGradient>
+                );
+              })}
             </defs>
 
-            {/* Background fills per level */}
+            {/* Aneis de fundo */}
             {[10, 8, 6, 4, 2].map((level, li) => (
-              <circle
-                key={level}
-                cx={cx} cy={cy}
-                r={(level / 10) * maxR}
+              <circle key={level} cx={CX} cy={CY}
+                r={(level / 10) * MAX_R}
                 fill={li === 0 ? "#f9fafb" : "none"}
-                stroke="#e2e8e4"
-                strokeWidth="0.8"
+                stroke="#e2e8e4" strokeWidth="0.8"
               />
             ))}
 
-            {/* Level labels */}
+            {/* Números dos níveis */}
             {[2, 4, 6, 8, 10].map((level) => (
-              <text
-                key={level}
-                x={cx + 4}
-                y={cy - (level / 10) * maxR + 4}
-                fontSize="8"
-                fill="#aaa"
-                fontFamily="sans-serif"
-              >{level}</text>
+              <text key={level} x={CX + 4} y={CY - (level / 10) * MAX_R + 4}
+                fontSize="8" fill="#bbb" fontFamily="sans-serif">{level}</text>
             ))}
 
-            {/* Axis lines */}
+            {/* Eixos tracejados */}
             {areas.map((_, i) => {
-              const angle = (360 / total) * i;
-              const end = polarToCartesian(cx, cy, maxR, angle);
+              const end = polarToCartesian(CX, CY, MAX_R, sliceAngle * i);
               return (
-                <line key={i} x1={cx} y1={cy} x2={end.x} y2={end.y}
-                  stroke="#d0d8d3" strokeWidth="1" strokeDasharray="3,3" />
+                <line key={i} x1={CX} y1={CY} x2={end.x} y2={end.y}
+                  stroke="#d0d8d3" strokeWidth="0.8" strokeDasharray="3,3" />
               );
             })}
 
-            {/* Filled polygon with gradient */}
-            <polygon
-              points={buildPolygonPoints(values, areas, cx, cy, maxR)}
-              fill="rgba(106,153,124,0.22)"
-              stroke="#6a997c"
-              strokeWidth="2"
-              strokeLinejoin="round"
-            />
-
-            {/* Dots with color per area */}
+            {/* Fatias coloridas individuais */}
             {areas.map((a, i) => {
-              const angle = (360 / total) * i;
-              const r = (values[a.key] / 10) * maxR;
-              const p = polarToCartesian(cx, cy, r, angle);
+              const score      = values[a.key];
+              const r          = (score / 10) * MAX_R;
+              const startAngle = sliceAngle * i;
+              const endAngle   = sliceAngle * (i + 1);
+              const d          = slicePath(CX, CY, r, startAngle, endAngle);
+              return d ? (
+                <path
+                  key={a.key}
+                  d={d}
+                  fill={AREA_COLORS[i]}
+                  fillOpacity="0.38"
+                  stroke={AREA_COLORS[i]}
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+              ) : null;
+            })}
+
+            {/* Contorno externo do polígono (borda da união) */}
+            {areas.map((a, i) => {
+              const score      = values[a.key];
+              const r          = (score / 10) * MAX_R;
+              const nextScore  = values[areas[(i + 1) % total].key];
+              const nextR      = (nextScore / 10) * MAX_R;
+              const p1 = polarToCartesian(CX, CY, r,     sliceAngle * i);
+              const p2 = polarToCartesian(CX, CY, nextR, sliceAngle * (i + 1));
+              return (
+                <line key={a.key} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
+                  stroke="rgba(255,255,255,0.6)" strokeWidth="1" />
+              );
+            })}
+
+            {/* Pontos coloridos com valor */}
+            {areas.map((a, i) => {
+              const angle = sliceAngle * i;
+              const r     = (values[a.key] / 10) * MAX_R;
+              const p     = polarToCartesian(CX, CY, r, angle);
               return (
                 <g key={a.key}>
-                  <circle cx={p.x} cy={p.y} r={6} fill={AREA_COLORS[i]} stroke="#fff" strokeWidth="2" />
+                  <circle cx={p.x} cy={p.y} r={7} fill={AREA_COLORS[i]} stroke="#fff" strokeWidth="2" />
                   <text x={p.x} y={p.y + 1} textAnchor="middle" dominantBaseline="middle"
                     fontSize="7" fill="#fff" fontFamily="sans-serif" fontWeight="bold">
                     {values[a.key]}
@@ -253,19 +284,21 @@ export default function RodaDaVida({ patientName = "Paciente" }) {
               );
             })}
 
-            {/* Labels outside */}
+            {/* Rótulos externos com cor da área */}
             {areas.map((a, i) => {
-              const angle = (360 / total) * i;
-              const p = polarToCartesian(cx, cy, maxR + 24, angle);
+              const angle = sliceAngle * i;
+              const p     = polarToCartesian(CX, CY, MAX_R + 26, angle);
               const words = a.label.split(" ");
+              const mid   = Math.ceil(words.length / 2);
               return (
-                <text key={a.key} x={p.x} y={p.y} textAnchor="middle"
-                  dominantBaseline="middle" fontSize="10" fill="#3a3a3a"
-                  fontFamily="sans-serif" fontWeight="500">
+                <text key={a.key} x={p.x} y={p.y}
+                  textAnchor="middle" dominantBaseline="middle"
+                  fontSize="10" fill={AREA_COLORS[i]}
+                  fontFamily="sans-serif" fontWeight="600">
                   {words.length > 2 ? (
                     <>
-                      <tspan x={p.x} dy="-6">{words.slice(0, Math.ceil(words.length/2)).join(" ")}</tspan>
-                      <tspan x={p.x} dy="12">{words.slice(Math.ceil(words.length/2)).join(" ")}</tspan>
+                      <tspan x={p.x} dy="-6">{words.slice(0, mid).join(" ")}</tspan>
+                      <tspan x={p.x} dy="13">{words.slice(mid).join(" ")}</tspan>
                     </>
                   ) : a.label}
                 </text>
@@ -279,10 +312,7 @@ export default function RodaDaVida({ patientName = "Paciente" }) {
           {areas.map((area, i) => (
             <div key={area.key} className={styles.sliderRow}>
               <div className={styles.labelWrapper}>
-                <span
-                  className={styles.colorDot}
-                  style={{ background: AREA_COLORS[i] }}
-                />
+                <span className={styles.colorDot} style={{ background: AREA_COLORS[i] }} />
                 {editingKey === area.key ? (
                   <input
                     autoFocus
@@ -324,8 +354,9 @@ export default function RodaDaVida({ patientName = "Paciente" }) {
 }
 
 function hexToRgb(hex) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return { r, g, b };
+  return {
+    r: parseInt(hex.slice(1, 3), 16),
+    g: parseInt(hex.slice(3, 5), 16),
+    b: parseInt(hex.slice(5, 7), 16),
+  };
 }
