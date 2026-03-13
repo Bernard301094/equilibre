@@ -9,15 +9,17 @@ import CreateExerciseView from "./CreateExerciseView";
 import "./ExercisesView.css";
 
 const TYPE_LABELS = {
-  open:        "📝 Resposta Aberta",
-  options:     "🔘 Múltipla Escolha",
-  scale:       "🔢 Escala Numérica",
-  slider:      "🎚️ Termômetro (SUDS)",
-  rpd:         "🧠 RPD (Registro de Pensamentos)",
-  cardSort:    "🃏 Card Sorting (Valores)",
-  matrix:      "➕ Matriz ACT",
-  instruction: "📢 Instrução",
-  reflect:     "💭 Reflexão",
+  open:         "📝 Resposta Aberta",
+  options:      "🔘 Múltipla Escolha",
+  scale:        "🔢 Escala Numérica",
+  slider:       "🎚️ Termômetro (SUDS)",
+  rpd:          "🧠 RPD (Registro de Pensamentos)",
+  cardSort:     "🃏 Card Sorting (Valores)",
+  matrix:       "➕ Matriz ACT",
+  instruction:  "📢 Instrução",
+  reflect:      "💭 Reflexão",
+  slider_emoji: "😄 Slider Emocional",
+  breathing:    "🌬️ Respiração Animada",
 };
 
 const APPROACH_COLORS = {
@@ -89,10 +91,8 @@ export default function ExercisesView({ session }) {
     }
   };
 
-  // Títulos já importados para mostrar badge ✅
   const importedTitles = new Set(exercises.map((e) => e.title));
 
-  // Modelos filtrados por abordagem
   const filteredModels = approachFilter === "Todos"
     ? CLINICAL_MODELS
     : CLINICAL_MODELS.filter((m) => m.category === approachFilter);
@@ -110,9 +110,9 @@ export default function ExercisesView({ session }) {
   }
 
   if (previewEx) {
-    const qs       = parseQuestions(previewEx);
-    const isModel  = !!previewEx._isModel; // flag para saber se veio do CLINICAL_MODELS
-    const colors   = APPROACH_COLORS[previewEx.category] || {};
+    const qs      = parseQuestions(previewEx);
+    const isModel = !!previewEx._isModel;
+    const colors  = APPROACH_COLORS[previewEx.category] || {};
     const alreadyImported = importedTitles.has(previewEx.title);
 
     return (
@@ -162,6 +162,7 @@ export default function ExercisesView({ session }) {
           <div key={q.id || i} className="ev-question-card">
             <div className="ev-question-card__type">{i + 1}. {TYPE_LABELS[q.type] || "📝 Bloco"}</div>
             <div className="ev-question-card__text">{q.text}</div>
+
             {(q.type === "options" || q.type === "cardSort") && q.options && (
               <div className="ev-preview-dynamic-list">
                 {q.options.map((opt, idx) => <span key={idx} className="ev-preview-tag">{opt}</span>)}
@@ -177,6 +178,25 @@ export default function ExercisesView({ session }) {
                 <span className="label-min">{q.minLabel || "Mínimo"}</span>
                 <span className="scale-line"></span>
                 <span className="label-max">{q.maxLabel || "Máximo"}</span>
+              </div>
+            )}
+
+            {/* ✨ Preview slider emocional */}
+            {q.type === "slider_emoji" && (
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.3rem", padding: "6px 4px", opacity: 0.6 }}>
+                {["😔", "😞", "😐", "🙂", "😄"].map((e) => <span key={e}>{e}</span>)}
+              </div>
+            )}
+
+            {/* ✨ Preview respiração */}
+            {q.type === "breathing" && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, color: "#4a9c5d", fontSize: 13, fontWeight: 600 }}>
+                <span style={{
+                  width: 36, height: 36, borderRadius: "50%",
+                  border: "3px solid #4a9c5d",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem",
+                }}>🌬️</span>
+                {q.cycles ?? 3} ciclos · Inspire 4s – Segure 4s – Expire 6s
               </div>
             )}
           </div>
@@ -207,7 +227,6 @@ export default function ExercisesView({ session }) {
 
       {error && <p className="ev-error-msg" role="alert">{error}</p>}
 
-      {/* Filtro por abordagem — só na aba Modelos */}
       {activeTab === "library" && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
           {ALL_APPROACHES.map((approach) => {
@@ -221,11 +240,10 @@ export default function ExercisesView({ session }) {
                 key={approach}
                 onClick={() => setApproachFilter(approach)}
                 style={{
-                  padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700,
-                  cursor: "pointer",
-                  border:      isActive ? `2px solid ${colors.border || "#0a2e48"}` : "2px solid #e8d5b7",
-                  background:  isActive ? (colors.bg   || "#0a2e48") : "white",
-                  color:       isActive ? (colors.text || "white")   : "#6b7280",
+                  padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                  border:     isActive ? `2px solid ${colors.border || "#0a2e48"}` : "2px solid #e8d5b7",
+                  background: isActive ? (colors.bg   || "#0a2e48") : "white",
+                  color:      isActive ? (colors.text || "white")   : "#6b7280",
                   transition: "all 0.15s",
                 }}
               >
@@ -265,6 +283,10 @@ export default function ExercisesView({ session }) {
             filteredModels.map((model) => {
               const colors          = APPROACH_COLORS[model.category] || {};
               const alreadyImported = importedTitles.has(model.title);
+              // detecta se tem tipos dinâmicos
+              const hasDynamic = model.questions.some(
+                (q) => q.type === "slider_emoji" || q.type === "breathing"
+              );
               return (
                 <div
                   key={model.title}
@@ -290,15 +312,25 @@ export default function ExercisesView({ session }) {
                     )}
                   </div>
 
-                  <span style={{
-                    display: "inline-block", marginBottom: 8,
-                    padding: "3px 10px", borderRadius: 20, fontSize: 10, fontWeight: 800,
-                    background: colors.bg    || "#f1f5f9",
-                    border:     `1px solid ${colors.border || "#e2e8f0"}`,
-                    color:      colors.text  || "#475569",
-                  }}>
-                    {model.category}
-                  </span>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+                    <span style={{
+                      display: "inline-block",
+                      padding: "3px 10px", borderRadius: 20, fontSize: 10, fontWeight: 800,
+                      background: colors.bg    || "#f1f5f9",
+                      border:     `1px solid ${colors.border || "#e2e8f0"}`,
+                      color:      colors.text  || "#475569",
+                    }}>
+                      {model.category}
+                    </span>
+                    {/* Badge ✨ para modelos com tipos dinâmicos */}
+                    {hasDynamic && (
+                      <span style={{
+                        display: "inline-block",
+                        padding: "3px 8px", borderRadius: 20, fontSize: 10, fontWeight: 800,
+                        background: "#fdf4ff", border: "1px solid #e9d5ff", color: "#7e22ce",
+                      }}>✨ Interativo</span>
+                    )}
+                  </div>
 
                   <div className="ev-ex-card__title">{model.title}</div>
                   <div className="ev-ex-card__desc">{model.description}</div>

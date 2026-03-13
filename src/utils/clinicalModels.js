@@ -317,4 +317,59 @@ export const CLINICAL_MODELS = [
       { id: "q6", type: "open",        text: "Que frase de autocompaixão você pode repetir quando se sentir assim novamente?" },
     ],
   },
+
+  // ── ✨ Modelos Dinâmicos Equilibre ────────────────────────────────────────
+  // Usam slider_emoji e breathing para experiência mais interativa
+
+  {
+    title: "Respiração 4-7-8",
+    description: "Técnica de respiração guiada para reduzir a ansiedade rapidamente com anel animado.",
+    category: "TCC",
+    questions: [
+      { id: "q1", type: "slider_emoji", text: "Antes de começar: como você está se sentindo agora?" },
+      { id: "q2", type: "breathing",    text: "🌬️ Siga o ritmo abaixo. Inspire pelo nariz, segure e expire devagar.", cycles: 3 },
+      { id: "q3", type: "scale",        text: "De 0 a 10, qual é o seu nível de ansiedade APÓS o exercício?", minLabel: "Sem ansiedade", maxLabel: "Ansiedade intensa" },
+      { id: "q4", type: "open",         text: "O que você percebeu no seu corpo durante a respiração?" },
+    ],
+  },
+
+  {
+    title: "Check-in Emocional Diário",
+    description: "Registro rápido do estado emocional com slider interativo para rastrear bem-estar.",
+    category: "Psicologia Positiva",
+    questions: [
+      { id: "q1", type: "slider_emoji", text: "Como você está se sentindo agora?" },
+      { id: "q2", type: "open",         text: "O que está influenciando esse sentimento hoje?" },
+      { id: "q3", type: "open",         text: "Que necessidade sua não está sendo atendida no momento?" },
+      { id: "q4", type: "open",         text: "Que pequena ação poderia melhorar como você está se sentindo agora?" },
+      { id: "q5", type: "slider_emoji", text: "Após refletir: como você está se sentindo agora?" },
+    ],
+  },
+
+  {
+    title: "Escaneamento Corporal com Respiração",
+    description: "Mindfulness guiado com atenção ao corpo e respiração animada para encerrar.",
+    category: "ACT",
+    questions: [
+      { id: "q1", type: "slider_emoji", text: "Como está sua energia agora?" },
+      { id: "q2", type: "instruction",  text: "🧘 Deite-se ou sente-se confortavelmente. Feche os olhos. Perceba seus pés → pernas → quadril → abdômen → peito → ombros → cabeça. Leve 3 minutos nesse percurso." },
+      { id: "q3", type: "open",         text: "Em quais partes do corpo você sentiu mais tensão ou desconforto?" },
+      { id: "q4", type: "open",         text: "Em quais partes você sentiu leveza ou relaxamento?" },
+      { id: "q5", type: "scale",        text: "Qualidade de presença durante o exercício (0 = muito distraído, 10 = totalmente presente):", minLabel: "Muito distraído", maxLabel: "Totalmente presente" },
+      { id: "q6", type: "breathing",    text: "🌬️ Para encerrar, faça 2 ciclos de respiração consciente.", cycles: 2 },
+    ],
+  },
+
+  {
+    title: "Gratidão com Check-in Emocional",
+    description: "Combina prática de gratidão com slider emocional para medir impacto no humor.",
+    category: "Psicologia Positiva",
+    questions: [
+      { id: "q1", type: "slider_emoji", text: "Como você está se sentindo antes de começar?" },
+      { id: "q2", type: "open",         text: "Liste 3 coisas pelas quais você é grato(a) hoje (podem ser pequenas):" },
+      { id: "q3", type: "open",         text: "Qual dessas coisas te tocou mais profundamente? Por quê?" },
+      { id: "q4", type: "reflect",      text: "Feche os olhos por 30 segundos e sinta essa gratidão no seu corpo. Onde você a percebe fisicamente?" },
+      { id: "q5", type: "slider_emoji", text: "E agora, como você está se sentindo?" },
+    ],
+  },
 ];
