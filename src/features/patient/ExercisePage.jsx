@@ -1,10 +1,204 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import db from "../../services/db";
 import { parseQuestions, serializeAnswers } from "../../utils/parsing";
 import { LOGO_PATH, LS_LAST_ACTION } from "../../utils/constants";
 import CelebrationOverlay from "../../components/ui/CelebrationOverlay";
 import "./ExercisePage.css";
 
+/* ══════════════════════════════════════════════════════════════
+   SliderEmoji  — arrastar para selecionar emoção + intensidade
+   ══════════════════════════════════════════════════════════════ */
+const SLIDER_EMOJIS = [
+  { val: 1, emoji: "😔", label: "Muito mal" },
+  { val: 2, emoji: "😞", label: "Mal" },
+  { val: 3, emoji: "😐", label: "Neutro" },
+  { val: 4, emoji: "🙂", label: "Bem" },
+  { val: 5, emoji: "😄", label: "Muito bem" },
+];
+
+function SliderEmoji({ value, onChange, emojis = SLIDER_EMOJIS, question }) {
+  const current = emojis.find((e) => e.val === Number(value)) ?? null;
+  return (
+    <div className="slider-emoji">
+      <p className="exercise-page__question-text">{question.text}</p>
+
+      {/* Emoji central animado */}
+      <div className="slider-emoji__display" aria-live="polite">
+        {current ? (
+          <>
+            <span className="slider-emoji__icon" key={current.val}>{current.emoji}</span>
+            <span className="slider-emoji__label">{current.label}</span>
+          </>
+        ) : (
+          <span className="slider-emoji__placeholder">👆 Arraste para escolher</span>
+        )}
+      </div>
+
+      {/* Slider nativo */}
+      <input
+        type="range"
+        className="slider-emoji__range"
+        min={1}
+        max={emojis.length}
+        step={1}
+        value={value || 1}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={question.text}
+        aria-valuetext={current?.label ?? ""}
+      />
+
+      {/* Legenda de extremos */}
+      <div className="slider-emoji__ticks" aria-hidden="true">
+        {emojis.map((e) => (
+          <button
+            key={e.val}
+            type="button"
+            className={[
+              "slider-emoji__tick",
+              Number(value) === e.val ? "slider-emoji__tick--active" : "",
+            ].join(" ")}
+            onClick={() => onChange(String(e.val))}
+            aria-label={e.label}
+          >
+            {e.emoji}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BreathingExercise  — anel animado inhala / segura / expira
+   ══════════════════════════════════════════════════════════════ */
+const BREATH_PHASES = [
+  { key: "inhale",  label: "Inspire",  color: "#4a9c5d", seconds: 4 },
+  { key: "hold",   label: "Segure",   color: "#2b6cb0", seconds: 4 },
+  { key: "exhale", label: "Expire",   color: "#805ad5", seconds: 6 },
+];
+
+function BreathingExercise({ question, onComplete }) {
+  const totalCycles = question.cycles ?? 3;
+  const phases      = BREATH_PHASES;
+
+  const [started,      setStarted]      = useState(false);
+  const [phaseIdx,     setPhaseIdx]     = useState(0);
+  const [cycle,        setCycle]        = useState(1);
+  const [countdown,    setCountdown]    = useState(phases[0].seconds);
+  const [finished,     setFinished]     = useState(false);
+  const timerRef = useRef(null);
+
+  const phase = phases[phaseIdx];
+
+  const clearTimer = () => { if (timerRef.current) clearInterval(timerRef.current); };
+
+  const advance = useCallback(() => {
+    setCountdown((prev) => {
+      if (prev > 1) return prev - 1;
+
+      // fim desta fase
+      clearTimer();
+      const nextPhaseIdx = (phaseIdx + 1) % phases.length;
+      const endOfCycle   = nextPhaseIdx === 0;
+      const nextCycle    = endOfCycle ? cycle + 1 : cycle;
+
+      if (endOfCycle && nextCycle > totalCycles) {
+        setFinished(true);
+        setStarted(false);
+        onComplete && onComplete("done");
+        return 0;
+      }
+
+      setPhaseIdx(nextPhaseIdx);
+      if (endOfCycle) setCycle(nextCycle);
+      setCountdown(phases[nextPhaseIdx].seconds);
+      return phases[nextPhaseIdx].seconds;
+    });
+  }, [phaseIdx, cycle, totalCycles, phases, onComplete]);
+
+  useEffect(() => {
+    if (!started) return;
+    timerRef.current = setInterval(advance, 1000);
+    return clearTimer;
+  }, [started, advance]);
+
+  // progresso do anel SVG (0 → 1)
+  const ringProgress = started
+    ? 1 - (countdown - 1) / (phase.seconds - 1 || 1)
+    : 0;
+  const radius = 54;
+  const circ   = 2 * Math.PI * radius;
+  const dash   = circ * ringProgress;
+
+  return (
+    <div className="breathing">
+      <p className="exercise-page__question-text">{question.text}</p>
+
+      {/* Anel SVG */}
+      <div className="breathing__ring-wrap">
+        <svg viewBox="0 0 120 120" className="breathing__svg" aria-hidden="true">
+          {/* trilha */}
+          <circle cx="60" cy="60" r={radius} className="breathing__track" />
+          {/* progresso */}
+          <circle
+            cx="60" cy="60" r={radius}
+            className="breathing__arc"
+            style={{
+              stroke: phase.color,
+              strokeDasharray: `${dash} ${circ}`,
+              transition: started ? "stroke-dasharray 1s linear" : "none",
+            }}
+          />
+        </svg>
+
+        {/* Texto central */}
+        <div className="breathing__center" style={{ color: phase.color }}>
+          {finished ? (
+            <>
+              <span className="breathing__done-icon">✅</span>
+              <span className="breathing__done-txt">Concluído</span>
+            </>
+          ) : started ? (
+            <>
+              <span className="breathing__phase-label">{phase.label}</span>
+              <span className="breathing__countdown">{countdown}s</span>
+            </>
+          ) : (
+            <span className="breathing__idle">Pronto?</span>
+          )}
+        </div>
+      </div>
+
+      {/* Ciclos */}
+      {!finished && (
+        <p className="breathing__cycles" aria-live="polite">
+          {started
+            ? `Ciclo ${cycle} de ${totalCycles}`
+            : `${totalCycles} ciclos · ${phases.map((p) => p.seconds + "s").join(" – ")}`}
+        </p>
+      )}
+
+      {/* Botão iniciar / reiniciar */}
+      {!finished && (
+        <button
+          className="breathing__btn"
+          onClick={() => {
+            setPhaseIdx(0);
+            setCycle(1);
+            setCountdown(phases[0].seconds);
+            setStarted(true);
+          }}
+        >
+          {started ? "Reiniciar" : "Começar respiração"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ExercisePage — player principal
+   ══════════════════════════════════════════════════════════════ */
 export default function ExercisePage({ exercise, session, onBack }) {
   const questions = parseQuestions(exercise);
 
@@ -78,7 +272,6 @@ export default function ExercisePage({ exercise, session, onBack }) {
 
       localStorage.setItem(LS_LAST_ACTION, String(Date.now()));
 
-      // ── Trigger leaf shower, then reveal done screen ──
       setCelebrating(true);
       setTimeout(() => {
         setCelebrating(false);
@@ -94,13 +287,16 @@ export default function ExercisePage({ exercise, session, onBack }) {
     }
   };
 
+  // slider_emoji e breathing são considerados respondidos assim que
+  // têm qualquer valor (breathing marca "done" ao completar)
   const canAdvance =
     !q ||
     q.type === "instruction" ||
     q.type === "reflect" ||
+    q.type === "breathing" ||
     answers[q.id] !== "";
 
-  /* ── Pantalla de éxito ── */
+  /* ── Tela de conclusão ── */
   if (done) {
     return (
       <div className="exercise-page__done-screen">
@@ -131,7 +327,6 @@ export default function ExercisePage({ exercise, session, onBack }) {
 
   return (
     <>
-      {/* ── Celebration overlay — leaf shower on completion ── */}
       <CelebrationOverlay active={celebrating} />
 
       <div className="exercise-page__wrapper">
@@ -156,7 +351,7 @@ export default function ExercisePage({ exercise, session, onBack }) {
             </div>
           </header>
 
-          {/* ── Barra de progreso ── */}
+          {/* ── Barra de progresso ── */}
           <div
             className="exercise-page__progress-track"
             role="progressbar"
@@ -171,24 +366,20 @@ export default function ExercisePage({ exercise, session, onBack }) {
             />
           </div>
 
-          {/* ── Tarjeta de pregunta ── */}
+          {/* ── Card da pergunta ── */}
           <div className="exercise-page__question-card">
-            <div className="exercise-page__step-label">
-              Pergunta {step + 1}
-            </div>
+            <div className="exercise-page__step-label">Pergunta {step + 1}</div>
 
-            {/* Instrucción */}
+            {/* Instrução */}
             {q.type === "instruction" && (
               <div className="exercise-page__instruction">{q.text}</div>
             )}
 
-            {/* Reflexión */}
+            {/* Reflexão */}
             {q.type === "reflect" && (
               <>
                 <div className="exercise-page__reflect-text">{q.text}</div>
-                <label htmlFor={`ans-${q.id}`} className="sr-only">
-                  Reflexão (opcional)
-                </label>
+                <label htmlFor={`ans-${q.id}`} className="sr-only">Reflexão (opcional)</label>
                 <textarea
                   id={`ans-${q.id}`}
                   className="exercise-page__textarea"
@@ -199,13 +390,11 @@ export default function ExercisePage({ exercise, session, onBack }) {
               </>
             )}
 
-            {/* Abierta */}
+            {/* Aberta */}
             {q.type === "open" && (
               <>
                 <div className="exercise-page__question-text">{q.text}</div>
-                <label htmlFor={`ans-${q.id}`} className="sr-only">
-                  Sua resposta
-                </label>
+                <label htmlFor={`ans-${q.id}`} className="sr-only">Sua resposta</label>
                 <textarea
                   id={`ans-${q.id}`}
                   className="exercise-page__textarea"
@@ -247,7 +436,25 @@ export default function ExercisePage({ exercise, session, onBack }) {
               </>
             )}
 
-            {/* ── Navegación ── */}
+            {/* ✨ NOVO: Slider emocional */}
+            {q.type === "slider_emoji" && (
+              <SliderEmoji
+                question={q}
+                value={answers[q.id]}
+                onChange={setAns}
+                emojis={q.emojis ?? undefined}
+              />
+            )}
+
+            {/* ✨ NOVO: Respiração animada */}
+            {q.type === "breathing" && (
+              <BreathingExercise
+                question={q}
+                onComplete={() => setAns("done")}
+              />
+            )}
+
+            {/* ── Navegação ── */}
             <div className="exercise-page__nav">
               <button
                 className="exercise-page__nav-btn exercise-page__nav-btn--prev"
