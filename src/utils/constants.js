@@ -1,16 +1,16 @@
-// ─── Application ──────────────────────────────────────────────────────────────
+// ─── Application ─────────────────────────────────────────────────────────────────────────────────
 
 export const APP_NAME = "Equilibre";
 export const LOGO_PATH = "/equilibre-icon.png";
 
-// ─── Roles ────────────────────────────────────────────────────────────────────
+// ─── Roles ───────────────────────────────────────────────────────────────────────────────────
 
 export const ROLE = /** @type {const} */ ({
   THERAPIST: "therapist",
   PATIENT: "patient",
 });
 
-// ─── Exercise categories ──────────────────────────────────────────────────────
+// ─── Exercise categories ────────────────────────────────────────────────────────────
 
 export const CATEGORIES = [
   "Ansiedade",
@@ -30,37 +30,26 @@ export const CATEGORY_CLASS = {
   Outro: "outro",
 };
 
-// ─── Question types ───────────────────────────────────────────────────────────
+// ─── Question types ───────────────────────────────────────────────────────────────
 
 export const QUESTION_TYPES = [
-  { value: "open", label: "Resposta aberta" },
-  { value: "scale", label: "Escala (0–10)" },
-  { value: "reflect", label: "Reflexão (opcional)" },
-  { value: "instruction", label: "Instrução (sem resposta)" },
+  { value: "open",         label: "Resposta aberta" },
+  { value: "scale",        label: "Escala (0–10)" },
+  { value: "reflect",      label: "Reflexão (opcional)" },
+  { value: "instruction",  label: "Instrução (sem resposta)" },
+  // ✨ Tipos dinâmicos
+  { value: "slider_emoji", label: "Slider emocional 😄" },
+  { value: "breathing",    label: "Respiração animada 🌬️" },
 ];
 
-// ─── Diary moods — FONTE ÚNICA DA VERDADE ─────────────────────────────────────
-//
-//  Cada humor tem:
-//    id    → chave estável gravada no banco (string, única)
-//    val   → valor numérico 1–5 para gráficos (pode repetir entre humores)
-//    emoji → representação visual universal
-//    label → nome em PT-BR, primeira pessoa implícita, sem julgamento
-//    color → cor semântica usada em botões, badges e barras
-//
-//  Humores difíceis (val 1–2) ficam na primeira fileira do grid 5×2.
-//  Humores positivos/neutros (val 3–5) ficam na segunda fileira.
-//
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Diary moods — FONTE ÚNCIA DA VERDADE ─────────────────────────────────────────────
 
 export const MOOD_OPTIONS = [
-  // — Fileira superior: humores difíceis —
   { id: "muito-dificil", val: 1, emoji: "😔", label: "Muito difícil",  color: "#e53e3e" },
   { id: "esgotado",      val: 2, emoji: "😞", label: "Esgotado",       color: "#dd6b20" },
   { id: "frustrado",     val: 2, emoji: "😤", label: "Frustrado",      color: "#d69e2e" },
   { id: "ansioso",       val: 3, emoji: "😰", label: "Ansioso",        color: "#b7791f" },
   { id: "sem-sentir",    val: 3, emoji: "😶", label: "Sem sentir",     color: "#718096" },
-  // — Fileira inferior: humores neutros e positivos —
   { id: "neutro",        val: 3, emoji: "😐", label: "Neutro",         color: "#4a5568" },
   { id: "tranquilo",     val: 4, emoji: "🙂", label: "Tranquilo",      color: "#2f855a" },
   { id: "esperancoso",   val: 4, emoji: "🌱", label: "Esperançoso",    color: "#276749" },
@@ -68,31 +57,18 @@ export const MOOD_OPTIONS = [
   { id: "muito-bem",     val: 5, emoji: "😄", label: "Muito bem",      color: "#2c5282" },
 ];
 
-/**
- * Resolve o objeto de humor a partir de uma entrada do banco.
- * Tenta primeiro pelo id estável; se não existir (registros antigos),
- * cai de volta ao primeiro humor com o val correspondente.
- *
- * @param {string|undefined} moodId  — campo `mood_id` da entrada
- * @param {number|undefined} moodVal — campo `mood` da entrada (numérico)
- * @returns {typeof MOOD_OPTIONS[0]}
- */
 export function resolveMood(moodId, moodVal) {
   if (moodId) {
     const byId = MOOD_OPTIONS.find((m) => m.id === moodId);
     if (byId) return byId;
   }
-  return MOOD_OPTIONS.find((m) => m.val === moodVal) ?? MOOD_OPTIONS[4]; // fallback: Neutro
+  return MOOD_OPTIONS.find((m) => m.val === moodVal) ?? MOOD_OPTIONS[4];
 }
 
-/**
- * Alias de retrocompatibilidade.
- * Componentes que ainda importam `MOODS` continuam funcionando.
- * @deprecated Use MOOD_OPTIONS
- */
+/** @deprecated Use MOOD_OPTIONS */
 export const MOODS = MOOD_OPTIONS;
 
-// ─── Behavioral Activation pillars ───────────────────────────────────────────
+// ─── Behavioral Activation pillars ──────────────────────────────────────────────────
 
 export const BA_PILLARS = [
   { name: "Autocuidado",       icon: "🧘", desc: "Cuidar de si" },
@@ -114,7 +90,7 @@ export const BA_AVOIDANCE_REASONS = [
   "Outro imprevisto",
 ];
 
-// ─── Plant gamification stages ────────────────────────────────────────────────
+// ─── Plant gamification stages ─────────────────────────────────────────────────────────
 
 export const PLANT_STAGES = [
   { minStreak: 0,  icon: "🌰", label: "Semente",        color: "#8b5a2b", desc: "Pronta para crescer." },
@@ -134,7 +110,7 @@ export function getPlantStage(streak) {
   return stage;
 }
 
-// ─── Diary risk words (for therapist alert) ───────────────────────────────────
+// ─── Diary risk words ────────────────────────────────────────────────────────────────
 
 export const DIARY_RISK_WORDS = [
   "triste",
@@ -149,7 +125,7 @@ export const DIARY_RISK_WORDS = [
   "crise",
 ];
 
-// ─── Seed exercises ───────────────────────────────────────────────────────────
+// ─── Seed exercises ───────────────────────────────────────────────────────────────────
 
 export const SEED_EXERCISES = [
   {
@@ -158,11 +134,15 @@ export const SEED_EXERCISES = [
     category: "Ansiedade",
     description: "Técnica de respiração para reduzir a ansiedade rapidamente.",
     questions: [
-      { id: "q1", type: "reflect",     text: "Antes de começar: em uma palavra, como você está se sentindo agora?" },
-      { id: "q2", type: "instruction", text: "🌬️ Inspire pelo nariz contando até 4 — segure o ar contando até 7 — expire pela boca contando até 8. Repita 3 vezes." },
-      { id: "q3", type: "scale",       text: "De 0 a 10, qual é o seu nível de ansiedade ANTES do exercício?" },
-      { id: "q4", type: "scale",       text: "De 0 a 10, qual é o seu nível de ansiedade APÓS o exercício?" },
-      { id: "q5", type: "open",        text: "O que você percebeu no seu corpo durante a respiração? Descreva livremente." },
+      { id: "q1", type: "slider_emoji", text: "Antes de começar: como você está se sentindo agora?" },
+      {
+        id: "q2",
+        type: "breathing",
+        text: "🌬️ Siga o ritmo abaixo. Inspire pelo nariz, segure e expire devagar.",
+        cycles: 3,
+      },
+      { id: "q3", type: "scale",  text: "De 0 a 10, qual é o seu nível de ansiedade APÓS o exercício?" },
+      { id: "q4", type: "open",   text: "O que você percebeu no seu corpo durante a respiração?" },
     ],
   },
   {
@@ -171,12 +151,13 @@ export const SEED_EXERCISES = [
     category: "Ansiedade",
     description: "Identificar e questionar pensamentos automáticos negativos.",
     questions: [
-      { id: "q1", type: "open",  text: "Descreva a situação que gerou ansiedade ou desconforto." },
-      { id: "q2", type: "open",  text: "Que pensamento automático surgiu nesse momento?" },
-      { id: "q3", type: "scale", text: "Qual a intensidade desse sentimento de 0 a 10?" },
-      { id: "q4", type: "open",  text: "Que evidências confirmam esse pensamento?" },
-      { id: "q5", type: "open",  text: "Que evidências contradizem esse pensamento?" },
-      { id: "q6", type: "open",  text: "Como você poderia pensar de forma mais equilibrada sobre essa situação?" },
+      { id: "q1", type: "slider_emoji", text: "Como você está se sentindo agora?" },
+      { id: "q2", type: "open",  text: "Descreva a situação que gerou ansiedade ou desconforto." },
+      { id: "q3", type: "open",  text: "Que pensamento automático surgiu nesse momento?" },
+      { id: "q4", type: "scale", text: "Qual a intensidade desse sentimento de 0 a 10?" },
+      { id: "q5", type: "open",  text: "Que evidências confirmam esse pensamento?" },
+      { id: "q6", type: "open",  text: "Que evidências contradizem esse pensamento?" },
+      { id: "q7", type: "open",  text: "Como você poderia pensar de forma mais equilibrada sobre essa situação?" },
     ],
   },
   {
@@ -185,10 +166,11 @@ export const SEED_EXERCISES = [
     category: "Bem-estar",
     description: "Prática de foco no positivo para fortalecer o bem-estar emocional.",
     questions: [
-      { id: "q1", type: "open",    text: "Liste 3 coisas pelas quais você é grato(a) hoje (podem ser pequenas)." },
-      { id: "q2", type: "open",    text: "Qual dessas coisas te tocou mais profundamente? Por quê?" },
-      { id: "q3", type: "reflect", text: "Feche os olhos por 30 segundos e sinta essa gratidão no seu corpo. Onde você a percebe fisicamente?" },
-      { id: "q4", type: "open",    text: "Como você poderia trazer mais momentos assim para a sua semana?" },
+      { id: "q1", type: "slider_emoji", text: "Como você está se sentindo antes de começar?" },
+      { id: "q2", type: "open",    text: "Liste 3 coisas pelas quais você é grato(a) hoje (podem ser pequenas)." },
+      { id: "q3", type: "open",    text: "Qual dessas coisas te tocou mais profundamente? Por quê?" },
+      { id: "q4", type: "reflect", text: "Feche os olhos por 30 segundos e sinta essa gratidão no seu corpo. Onde você a percebe fisicamente?" },
+      { id: "q5", type: "slider_emoji", text: "E agora, como você está se sentindo?" },
     ],
   },
   {
@@ -197,21 +179,27 @@ export const SEED_EXERCISES = [
     category: "Mindfulness",
     description: "Atenção plena ao corpo para reduzir tensão e aumentar presença.",
     questions: [
-      { id: "q1", type: "instruction", text: "🧘 Deite-se ou sente-se confortavelmente. Feche os olhos. Comece percebendo seus pés — depois pernas, quadril, abdômen, peito, mãos, braços, ombros, pescoço e cabeça. Leve 3 minutos nesse percurso." },
-      { id: "q2", type: "open",        text: "Em quais partes do corpo você sentiu mais tensão ou desconforto?" },
-      { id: "q3", type: "open",        text: "Em quais partes você sentiu leveza ou relaxamento?" },
-      { id: "q4", type: "scale",       text: "Como você avalia sua qualidade de presença durante o exercício? (0 = muito distraído, 10 = totalmente presente)" },
-      { id: "q5", type: "open",        text: "O que esse exercício revelou sobre como você está carregando seu dia no corpo?" },
+      { id: "q1", type: "slider_emoji", text: "Como está sua energia agora?" },
+      { id: "q2", type: "instruction", text: "🧘 Deite-se ou sente-se confortavelmente. Feche os olhos. Comece percebendo seus pés — depois pernas, quadril, abdômen, peito, mãos, braços, ombros, pescoço e cabeça. Leve 3 minutos nesse percurso." },
+      { id: "q3", type: "open",  text: "Em quais partes do corpo você sentiu mais tensão ou desconforto?" },
+      { id: "q4", type: "open",  text: "Em quais partes você sentiu leveza ou relaxamento?" },
+      { id: "q5", type: "scale", text: "Como você avalia sua qualidade de presença durante o exercício? (0 = muito distrado, 10 = totalmente presente)" },
+      {
+        id: "q6",
+        type: "breathing",
+        text: "🌬️ Para encerrar, faça 2 ciclos de respiração consciente.",
+        cycles: 2,
+      },
     ],
   },
 ];
 
-// ─── Token refresh interval ───────────────────────────────────────────────────
+// ─── Token refresh interval ────────────────────────────────────────────────────────────
 
 /** milliseconds — refresh JWT 10 min before typical 60-min expiry */
 export const TOKEN_REFRESH_INTERVAL_MS = 50 * 60 * 1000;
 
-// ─── LocalStorage keys ────────────────────────────────────────────────────────
+// ─── LocalStorage keys ─────────────────────────────────────────────────────────────
 
 export const LS_SESSION_KEY = "equilibre_session";
 export const LS_SEEDED_KEY  = "eq_seeded";
