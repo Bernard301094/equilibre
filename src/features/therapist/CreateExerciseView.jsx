@@ -14,20 +14,24 @@ function makeQuestion() {
 }
 
 const TYPE_META = {
-  open:        { icon: "📝", label: "Resposta aberta",  color: "var(--blue-dark)"  },
-  scale:       { icon: "🔢", label: "Escala Numérica",      color: "var(--blue-mid)"   },
-  reflect:     { icon: "💭", label: "Reflexão",         color: "var(--orange)"     },
-  instruction: { icon: "📢", label: "Instrução",        color: "var(--sage, #2e7fab)" },
+  open:         { icon: "📝", label: "Resposta aberta",       color: "var(--blue-dark)"       },
+  scale:        { icon: "🔢", label: "Escala Numérica",        color: "var(--blue-mid)"        },
+  reflect:      { icon: "💭", label: "Reflexão",              color: "var(--orange)"          },
+  instruction:  { icon: "📢", label: "Instrução",             color: "var(--sage, #2e7fab)"   },
+  slider_emoji: { icon: "😄", label: "Slider emocional",      color: "#e88fb4"               },
+  breathing:    { icon: "🌬️", label: "Respiração animada",    color: "#4a9c5d"               },
 };
 
 const TYPE_HINT = {
-  open:        "O paciente escreverá uma resposta livre.",
-  scale:       "O paciente escolherá um valor (ex: 0 a 10).",
-  reflect:     "Campo opcional — o paciente pode escrever ou apenas refletir.",
-  instruction: "O paciente verá esta mensagem, mas não precisa responder.",
+  open:         "O paciente escreverá uma resposta livre.",
+  scale:        "O paciente escolherá um valor (ex: 0 a 10).",
+  reflect:      "Campo opcional — o paciente pode escrever ou apenas refletir.",
+  instruction:  "O paciente verá esta mensagem, mas não precisa responder.",
+  slider_emoji: "O paciente arrasta um slider para indicar como está se sentindo (emoji 1–5).",
+  breathing:    "Exibe um anel animado com contagem regressiva para guiar a respiração.",
 };
 
-/* ── QuestionItem ──────────────────────────────────────────── */
+/* ── QuestionItem ───────────────────────────────────────────────────────────── */
 function QuestionItem({ q, index, isActive, total, onSelect, onMove, onRemove }) {
   const meta = TYPE_META[q.type] ?? TYPE_META.open;
 
@@ -50,15 +54,15 @@ function QuestionItem({ q, index, isActive, total, onSelect, onMove, onRemove })
         <p className="cev-qitem__preview">{q.text || <em>Sem texto ainda…</em>}</p>
       </div>
       <div className="cev-qitem__controls" onClick={(e) => e.stopPropagation()}>
-        <button className="cev-qitem__ctrl" aria-label="Mover para cima" onClick={() => onMove(index, -1)} disabled={index === 0} tabIndex={-1}>↑</button>
-        <button className="cev-qitem__ctrl" aria-label="Mover para baixo" onClick={() => onMove(index, 1)} disabled={index === total - 1} tabIndex={-1}>↓</button>
+        <button className="cev-qitem__ctrl" aria-label="Mover para cima"  onClick={() => onMove(index, -1)} disabled={index === 0}           tabIndex={-1}>↑</button>
+        <button className="cev-qitem__ctrl" aria-label="Mover para baixo" onClick={() => onMove(index,  1)} disabled={index === total - 1}  tabIndex={-1}>↓</button>
         <button className="cev-qitem__ctrl cev-qitem__ctrl--remove" aria-label={`Remover pergunta ${index + 1}`} onClick={() => onRemove(index)} disabled={total === 1} tabIndex={-1}>🗑</button>
       </div>
     </div>
   );
 }
 
-/* ── QuestionEditor ────────────────────────────────────────── */
+/* ── QuestionEditor ─────────────────────────────────────────────────────────── */
 function QuestionEditor({ q, index, onUpdate }) {
   const meta = TYPE_META[q.type] ?? TYPE_META.open;
 
@@ -72,6 +76,7 @@ function QuestionEditor({ q, index, onUpdate }) {
         </div>
       </div>
 
+      {/* Seletor de tipo */}
       <fieldset className="cev-type-fieldset">
         <legend className="cev-label">Tipo de pergunta</legend>
         <div className="cev-type-grid">
@@ -95,30 +100,38 @@ function QuestionEditor({ q, index, onUpdate }) {
         </div>
       </fieldset>
 
+      {/* Texto da pergunta / instrução */}
       <div className="cev-field">
-        <label htmlFor={`q-text-${q.id}`} className="cev-label">{q.type === "instruction" ? "Texto da instrução" : "Texto da pergunta"}</label>
+        <label htmlFor={`q-text-${q.id}`} className="cev-label">
+          {q.type === "instruction" ? "Texto da instrução" : "Texto da pergunta"}
+        </label>
         <textarea
           id={`q-text-${q.id}`}
           className="cev-input cev-input--textarea cev-input--question"
-          placeholder={q.type === "instruction" ? "Escreva a instrução para o paciente…" : "Escreva a pergunta…"}
+          placeholder={
+            q.type === "instruction"  ? "Escreva a instrução para o paciente…" :
+            q.type === "slider_emoji" ? "Ex: Como você está se sentindo agora?" :
+            q.type === "breathing"    ? "Ex: Siga o ritmo abaixo e respire com calma." :
+            "Escreva a pergunta…"
+          }
           value={q.text}
           onChange={(e) => onUpdate(index, "text", e.target.value)}
           rows={3}
         />
       </div>
 
-      {/* RECUADROS PARA EDITAR ETIQUETAS DE LA ESCALA */}
+      {/* Rótulos da escala */}
       {q.type === "scale" && (
-        <div className="cev-field" style={{ marginTop: '15px' }}>
+        <div className="cev-field" style={{ marginTop: "15px" }}>
           <label className="cev-label">Rótulos da Escala (Opcional)</label>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             <input
               className="cev-input"
               placeholder="Mínimo (Ex: 0 (Nenhum))"
               value={q.minLabel || ""}
               onChange={(e) => onUpdate(index, "minLabel", e.target.value)}
             />
-            <span style={{ color: 'var(--text-muted)', fontSize: '14px', fontWeight: 'bold' }}>até</span>
+            <span style={{ color: "var(--text-muted)", fontSize: "14px", fontWeight: "bold" }}>até</span>
             <input
               className="cev-input"
               placeholder="Máximo (Ex: 10 (Máximo))"
@@ -129,29 +142,98 @@ function QuestionEditor({ q, index, onUpdate }) {
         </div>
       )}
 
-      <p className="cev-type-hint" style={{marginTop: '15px'}}><span aria-hidden="true">{meta.icon}</span> {TYPE_HINT[q.type]}</p>
+      {/* Ciclos de respiração */}
+      {q.type === "breathing" && (
+        <div className="cev-field" style={{ marginTop: "15px" }}>
+          <label htmlFor={`q-cycles-${q.id}`} className="cev-label">
+            Número de ciclos
+            <span className="cev-label__optional"> (padrão: 3)</span>
+          </label>
+          <input
+            id={`q-cycles-${q.id}`}
+            type="number"
+            min={1}
+            max={10}
+            className="cev-input"
+            style={{ width: "80px" }}
+            value={q.cycles ?? 3}
+            onChange={(e) => onUpdate(index, "cycles", Number(e.target.value))}
+          />
+          <p className="cev-type-hint" style={{ marginTop: "6px" }}>
+            Cada ciclo = Inspire 4s – Segure 4s – Expire 6s
+          </p>
+        </div>
+      )}
 
-      {/* Preview */}
+      {/* Hint */}
+      <p className="cev-type-hint" style={{ marginTop: "15px" }}>
+        <span aria-hidden="true">{meta.icon}</span> {TYPE_HINT[q.type] ?? ""}
+      </p>
+
+      {/* Pré-visualização */}
       {q.text && (
         <div className="cev-preview">
           <p className="cev-label">Pré-visualização</p>
 
-          {q.type === "instruction" && <div className="cev-preview__instruction">{q.text}</div>}
-          {q.type === "reflect" && (<><p className="cev-preview__q-text">{q.text}</p><div className="cev-preview__placeholder" /></>)}
-          {q.type === "open" && (<><p className="cev-preview__q-text">{q.text}</p><div className="cev-preview__placeholder cev-preview__placeholder--tall" /></>)}
-          
+          {q.type === "instruction" && (
+            <div className="cev-preview__instruction">{q.text}</div>
+          )}
+
+          {q.type === "reflect" && (
+            <><p className="cev-preview__q-text">{q.text}</p><div className="cev-preview__placeholder" /></>
+          )}
+
+          {q.type === "open" && (
+            <><p className="cev-preview__q-text">{q.text}</p><div className="cev-preview__placeholder cev-preview__placeholder--tall" /></>
+          )}
+
           {q.type === "scale" && (
             <>
               <p className="cev-preview__q-text">{q.text}</p>
-              {/* Preview visual de las etiquetas dinámicas que el terapeuta está editando */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 'bold' }}>
-                <span style={{color: 'var(--sage, #2d6a4f)'}}>{q.minLabel || '0 (Nenhum)'}</span>
-                <span style={{color: 'var(--danger, #e74c3c)'}}>{q.maxLabel || '10 (Máximo)'}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px", fontWeight: "bold" }}>
+                <span style={{ color: "var(--sage, #2d6a4f)" }}>{q.minLabel || "0 (Nenhum)"}</span>
+                <span style={{ color: "var(--danger, #e74c3c)" }}>{q.maxLabel || "10 (Máximo)"}</span>
               </div>
               <div className="cev-scale-dots">
                 {[0,1,2,3,4,5,6,7,8,9,10].map((n) => (
                   <div key={n} className="cev-scale-dots__dot">{n}</div>
                 ))}
+              </div>
+            </>
+          )}
+
+          {/* ✨ Pré-visualização slider emocional */}
+          {q.type === "slider_emoji" && (
+            <>
+              <p className="cev-preview__q-text">{q.text}</p>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.5rem", margin: "0.5rem 0", padding: "0 0.5rem" }}>
+                {["😔", "😞", "😐", "🙂", "😄"].map((e) => (
+                  <span key={e} style={{ opacity: 0.5 }}>{e}</span>
+                ))}
+              </div>
+              <div style={{ height: "6px", background: "var(--border, #e2e8f0)", borderRadius: "999px", margin: "0.25rem 0.5rem" }} />
+              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", textAlign: "center", marginTop: "4px" }}>
+                O paciente arrasta para escolher o emoji
+              </p>
+            </>
+          )}
+
+          {/* ✨ Pré-visualização respiração */}
+          {q.type === "breathing" && (
+            <>
+              <p className="cev-preview__q-text">{q.text}</p>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem", padding: "1rem" }}>
+                <div style={{
+                  width: "80px", height: "80px", borderRadius: "50%",
+                  border: "6px solid #4a9c5d",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "1.5rem",
+                }}>
+                  🌬️
+                </div>
+                <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", textAlign: "center" }}>
+                  {q.cycles ?? 3} ciclos · Inspire 4s – Segure 4s – Expire 6s
+                </p>
               </div>
             </>
           )}
@@ -161,7 +243,7 @@ function QuestionEditor({ q, index, onUpdate }) {
   );
 }
 
-/* ── CreateExerciseView ────────────────────────────────────── */
+/* ── CreateExerciseView ──────────────────────────────────────────────────── */
 export default function CreateExerciseView({ session, onSaved, onCancel, initialExercise }) {
   const isEditing = !!initialExercise;
 
@@ -193,13 +275,18 @@ export default function CreateExerciseView({ session, onSaved, onCancel, initial
     setQuestions((qs) => qs.map((q, idx) => {
       if (idx !== i) return q;
       const updatedQ = { ...q, [field]: val };
-      
-      // AUTO-RELLENADO PARA EL CREADOR DEL TERAPEUTA
-      if (field === "type" && val === "scale") {
-        updatedQ.minLabel = updatedQ.minLabel || "0 (Nenhum)";
-        updatedQ.maxLabel = updatedQ.maxLabel || "10 (Máximo)";
-        if (!updatedQ.text || updatedQ.text.trim() === "") {
-          updatedQ.text = "De 0 a 10, qual é o seu nível de ansiedade ANTES do exercício?";
+      if (field === "type") {
+        if (val === "scale") {
+          updatedQ.minLabel = updatedQ.minLabel || "0 (Nenhum)";
+          updatedQ.maxLabel = updatedQ.maxLabel || "10 (Máximo)";
+          if (!updatedQ.text?.trim()) updatedQ.text = "De 0 a 10, qual é o seu nível de ansiedade?";
+        }
+        if (val === "breathing") {
+          updatedQ.cycles = updatedQ.cycles ?? 3;
+          if (!updatedQ.text?.trim()) updatedQ.text = "Siga o ritmo abaixo e respire com calma.";
+        }
+        if (val === "slider_emoji") {
+          if (!updatedQ.text?.trim()) updatedQ.text = "Como você está se sentindo agora?";
         }
       }
       return updatedQ;
@@ -222,12 +309,28 @@ export default function CreateExerciseView({ session, onSaved, onCancel, initial
     if (err) { setError(err); return; }
     setSaving(true);
     try {
-      const payload = { title: form.title.trim(), category: form.category, description: form.description.trim(), questions: JSON.stringify(questions) };
-      if (isEditing) await db.update("exercises", { id: initialExercise.id }, payload, session.access_token);
-      else await db.insert("exercises", { id: "ex_" + Date.now() + Math.random().toString(36).slice(2, 6), therapist_id: session.id, ...payload }, session.access_token);
+      const payload = {
+        title:       form.title.trim(),
+        category:    form.category,
+        description: form.description.trim(),
+        questions:   JSON.stringify(questions),
+      };
+      if (isEditing) {
+        await db.update("exercises", { id: initialExercise.id }, payload, session.access_token);
+      } else {
+        await db.insert("exercises", {
+          id: "ex_" + Date.now() + Math.random().toString(36).slice(2, 6),
+          therapist_id: session.id,
+          ...payload,
+        }, session.access_token);
+      }
       setSuccess(isEditing ? "Exercício atualizado!" : "Exercício criado com sucesso!");
       setTimeout(() => { setSuccess(""); onSaved(); }, 1400);
-    } catch (e) { setError("Erro ao salvar: " + e.message); } finally { setSaving(false); }
+    } catch (e) {
+      setError("Erro ao salvar: " + e.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const activeQ = questions[activeQIdx] ?? null;
@@ -237,9 +340,16 @@ export default function CreateExerciseView({ session, onSaved, onCancel, initial
       <div className="cev-topbar">
         <div className="cev-topbar__left">
           {onCancel && <button className="cev-back-btn" onClick={onCancel} aria-label="Voltar">← Voltar</button>}
-          <div><h2 className="cev-topbar__title">{isEditing ? "Editar Exercício" : "Criar Exercício"}</h2><p className="cev-topbar__sub">{isEditing ? "Modifique as informações abaixo" : "Monte um exercício personalizado para seus pacientes"}</p></div>
+          <div>
+            <h2 className="cev-topbar__title">{isEditing ? "Editar Exercício" : "Criar Exercício"}</h2>
+            <p className="cev-topbar__sub">{isEditing ? "Modifique as informações abaixo" : "Monte um exercício personalizado para seus pacientes"}</p>
+          </div>
         </div>
-        {!isMobile && <button className="cev-save-btn" onClick={save} disabled={saving}>{saving ? "Salvando…" : isEditing ? "💾 Atualizar" : "💾 Publicar exercício"}</button>}
+        {!isMobile && (
+          <button className="cev-save-btn" onClick={save} disabled={saving}>
+            {saving ? "Salvando…" : isEditing ? "💾 Atualizar" : "💾 Publicar exercício"}
+          </button>
+        )}
       </div>
 
       {success && <div className="cev-banner cev-banner--success">{success}</div>}
@@ -300,7 +410,9 @@ export default function CreateExerciseView({ session, onSaved, onCancel, initial
       {isMobile && (
         <div className="cev-mobile-bar">
           {onCancel && <button className="cev-back-btn" onClick={onCancel}>← Voltar</button>}
-          <button className="cev-save-btn cev-save-btn--full" onClick={save} disabled={saving}>{saving ? "Salvando…" : isEditing ? "💾 Atualizar" : "💾 Publicar"}</button>
+          <button className="cev-save-btn cev-save-btn--full" onClick={save} disabled={saving}>
+            {saving ? "Salvando…" : isEditing ? "💾 Atualizar" : "💾 Publicar"}
+          </button>
         </div>
       )}
     </div>
