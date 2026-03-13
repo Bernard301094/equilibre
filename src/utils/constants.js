@@ -31,16 +31,22 @@ export const CATEGORY_CLASS = {
 };
 
 // ─── Question types ───────────────────────────────────────────────────────────────
-// slider_emoji e breathing NÃO aparecem aqui — só estão disponíveis nos Modelos Equilibre
 
 export const QUESTION_TYPES = [
-  { value: "open",        label: "Resposta aberta" },
-  { value: "scale",       label: "Escala (0–10)" },
-  { value: "reflect",     label: "Reflexão (opcional)" },
-  { value: "instruction", label: "Instrução (sem resposta)" },
+  { value: "open",            label: "Resposta aberta" },
+  { value: "scale",           label: "Escala (0–10)" },
+  { value: "reflect",         label: "Reflexão (opcional)" },
+  { value: "instruction",     label: "Instrução (sem resposta)" },
+  { value: "yes_no",          label: "Sim / Não" },
+  { value: "multiple_choice", label: "Múltipla escolha" },
+  { value: "checklist",       label: "Checklist" },
+  { value: "number",          label: "Número livre" },
+  { value: "time",            label: "Horário" },
+  { value: "slider_emoji",    label: "Slider emocional" },
+  { value: "breathing",       label: "Respiração animada" },
 ];
 
-// ─── Diary moods — FONTE ÚNCIA DA VERDADE ─────────────────────────────────────────────
+// ─── Diary moods — FONTE ÚNICA DA VERDADE ─────────────────────────────────────────────
 
 export const MOOD_OPTIONS = [
   { id: "muito-dificil", val: 1, emoji: "😔", label: "Muito difícil",  color: "#e53e3e" },
@@ -133,12 +139,7 @@ export const SEED_EXERCISES = [
     description: "Técnica de respiração para reduzir a ansiedade rapidamente.",
     questions: [
       { id: "q1", type: "slider_emoji", text: "Antes de começar: como você está se sentindo agora?" },
-      {
-        id: "q2",
-        type: "breathing",
-        text: "🌬️ Siga o ritmo abaixo. Inspire pelo nariz, segure e expire devagar.",
-        cycles: 3,
-      },
+      { id: "q2", type: "breathing", text: "🌬️ Siga o ritmo abaixo. Inspire pelo nariz, segure e expire devagar.", cycles: 3 },
       { id: "q3", type: "scale",  text: "De 0 a 10, qual é o seu nível de ansiedade APÓS o exercício?" },
       { id: "q4", type: "open",   text: "O que você percebeu no seu corpo durante a respiração?" },
     ],
@@ -182,12 +183,7 @@ export const SEED_EXERCISES = [
       { id: "q3", type: "open",  text: "Em quais partes do corpo você sentiu mais tensão ou desconforto?" },
       { id: "q4", type: "open",  text: "Em quais partes você sentiu leveza ou relaxamento?" },
       { id: "q5", type: "scale", text: "Como você avalia sua qualidade de presença durante o exercício? (0 = muito distrado, 10 = totalmente presente)" },
-      {
-        id: "q6",
-        type: "breathing",
-        text: "🌬️ Para encerrar, faça 2 ciclos de respiração consciente.",
-        cycles: 2,
-      },
+      { id: "q6", type: "breathing", text: "🌬️ Para encerrar, faça 2 ciclos de respiração consciente.", cycles: 2 },
     ],
   },
 ];
