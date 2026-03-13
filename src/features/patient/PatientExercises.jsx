@@ -3,26 +3,22 @@ import db from "../../services/db";
 import { parseQuestions } from "../../utils/parsing";
 import { daysUntil } from "../../utils/dates";
 import { CATEGORY_CLASS } from "../../utils/constants";
-import EmptyState from "../../components/ui/EmptyState";
+import EmptyState  from "../../components/ui/EmptyState";
+import ExercisePage from "./ExercisePage";
 import "./PatientExercises.css";
 
 const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPA_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_KEY;
 
-/**
- * Busca exercícios pelos IDs diretamente via PostgREST usando
- * a sintaxe  ?id=in.(id1,id2,...)  com o token do paciente.
- * Isso contorna a RLS que bloqueia SELECT * FROM exercises.
- */
 async function fetchExercisesByIds(ids, token) {
   if (!ids || ids.length === 0) return [];
   const list = ids.map(encodeURIComponent).join(",");
   const url  = `${SUPA_URL}/rest/v1/exercises?id=in.(${list})`;
   const res  = await fetch(url, {
-    cache:   "no-store",
+    cache: "no-store",
     headers: {
-      apikey:        SUPA_KEY,
-      Authorization: `Bearer ${token}`,
+      apikey:         SUPA_KEY,
+      Authorization:  `Bearer ${token}`,
       "Content-Type": "application/json",
     },
   });
@@ -33,20 +29,20 @@ async function fetchExercisesByIds(ids, token) {
   return res.json();
 }
 
-/* ─ Due date chip ──────────────────────────────────────────── */
+/* ─ Due date chip ──────────────────────────────────────── */
 function DueChip({ dueDate }) {
   const days = daysUntil(dueDate);
   if (days === null) return null;
-  if (days < 0)  return <span className="due-chip due-chip--late" aria-label="Atrasado">⚠️ Atrasado</span>;
-  if (days <= 2) return <span className="due-chip due-chip--warn" aria-label={`Vence em ${days} dias`}>⏳ Vence em {days}d</span>;
+  if (days < 0)  return <span className="due-chip due-chip--late">⚠️ Atrasado</span>;
+  if (days <= 2) return <span className="due-chip due-chip--warn">⏳ Vence em {days}d</span>;
   return (
-    <span className="due-chip due-chip--ok" aria-label={`Data limite: ${new Date(dueDate).toLocaleDateString("pt-BR")}`}>
+    <span className="due-chip due-chip--ok">
       📅 {new Date(dueDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
     </span>
   );
 }
 
-/* ─ Exercise card ──────────────────────────────────────────── */
+/* ─ Exercise card ──────────────────────────────────────── */
 function ExCard({ assign, isDone, exercises, onStart }) {
   const ex = exercises.find((e) => e.id === assign.exercise_id);
   if (!ex) return null;
@@ -56,43 +52,32 @@ function ExCard({ assign, isDone, exercises, onStart }) {
 
   return (
     <div
-      className={[
-        "ex-card",
-        catClass,
-        isDone ? "ex-card--done" : "",
-      ].filter(Boolean).join(" ")}
+      className={["ex-card", catClass, isDone ? "ex-card--done" : ""].filter(Boolean).join(" ")}
       onClick={() => !isDone && onStart(ex)}
       role={isDone ? "article" : "button"}
       tabIndex={isDone ? undefined : 0}
       aria-label={isDone ? `${ex.title} — concluído` : `Iniciar exercício: ${ex.title}`}
-      onKeyDown={!isDone
-        ? (e) => (e.key === "Enter" || e.key === " ") && onStart(ex)
-        : undefined}
+      onKeyDown={!isDone ? (e) => (e.key === "Enter" || e.key === " ") && onStart(ex) : undefined}
     >
       <span className={`ex-cat ${catClass}`}>{ex.category}</span>
       <h3 className="ex-card__title">{ex.title}</h3>
       {ex.description && <p className="ex-card__desc">{ex.description}</p>}
-
       <div className="ex-card__footer">
         <span className="ex-card__question-count">
           {qs.length} {qs.length === 1 ? "pergunta" : "perguntas"}
         </span>
         <div className="ex-card__actions">
           {!isDone && <DueChip dueDate={assign.due_date} />}
-          {isDone ? (
-            <span className="response-badge badge-done">✅ Concluído</span>
-          ) : (
-            <button className="btn-start" tabIndex={-1} aria-hidden="true">
-              Começar →
-            </button>
-          )}
+          {isDone
+            ? <span className="response-badge badge-done">✅ Concluído</span>
+            : <button className="btn-start" tabIndex={-1} aria-hidden="true">Começar →</button>
+          }
         </div>
       </div>
     </div>
   );
 }
 
-/* ─ Section label ──────────────────────────────────────────── */
 function SectionLabel({ children }) {
   return (
     <div className="pex-section__label" aria-hidden="true">
@@ -102,52 +87,61 @@ function SectionLabel({ children }) {
   );
 }
 
-/* ─ Main ────────────────────────────────────────────────── */
-export default function PatientExercises({ session, onStart }) {
-  const [pending,   setPending]   = useState([]);
-  const [done,      setDone]      = useState([]);
-  const [exercises, setExercises] = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState("");
+/* ─ Main ──────────────────────────────────────────────── */
+export default function PatientExercises({ session }) {
+  const [pending,         setPending]         = useState([]);
+  const [done,            setDone]            = useState([]);
+  const [exercises,       setExercises]       = useState([]);
+  const [loading,         setLoading]         = useState(true);
+  const [error,           setError]           = useState("");
+  const [activeExercise,  setActiveExercise]  = useState(null); // ← exercício aberto
+
+  const loadData = async () => {
+    try {
+      const [pend, don] = await Promise.all([
+        db.query("assignments", { filter: { patient_id: session.id, status: "pending" } }, session.access_token),
+        db.query("assignments", { filter: { patient_id: session.id, status: "done"    } }, session.access_token),
+      ]);
+
+      const pendArr = Array.isArray(pend) ? pend : [];
+      const donArr  = Array.isArray(don)  ? don  : [];
+
+      const ids = [...new Set([...pendArr, ...donArr].map((a) => a.exercise_id).filter(Boolean))];
+      const exArr = ids.length > 0 ? await fetchExercisesByIds(ids, session.access_token) : [];
+
+      setPending(pendArr);
+      setDone(donArr);
+      setExercises(Array.isArray(exArr) ? exArr : []);
+    } catch (e) {
+      console.error("[PatientExercises]", e);
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        // 1️⃣ Busca assignments do paciente
-        const [pend, don] = await Promise.all([
-          db.query("assignments", { filter: { patient_id: session.id, status: "pending" } }, session.access_token),
-          db.query("assignments", { filter: { patient_id: session.id, status: "done"    } }, session.access_token),
-        ]);
-        if (!active) return;
-
-        const pendArr = Array.isArray(pend) ? pend : [];
-        const donArr  = Array.isArray(don)  ? don  : [];
-
-        // 2️⃣ Coleta IDs únicos
-        const ids = [...new Set(
-          [...pendArr, ...donArr].map((a) => a.exercise_id).filter(Boolean)
-        )];
-
-        // 3️⃣ Busca exercises via fetch direto com token do paciente
-        //    (contorna RLS que bloqueia SELECT sem filtro)
-        const exArr = ids.length > 0
-          ? await fetchExercisesByIds(ids, session.access_token)
-          : [];
-
-        if (!active) return;
-        setPending(pendArr);
-        setDone(donArr);
-        setExercises(Array.isArray(exArr) ? exArr : []);
-      } catch (e) {
-        console.error("[PatientExercises]", e);
-        if (active) setError(e.message);
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-    return () => { active = false; };
+    loadData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.id, session.access_token]);
+
+  // Quando o paciente conclui o exercício, fecha e recarrega os dados
+  const handleBack = () => {
+    setActiveExercise(null);
+    setLoading(true);
+    loadData();
+  };
+
+  // ← Se há exercício ativo, mostra o player em tela cheia
+  if (activeExercise) {
+    return (
+      <ExercisePage
+        exercise={activeExercise}
+        session={session}
+        onBack={handleBack}
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -164,15 +158,11 @@ export default function PatientExercises({ session, onStart }) {
     <div className="pex-page page-fade-in">
       <header className="pex-header">
         <h2 className="pex-header__title">📚 Meus Exercícios</h2>
-        <p className="pex-header__sub">
-          Complete as tarefas recomendadas pela sua profissional.
-        </p>
+        <p className="pex-header__sub">Complete as tarefas recomendadas pela sua profissional.</p>
       </header>
 
       {error && (
-        <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 12 }}>
-          ⚠️ {error}
-        </p>
+        <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 12 }}>⚠️ {error}</p>
       )}
 
       {pending.length > 0 && (
@@ -181,7 +171,12 @@ export default function PatientExercises({ session, onStart }) {
           <div className="pex-grid pex-grid--pending" role="list">
             {pending.map((a) => (
               <div key={a.id} role="listitem">
-                <ExCard assign={a} isDone={false} exercises={exercises} onStart={onStart} />
+                <ExCard
+                  assign={a}
+                  isDone={false}
+                  exercises={exercises}
+                  onStart={setActiveExercise}
+                />
               </div>
             ))}
           </div>
@@ -194,7 +189,12 @@ export default function PatientExercises({ session, onStart }) {
           <div className="pex-grid pex-grid--done" role="list">
             {done.map((a) => (
               <div key={a.id} role="listitem">
-                <ExCard assign={a} isDone={true} exercises={exercises} onStart={onStart} />
+                <ExCard
+                  assign={a}
+                  isDone={true}
+                  exercises={exercises}
+                  onStart={setActiveExercise}
+                />
               </div>
             ))}
           </div>
