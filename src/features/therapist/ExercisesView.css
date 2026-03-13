@@ -40,6 +40,7 @@
   white-space: nowrap;
   transition: color 0.18s, border-color 0.18s;
   border-radius: 0;
+  font-family: 'DM Sans', sans-serif;
 }
 .ev-tab-btn:hover  { color: var(--blue-mid, #17527c); }
 .ev-tab-btn.active {
@@ -157,6 +158,7 @@
   font-weight: 800;
   letter-spacing: 0.03em;
   line-height: 1.4;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .ev-ex-card__badge--interactive {
@@ -182,6 +184,7 @@
   margin: 4px 0 4px;
   padding-right: 42px;
   line-height: 1.4;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .ev-ex-card--global .ev-ex-card__title {
@@ -197,6 +200,7 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   flex-grow: 1;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .ev-ex-card__count {
@@ -204,6 +208,7 @@
   color: var(--text-muted, #6b7280);
   margin-top: 10px;
   font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .ev-ex-card__count--model {
@@ -227,6 +232,7 @@
   color: var(--blue-dark, #0a2e48);
   margin-bottom: 4px;
   align-self: flex-start;
+  font-family: 'DM Sans', sans-serif;
 }
 .ex-cat.cat-official      { background: var(--blue-mid, #17527c); color: white; }
 .ex-cat.mindfulness       { background: #e0f2fe; color: #075985; }
@@ -272,7 +278,7 @@
   transform: translateX(-2px);
 }
 
-/* ✨ Botão principal do preview — "Adicionar à minha lista" */
+/* Botão — "Adicionar à minha lista" */
 .ev-preview__import-btn {
   display: inline-flex;
   align-items: center;
@@ -296,17 +302,10 @@
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
   transform: translateY(-1px);
 }
-.ev-preview__import-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.2);
-}
-.ev-preview__import-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
+.ev-preview__import-btn:active  { transform: translateY(0); box-shadow: 0 1px 4px rgba(37,99,235,0.2); }
+.ev-preview__import-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-/* Botão editar no preview de exercícios próprios */
+/* Botão editar (exercícios próprios) */
 .ev-preview__edit-btn {
   display: inline-flex;
   align-items: center;
@@ -359,6 +358,7 @@
   color: var(--text-muted, #6b7280);
   line-height: 1.6;
   margin: 0;
+  font-family: 'DM Sans', sans-serif;
 }
 
 /* Questions */
@@ -369,6 +369,7 @@
   letter-spacing: 0.08em;
   color: var(--text-muted, #6b7280);
   margin: 0 0 12px;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .ev-question-card {
@@ -386,12 +387,14 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 6px;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .ev-question-card__text {
   font-size: 15px;
   color: var(--text, #1a1a2e);
   line-height: 1.5;
+  font-family: 'DM Sans', sans-serif;
 }
 
 /* Scale labels */
@@ -400,7 +403,7 @@
   align-items: center;
   gap: 12px;
   margin-top: 12px;
-  background: white;
+  background: var(--white, #ffffff);
   padding: 10px 14px;
   border-radius: 8px;
   border: 1px dashed var(--warm, #e8d5b7);
@@ -415,13 +418,14 @@
 /* Tags */
 .ev-preview-dynamic-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .ev-preview-tag {
-  background: white;
+  background: var(--white, #ffffff);
   border: 1px solid var(--warm, #e8d5b7);
   color: var(--text, #1a202c);
   padding: 5px 12px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
 }
 .ev-preview-tag.tag-blue { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
 
@@ -448,6 +452,7 @@
   color: #15803d;
   font-size: 13px;
   font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
 }
 .ev-preview-breathing__ring {
   width: 38px;
@@ -475,7 +480,7 @@
   padding: 16px;
 }
 .ev-delete-modal {
-  background: white;
+  background: var(--card, #ffffff);
   border-radius: 20px;
   padding: 32px 24px 24px;
   width: 100%;
@@ -495,6 +500,7 @@
   color: var(--text-muted, #6b7280);
   line-height: 1.6;
   margin-bottom: 24px;
+  font-family: 'DM Sans', sans-serif;
 }
 .ev-delete-modal__actions {
   display: flex;
@@ -506,32 +512,167 @@
 .ev-delete-modal__actions .btn-danger { flex: 1; min-width: 120px; min-height: 44px; }
 
 /* ============================================================
-   DARK MODE
+   DARK MODE — cobertura completa
+   Todos os valores hardcoded (#hex) são substituídos pelas
+   variáveis do projeto ou por valores calibrados para dark.
    ============================================================ */
-body.dark-mode .ev-ex-card--global {
-  background: linear-gradient(145deg, #1e293b 0%, #1e3a5f22 100%);
-  border-color: #3b5998;
+
+/* — Cards base — */
+body.dark-mode .ev-ex-card {
+  background: var(--card);
+  border-color: var(--warm);
 }
+body.dark-mode .ev-ex-card:hover,
+body.dark-mode .ev-ex-card:focus-visible {
+  box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+}
+
+/* — Cards modelo (--global) — */
+body.dark-mode .ev-ex-card--global {
+  background: linear-gradient(145deg, #1a3352 0%, #162b44 100%);
+  border-color: #2a4a72;
+}
+body.dark-mode .ev-ex-card--global:hover,
+body.dark-mode .ev-ex-card--global:focus-visible {
+  box-shadow: 0 6px 28px rgba(0,0,0,0.55);
+  border-color: #3a6aaa;
+}
+body.dark-mode .ev-ex-card--global .ev-ex-card__title {
+  color: #90c4f0;
+}
+body.dark-mode .ev-ex-card__count--model {
+  color: #60a5fa;
+}
+
+/* — Action btns no card — */
+body.dark-mode .ev-ex-card__action-btn {
+  background: var(--white);
+  border-color: var(--warm);
+  color: var(--text-muted);
+}
+body.dark-mode .ev-ex-card__action-btn--import {
+  background: #1e3a5f;
+  border-color: #2a5080;
+  color: #60a5fa;
+}
+body.dark-mode .ev-ex-card__action-btn--import:hover {
+  background: #254a72;
+  color: #93c5fd;
+}
+body.dark-mode .ev-ex-card__action-btn--delete:hover {
+  background: rgba(220,38,38,0.15);
+}
+
+/* — Badges — */
+body.dark-mode .ev-ex-card__badge--interactive {
+  background: #2d1b4e;
+  border-color: #5b21b6;
+  color: #c4b5fd;
+}
+body.dark-mode .ev-ex-card__badge--imported {
+  background: #052e16;
+  border-color: #166534;
+  color: #4ade80;
+}
+
+/* — Filter chips (inline style override) — */
+body.dark-mode .ev-filter-chips button {
+  background: var(--card) !important;
+  border-color: var(--warm) !important;
+  color: var(--text-muted) !important;
+}
+
+/* — Category badges (ex-cat) — */
+body.dark-mode .ex-cat.mindfulness       { background: #0c2a3d; color: #7dd3fc; }
+body.dark-mode .ex-cat.bem-estar         { background: #052e16; color: #86efac; }
+body.dark-mode .ex-cat.ansiedade         { background: #2d1e00; color: #fde68a; }
+body.dark-mode .ex-cat.autoconhecimento  { background: #2d1b4e; color: #d8b4fe; }
+body.dark-mode .ex-cat.relacionamentos   { background: #3b0a14; color: #fca5a5; }
+body.dark-mode .ex-cat.outro             { background: #1e293b; color: #94a3b8; }
+body.dark-mode .ex-cat.cat-official      { background: var(--blue-mid); color: white; }
+
+/* — Preview header buttons — */
 body.dark-mode .ev-preview__back-btn {
   border-color: var(--warm);
-  color: var(--text);
+  color: var(--text-muted);
 }
 body.dark-mode .ev-preview__back-btn:hover {
   background: rgba(255,255,255,0.05);
-  border-color: var(--blue-light);
-  color: var(--blue-light);
+  border-color: var(--blue-mid);
+  color: var(--blue-mid);
 }
+body.dark-mode .ev-preview__edit-btn {
+  border-color: var(--blue-mid);
+  color: var(--blue-mid);
+}
+body.dark-mode .ev-preview__edit-btn:hover {
+  background: var(--blue-mid);
+  color: var(--card);
+}
+body.dark-mode .ev-preview__import-btn {
+  background: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59,130,246,0.3);
+}
+body.dark-mode .ev-preview__import-btn:hover {
+  background: #2563eb;
+  box-shadow: 0 4px 14px rgba(59,130,246,0.45);
+}
+
+/* — Preview card info — */
+body.dark-mode .ev-preview__card {
+  background: var(--card);
+  border-color: var(--warm);
+}
+body.dark-mode .ev-preview__card--global {
+  border-top-color: #3b82f6;
+}
+body.dark-mode .ev-preview__heading,
+body.dark-mode .ev-preview__title {
+  color: var(--blue-dark);
+}
+
+/* — Blocos de perguntas — */
+body.dark-mode .ev-question-card {
+  background: var(--white);
+  border-color: var(--warm);
+}
+body.dark-mode .ev-question-card__text  { color: var(--text); }
+body.dark-mode .ev-question-card__type  { color: var(--sage); }
+
+/* — Scale labels — */
+body.dark-mode .ev-preview-scale-labels {
+  background: var(--white);
+  border-color: var(--warm);
+}
+body.dark-mode .ev-preview-scale-labels .label-min { color: #34d399; }
+body.dark-mode .ev-preview-scale-labels .label-max { color: #f87171; }
+
+/* — Tags — */
+body.dark-mode .ev-preview-tag {
+  background: var(--white);
+  border-color: var(--warm);
+  color: var(--text);
+}
+body.dark-mode .ev-preview-tag.tag-blue {
+  background: #0c2035;
+  border-color: #1e3a5f;
+  color: #93c5fd;
+}
+
+/* — Breathing block — */
 body.dark-mode .ev-preview-breathing {
   background: #052e16;
   border-color: #166534;
   color: #4ade80;
 }
-body.dark-mode .ev-preview__import-btn {
-  background: #3b82f6;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+body.dark-mode .ev-preview-breathing__ring {
+  border-color: #22c55e;
 }
-body.dark-mode .ev-preview__import-btn:hover {
-  background: #2563eb;
+
+/* — Delete modal — */
+body.dark-mode .ev-delete-modal {
+  background: var(--card);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
 }
 
 /* ============================================================
