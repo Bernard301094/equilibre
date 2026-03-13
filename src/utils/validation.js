@@ -1,7 +1,7 @@
 /**
  * Validates the therapist/patient registration form.
  *
- * @param {{ name: string, email: string, password: string, confirm: string, role: string, inviteCode?: string }} form
+ * @param {{ name: string, email: string, password: string, confirm: string, role: string, inviteCode?: string, crp?: string }} form
  * @returns {string|null}  error message or null if valid
  */
 export function validateRegisterForm(form) {
@@ -19,15 +19,15 @@ export function validateRegisterForm(form) {
   if (form.role === "patient" && !form.inviteCode?.trim()) {
     return "Informe o código de convite.";
   }
+  // VALIDAÇÃO EXCLUSIVA PARA PROFISSIONAIS (CRP)
+  if (form.role === "therapist" && !form.crp?.trim()) {
+    return "O número de registro (CRP) é obrigatório para profissionais.";
+  }
   return null;
 }
 
 /**
  * Validates the exercise creation/editing form.
- *
- * @param {{ title: string, description: string }} form
- * @param {Array<{ text: string, type: string }>} questions
- * @returns {string|null}
  */
 export function validateExerciseForm(form, questions) {
   if (!form.title?.trim()) return "Informe o título do exercício.";
@@ -46,9 +46,6 @@ export function validateExerciseForm(form, questions) {
 
 /**
  * Validates the login form.
- *
- * @param {{ email: string, password: string }} form
- * @returns {string|null}
  */
 export function validateLoginForm(form) {
   if (!form.email?.trim()) return "Informe o e-mail.";
@@ -58,9 +55,6 @@ export function validateLoginForm(form) {
 
 /**
  * Validates a diary entry before saving.
- *
- * @param {{ mood: number|null }} entry
- * @returns {string|null}
  */
 export function validateDiaryEntry(entry) {
   if (entry.mood === null || entry.mood === undefined) {
@@ -71,9 +65,6 @@ export function validateDiaryEntry(entry) {
 
 /**
  * Validates a new activity (Behavioral Activation) form.
- *
- * @param {{ title: string, date: string, time: string }} form
- * @returns {string|null}
  */
 export function validateActivityForm(form) {
   if (!form.title?.trim()) return "Descreva o que você vai fazer.";
@@ -84,9 +75,6 @@ export function validateActivityForm(form) {
 
 /**
  * Validates a password reset request.
- *
- * @param {string} email
- * @returns {string|null}
  */
 export function validateResetEmail(email) {
   if (!email?.trim()) return "Informe o seu e-mail.";
@@ -98,9 +86,6 @@ export function validateResetEmail(email) {
 
 /**
  * Validates an invite code format (6–8 uppercase alphanumeric chars).
- *
- * @param {string} code
- * @returns {string|null}
  */
 export function validateInviteCode(code) {
   if (!code?.trim()) return "Informe o código de convite.";
