@@ -10,6 +10,8 @@ import { validateInviteCode } from "../../utils/validation";
 import "./Home.css";
 import "../../styles/micro-interactions.css";
 
+const LS_ADMIN_BACKUP = "eq_admin_session_backup";
+
 const getGreeting = (name) => {
   const h = new Date().getHours();
   if (h >= 5  && h < 12) return `Bom dia, ${name} ☀️`;
@@ -38,6 +40,11 @@ export default function PatientHome({ session, setSession, setView }) {
   const [linkMsg,    setLinkMsg]    = useState({ type: "", text: "" });
   const inflightRef = useRef(false);
 
+  // ── Sessão de impersonação ativa? ──
+  // Se o admin está navegando como paciente teste, oculta o card
+  // de vinculação — não faz sentido vincular uma conta de dev.
+  const isImpersonating = !!localStorage.getItem(LS_ADMIN_BACKUP);
+
   // ── Micro-interaction state ──
   const [prevStreak,    setPrevStreak]    = useState(null);
   const [prevWeekDone,  setPrevWeekDone]  = useState(null);
@@ -51,7 +58,6 @@ export default function PatientHome({ session, setSession, setView }) {
 
   useEffect(() => {
     if (supported && permission === "default" && !subscribed) {
-      // Pede permissão 4 segundos após o paciente abrir a tela
       const t = setTimeout(() => subscribe(), 4000);
       return () => clearTimeout(t);
     }
@@ -202,8 +208,11 @@ export default function PatientHome({ session, setSession, setView }) {
           <p className="patient-home__greeting-sub">{getGreetingSub()}</p>
         </header>
 
-        {/* ── Vincular profesional ── */}
-        {!session.therapist_id && (
+        {/* ── Vincular profissional ──
+            Oculto durante impersonação (sessão de dev),
+            pois a conta de teste pode não ter therapist_id
+            e o card seria inútil / confuso nesse contexto. */}
+        {!session.therapist_id && !isImpersonating && (
           <div className="patient-home__link-card">
             <span className="patient-home__link-icon" aria-hidden="true">🤝</span>
             <div className="patient-home__link-body">
