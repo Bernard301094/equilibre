@@ -112,9 +112,9 @@ export default function ExercisesView({ session }) {
 
   /* ─── Preview view ──────────────────────────────────────────────── */
   if (previewEx) {
-    const qs            = parseQuestions(previewEx);
-    const isModel       = !!previewEx._isModel;
-    const colors        = APPROACH_COLORS[previewEx.category] || {};
+    const qs              = parseQuestions(previewEx);
+    const isModel         = !!previewEx._isModel;
+    const colors          = APPROACH_COLORS[previewEx.category] || {};
     const alreadyImported = importedTitles.has(previewEx.title);
 
     return (
@@ -123,14 +123,16 @@ export default function ExercisesView({ session }) {
         <div className="ev-preview__header">
           <button className="ev-preview__back-btn" onClick={() => setPreviewEx(null)}>← Voltar</button>
           <h2 className="ev-preview__heading">Pré-visualização</h2>
+
           {!isModel ? (
-            <button className="btn btn-sage" onClick={() => setEditingEx(previewEx)}>✏️ Editar</button>
+            <button className="ev-preview__edit-btn" onClick={() => setEditingEx(previewEx)}>✏️ Editar</button>
           ) : alreadyImported ? (
-            <span className="ev-ex-card__badge ev-ex-card__badge--imported">✅ Já na sua biblioteca</span>
+            <span className="ev-ex-card__badge ev-ex-card__badge--imported" style={{ fontSize: 13, padding: "8px 14px" }}>
+              ✅ Já na sua lista
+            </span>
           ) : (
             <button
-              className="btn"
-              style={{ background: "#2563eb", borderColor: "#2563eb", color: "white" }}
+              className="ev-preview__import-btn"
               disabled={importing === previewEx.title}
               onClick={() => handleImport(previewEx)}
             >
@@ -144,15 +146,15 @@ export default function ExercisesView({ session }) {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             {isModel && <span className="ex-cat cat-official">EQUILIBRE</span>}
             {isModel && colors.bg && (
-              <span className="ev-ex-card__badge ev-ex-card__badge--approach"
-                style={{ background: colors.bg, border: `1px solid ${colors.border}`, color: colors.text }}>
+              <span
+                className="ev-ex-card__badge"
+                style={{ background: colors.bg, border: `1px solid ${colors.border}`, color: colors.text }}
+              >
                 {previewEx.category}
               </span>
             )}
             {!isModel && (
-              <span className={`ex-cat ${CATEGORY_CLASS[previewEx.category] || ""}`}>
-                {previewEx.category}
-              </span>
+              <span className={`ex-cat ${CATEGORY_CLASS[previewEx.category] || ""}`}>{previewEx.category}</span>
             )}
           </div>
           <h3 className="ev-preview__title">{previewEx.title}</h3>
@@ -161,7 +163,6 @@ export default function ExercisesView({ session }) {
 
         {/* Questions */}
         <h4 className="ev-questions__label">Estrutura — {qs.length} blocos</h4>
-
         {qs.map((q, i) => (
           <div key={q.id || i} className="ev-question-card">
             <div className="ev-question-card__type">{i + 1}. {TYPE_LABELS[q.type] || "📝 Bloco"}</div>
@@ -238,15 +239,16 @@ export default function ExercisesView({ session }) {
                 key={approach}
                 onClick={() => setApproachFilter(approach)}
                 style={{
-                  padding:    "6px 14px",
-                  borderRadius: 20,
-                  fontSize:   12,
-                  fontWeight: 700,
-                  cursor:     "pointer",
-                  border:     isActive ? `2px solid ${c.border || "#0a2e48"}` : "2px solid #e8d5b7",
-                  background: isActive ? (c.bg   || "#e0f2fe") : "white",
-                  color:      isActive ? (c.text || "#0a2e48") : "#6b7280",
-                  transition: "all 0.15s",
+                  padding:      "6px 14px",
+                  borderRadius: "20px",
+                  fontSize:     "12px",
+                  fontWeight:   700,
+                  cursor:       "pointer",
+                  border:       isActive ? `2px solid ${c.border || "#0a2e48"}` : "2px solid #e8d5b7",
+                  background:   isActive ? (c.bg   || "#e0f2fe") : "white",
+                  color:        isActive ? (c.text || "#0a2e48") : "#6b7280",
+                  transition:   "all 0.15s",
+                  fontFamily:   "'DM Sans', sans-serif",
                 }}
               >
                 {approach}{count > 0 ? ` (${count})` : ""}
@@ -286,9 +288,9 @@ export default function ExercisesView({ session }) {
             </div>
           ) : (
             filteredModels.map((model) => {
-              const c             = APPROACH_COLORS[model.category] || {};
+              const c               = APPROACH_COLORS[model.category] || {};
               const alreadyImported = importedTitles.has(model.title);
-              const hasDynamic    = model.questions.some(
+              const hasDynamic      = model.questions.some(
                 (q) => q.type === "slider_emoji" || q.type === "breathing"
               );
               return (
@@ -298,7 +300,6 @@ export default function ExercisesView({ session }) {
                   onClick={() => setPreviewEx({ ...model, _isModel: true })}
                   style={alreadyImported ? { opacity: 0.65 } : {}}
                 >
-                  {/* Action: import or already-imported badge */}
                   <div className="ev-ex-card__actions">
                     {alreadyImported ? (
                       <span className="ev-ex-card__badge ev-ex-card__badge--imported">✅ Adicionado</span>
@@ -314,10 +315,9 @@ export default function ExercisesView({ session }) {
                     )}
                   </div>
 
-                  {/* Badges row */}
                   <div className="ev-ex-card__badges">
                     <span
-                      className="ev-ex-card__badge ev-ex-card__badge--approach"
+                      className="ev-ex-card__badge"
                       style={{ background: c.bg || "#f1f5f9", border: `1px solid ${c.border || "#e2e8f0"}`, color: c.text || "#475569" }}
                     >
                       {model.category}

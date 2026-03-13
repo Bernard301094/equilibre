@@ -145,7 +145,7 @@
   gap: 6px;
   flex-wrap: wrap;
   margin-bottom: 4px;
-  padding-right: 42px; /* clearance for action btn */
+  padding-right: 42px;
 }
 
 .ev-ex-card__badge {
@@ -157,10 +157,6 @@
   font-weight: 800;
   letter-spacing: 0.03em;
   line-height: 1.4;
-}
-
-.ev-ex-card__badge--approach {
-  /* colors set inline per approach */
 }
 
 .ev-ex-card__badge--interactive {
@@ -215,11 +211,10 @@
   font-weight: 600;
 }
 
-/* Empty state */
 .ev-empty { grid-column: 1 / -1; padding: 40px 0; }
 
 /* ============================================================
-   CATEGORY BADGE (ex-cat) used on "Meus Criados"
+   CATEGORY BADGE (ex-cat)
    ============================================================ */
 .ex-cat {
   display: inline-block;
@@ -233,13 +228,13 @@
   margin-bottom: 4px;
   align-self: flex-start;
 }
-.ex-cat.cat-official   { background: var(--blue-mid, #17527c); color: white; }
-.ex-cat.mindfulness    { background: #e0f2fe; color: #075985; }
-.ex-cat.bem-estar      { background: #dcfce7; color: #166534; }
-.ex-cat.ansiedade      { background: #fef9c3; color: #854d0e; }
-.ex-cat.autoconhecimento { background: #fdf4ff; color: #6b21a8; }
-.ex-cat.relacionamentos { background: #fff1f2; color: #9f1239; }
-.ex-cat.outro          { background: #f1f5f9; color: #475569; }
+.ex-cat.cat-official      { background: var(--blue-mid, #17527c); color: white; }
+.ex-cat.mindfulness       { background: #e0f2fe; color: #075985; }
+.ex-cat.bem-estar         { background: #dcfce7; color: #166534; }
+.ex-cat.ansiedade         { background: #fef9c3; color: #854d0e; }
+.ex-cat.autoconhecimento  { background: #fdf4ff; color: #6b21a8; }
+.ex-cat.relacionamentos   { background: #fff1f2; color: #9f1239; }
+.ex-cat.outro             { background: #f1f5f9; color: #475569; }
 
 /* ============================================================
    PREVIEW MODE
@@ -258,7 +253,7 @@
   background: transparent;
   border: 1.5px solid var(--warm, #e8d5b7);
   color: var(--text-muted, #6b7280);
-  padding: 7px 14px;
+  padding: 9px 16px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
@@ -268,12 +263,69 @@
   gap: 6px;
   transition: all 0.2s;
   white-space: nowrap;
+  font-family: 'DM Sans', sans-serif;
 }
 .ev-preview__back-btn:hover {
   background: var(--cream, #fdf8f3);
   color: var(--blue-dark, #0a2e48);
   border-color: var(--blue-mid, #17527c);
   transform: translateX(-2px);
+}
+
+/* ✨ Botão principal do preview — "Adicionar à minha lista" */
+.ev-preview__import-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  background: #2563eb;
+  border: none;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.ev-preview__import-btn:hover {
+  background: #1d4ed8;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+.ev-preview__import-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.2);
+}
+.ev-preview__import-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Botão editar no preview de exercícios próprios */
+.ev-preview__edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1.5px solid var(--blue-mid, #17527c);
+  color: var(--blue-mid, #17527c);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.ev-preview__edit-btn:hover {
+  background: var(--blue-mid, #17527c);
+  color: white;
 }
 
 .ev-preview__heading {
@@ -474,13 +526,22 @@ body.dark-mode .ev-preview-breathing {
   border-color: #166534;
   color: #4ade80;
 }
+body.dark-mode .ev-preview__import-btn {
+  background: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+body.dark-mode .ev-preview__import-btn:hover {
+  background: #2563eb;
+}
 
 /* ============================================================
    RESPONSIVE
    ============================================================ */
 @media (max-width: 479px) {
-  .ev-preview__card  { padding: 16px; }
-  .ev-question-card  { padding: 12px 14px; }
-  .ev-delete-modal   { padding: 24px 18px 20px; }
+  .ev-preview__header     { gap: 8px; }
+  .ev-preview__import-btn { padding: 9px 14px; font-size: 13px; }
+  .ev-preview__card       { padding: 16px; }
+  .ev-question-card       { padding: 12px 14px; }
+  .ev-delete-modal        { padding: 24px 18px 20px; }
   .ev-ex-card__action-btn { min-width: 28px; min-height: 28px; }
 }
