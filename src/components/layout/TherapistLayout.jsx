@@ -11,7 +11,6 @@ import { useIsMobile }      from "../../hooks/useIsMobile";
 import { THERAPIST_ROUTES } from "../../App";
 import "./TherapistLayout.css";
 
-/* ── Utilitário de som ───────────────────────────────────── */
 function playNotificationSound() {
   try {
     const audio = new Audio("/notification.wav");
@@ -28,11 +27,9 @@ const NAV_ITEMS = [
   { id: "progress",    icon: "📈",  label: "Progresso"    },
   { id: "responses",   icon: "💬",  label: "Respostas"    },
   { id: "orientacoes", icon: "📬",  label: "Orientações"  },
+  { id: "modelos",     icon: "🧩",  label: "Modelos"      },
 ];
 
-/* ════════════════════════════════════════════════════════════
-   useBellState — física de pêndulo
-   ════════════════════════════════════════════════════════════ */
 function useBellState(unreadCount) {
   const [animKey,  setAnimKey]  = useState(0);
   const [animType, setAnimType] = useState(null);
@@ -71,7 +68,6 @@ function useBellState(unreadCount) {
   return { animKey, iconClass, triggerRing };
 }
 
-/* ── LogoutDialog ─────────────────────────────────────────── */
 function LogoutDialog({ onConfirm, onCancel }) {
   return (
     <div className="logout-overlay" onClick={onCancel}>
@@ -88,7 +84,6 @@ function LogoutDialog({ onConfirm, onCancel }) {
   );
 }
 
-/* ── FloatingBell ─────────────────────────────────────────── */
 function FloatingBell({ unreadCount, isActive, onClick }) {
   const { animKey, iconClass, triggerRing } = useBellState(unreadCount);
   const handleClick = () => { triggerRing(); onClick(); };
@@ -117,7 +112,6 @@ function FloatingBell({ unreadCount, isActive, onClick }) {
   );
 }
 
-/* ── SidebarBell ──────────────────────────────────────────── */
 function SidebarBell({ unreadCount, onClick }) {
   const { animKey, iconClass, triggerRing } = useBellState(unreadCount);
   const handleClick = () => { triggerRing(); onClick(); };
@@ -138,9 +132,6 @@ function SidebarBell({ unreadCount, onClick }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════
-   TherapistLayout
-   ════════════════════════════════════════════════════════════ */
 export default function TherapistLayout({ session, setSession, logout, theme, toggleTheme }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -149,7 +140,6 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
   const [showLogout,  setShowLogout]  = useState(false);
   const [showDelete,  setShowDelete]  = useState(false);
 
-  /* ── Estado do modal de paciente ── */
   const [selectedPatient,    setSelectedPatient]    = useState(null);
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
 
@@ -181,10 +171,8 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
     navigate(path);
   }, [navigate, location.pathname]);
 
-  /* ── FIX DEFINITIVO: Búsqueda directa en el String de la URL ── */
   const getActiveView = (path) => {
     const url = path.toLowerCase();
-    
     if (url.includes("paciente") || url.includes("patient")) return "patients";
     if (url.includes("exercicio") || url.includes("exercise")) return "exercises";
     if (url.includes("criar") || url.includes("create")) return "create";
@@ -192,9 +180,8 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
     if (url.includes("resposta") || url.includes("response")) return "responses";
     if (url.includes("orientaco") || url.includes("orientacoes")) return "orientacoes";
     if (url.includes("notificaco") || url.includes("notification")) return "notifications";
-    
-    // Si no encuentra ninguna de las palabras clave anteriores, asume que es el Dashboard (Início)
-    return "dashboard"; 
+    if (url.includes("modelos")) return "modelos";
+    return "dashboard";
   };
 
   const activeView = getActiveView(location.pathname);
