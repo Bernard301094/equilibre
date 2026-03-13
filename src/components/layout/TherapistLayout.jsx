@@ -6,19 +6,12 @@ import ToastContainer from "../ui/Toast";
 import ProfileModal      from "../shared/ProfileModal";
 import DeleteAccountModal from "../shared/DeleteAccountModal";
 import PatientModal from "../../features/therapist/PatientModal/PatientModal";
-// ↓ Importa o teu modal de paciente aqui — ajusta o caminho conforme o teu projeto
-// import PatientModal from "../shared/PatientModal";
 import { useNotifications } from "../../hooks/useNotifications";
 import { useIsMobile }      from "../../hooks/useIsMobile";
-import {
-  THERAPIST_ROUTES,
-  PATH_TO_THERAPIST_VIEW,
-} from "../../App";
+import { THERAPIST_ROUTES } from "../../App";
 import "./TherapistLayout.css";
 
-/* ── Utilitário de som ─────────────────────────────────────
-   Coloca /notification.wav na pasta /public do projeto.
-   ──────────────────────────────────────────────────────── */
+/* ── Utilitário de som ───────────────────────────────────── */
 function playNotificationSound() {
   try {
     const audio = new Audio("/notification.wav");
@@ -160,13 +153,11 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
   const [selectedPatient,    setSelectedPatient]    = useState(null);
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
 
-  /* Abre o modal para um paciente específico */
   const handleOpenPatient = useCallback((patient) => {
     setSelectedPatient(patient);
     setIsPatientModalOpen(true);
   }, []);
 
-  /* Fecha o modal e limpa a seleção */
   const handleClosePatient = useCallback(() => {
     setIsPatientModalOpen(false);
     setSelectedPatient(null);
@@ -176,8 +167,7 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
   const prevPathRef = useRef(location.pathname);
   const { unreadCount, markAllRead } = useNotifications(session.id);
 
-  /* ── Som quando chega nova notificação ── */
-  const prevUnreadRef = useRef(-1); // -1 = primeiro render, sem som
+  const prevUnreadRef = useRef(-1);
   useEffect(() => {
     if (prevUnreadRef.current === -1) { prevUnreadRef.current = unreadCount; return; }
     if (unreadCount > prevUnreadRef.current) playNotificationSound();
@@ -191,7 +181,23 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
     navigate(path);
   }, [navigate, location.pathname]);
 
-  const activeView = PATH_TO_THERAPIST_VIEW[location.pathname] ?? "dashboard";
+  /* ── FIX DEFINITIVO: Búsqueda directa en el String de la URL ── */
+  const getActiveView = (path) => {
+    const url = path.toLowerCase();
+    
+    if (url.includes("paciente") || url.includes("patient")) return "patients";
+    if (url.includes("exercicio") || url.includes("exercise")) return "exercises";
+    if (url.includes("criar") || url.includes("create")) return "create";
+    if (url.includes("progresso") || url.includes("progress")) return "progress";
+    if (url.includes("resposta") || url.includes("response")) return "responses";
+    if (url.includes("orientaco") || url.includes("orientacoes")) return "orientacoes";
+    if (url.includes("notificaco") || url.includes("notification")) return "notifications";
+    
+    // Si no encuentra ninguna de las palabras clave anteriores, asume que es el Dashboard (Início)
+    return "dashboard"; 
+  };
+
+  const activeView = getActiveView(location.pathname);
 
   const handleBellClick = () => {
     if (activeView === "notifications") {
@@ -226,12 +232,6 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
       )}
 
       <main className={`therapist-layout__main${isMobile ? " therapist-layout__main--mobile" : ""}`}>
-        {/*
-          Passa onOpenPatient via outlet context.
-          No componente filho (ex: TherapistDashboard), recebe com:
-            const { onOpenPatient } = useOutletContext();
-          ou, se o teu router passar props diretamente, adiciona onOpenPatient={handleOpenPatient}.
-        */}
         <Outlet context={{ session, setSession, navigateTo, onOpenPatient: handleOpenPatient }} />
       </main>
 

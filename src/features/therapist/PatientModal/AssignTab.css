@@ -80,6 +80,69 @@
   padding: 12px 0;
 }
 
+/* ── Abas de Navegação (Meus Exercícios vs Globais) ───────── */
+.assign-tab__tabs-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 1.5px solid var(--warm, #e8e0d5);
+  padding-bottom: 15px;
+}
+
+.assign-tab__tab-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--warm, #e8e0d5);
+  background: var(--surface, #fff);
+  color: var(--text-secondary, #475569);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.assign-tab__tab-btn:hover {
+  background: var(--surface-alt, #f0f4f8);
+  color: var(--text-primary, #1a202c);
+}
+
+.assign-tab__tab-btn--active-my {
+  background: var(--sage, #6b9e78);
+  color: #fff;
+  border-color: var(--sage, #6b9e78);
+}
+.assign-tab__tab-btn--active-my:hover {
+  background: var(--sage, #6b9e78);
+  color: #fff;
+}
+
+.assign-tab__tab-btn--active-global {
+  background: var(--blue-mid, #4aa3cc);
+  color: #fff;
+  border-color: var(--blue-mid, #4aa3cc);
+}
+.assign-tab__tab-btn--active-global:hover {
+  background: var(--blue-mid, #4aa3cc);
+  color: #fff;
+}
+
+/* Badge Oficial */
+.assign-tab__badge-official {
+  margin-left: 8px;
+  font-size: 0.65rem;
+  background: rgba(74, 163, 204, 0.15);
+  color: var(--blue-mid, #4aa3cc);
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
 /* ── Lista de ejercicios asignados (Atribuidos) ───────────── */
 .assign-tab__assigned-list {
   display: flex;
@@ -281,12 +344,44 @@ body.dark-mode .assign-tab__btn--cancel {
   border-color: var(--warm);
 }
 
-/* CORRECCIÓN: 'x' roja vibrante para eliminar en Modo Oscuro */
+/* Botão de remover vermelho no Modo Escuro */
 body.dark-mode .assign-tab__remove-btn {
-  background: rgba(248, 113, 113, 0.15); /* Fondo rojo sutil pero definido */
-  color: #f87171; /* Rojo brillante para el icono 'x' */
+  background: rgba(248, 113, 113, 0.15); 
+  color: #f87171; 
 }
 
 body.dark-mode .assign-tab__remove-btn:hover {
-  background: rgba(248, 113, 113, 0.25); /* Hover rojo más intenso */
+  background: rgba(248, 113, 113, 0.25); 
+}
+
+/* Abas no Modo Escuro */
+body.dark-mode .assign-tab__tabs-container {
+  border-color: var(--warm);
+}
+
+body.dark-mode .assign-tab__tab-btn {
+  background: var(--cream);
+  border-color: var(--warm);
+  color: var(--text);
+}
+
+body.dark-mode .assign-tab__tab-btn:hover {
+  background: var(--warm);
+}
+
+body.dark-mode .assign-tab__tab-btn--active-my {
+  background: var(--sage);
+  color: #fff;
+  border-color: var(--sage);
+}
+
+body.dark-mode .assign-tab__tab-btn--active-global {
+  background: var(--blue-mid);
+  color: #fff;
+  border-color: var(--blue-mid);
+}
+
+body.dark-mode .assign-tab__badge-official {
+  background: rgba(111, 184, 222, 0.2);
+  color: var(--blue-light);
 }

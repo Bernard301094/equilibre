@@ -6,10 +6,21 @@ import EmptyState from "../../components/ui/EmptyState";
 import CreateExerciseView from "./CreateExerciseView";
 import "./ExercisesView.css";
 
+const TYPE_LABELS = {
+  open: "📝 Resposta Aberta",
+  options: "🔘 Múltipla Escolha",
+  scale: "🔢 Escala Numérica",
+  slider: "🎚️ Termômetro (SUDS)",
+  rpd: "🧠 RPD (Registro de Pensamentos)",
+  cardSort: "🃏 Card Sorting (Valores)",
+  matrix: "➕ Matriz ACT",
+  instruction: "📢 Instrução"
+};
+
 export default function ExercisesView({ session }) {
   const [exercises, setExercises] = useState([]);
-  const [globalExercises, setGlobalExercises] = useState([]); // Nova: Lista global
-  const [activeTab, setActiveTab] = useState("my-list"); // Nova: Controle de abas
+  const [globalExercises, setGlobalExercises] = useState([]);
+  const [activeTab, setActiveTab] = useState("my-list"); 
   const [editingEx, setEditingEx] = useState(null);
   const [previewEx, setPreviewEx] = useState(null);
   const [deletingEx, setDeletingEx] = useState(null);
@@ -21,16 +32,14 @@ export default function ExercisesView({ session }) {
     setLoading(true);
     const token = session.access_token;
 
-    // Busca exercícios privados
     const fetchPrivate = db.query("exercises", {}, token).then((r) => {
       const all = Array.isArray(r) ? r : [];
       setExercises(all.filter((ex) => !ex.therapist_id || ex.therapist_id === session.id));
-    });
+    }).catch(() => {});
 
-    // Busca exercícios globais (da biblioteca do admin)
     const fetchGlobal = db.query("global_exercises", { order: "created_at.desc" }, token)
       .then((r) => setGlobalExercises(Array.isArray(r) ? r : []))
-      .catch(() => setGlobalExercises([])); // Falha silenciosa se a tabela não existir ainda
+      .catch(() => setGlobalExercises([]));
 
     Promise.all([fetchPrivate, fetchGlobal]).finally(() => setLoading(false));
   }, [session.id, session.access_token, refresh]);
@@ -39,39 +48,43 @@ export default function ExercisesView({ session }) {
     if (!deletingEx) return;
     setError("");
     try {
+      // 1. Elimina as tarefas pendentes vinculadas a este exercicio (para non deixar pantasmas)
+      await db.delete("assignments", { exercise_id: deletingEx.id }, session.access_token).catch(() => {});
+      
+      // 2. Elimina o exercicio da biblioteca
       await db.delete("exercises", { id: deletingEx.id }, session.access_token);
+      
       setRefresh((r) => r + 1);
       setDeletingEx(null);
       if (previewEx?.id === deletingEx.id) setPreviewEx(null);
     } catch (e) {
-      setError("Erro ao excluir exercício: " + e.message);
+      setError("Erro ao excluír exercicio: " + e.message);
       setDeletingEx(null);
     }
   };
 
-  // ── Função de Importação ───────────────────────────────────────────────────
-  const handleImport = async (globalEx) => {
+ const handleImport = async (globalEx) => {
     setError("");
     try {
-      // Clonamos o exercício para a lista da terapeuta
       await db.insert("exercises", {
+        // 👇 ADICIONE ESTA LINHA AQUI 👇
+        id: "ex_" + Date.now() + Math.random().toString(36).slice(2, 6),
         title: globalEx.title,
-        description: globalEx.description,
-        category: globalEx.category || "Geral",
+        description: globalEx.description || "Modelo Oficial Equilibre",
+        category: globalEx.category || "TCC",
         questions: typeof globalEx.questions === 'string' ? globalEx.questions : JSON.stringify(globalEx.questions),
-        therapist_id: session.id,
-        is_template: false
+        therapist_id: session.id
       }, session.access_token);
 
       alert(`"${globalEx.title}" importado com sucesso!`);
       setActiveTab("my-list");
+      setPreviewEx(null);
       setRefresh(r => r + 1);
     } catch (e) {
       setError("Erro ao importar modelo: " + e.message);
     }
   };
 
-  // ── Edit mode ──────────────────────────────────────────────────────────────
   if (editingEx) {
     return (
       <CreateExerciseView
@@ -88,7 +101,6 @@ export default function ExercisesView({ session }) {
     );
   }
 
-  // ── Preview mode ───────────────────────────────────────────────────────────
   if (previewEx) {
     const qs = parseQuestions(previewEx);
     const isGlobal = !exercises.find(e => e.id === previewEx.id);
@@ -96,35 +108,64 @@ export default function ExercisesView({ session }) {
     return (
       <div className="page-fade-in ev-preview">
         <div className="ev-preview__header">
-          <button className="btn btn-outline btn-sm" onClick={() => setPreviewEx(null)}>← Voltar</button>
-          <h2 className="ev-preview__heading">Vista Prévia</h2>
+          <button className="ev-preview__back-btn" onClick={() => setPreviewEx(null)}>
+            ← Voltar
+          </button>
+          <h2 className="ev-preview__heading">Vista Prévia do Exercício</h2>
           {!isGlobal ? (
             <button className="btn btn-sage" onClick={() => setEditingEx(previewEx)}>✏️ Editar Exercício</button>
           ) : (
-            <button className="btn btn-sage" onClick={() => handleImport(previewEx)}>📥 Importar para Minha Lista</button>
+            <button className="btn btn-sage" style={{background: '#2563eb', borderColor: '#2563eb', color: 'white'}} onClick={() => handleImport(previewEx)}>
+              📥 Importar para a Minha Lista
+            </button>
           )}
         </div>
 
-        <div className="ev-preview__card">
-          <span className={`ex-cat ${CATEGORY_CLASS[previewEx.category] || ""}`}>{previewEx.category}</span>
+        <div className={`ev-preview__card ${isGlobal ? 'ev-preview__card--global' : ''}`}>
+          {isGlobal ? (
+            <span className="ex-cat cat-official" style={{marginBottom: '10px', display: 'inline-block'}}>OFICIAL EQUILIBRE</span>
+          ) : (
+            <span className={`ex-cat ${CATEGORY_CLASS[previewEx.category] || ""}`}>{previewEx.category}</span>
+          )}
+          
           <h3 className="ev-preview__title">{previewEx.title}</h3>
-          <p className="ev-preview__desc">{previewEx.description}</p>
+          <p className="ev-preview__desc">{previewEx.description || 'Sem descrição.'}</p>
         </div>
 
-        <h4 className="ev-questions__label">Perguntas cadastradas ({qs.length})</h4>
+        <h4 className="ev-questions__label">Estrutura do Exercício ({qs.length} blocos)</h4>
+        
         {qs.map((q, i) => (
           <div key={q.id || i} className="ev-question-card">
             <div className="ev-question-card__type">
-              {i + 1}. {q.type === "instruction" ? "📢 Instrução" : q.type === "scale" ? "🔢 Escala" : "📝 Resposta"}
+              {i + 1}. {TYPE_LABELS[q.type] || "📝 Bloco"}
             </div>
             <div className="ev-question-card__text">{q.text}</div>
+            
+            {(q.type === 'options' || q.type === 'cardSort') && q.options && (
+               <div className="ev-preview-dynamic-list">
+                 {q.options.map((opt, idx) => <span key={idx} className="ev-preview-tag">{opt}</span>)}
+               </div>
+            )}
+            
+            {q.type === 'matrix' && q.areas && (
+               <div className="ev-preview-dynamic-list">
+                 {q.areas.map((area, idx) => <span key={idx} className="ev-preview-tag tag-blue">{area}</span>)}
+               </div>
+            )}
+            
+            {(q.type === 'scale' || q.type === 'slider') && (
+               <div className="ev-preview-scale-labels">
+                 <span className="label-min">{q.minLabel || 'Mínimo'}</span>
+                 <span className="scale-line"></span>
+                 <span className="label-max">{q.maxLabel || 'Máximo'}</span>
+               </div>
+            )}
           </div>
         ))}
       </div>
     );
   }
 
-  // ── Main List ──────────────────────────────────────────────────────────────
   return (
     <div className="page-fade-in">
       <div className="page-header">
@@ -149,7 +190,6 @@ export default function ExercisesView({ session }) {
 
       <div className="ev-grid">
         {activeTab === "my-list" ? (
-          // LISTA PRIVADA
           exercises.map((ex) => (
             <div key={ex.id} className="ev-ex-card" onClick={() => setPreviewEx(ex)}>
               <div className="ev-ex-card__actions">
@@ -159,11 +199,10 @@ export default function ExercisesView({ session }) {
               <span className={`ex-cat ${CATEGORY_CLASS[ex.category] || ""}`}>{ex.category}</span>
               <div className="ev-ex-card__title">{ex.title}</div>
               <div className="ev-ex-card__desc">{ex.description}</div>
-              <div className="ev-ex-card__count">📝 {parseQuestions(ex).length} perguntas</div>
+              <div className="ev-ex-card__count">📝 {parseQuestions(ex).length} blocos</div>
             </div>
           ))
         ) : (
-          // LISTA GLOBAL
           globalExercises.map((ex) => (
             <div key={ex.id} className="ev-ex-card ev-ex-card--global" onClick={() => setPreviewEx(ex)}>
               <div className="ev-ex-card__actions">
@@ -171,8 +210,8 @@ export default function ExercisesView({ session }) {
               </div>
               <span className="ex-cat cat-official">OFICIAL</span>
               <div className="ev-ex-card__title">{ex.title}</div>
-              <div className="ev-ex-card__desc">{ex.description}</div>
-              <div className="ev-ex-card__count">✨ Modelo da Plataforma</div>
+              <div className="ev-ex-card__desc">{ex.description || 'Modelo de Intervenção Clínica'}</div>
+              <div className="ev-ex-card__count">✨ Pronto a usar</div>
             </div>
           ))
         )}
@@ -184,7 +223,6 @@ export default function ExercisesView({ session }) {
         )}
       </div>
 
-      {/* Delete confirmation modal (mantido igual) */}
       {deletingEx && (
         <div className="ev-delete-overlay" onClick={() => setDeletingEx(null)}>
           <div className="ev-delete-modal" onClick={(e) => e.stopPropagation()}>
