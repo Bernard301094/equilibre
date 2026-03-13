@@ -112,7 +112,6 @@ function DevCard({ roleKey, icon, title, extraInfo, exists, devLoading, onEnsure
       </div>
 
       <div className="devtools-actions">
-        {/* ✅ Criar: solo cuando NO existe */}
         {exists !== true && (
           <button
             className="btn-devtools-create"
@@ -122,8 +121,6 @@ function DevCard({ roleKey, icon, title, extraInfo, exists, devLoading, onEnsure
             {devLoading ? "⏳ ..." : "✅ Criar conta"}
           </button>
         )}
-
-        {/* 🎭 Entrar: solo cuando existe */}
         {exists === true && (
           <button
             className="btn-devtools-enter"
@@ -133,8 +130,6 @@ function DevCard({ roleKey, icon, title, extraInfo, exists, devLoading, onEnsure
             {devLoading ? "⏳ ..." : "🎭 Entrar"}
           </button>
         )}
-
-        {/* 🗑️ Delete: solo cuando existe */}
         {exists === true && (
           <button
             className="btn-devtools-delete"
@@ -272,10 +267,22 @@ export default function AdminDashboard({ session, logout, setSession }) {
         };
         if (acc.role === "therapist") row.crp = acc.crp;
         if (acc.role === "patient") {
-          const therapists = await db.query("users", { filter: { role: "therapist" }, order: "created_at.asc" }, session.access_token);
-          if (Array.isArray(therapists) && therapists.length > 0) {
-            row.therapist_id = therapists[0].id;
-            log(`🔗 Paciente vinculado a: ${therapists[0].name}`);
+          // Busca especificamente o Terapeuta Teste, não o 1º da lista
+          const testTherapist = await adminGetUser(TEST_ACCOUNTS.therapist.email);
+          if (testTherapist) {
+            const therapistRows = await db.query(
+              "users",
+              { filter: { id: testTherapist.id } },
+              session.access_token
+            );
+            if (Array.isArray(therapistRows) && therapistRows.length > 0) {
+              row.therapist_id = therapistRows[0].id;
+              log(`🔗 Paciente vinculado ao Terapeuta Teste (${therapistRows[0].name})`, "success");
+            } else {
+              log(`⚠️ Terapeuta Teste não tem perfil na tabela users. Crie a conta do terapeuta primeiro.`, "warn");
+            }
+          } else {
+            log(`⚠️ Conta do Terapeuta Teste não encontrada no Auth. Crie-a primeiro.`, "warn");
           }
         }
         await db.insert("users", row, session.access_token);
@@ -547,7 +554,7 @@ export default function AdminDashboard({ session, logout, setSession }) {
           roleKey="patient"
           icon="🌱"
           title="Conta Paciente"
-          extraInfo="Vinculado ao 1º terapeuta ativo"
+          extraInfo="Vinculado ao Terapeuta Teste"
           exists={testStatus.patient}
           devLoading={devLoading}
           onEnsure={() => ensureTestAccount("patient")}
