@@ -6,6 +6,33 @@ import { CATEGORY_CLASS } from "../../utils/constants";
 import EmptyState from "../../components/ui/EmptyState";
 import "./PatientExercises.css";
 
+const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPA_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_KEY;
+
+/**
+ * Busca exercícios pelos IDs diretamente via PostgREST usando
+ * a sintaxe  ?id=in.(id1,id2,...)  com o token do paciente.
+ * Isso contorna a RLS que bloqueia SELECT * FROM exercises.
+ */
+async function fetchExercisesByIds(ids, token) {
+  if (!ids || ids.length === 0) return [];
+  const list = ids.map(encodeURIComponent).join(",");
+  const url  = `${SUPA_URL}/rest/v1/exercises?id=in.(${list})`;
+  const res  = await fetch(url, {
+    cache:   "no-store",
+    headers: {
+      apikey:        SUPA_KEY,
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
 /* ─ Due date chip ──────────────────────────────────────────── */
 function DueChip({ dueDate }) {
   const days = daysUntil(dueDate);
@@ -43,11 +70,8 @@ function ExCard({ assign, isDone, exercises, onStart }) {
         : undefined}
     >
       <span className={`ex-cat ${catClass}`}>{ex.category}</span>
-
       <h3 className="ex-card__title">{ex.title}</h3>
-      {ex.description && (
-        <p className="ex-card__desc">{ex.description}</p>
-      )}
+      {ex.description && <p className="ex-card__desc">{ex.description}</p>}
 
       <div className="ex-card__footer">
         <span className="ex-card__question-count">
@@ -84,6 +108,7 @@ export default function PatientExercises({ session, onStart }) {
   const [done,      setDone]      = useState([]);
   const [exercises, setExercises] = useState([]);
   const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState("");
 
   useEffect(() => {
     let active = true;
@@ -94,34 +119,29 @@ export default function PatientExercises({ session, onStart }) {
           db.query("assignments", { filter: { patient_id: session.id, status: "pending" } }, session.access_token),
           db.query("assignments", { filter: { patient_id: session.id, status: "done"    } }, session.access_token),
         ]);
-
         if (!active) return;
 
         const pendArr = Array.isArray(pend) ? pend : [];
         const donArr  = Array.isArray(don)  ? don  : [];
 
-        // 2️⃣ Coleta todos os exercise_ids únicos das assignments
-        const allAssigns   = [...pendArr, ...donArr];
-        const exerciseIds  = [...new Set(allAssigns.map((a) => a.exercise_id).filter(Boolean))];
+        // 2️⃣ Coleta IDs únicos
+        const ids = [...new Set(
+          [...pendArr, ...donArr].map((a) => a.exercise_id).filter(Boolean)
+        )];
 
-        let exArr = [];
-        if (exerciseIds.length > 0) {
-          // Busca cada exercício individualmente para contornar limitações de RLS
-          // (o paciente pode não ter permissão de listar todos os exercises,
-          //  mas consegue ler os que estão linkados às suas assignments)
-          const results = await Promise.all(
-            exerciseIds.map((id) =>
-              db.query("exercises", { filter: { id } }, session.access_token).catch(() => [])
-            )
-          );
-          exArr = results.flat().filter(Boolean);
-        }
+        // 3️⃣ Busca exercises via fetch direto com token do paciente
+        //    (contorna RLS que bloqueia SELECT sem filtro)
+        const exArr = ids.length > 0
+          ? await fetchExercisesByIds(ids, session.access_token)
+          : [];
 
+        if (!active) return;
         setPending(pendArr);
         setDone(donArr);
-        setExercises(exArr);
+        setExercises(Array.isArray(exArr) ? exArr : []);
       } catch (e) {
         console.error("[PatientExercises]", e);
+        if (active) setError(e.message);
       } finally {
         if (active) setLoading(false);
       }
@@ -142,7 +162,6 @@ export default function PatientExercises({ session, onStart }) {
 
   return (
     <div className="pex-page page-fade-in">
-
       <header className="pex-header">
         <h2 className="pex-header__title">📚 Meus Exercícios</h2>
         <p className="pex-header__sub">
@@ -150,18 +169,19 @@ export default function PatientExercises({ session, onStart }) {
         </p>
       </header>
 
+      {error && (
+        <p style={{ color: "#dc2626", fontSize: 13, marginBottom: 12 }}>
+          ⚠️ {error}
+        </p>
+      )}
+
       {pending.length > 0 && (
         <section className="pex-section" aria-label="Exercícios para fazer">
           <SectionLabel>Para fazer · {pending.length}</SectionLabel>
           <div className="pex-grid pex-grid--pending" role="list">
             {pending.map((a) => (
               <div key={a.id} role="listitem">
-                <ExCard
-                  assign={a}
-                  isDone={false}
-                  exercises={exercises}
-                  onStart={onStart}
-                />
+                <ExCard assign={a} isDone={false} exercises={exercises} onStart={onStart} />
               </div>
             ))}
           </div>
@@ -174,12 +194,7 @@ export default function PatientExercises({ session, onStart }) {
           <div className="pex-grid pex-grid--done" role="list">
             {done.map((a) => (
               <div key={a.id} role="listitem">
-                <ExCard
-                  assign={a}
-                  isDone={true}
-                  exercises={exercises}
-                  onStart={onStart}
-                />
+                <ExCard assign={a} isDone={true} exercises={exercises} onStart={onStart} />
               </div>
             ))}
           </div>
@@ -195,7 +210,6 @@ export default function PatientExercises({ session, onStart }) {
           />
         </div>
       )}
-
     </div>
   );
 }
