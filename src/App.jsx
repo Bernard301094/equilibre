@@ -8,7 +8,7 @@ import auth from "./services/auth";
 import { SEED_EXERCISES, LS_SEEDED_KEY, ROLE } from "./utils/constants";
 import Spinner         from "./components/ui/Spinner";
 import ConnectionToast from "./components/ui/ConnectionToast";
-import ImpersonateBanner from "./components/ui/ImpersonateBanner"; // ← NOVO
+import ImpersonateBanner from "./components/ui/ImpersonateBanner";
 import LoginPage       from "./components/auth/LoginPage";
 import TherapistLayout from "./components/layout/TherapistLayout";
 import PatientLayout   from "./components/layout/PatientLayout";
@@ -31,9 +31,9 @@ import PatientNotificationsView  from "./features/patient/PatientNotificationsVi
 import MessagesView              from "./components/shared/MessagesView";
 import AdminDashboard            from "./features/admin/AdminDashboard";
 
-/* ── E-MAIL DO ADMINISTRADOR GERAL ─────────────────────────── */
+/* ── E-MAIL DO ADMINISTRADOR GERAL ────────────────────────────── */
 const ADMIN_EMAIL = "bernard30101994@gmail.com";
-/* ──────────────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────── */
 
 async function seedExercisesIfNeeded() {
   if (localStorage.getItem(LS_SEEDED_KEY)) return;
@@ -184,9 +184,9 @@ async function resolveRegister(form) {
   } catch (e) { return `Erro ao finalizar criação de conta: ${e.message}`; }
 }
 
-export const PATH_TO_THERAPIST_VIEW = "/terapeuta";
-export const PATH_TO_PATIENT_VIEW = "/paciente";
-
+/* ═════════════════════════════════════════════════════════════
+   ROTAS — id → pathname
+═════════════════════════════════════════════════════════════ */
 export const THERAPIST_ROUTES = {
   dashboard:     "/terapeuta/inicio",
   patients:      "/terapeuta/pacientes",
@@ -197,6 +197,7 @@ export const THERAPIST_ROUTES = {
   notifications: "/terapeuta/notificacoes",
   orientacoes:   "/terapeuta/orientacoes",
 };
+
 export const PATIENT_ROUTES = {
   home:          "/paciente/inicio",
   exercises:     "/paciente/exercicios",
@@ -207,6 +208,20 @@ export const PATIENT_ROUTES = {
   orientacoes:   "/paciente/orientacoes",
   notifications: "/paciente/notificacoes",
 };
+
+/* ═════════════════════════════════════════════════════════════
+   MAPAS INVERSOS — pathname → id
+   Usados pelos layouts para calcular o item ativo no nav.
+═════════════════════════════════════════════════════════════ */
+export const PATH_TO_THERAPIST_VIEW = Object.fromEntries(
+  Object.entries(THERAPIST_ROUTES).map(([id, path]) => [path, id])
+);
+// ex: { "/terapeuta/inicio": "dashboard", "/terapeuta/pacientes": "patients", ... }
+
+export const PATH_TO_PATIENT_VIEW = Object.fromEntries(
+  Object.entries(PATIENT_ROUTES).map(([id, path]) => [path, id])
+);
+// ex: { "/paciente/inicio": "home", "/paciente/diario": "diary", ... }
 
 function RequireAuth({ session, role, redirectTo, children }) {
   if (!session) return <Navigate to="/entrar" replace />;
@@ -232,7 +247,7 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
 
   return (
     <>
-      {/* ← BANNER FLOTANTE de impersonación */}
+      {/* BANNER FLOTANTE de impersonación */}
       <ImpersonateBanner setSession={setSession} />
 
       <Routes>
@@ -260,7 +275,6 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
           path="/admin"
           element={
             <RequireAuth session={session} role="admin" redirectTo="/entrar">
-              {/* ← setSession pasado al AdminDashboard */}
               <AdminDashboard session={session} logout={logout} setSession={setSession} />
             </RequireAuth>
           }
