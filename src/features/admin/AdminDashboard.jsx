@@ -1,20 +1,13 @@
 // src/features/admin/AdminDashboard.jsx
 import { useState, useEffect } from "react";
 import db from "../../services/db";
-import { QUESTION_TYPES, CATEGORIES, CATEGORY_CLASS } from "../../utils/constants";
+import { CLINICAL_MODELS } from "../../utils/clinicalModels";
 import "./AdminDashboard.css";
 
 const SUPA_URL    = import.meta.env.VITE_SUPABASE_URL;
 const ANON_KEY    = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_KEY;
 const SERVICE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_KEY;
 const LS_ADMIN_BACKUP = "eq_admin_session_backup";
-
-const TYPE_META = {
-  open:        { icon: "📝", label: "Resposta aberta" },
-  scale:       { icon: "🔢", label: "Escala 0–10" },
-  reflect:     { icon: "💭", label: "Reflexão" },
-  instruction: { icon: "📢", label: "Instrução" },
-};
 
 const TEST_ACCOUNTS = {
   therapist: {
@@ -31,8 +24,6 @@ const TEST_ACCOUNTS = {
     role:     "patient",
   },
 };
-
-// ── Admin API helpers ──────────────────────────────────────────────────────
 
 const adminHeaders = () => ({
   apikey:         SERVICE_KEY,
@@ -97,7 +88,6 @@ function DevCard({ roleKey, icon, title, extraInfo, exists, devLoading, onEnsure
         {exists === true  && <span className="devtools-badge devtools-badge--exists">● Conta ativa</span>}
         {exists === false && <span className="devtools-badge devtools-badge--missing">○ Não criada</span>}
       </div>
-
       <div className="devtools-card__header">
         <span className="devtools-icon">{icon}</span>
         <div>
@@ -105,38 +95,23 @@ function DevCard({ roleKey, icon, title, extraInfo, exists, devLoading, onEnsure
           <code className="devtools-email">{acc.email}</code>
         </div>
       </div>
-
       <div className="devtools-creds">
         <span>Senha: <code>{acc.password}</code></span>
         {extraInfo && <span>{extraInfo}</span>}
       </div>
-
       <div className="devtools-actions">
         {exists !== true && (
-          <button
-            className="btn-devtools-create"
-            disabled={devLoading || !SERVICE_KEY}
-            onClick={onEnsure}
-          >
+          <button className="btn-devtools-create" disabled={devLoading || !SERVICE_KEY} onClick={onEnsure}>
             {devLoading ? "⏳ ..." : "✅ Criar conta"}
           </button>
         )}
         {exists === true && (
-          <button
-            className="btn-devtools-enter"
-            disabled={devLoading || !SERVICE_KEY}
-            onClick={onImpersonate}
-          >
+          <button className="btn-devtools-enter" disabled={devLoading || !SERVICE_KEY} onClick={onImpersonate}>
             {devLoading ? "⏳ ..." : "🎭 Entrar"}
           </button>
         )}
         {exists === true && (
-          <button
-            className="btn-devtools-delete"
-            disabled={devLoading || !SERVICE_KEY}
-            onClick={onDelete}
-            title="Deletar conta de teste"
-          >
+          <button className="btn-devtools-delete" disabled={devLoading || !SERVICE_KEY} onClick={onDelete} title="Deletar conta de teste">
             🗑️
           </button>
         )}
@@ -149,23 +124,25 @@ function DevCard({ roleKey, icon, title, extraInfo, exists, devLoading, onEnsure
 
 export default function AdminDashboard({ session, logout, setSession }) {
   const [activeTab,   setActiveTab]   = useState("overview");
-  const [data,        setData]        = useState({ therapists: [], patients: [], invites: [], globalExercises: [] });
+  const [data,        setData]        = useState({ therapists: [], patients: [], invites: [] });
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState("");
   const [devLog,      setDevLog]      = useState([]);
   const [devLoading,  setDevLoading]  = useState(false);
   const [testStatus,  setTestStatus]  = useState({ therapist: null, patient: null });
-
-  const [newEx, setNewEx] = useState({
-    title: "", description: "", category: CATEGORIES[0],
-    questions: [{ id: "q_" + Date.now(), type: "open", text: "" }],
-  });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => { fetchData(); }, []);
 
   useEffect(() => {
     if (activeTab === "devtools" && SERVICE_KEY) checkTestAccounts();
   }, [activeTab]);
+
+  useEffect(() => {
+    const onResize = () => { if (window.innerWidth > 768) setSidebarOpen(false); };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const checkTestAccounts = async () => {
     setTestStatus({ therapist: null, patient: null });
@@ -180,17 +157,15 @@ export default function AdminDashboard({ session, logout, setSession }) {
     setLoading(true);
     try {
       const token = session.access_token;
-      const [therapists, patients, invites, globals] = await Promise.all([
-        db.query("users", { filter: { role: "therapist" }, order: "created_at.desc" }, token),
-        db.query("users", { filter: { role: "patient"   }, order: "created_at.desc" }, token),
+      const [therapists, patients, invites] = await Promise.all([
+        db.query("users",   { filter: { role: "therapist" }, order: "created_at.desc" }, token),
+        db.query("users",   { filter: { role: "patient"   }, order: "created_at.desc" }, token),
         db.query("invites", { order: "created_at.desc" }, token),
-        db.query("global_exercises", { order: "created_at.desc" }, token),
       ]);
       setData({
-        therapists:      Array.isArray(therapists) ? therapists : [],
-        patients:        Array.isArray(patients)   ? patients   : [],
-        invites:         Array.isArray(invites)    ? invites    : [],
-        globalExercises: Array.isArray(globals)    ? globals    : [],
+        therapists: Array.isArray(therapists) ? therapists : [],
+        patients:   Array.isArray(patients)   ? patients   : [],
+        invites:    Array.isArray(invites)     ? invites    : [],
       });
     } catch (err) {
       setError("Erro de sincronização com o banco de dados.");
@@ -207,27 +182,10 @@ export default function AdminDashboard({ session, logout, setSession }) {
     } catch (err) { alert(err.message); }
   };
 
-  const updateQuestion = (id, field, value) => {
-    setNewEx({ ...newEx, questions: newEx.questions.map(q => q.id === id ? { ...q, [field]: value } : q) });
+  const navigate = (tab) => {
+    setActiveTab(tab);
+    setSidebarOpen(false);
   };
-
-  const handleSaveExercise = async () => {
-    if (!newEx.title || newEx.questions.some(q => !q.text.trim())) {
-      alert("Complete todos os campos do exercício."); return;
-    }
-    try {
-      await db.insert("global_exercises", {
-        ...newEx,
-        questions: JSON.stringify(newEx.questions),
-        created_by: session.id,
-      }, session.access_token);
-      alert("Modelo oficial publicado!");
-      setNewEx({ title: "", description: "", category: CATEGORIES[0], questions: [{ id: "q_" + Date.now(), type: "open", text: "" }] });
-      fetchData();
-    } catch (err) { alert(err.message); }
-  };
-
-  // ── Dev Tools ─────────────────────────────────────────────────────────────
 
   const log = (msg, type = "info") =>
     setDevLog(prev => [{ msg, type, ts: new Date().toLocaleTimeString() }, ...prev.slice(0, 29)]);
@@ -255,8 +213,8 @@ export default function AdminDashboard({ session, logout, setSession }) {
 
       log(`🔐 Fazendo signIn...`);
       const signInData = await signInAs(acc.email, acc.password);
-      const token = signInData.access_token;
-      userId = signInData.user?.id ?? userId;
+      const token      = signInData.access_token;
+      userId           = signInData.user?.id ?? userId;
       log(`✅ SignIn OK.`, "success");
 
       const existing = await db.query("users", { filter: { id: userId } }, session.access_token);
@@ -267,14 +225,9 @@ export default function AdminDashboard({ session, logout, setSession }) {
         };
         if (acc.role === "therapist") row.crp = acc.crp;
         if (acc.role === "patient") {
-          // Busca especificamente o Terapeuta Teste, não o 1º da lista
           const testTherapist = await adminGetUser(TEST_ACCOUNTS.therapist.email);
           if (testTherapist) {
-            const therapistRows = await db.query(
-              "users",
-              { filter: { id: testTherapist.id } },
-              session.access_token
-            );
+            const therapistRows = await db.query("users", { filter: { id: testTherapist.id } }, session.access_token);
             if (Array.isArray(therapistRows) && therapistRows.length > 0) {
               row.therapist_id = therapistRows[0].id;
               log(`🔗 Paciente vinculado ao Terapeuta Teste (${therapistRows[0].name})`, "success");
@@ -308,9 +261,8 @@ export default function AdminDashboard({ session, logout, setSession }) {
   };
 
   const handleImpersonate = async (roleKey) => {
-    const acc = TEST_ACCOUNTS[roleKey];
     setDevLoading(true);
-    log(`🎭 Iniciando impersonação de ${acc.role}...`);
+    log(`🎭 Iniciando impersonação de ${TEST_ACCOUNTS[roleKey].role}...`);
     try {
       const result = await ensureTestAccount(roleKey);
       if (!result) throw new Error("Não foi possível preparar a conta de teste.");
@@ -347,7 +299,7 @@ export default function AdminDashboard({ session, logout, setSession }) {
         const r = await fetch(`${SURL}/auth/v1/admin/users?page=${page}&per_page=50`, {
           headers: { apikey: SKEY, Authorization: `Bearer ${SKEY}`, "Content-Type": "application/json" }
         });
-        const d = await r.json();
+        const d     = await r.json();
         const users = d?.users ?? [];
         const found = users.find(u => u.email === acc.email);
         if (found) { authUser = found; break; }
@@ -413,7 +365,11 @@ export default function AdminDashboard({ session, logout, setSession }) {
           </div>
           <div className="admin-stat-card ev-preview__card">
             <span className="admin-stat-card__icon">📚</span>
-            <div className="admin-stat-card__info"><h3>Biblioteca</h3><p>{data.globalExercises.length}</p></div>
+            <div className="admin-stat-card__info">
+              <h3>Modelos Clínicos</h3>
+              <p>{CLINICAL_MODELS.length}</p>
+              <span style={{ fontSize: 11, color: "#6b7280" }}>distribuídos pelo app</span>
+            </div>
           </div>
           <div className="admin-stat-card ev-preview__card">
             <span className="admin-stat-card__icon">🎟️</span>
@@ -472,72 +428,18 @@ export default function AdminDashboard({ session, logout, setSession }) {
     </div>
   );
 
-  const renderLibrary = () => (
-    <div className="admin-grid-layout admin-fade-in">
-      <section className="admin-section">
-        <h2 className="admin-content__heading">Novo Modelo Profissional</h2>
-        <div className="ev-preview__card">
-          <div className="admin-field">
-            <label className="ev-questions__label">Título</label>
-            <input className="admin-input" type="text" value={newEx.title} onChange={e => setNewEx({...newEx, title: e.target.value})} />
-          </div>
-          <div className="admin-field">
-            <label className="ev-questions__label">Categoria</label>
-            <select className="admin-input" value={newEx.category} onChange={e => setNewEx({...newEx, category: e.target.value})}>
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div className="admin-questions-list">
-            <label className="ev-questions__label">Elementos do Exercício</label>
-            {newEx.questions.map((q, i) => (
-              <div key={q.id} className="admin-question-editor ev-question-card">
-                <div className="admin-question-header">
-                  <span className="admin-question-num">{i + 1}</span>
-                  <div className="admin-type-selector">
-                    {QUESTION_TYPES.map(t => (
-                      <button key={t.value} className={`type-dot ${q.type === t.value ? 'active' : ''}`} onClick={() => updateQuestion(q.id, 'type', t.value)}>{TYPE_META[t.value].icon}</button>
-                    ))}
-                  </div>
-                  <button className="btn-delete-small" onClick={() => setNewEx({...newEx, questions: newEx.questions.filter(item => item.id !== q.id)})}>✕</button>
-                </div>
-                <textarea className="admin-input-ghost" placeholder="Texto da pergunta ou instrução..." value={q.text} onChange={e => updateQuestion(q.id, 'text', e.target.value)} />
-              </div>
-            ))}
-            <button className="btn-add-ghost" onClick={() => setNewEx({...newEx, questions: [...newEx.questions, {id:"q_"+Date.now(), type:'open', text:''}]})}>+ Adicionar Elemento</button>
-          </div>
-          <button className="btn btn-sage w-full mt-4" onClick={handleSaveExercise}>Publicar Modelo Oficial</button>
-        </div>
-      </section>
-      <section className="admin-section">
-        <h2 className="admin-content__heading">Modelos Ativos</h2>
-        <div className="ev-grid">
-          {data.globalExercises.map(ex => (
-            <div key={ex.id} className="ev-ex-card ev-ex-card--global">
-              <span className={`ex-cat ${CATEGORY_CLASS[ex.category]}`}>{ex.category}</span>
-              <div className="ev-ex-card__title">{ex.title}</div>
-              <div className="ev-ex-card__desc">{ex.description}</div>
-              <button className="btn-delete-icon" onClick={async () => { if(confirm("Remover?")) { await db.delete("global_exercises", {id: ex.id}, session.access_token); fetchData(); }}}>🗑️</button>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-
   const renderDevTools = () => (
     <div className="admin-fade-in">
       <h2 className="admin-content__heading">🛠️ Dev Tools</h2>
       <p className="admin-section-desc">
         Crie e acesse contas de teste sem sair do Admin. Um banner aparece para voltar ao painel quando estiver numa conta de teste.
       </p>
-
       {!SERVICE_KEY && (
         <div className="devtools-warning">
           ⚠️ <strong>VITE_SUPABASE_SERVICE_KEY</strong> não encontrada no <code>.env</code>. Adicione-a para usar o Dev Tools.<br/>
           <small>Supabase → Project Settings → API → service_role (secret)</small>
         </div>
       )}
-
       <div className="devtools-grid">
         <DevCard
           roleKey="therapist"
@@ -562,7 +464,6 @@ export default function AdminDashboard({ session, logout, setSession }) {
           onDelete={() => handleDeleteTestAccount("patient")}
         />
       </div>
-
       <div className="devtools-log">
         <div className="devtools-log__header">
           <span>📋 Log de operações</span>
@@ -581,30 +482,57 @@ export default function AdminDashboard({ session, logout, setSession }) {
     </div>
   );
 
+  // ── Render principal ───────────────────────────────────────────────────────
+
   return (
     <div className="admin-container page-fade-in">
-      <aside className="admin-sidebar">
+
+      {/* ☰ Botão flutuante — visível só quando sidebar FECHADA no mobile */}
+      <button
+        className={`admin-hamburger ${sidebarOpen ? "hidden" : ""}`}
+        onClick={() => setSidebarOpen(true)}
+        aria-label="Abrir menu"
+      >
+        ☰
+      </button>
+
+      {/* Overlay escuro — fecha ao clicar fora */}
+      <div
+        className={`admin-overlay ${sidebarOpen ? "open" : ""}`}
+        onClick={() => setSidebarOpen(false)}
+      />
+
+      <aside className={`admin-sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="admin-sidebar__header">
+
+          {/* ✕ Botão fechar — visível só dentro da sidebar aberta */}
+          <button
+            className="admin-hamburger-inline"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Fechar menu"
+          >
+            ✕
+          </button>
+
           <h1 className="admin-brand">Equilibre<span>Admin</span></h1>
           <p className="admin-user-tag">{session.name}</p>
         </div>
         <nav className="admin-nav">
-          <button className={`admin-nav__item ${activeTab === 'overview'      ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>📊 Dashboard</button>
-          <button className={`admin-nav__item ${activeTab === 'professionals' ? 'active' : ''}`} onClick={() => setActiveTab('professionals')}>🧠 Profissionais</button>
-          <button className={`admin-nav__item ${activeTab === 'library'       ? 'active' : ''}`} onClick={() => setActiveTab('library')}>📚 Biblioteca Global</button>
-          <button className={`admin-nav__item ${activeTab === 'invites'       ? 'active' : ''}`} onClick={() => setActiveTab('invites')}>🎟️ Convites</button>
-          <button className={`admin-nav__item devtools-tab ${activeTab === 'devtools' ? 'active' : ''}`} onClick={() => setActiveTab('devtools')}>🛠️ Dev Tools</button>
+          <button className={`admin-nav__item ${activeTab === 'overview'      ? 'active' : ''}`} onClick={() => navigate('overview')}>📊 Dashboard</button>
+          <button className={`admin-nav__item ${activeTab === 'professionals' ? 'active' : ''}`} onClick={() => navigate('professionals')}>🧠 Profissionais</button>
+          <button className={`admin-nav__item ${activeTab === 'invites'       ? 'active' : ''}`} onClick={() => navigate('invites')}>🎟️ Convites</button>
+          <button className={`admin-nav__item devtools-tab ${activeTab === 'devtools' ? 'active' : ''}`} onClick={() => navigate('devtools')}>🛠️ Dev Tools</button>
         </nav>
         <div className="admin-sidebar__footer">
           <button onClick={logout} className="admin-btn-logout">Sair do Sistema</button>
         </div>
       </aside>
+
       <main className="admin-content">
         {error   && <div className="admin-error-bar">{error}</div>}
         {loading && <div className="admin-loading-bar">Carregando...</div>}
         {activeTab === "overview"      && renderOverview()}
         {activeTab === "professionals" && renderTherapists()}
-        {activeTab === "library"       && renderLibrary()}
         {activeTab === "invites"       && renderInvites()}
         {activeTab === "devtools"      && renderDevTools()}
       </main>
