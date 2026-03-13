@@ -13,8 +13,8 @@ const TYPE_LABELS = {
   options:      "🔘 Múltipla Escolha",
   scale:        "🔢 Escala Numérica",
   slider:       "🎚️ Termômetro (SUDS)",
-  rpd:          "🧠 RPD (Registro de Pensamentos)",
-  cardSort:     "🃏 Card Sorting (Valores)",
+  rpd:          "🧠 RPD",
+  cardSort:     "🃏 Card Sorting",
   matrix:       "➕ Matriz ACT",
   instruction:  "📢 Instrução",
   reflect:      "💭 Reflexão",
@@ -66,7 +66,7 @@ export default function ExercisesView({ session }) {
       setDeletingEx(null);
       if (previewEx?.id === deletingEx.id) setPreviewEx(null);
     } catch (e) {
-      setError("Erro ao excluír exercicio: " + e.message);
+      setError("Erro ao excluír exercício: " + e.message);
       setDeletingEx(null);
     }
   };
@@ -97,6 +97,7 @@ export default function ExercisesView({ session }) {
     ? CLINICAL_MODELS
     : CLINICAL_MODELS.filter((m) => m.category === approachFilter);
 
+  /* ─── Editing view ─────────────────────────────────────────────── */
   if (editingEx) {
     return (
       <CreateExerciseView
@@ -109,54 +110,57 @@ export default function ExercisesView({ session }) {
     );
   }
 
+  /* ─── Preview view ──────────────────────────────────────────────── */
   if (previewEx) {
-    const qs      = parseQuestions(previewEx);
-    const isModel = !!previewEx._isModel;
-    const colors  = APPROACH_COLORS[previewEx.category] || {};
+    const qs            = parseQuestions(previewEx);
+    const isModel       = !!previewEx._isModel;
+    const colors        = APPROACH_COLORS[previewEx.category] || {};
     const alreadyImported = importedTitles.has(previewEx.title);
 
     return (
       <div className="page-fade-in ev-preview">
+        {/* Header */}
         <div className="ev-preview__header">
           <button className="ev-preview__back-btn" onClick={() => setPreviewEx(null)}>← Voltar</button>
-          <h2 className="ev-preview__heading">Vista Prévia do Exercício</h2>
+          <h2 className="ev-preview__heading">Pré-visualização</h2>
           {!isModel ? (
-            <button className="btn btn-sage" onClick={() => setEditingEx(previewEx)}>✏️ Editar Exercício</button>
+            <button className="btn btn-sage" onClick={() => setEditingEx(previewEx)}>✏️ Editar</button>
           ) : alreadyImported ? (
-            <span style={{ padding: "8px 16px", background: "#dcfce7", color: "#16a34a", borderRadius: 8, fontWeight: 700, fontSize: 13 }}>
-              ✅ Já na sua biblioteca
-            </span>
+            <span className="ev-ex-card__badge ev-ex-card__badge--imported">✅ Já na sua biblioteca</span>
           ) : (
             <button
-              className="btn btn-sage"
+              className="btn"
               style={{ background: "#2563eb", borderColor: "#2563eb", color: "white" }}
               disabled={importing === previewEx.title}
               onClick={() => handleImport(previewEx)}
             >
-              {importing === previewEx.title ? "⏳ Adicionando..." : "📥 Adicionar à Minha Lista"}
+              {importing === previewEx.title ? "⏳ Adicionando..." : "📥 Adicionar à minha lista"}
             </button>
           )}
         </div>
 
+        {/* Info card */}
         <div className={`ev-preview__card ${isModel ? "ev-preview__card--global" : ""}`}>
-          {isModel ? (
-            <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
-              <span className="ex-cat cat-official">EQUILIBRE</span>
-              <span style={{
-                padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
-                background: colors.bg, border: `1px solid ${colors.border}`, color: colors.text,
-              }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            {isModel && <span className="ex-cat cat-official">EQUILIBRE</span>}
+            {isModel && colors.bg && (
+              <span className="ev-ex-card__badge ev-ex-card__badge--approach"
+                style={{ background: colors.bg, border: `1px solid ${colors.border}`, color: colors.text }}>
                 {previewEx.category}
               </span>
-            </div>
-          ) : (
-            <span className={`ex-cat ${CATEGORY_CLASS[previewEx.category] || ""}`}>{previewEx.category}</span>
-          )}
+            )}
+            {!isModel && (
+              <span className={`ex-cat ${CATEGORY_CLASS[previewEx.category] || ""}`}>
+                {previewEx.category}
+              </span>
+            )}
+          </div>
           <h3 className="ev-preview__title">{previewEx.title}</h3>
           <p className="ev-preview__desc">{previewEx.description || "Sem descrição."}</p>
         </div>
 
-        <h4 className="ev-questions__label">Estrutura do Exercício ({qs.length} blocos)</h4>
+        {/* Questions */}
+        <h4 className="ev-questions__label">Estrutura — {qs.length} blocos</h4>
 
         {qs.map((q, i) => (
           <div key={q.id || i} className="ev-question-card">
@@ -176,27 +180,19 @@ export default function ExercisesView({ session }) {
             {(q.type === "scale" || q.type === "slider") && (
               <div className="ev-preview-scale-labels">
                 <span className="label-min">{q.minLabel || "Mínimo"}</span>
-                <span className="scale-line"></span>
+                <span className="scale-line" />
                 <span className="label-max">{q.maxLabel || "Máximo"}</span>
               </div>
             )}
-
-            {/* ✨ Preview slider emocional */}
             {q.type === "slider_emoji" && (
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.3rem", padding: "6px 4px", opacity: 0.6 }}>
+              <div className="ev-preview-slider-emoji">
                 {["😔", "😞", "😐", "🙂", "😄"].map((e) => <span key={e}>{e}</span>)}
               </div>
             )}
-
-            {/* ✨ Preview respiração */}
             {q.type === "breathing" && (
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, color: "#4a9c5d", fontSize: 13, fontWeight: 600 }}>
-                <span style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  border: "3px solid #4a9c5d",
-                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem",
-                }}>🌬️</span>
-                {q.cycles ?? 3} ciclos · Inspire 4s – Segure 4s – Expire 6s
+              <div className="ev-preview-breathing">
+                <div className="ev-preview-breathing__ring">🌬️</div>
+                <span>{q.cycles ?? 3} ciclos · Inspire 4s – Segure 4s – Expire 6s</span>
               </div>
             )}
           </div>
@@ -205,6 +201,7 @@ export default function ExercisesView({ session }) {
     );
   }
 
+  /* ─── Main list view ────────────────────────────────────────────── */
   return (
     <div className="page-fade-in">
       <div className="page-header">
@@ -227,10 +224,11 @@ export default function ExercisesView({ session }) {
 
       {error && <p className="ev-error-msg" role="alert">{error}</p>}
 
+      {/* Approach filter chips */}
       {activeTab === "library" && (
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
+        <div className="ev-filter-chips">
           {ALL_APPROACHES.map((approach) => {
-            const colors   = APPROACH_COLORS[approach] || {};
+            const c        = APPROACH_COLORS[approach] || {};
             const isActive = approachFilter === approach;
             const count    = approach === "Todos"
               ? CLINICAL_MODELS.length
@@ -240,20 +238,25 @@ export default function ExercisesView({ session }) {
                 key={approach}
                 onClick={() => setApproachFilter(approach)}
                 style={{
-                  padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: "pointer",
-                  border:     isActive ? `2px solid ${colors.border || "#0a2e48"}` : "2px solid #e8d5b7",
-                  background: isActive ? (colors.bg   || "#0a2e48") : "white",
-                  color:      isActive ? (colors.text || "white")   : "#6b7280",
+                  padding:    "6px 14px",
+                  borderRadius: 20,
+                  fontSize:   12,
+                  fontWeight: 700,
+                  cursor:     "pointer",
+                  border:     isActive ? `2px solid ${c.border || "#0a2e48"}` : "2px solid #e8d5b7",
+                  background: isActive ? (c.bg   || "#e0f2fe") : "white",
+                  color:      isActive ? (c.text || "#0a2e48") : "#6b7280",
                   transition: "all 0.15s",
                 }}
               >
-                {approach} {count > 0 && `(${count})`}
+                {approach}{count > 0 ? ` (${count})` : ""}
               </button>
             );
           })}
         </div>
       )}
 
+      {/* Cards grid */}
       <div className="ev-grid">
         {activeTab === "my-list" ? (
           exercises.length === 0 && !loading ? (
@@ -264,8 +267,10 @@ export default function ExercisesView({ session }) {
             exercises.map((ex) => (
               <div key={ex.id} className="ev-ex-card" onClick={() => setPreviewEx(ex)}>
                 <div className="ev-ex-card__actions">
-                  <button title="Editar"  className="ev-ex-card__action-btn" onClick={(e) => { e.stopPropagation(); setEditingEx(ex); }}>✏️</button>
-                  <button title="Excluir" className="ev-ex-card__action-btn ev-ex-card__action-btn--delete" onClick={(e) => { e.stopPropagation(); setDeletingEx(ex); }}>🗑️</button>
+                  <button title="Editar" className="ev-ex-card__action-btn"
+                    onClick={(e) => { e.stopPropagation(); setEditingEx(ex); }}>✏️</button>
+                  <button title="Excluir" className="ev-ex-card__action-btn ev-ex-card__action-btn--delete"
+                    onClick={(e) => { e.stopPropagation(); setDeletingEx(ex); }}>🗑️</button>
                 </div>
                 <span className={`ex-cat ${CATEGORY_CLASS[ex.category] || ""}`}>{ex.category}</span>
                 <div className="ev-ex-card__title">{ex.title}</div>
@@ -281,10 +286,9 @@ export default function ExercisesView({ session }) {
             </div>
           ) : (
             filteredModels.map((model) => {
-              const colors          = APPROACH_COLORS[model.category] || {};
+              const c             = APPROACH_COLORS[model.category] || {};
               const alreadyImported = importedTitles.has(model.title);
-              // detecta se tem tipos dinâmicos
-              const hasDynamic = model.questions.some(
+              const hasDynamic    = model.questions.some(
                 (q) => q.type === "slider_emoji" || q.type === "breathing"
               );
               return (
@@ -292,14 +296,12 @@ export default function ExercisesView({ session }) {
                   key={model.title}
                   className="ev-ex-card ev-ex-card--global"
                   onClick={() => setPreviewEx({ ...model, _isModel: true })}
-                  style={alreadyImported ? { opacity: 0.7 } : {}}
+                  style={alreadyImported ? { opacity: 0.65 } : {}}
                 >
+                  {/* Action: import or already-imported badge */}
                   <div className="ev-ex-card__actions">
                     {alreadyImported ? (
-                      <span title="Já adicionado" style={{
-                        padding: "4px 8px", background: "#dcfce7", color: "#16a34a",
-                        borderRadius: 6, fontSize: 11, fontWeight: 700,
-                      }}>✅</span>
+                      <span className="ev-ex-card__badge ev-ex-card__badge--imported">✅ Adicionado</span>
                     ) : (
                       <button
                         title="Adicionar à minha lista"
@@ -312,29 +314,24 @@ export default function ExercisesView({ session }) {
                     )}
                   </div>
 
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-                    <span style={{
-                      display: "inline-block",
-                      padding: "3px 10px", borderRadius: 20, fontSize: 10, fontWeight: 800,
-                      background: colors.bg    || "#f1f5f9",
-                      border:     `1px solid ${colors.border || "#e2e8f0"}`,
-                      color:      colors.text  || "#475569",
-                    }}>
+                  {/* Badges row */}
+                  <div className="ev-ex-card__badges">
+                    <span
+                      className="ev-ex-card__badge ev-ex-card__badge--approach"
+                      style={{ background: c.bg || "#f1f5f9", border: `1px solid ${c.border || "#e2e8f0"}`, color: c.text || "#475569" }}
+                    >
                       {model.category}
                     </span>
-                    {/* Badge ✨ para modelos com tipos dinâmicos */}
                     {hasDynamic && (
-                      <span style={{
-                        display: "inline-block",
-                        padding: "3px 8px", borderRadius: 20, fontSize: 10, fontWeight: 800,
-                        background: "#fdf4ff", border: "1px solid #e9d5ff", color: "#7e22ce",
-                      }}>✨ Interativo</span>
+                      <span className="ev-ex-card__badge ev-ex-card__badge--interactive">✨ Interativo</span>
                     )}
                   </div>
 
                   <div className="ev-ex-card__title">{model.title}</div>
                   <div className="ev-ex-card__desc">{model.description}</div>
-                  <div className="ev-ex-card__count">✨ {model.questions.length} blocos</div>
+                  <div className="ev-ex-card__count ev-ex-card__count--model">
+                    ✨ {model.questions.length} blocos
+                  </div>
                 </div>
               );
             })
@@ -342,6 +339,7 @@ export default function ExercisesView({ session }) {
         )}
       </div>
 
+      {/* Delete modal */}
       {deletingEx && (
         <div className="ev-delete-overlay" onClick={() => setDeletingEx(null)}>
           <div className="ev-delete-modal" onClick={(e) => e.stopPropagation()}>
