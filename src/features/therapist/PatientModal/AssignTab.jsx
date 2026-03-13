@@ -25,7 +25,7 @@ export default function AssignTab({ patient, session, exercises, assignments, go
   const inflightRef = useRef(false);
 
   const [globalExercises, setGlobalExercises] = useState([]);
-  const [activeTab, setActiveTab] = useState("my-list"); 
+  const [activeTab, setActiveTab] = useState("my-list");
 
   useEffect(() => {
     db.query("global_exercises", { order: "created_at.desc" }, session.access_token)
@@ -33,11 +33,12 @@ export default function AssignTab({ patient, session, exercises, assignments, go
       .catch(e => console.error("Erro ao buscar modelos globais:", e));
   }, [session.access_token]);
 
-  const existingIds = localAssign.map((a) => a.exercise_id);
+  const existingIds   = localAssign.map((a) => a.exercise_id);
   const availableMyList = exercises.filter((ex) => !existingIds.includes(ex.id));
-  const listToShow = activeTab === "my-list" ? availableMyList : globalExercises;
+  const listToShow    = activeTab === "my-list" ? availableMyList : globalExercises;
 
-  const toggle = (id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  const toggle = (id) =>
+    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
   const removeAssign = async (exId) => {
     const a = localAssign.find((x) => x.exercise_id === exId);
@@ -47,7 +48,9 @@ export default function AssignTab({ patient, session, exercises, assignments, go
       const updated = localAssign.filter((x) => x.exercise_id !== exId);
       setLocalAssign(updated);
       onDataChange({ assignments: updated });
-    } catch (e) { setError("Erro ao remover: " + e.message); }
+    } catch (e) {
+      setError("Erro ao remover: " + e.message);
+    }
   };
 
   const save = async () => {
@@ -57,38 +60,42 @@ export default function AssignTab({ patient, session, exercises, assignments, go
     setError("");
     try {
       const newAssigns = [];
-      
+
       for (const exId of selected) {
         let finalExId = exId;
-        const isGlobal = globalExercises.find(g => g.id === exId);
+        const isGlobal = globalExercises.find((g) => g.id === exId);
 
-        // Clona el ejercicio Global
+        // Clona o exercício global na tabela do terapeuta
         if (isGlobal) {
-          const newId = "ex_" + Date.now() + Math.random().toString(36).slice(2, 6); // 👈 CRIA O ID
-          
-          await db.insert("exercises", {
-            id: newId, // 👈 INSERE O ID AQUI
-            title: isGlobal.title,
-            description: isGlobal.description || "Modelo Oficial Equilibre",
-            category: isGlobal.category || "TCC",
-            questions: typeof isGlobal.questions === 'string' ? isGlobal.questions : JSON.stringify(isGlobal.questions),
-            therapist_id: session.id
-          }, session.access_token);
-          
-          finalExId = newId; // 👈 USA O ID CRIADO PARA ATRIBUIR AO PACIENTE
+          const newId = "ex_" + Date.now() + Math.random().toString(36).slice(2, 6);
+          await db.insert(
+            "exercises",
+            {
+              id:           newId,
+              title:        isGlobal.title,
+              description:  isGlobal.description || "Modelo Oficial Equilibre",
+              category:     isGlobal.category || "TCC",
+              questions:    typeof isGlobal.questions === "string"
+                              ? isGlobal.questions
+                              : JSON.stringify(isGlobal.questions),
+              therapist_id: session.id,
+            },
+            session.access_token
+          );
+          finalExId = newId;
         }
 
         if (isGlobal || !existingIds.includes(finalExId)) {
+          // ⚠️  Não enviamos therapist_id aqui — a coluna não existe em assignments
           const inserted = await db.insert(
             "assignments",
             {
-              id:           "a" + Date.now() + Math.random().toString(36).slice(2, 5),
-              patient_id:   patient.id,
-              exercise_id:  finalExId,
-              therapist_id: session.id,
-              assigned_at:  new Date().toISOString(),
-              status:       "pending",
-              due_date:     dueDates[exId] || null, 
+              id:          "a" + Date.now() + Math.random().toString(36).slice(2, 5),
+              patient_id:  patient.id,
+              exercise_id: finalExId,
+              assigned_at: new Date().toISOString(),
+              status:      "pending",
+              due_date:    dueDates[exId] || null,
             },
             session.access_token
           );
@@ -97,14 +104,21 @@ export default function AssignTab({ patient, session, exercises, assignments, go
       }
 
       if (goal) {
-        await db.update("goals", { id: goal.id }, { weekly_target: weeklyGoal }, session.access_token);
+        await db.update(
+          "goals",
+          { id: goal.id },
+          { weekly_target: weeklyGoal },
+          session.access_token
+        );
       } else {
-        await db.insert("goals", {
-            id:           "g" + Date.now(),
-            patient_id:   patient.id,
-            therapist_id: session.id,
+        await db.insert(
+          "goals",
+          {
+            id:            "g" + Date.now(),
+            patient_id:    patient.id,
+            therapist_id:  session.id,
             weekly_target: weeklyGoal,
-            created_at:   new Date().toISOString(),
+            created_at:    new Date().toISOString(),
           },
           session.access_token
         );
@@ -115,8 +129,7 @@ export default function AssignTab({ patient, session, exercises, assignments, go
       onDataChange({ assignments: updated });
       setSelected([]);
       setDueDates({});
-      
-      if(activeTab === "global") setActiveTab("my-list"); 
+      if (activeTab === "global") setActiveTab("my-list");
 
     } catch (e) {
       setError("Erro ao salvar: " + e.message);
@@ -131,7 +144,14 @@ export default function AssignTab({ patient, session, exercises, assignments, go
       <div className="assign-tab__goal-box">
         <div className="assign-tab__goal-label">🎯 Meta semanal de exercícios</div>
         <div className="assign-tab__goal-row">
-          <input id="weekly-goal-range" type="range" min="1" max="10" value={weeklyGoal} onChange={(e) => setWeeklyGoal(Number(e.target.value))} className="assign-tab__goal-range" />
+          <input
+            id="weekly-goal-range"
+            type="range"
+            min="1" max="10"
+            value={weeklyGoal}
+            onChange={(e) => setWeeklyGoal(Number(e.target.value))}
+            className="assign-tab__goal-range"
+          />
           <span className="assign-tab__goal-value">{weeklyGoal}</span>
           <span className="assign-tab__goal-unit">por semana</span>
         </div>
@@ -145,36 +165,42 @@ export default function AssignTab({ patient, session, exercises, assignments, go
           <div className="assign-tab__assigned-list">
             {localAssign.map((a) => {
               const ex = exercises.find((e) => e.id === a.exercise_id);
-              
-              // SE O EXERCICIO FOI ELIMINADO DA BIBLIOTECA, MOSTRA UN AVISO E DEIXA BORRALO:
               if (!ex) {
                 return (
                   <div key={a.id} className="assign-tab__assigned-row">
-                    <span className="assign-tab__assigned-title" style={{color: '#ef4444', fontWeight: 'bold'}}>
-                      ⚠️ Exercicio Eliminado (Pantasma)
+                    <span className="assign-tab__assigned-title" style={{ color: "#ef4444", fontWeight: "bold" }}>
+                      ⚠️ Exercício Eliminado
                     </span>
                     <button
                       className="assign-tab__remove-btn"
                       onClick={() => removeAssign(a.exercise_id)}
-                      title="Quitar asignación rota"
+                      title="Remover atribuição inválida"
                     >
                       ✕
                     </button>
                   </div>
                 );
               }
-
-              // (O resto do código segue igual abaixo)
               return (
                 <div key={a.id} className="assign-tab__assigned-row">
                   <span className="assign-tab__assigned-title">{ex.title}</span>
                   <div className="assign-tab__assigned-meta">
                     <DueChip dueDate={a.due_date} />
-                    <span className={["assign-tab__status-badge", a.status === "done" ? "assign-tab__status-badge--done" : "assign-tab__status-badge--pending"].join(" ")}>
+                    <span className={[
+                      "assign-tab__status-badge",
+                      a.status === "done"
+                        ? "assign-tab__status-badge--done"
+                        : "assign-tab__status-badge--pending",
+                    ].join(" ")}>
                       {a.status === "done" ? "✓ Feito" : "⏳ Pendente"}
                     </span>
                   </div>
-                  <button className="assign-tab__remove-btn" onClick={() => removeAssign(a.exercise_id)}>✕</button>
+                  <button
+                    className="assign-tab__remove-btn"
+                    onClick={() => removeAssign(a.exercise_id)}
+                  >
+                    ✕
+                  </button>
                 </div>
               );
             })}
@@ -183,32 +209,72 @@ export default function AssignTab({ patient, session, exercises, assignments, go
       )}
 
       <section className="assign-tab__section">
-        <h4 className="assign-tab__section-label" style={{marginBottom: '5px'}}>Adicionar Novo Exercício</h4>
+        <h4 className="assign-tab__section-label" style={{ marginBottom: "5px" }}>
+          Adicionar Novo Exercício
+        </h4>
 
         <div className="assign-tab__tabs-container">
-          <button className={`assign-tab__tab-btn ${activeTab === 'my-list' ? 'assign-tab__tab-btn--active-my' : ''}`} onClick={() => setActiveTab("my-list")}>
+          <button
+            className={`assign-tab__tab-btn ${
+              activeTab === "my-list" ? "assign-tab__tab-btn--active-my" : ""
+            }`}
+            onClick={() => setActiveTab("my-list")}
+          >
             👤 Meus Exercícios
           </button>
-          <button className={`assign-tab__tab-btn ${activeTab === 'global' ? 'assign-tab__tab-btn--active-global' : ''}`} onClick={() => setActiveTab("global")}>
+          <button
+            className={`assign-tab__tab-btn ${
+              activeTab === "global" ? "assign-tab__tab-btn--active-global" : ""
+            }`}
+            onClick={() => setActiveTab("global")}
+          >
             ✨ Modelos Equilibre
           </button>
         </div>
 
-        {listToShow.length === 0 && <p className="assign-tab__empty">{activeTab === "my-list" ? "Todos os seus exercícios já foram atribuídos." : "Nenhum modelo global disponível."}</p>}
+        {listToShow.length === 0 && (
+          <p className="assign-tab__empty">
+            {activeTab === "my-list"
+              ? "Todos os seus exercícios já foram atribuídos."
+              : "Nenhum modelo global disponível."}
+          </p>
+        )}
 
         <div className="assign-tab__pick-list">
           {listToShow.map((ex) => {
             const isSelected = selected.includes(ex.id);
             return (
               <div key={ex.id} className="assign-tab__pick-wrap">
-                <div className={["assign-tab__pick", isSelected ? "assign-tab__pick--selected" : ""].filter(Boolean).join(" ")} onClick={() => toggle(ex.id)}>
+                <div
+                  className={[
+                    "assign-tab__pick",
+                    isSelected ? "assign-tab__pick--selected" : "",
+                  ].filter(Boolean).join(" ")}
+                  onClick={() => toggle(ex.id)}
+                >
                   <span className="assign-tab__pick-check">{isSelected ? "✓" : ""}</span>
-                  <span className="assign-tab__pick-title">{ex.title} {activeTab === 'global' && <span className="assign-tab__badge-official">OFICIAL</span>}</span>
+                  <span className="assign-tab__pick-title">
+                    {ex.title}{" "}
+                    {activeTab === "global" && (
+                      <span className="assign-tab__badge-official">OFICIAL</span>
+                    )}
+                  </span>
                 </div>
                 {isSelected && (
                   <div className="assign-tab__due-row">
-                    <label htmlFor={`due-${ex.id}`} className="assign-tab__due-label">📅 Prazo:</label>
-                    <input id={`due-${ex.id}`} type="date" className="assign-tab__due-input" value={dueDates[ex.id] || ""} min={new Date().toISOString().split("T")[0]} onChange={(e) => setDueDates((d) => ({ ...d, [ex.id]: e.target.value }))} />
+                    <label htmlFor={`due-${ex.id}`} className="assign-tab__due-label">
+                      📅 Prazo:
+                    </label>
+                    <input
+                      id={`due-${ex.id}`}
+                      type="date"
+                      className="assign-tab__due-input"
+                      value={dueDates[ex.id] || ""}
+                      min={new Date().toISOString().split("T")[0]}
+                      onChange={(e) =>
+                        setDueDates((d) => ({ ...d, [ex.id]: e.target.value }))
+                      }
+                    />
                   </div>
                 )}
               </div>
@@ -218,8 +284,17 @@ export default function AssignTab({ patient, session, exercises, assignments, go
       </section>
 
       <div className="assign-tab__footer">
-        <button className="assign-tab__btn assign-tab__btn--cancel" onClick={onClose}>Fechar</button>
-        <button className="assign-tab__btn assign-tab__btn--save" onClick={save} disabled={saving || selected.length === 0}>
+        <button
+          className="assign-tab__btn assign-tab__btn--cancel"
+          onClick={onClose}
+        >
+          Fechar
+        </button>
+        <button
+          className="assign-tab__btn assign-tab__btn--save"
+          onClick={save}
+          disabled={saving || selected.length === 0}
+        >
           {saving ? "Salvando..." : `Atribuir${selected.length > 0 ? ` (${selected.length})` : ""}`}
         </button>
       </div>
