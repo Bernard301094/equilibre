@@ -33,19 +33,50 @@ import AdminDashboard            from "./features/admin/AdminDashboard";
 
 /* ── E-MAIL DO ADMINISTRADOR GERAL ────────────────────────────── */
 const ADMIN_EMAIL = "bernard30101994@gmail.com";
-/* ───────────────────────────────────────────────────────────── */
 
+/**
+ * Versão do seed. Incremente este número sempre que alterar
+ * SEED_EXERCISES em constants.js — isso força o update no banco.
+ */
+const SEED_VERSION = "2";
+const SEED_VERSION_KEY = "eq_seed_version";
+
+/* ══════════════════════════════════════════════════════════════
+   seedExercisesIfNeeded
+   — Na v1: inseria apenas se o banco estava vazio.
+   — A partir da v2: compara SEED_VERSION com o valor salvo e
+     faz upsert (update se existe, insert se não existe) para
+     garantir que mudanças no seed sejam aplicadas.
+   ══════════════════════════════════════════════════════════════ */
 async function seedExercisesIfNeeded() {
-  if (localStorage.getItem(LS_SEEDED_KEY)) return;
+  const savedVersion = localStorage.getItem(SEED_VERSION_KEY);
+
+  // Se a versão já está atualizada, não faz nada
+  if (savedVersion === SEED_VERSION) return;
+
   try {
     const existing = await db.query("exercises", { select: "id" });
-    if (!Array.isArray(existing) || existing.length === 0) {
-      for (const ex of SEED_EXERCISES) {
-        await db.insert("exercises", { ...ex, questions: JSON.stringify(ex.questions) });
+    const existingIds = new Set(
+      Array.isArray(existing) ? existing.map((e) => e.id) : []
+    );
+
+    for (const ex of SEED_EXERCISES) {
+      const payload = { ...ex, questions: JSON.stringify(ex.questions) };
+      if (existingIds.has(ex.id)) {
+        // Exercício já existe → atualiza as perguntas
+        await db.update("exercises", { id: ex.id }, payload);
+      } else {
+        // Exercício novo → insere
+        await db.insert("exercises", payload);
       }
     }
+
+    localStorage.setItem(SEED_VERSION_KEY, SEED_VERSION);
+    // Mantém compatibilidade com a chave antiga
     localStorage.setItem(LS_SEEDED_KEY, "true");
-  } catch (e) { console.warn("[seed] failed:", e.message); }
+  } catch (e) {
+    console.warn("[seed] failed:", e.message);
+  }
 }
 
 async function resolveLogin({ email, password, role }) {
@@ -209,19 +240,13 @@ export const PATIENT_ROUTES = {
   notifications: "/paciente/notificacoes",
 };
 
-/* ═════════════════════════════════════════════════════════════
-   MAPAS INVERSOS — pathname → id
-   Usados pelos layouts para calcular o item ativo no nav.
-═════════════════════════════════════════════════════════════ */
 export const PATH_TO_THERAPIST_VIEW = Object.fromEntries(
   Object.entries(THERAPIST_ROUTES).map(([id, path]) => [path, id])
 );
-// ex: { "/terapeuta/inicio": "dashboard", "/terapeuta/pacientes": "patients", ... }
 
 export const PATH_TO_PATIENT_VIEW = Object.fromEntries(
   Object.entries(PATIENT_ROUTES).map(([id, path]) => [path, id])
 );
-// ex: { "/paciente/inicio": "home", "/paciente/diario": "diary", ... }
 
 function RequireAuth({ session, role, redirectTo, children }) {
   if (!session) return <Navigate to="/entrar" replace />;
@@ -247,7 +272,6 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
 
   return (
     <>
-      {/* BANNER FLOTANTE de impersonación */}
       <ImpersonateBanner setSession={setSession} />
 
       <Routes>
@@ -270,7 +294,6 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
           }
         />
 
-        {/* RUTA DE ADMINISTRADOR */}
         <Route
           path="/admin"
           element={
@@ -289,15 +312,15 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
           }
         >
           <Route index element={<Navigate to={THERAPIST_ROUTES.dashboard} replace />} />
-          <Route path="inicio"      element={<TherapistDashboard session={session} />} />
-          <Route path="pacientes"   element={<PatientsView session={session} />} />
-          <Route path="exercicios"  element={<ExercisesView session={session} />} />
-          <Route path="criar"       element={<CreateExerciseView session={session} />} />
-          <Route path="progresso"   element={<TherapistProgress session={session} />} />
-          <Route path="respostas"   element={<ResponsesView session={session} />} />
+          <Route path="inicio"       element={<TherapistDashboard session={session} />} />
+          <Route path="pacientes"    element={<PatientsView session={session} />} />
+          <Route path="exercicios"   element={<ExercisesView session={session} />} />
+          <Route path="criar"        element={<CreateExerciseView session={session} />} />
+          <Route path="progresso"    element={<TherapistProgress session={session} />} />
+          <Route path="respostas"    element={<ResponsesView session={session} />} />
           <Route path="notificacoes" element={<NotificationsView session={session} />} />
-          <Route path="orientacoes" element={<MessagesView session={session} />} />
-          <Route path="*"           element={<Navigate to={THERAPIST_ROUTES.dashboard} replace />} />
+          <Route path="orientacoes"  element={<MessagesView session={session} />} />
+          <Route path="*"            element={<Navigate to={THERAPIST_ROUTES.dashboard} replace />} />
         </Route>
 
         <Route
@@ -309,15 +332,15 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
           }
         >
           <Route index element={<Navigate to={PATIENT_ROUTES.home} replace />} />
-          <Route path="inicio"      element={<PatientHome session={session} setSession={setSession} />} />
-          <Route path="exercicios"  element={<PatientExercises session={session} />} />
-          <Route path="diario"      element={<PatientDiary session={session} />} />
-          <Route path="rotina"      element={<PatientRoutine session={session} />} />
-          <Route path="progresso"   element={<PatientProgress session={session} />} />
-          <Route path="historico"   element={<PatientHistory session={session} />} />
-          <Route path="orientacoes" element={<MessagesView session={session} />} />
+          <Route path="inicio"       element={<PatientHome session={session} setSession={setSession} />} />
+          <Route path="exercicios"   element={<PatientExercises session={session} />} />
+          <Route path="diario"       element={<PatientDiary session={session} />} />
+          <Route path="rotina"       element={<PatientRoutine session={session} />} />
+          <Route path="progresso"    element={<PatientProgress session={session} />} />
+          <Route path="historico"    element={<PatientHistory session={session} />} />
+          <Route path="orientacoes"  element={<MessagesView session={session} />} />
           <Route path="notificacoes" element={<PatientNotificationsView />} />
-          <Route path="*"           element={<Navigate to={PATIENT_ROUTES.home} replace />} />
+          <Route path="*"            element={<Navigate to={PATIENT_ROUTES.home} replace />} />
         </Route>
 
         <Route path="*" element={<Navigate to={defaultRedirect} replace />} />
