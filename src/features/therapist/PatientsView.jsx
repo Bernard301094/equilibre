@@ -9,6 +9,9 @@ import PatientModal from "./PatientModal/PatientModal";
 import { SkeletonList, SkeletonCard } from "../../components/ui/Skeleton";
 import "./PatientsView.css";
 
+/* URL pública do app — ajuste se o domínio mudar */
+const APP_URL = "https://equilibre-app.vercel.app";
+
 export default function PatientsView({ session }) {
   const [patients,        setPatients]        = useState([]);
   const [invites,         setInvites]         = useState([]);
@@ -281,7 +284,10 @@ export default function PatientsView({ session }) {
                       aria-label="Enviar pelo WhatsApp"
                       onClick={() => {
                         const msg = encodeURIComponent(
-                          `Olá! Estou usando o Equilibre para acompanhar o nosso trabalho.\n\nCrie a sua conta e use o código de convite:\n\n*${inv.code}*`
+                          `Olá! A sua psicóloga está usando o *Equilibre* para acompanhar o nosso trabalho juntos 🌿\n\n` +
+                          `Para começar, acesse o app pelo link abaixo, crie a sua conta como *Paciente* e use o código de convite:\n\n` +
+                          `🔗 *${APP_URL}*\n` +
+                          `🔑 Código: *${inv.code}*`
                         );
                         window.open(`https://wa.me/?text=${msg}`, "_blank");
                       }}
@@ -350,7 +356,7 @@ export default function PatientsView({ session }) {
   );
 }
 
-/* ── Diálogo de confirmación reutilizable (interno) ────────── */
+/* ── Diálogo de confirmação reutilizável (interno) ──────── */
 function ConfirmDialog({ icon, titleId, title, children, onClose, onConfirm, confirmLabel }) {
   return (
     <div className="confirm-overlay" onClick={onClose}>
