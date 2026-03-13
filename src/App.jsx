@@ -1,3 +1,4 @@
+// src/App.jsx
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { useSession } from "./hooks/useSession";
@@ -7,6 +8,7 @@ import auth from "./services/auth";
 import { SEED_EXERCISES, LS_SEEDED_KEY, ROLE } from "./utils/constants";
 import Spinner         from "./components/ui/Spinner";
 import ConnectionToast from "./components/ui/ConnectionToast";
+import ImpersonateBanner from "./components/ui/ImpersonateBanner"; // ← NOVO
 import LoginPage       from "./components/auth/LoginPage";
 import TherapistLayout from "./components/layout/TherapistLayout";
 import PatientLayout   from "./components/layout/PatientLayout";
@@ -30,7 +32,7 @@ import MessagesView              from "./components/shared/MessagesView";
 import AdminDashboard            from "./features/admin/AdminDashboard";
 
 /* ── E-MAIL DO ADMINISTRADOR GERAL ─────────────────────────── */
-const ADMIN_EMAIL = "bernard30101994@gmail.com"; // <-- NÃO ESQUEÇA DE TROCAR ISSO
+const ADMIN_EMAIL = "bernard30101994@gmail.com";
 /* ──────────────────────────────────────────────────────────── */
 
 async function seedExercisesIfNeeded() {
@@ -55,20 +57,20 @@ async function resolveLogin({ email, password, role }) {
 
   const token  = authData.access_token;
   const userId = authData.user?.id;
-  
+
   // INTERCEPTOR DE ADMIN
   if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
     return {
       id: userId,
       email: authData.user.email,
       name: "Administrador Geral",
-      role: "admin", 
+      role: "admin",
       access_token: token,
       refresh_token: authData.refresh_token,
     };
   }
 
-  let userRow  = null;
+  let userRow = null;
 
   try {
     const byId = await db.query("users", { filter: { id: userId } }, token);
@@ -127,7 +129,6 @@ async function resolveRegister(form) {
     userId = authRes?.user?.id ?? authRes?.id;
     token  = authRes?.access_token ?? authRes?.session?.access_token ?? null;
 
-    // Trava de segurança do Token
     if (userId && !token) {
       try {
         const loginRes = await auth.signIn(form.email, form.password);
@@ -146,7 +147,7 @@ async function resolveRegister(form) {
       try {
         const authRes = await auth.signIn(form.email, form.password);
         if (!authRes?.access_token) return "Erro ao autenticar conta existente. Verifique a senha.";
-        userId = authRes?.user?.id; token  = authRes.access_token; isReactivation = true;
+        userId = authRes?.user?.id; token = authRes.access_token; isReactivation = true;
       } catch { return "Este e-mail já tem uma conta anterior."; }
     } else { return `Erro ao criar conta: ${signUpErr.message}`; }
   }
@@ -163,11 +164,11 @@ async function resolveRegister(form) {
     } else {
       await db.insert(
         "users",
-        { 
-          id: userId, 
-          name: form.name, 
-          email: form.email, 
-          role: form.role, 
+        {
+          id: userId,
+          name: form.name,
+          email: form.email,
+          role: form.role,
           therapist_id: therapistId,
           crp: form.role === ROLE.THERAPIST ? form.crp : null,
           status: form.role === ROLE.THERAPIST ? "pending" : "active"
@@ -186,8 +187,26 @@ async function resolveRegister(form) {
 export const PATH_TO_THERAPIST_VIEW = "/terapeuta";
 export const PATH_TO_PATIENT_VIEW = "/paciente";
 
-export const THERAPIST_ROUTES = { dashboard: "/terapeuta/inicio", patients: "/terapeuta/pacientes", exercises: "/terapeuta/exercicios", create: "/terapeuta/criar", progress: "/terapeuta/progresso", responses: "/terapeuta/respostas", notifications: "/terapeuta/notificacoes", orientacoes: "/terapeuta/orientacoes" };
-export const PATIENT_ROUTES = { home: "/paciente/inicio", exercises: "/paciente/exercicios", diary: "/paciente/diario", routine: "/paciente/rotina", progress: "/paciente/progresso", history: "/paciente/historico", orientacoes: "/paciente/orientacoes", notifications: "/paciente/notificacoes" };
+export const THERAPIST_ROUTES = {
+  dashboard:     "/terapeuta/inicio",
+  patients:      "/terapeuta/pacientes",
+  exercises:     "/terapeuta/exercicios",
+  create:        "/terapeuta/criar",
+  progress:      "/terapeuta/progresso",
+  responses:     "/terapeuta/respostas",
+  notifications: "/terapeuta/notificacoes",
+  orientacoes:   "/terapeuta/orientacoes",
+};
+export const PATIENT_ROUTES = {
+  home:          "/paciente/inicio",
+  exercises:     "/paciente/exercicios",
+  diary:         "/paciente/diario",
+  routine:       "/paciente/rotina",
+  progress:      "/paciente/progresso",
+  history:       "/paciente/historico",
+  orientacoes:   "/paciente/orientacoes",
+  notifications: "/paciente/notificacoes",
+};
 
 function RequireAuth({ session, role, redirectTo, children }) {
   if (!session) return <Navigate to="/entrar" replace />;
@@ -201,45 +220,95 @@ function LoginWrapper({ onLogin, onRegister }) {
 }
 
 function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTheme }) {
-  const defaultRedirect = !session ? "/entrar" : session.role === "admin" ? "/admin" : session.role === ROLE.THERAPIST ? THERAPIST_ROUTES.dashboard : PATIENT_ROUTES.home;
+  const defaultRedirect = !session
+    ? "/entrar"
+    : session.role === "admin"
+      ? "/admin"
+      : session.role === ROLE.THERAPIST
+        ? THERAPIST_ROUTES.dashboard
+        : PATIENT_ROUTES.home;
 
   const shared = { session, setSession, updateSession, logout, theme, toggleTheme };
 
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to={defaultRedirect} replace />} />
-      <Route path="/entrar" element={session ? <Navigate to={defaultRedirect} replace /> : <LoginWrapper onLogin={async (form) => { try { const resolved = await resolveLogin(form); setSession(resolved); return null; } catch (e) { return e.message; } }} onRegister={resolveRegister} />} />
+    <>
+      {/* ← BANNER FLOTANTE de impersonación */}
+      <ImpersonateBanner setSession={setSession} />
 
-      {/* RUTA DE ADMINISTRADOR */}
-      <Route path="/admin" element={<RequireAuth session={session} role="admin" redirectTo="/entrar"><AdminDashboard session={session} logout={logout} /></RequireAuth>} />
+      <Routes>
+        <Route path="/" element={<Navigate to={defaultRedirect} replace />} />
 
-      <Route path="/terapeuta" element={<RequireAuth session={session} role={ROLE.THERAPIST} redirectTo="/entrar"><TherapistLayout {...shared} /></RequireAuth>}>
-        <Route index element={<Navigate to={THERAPIST_ROUTES.dashboard} replace />} />
-        <Route path="inicio" element={<TherapistDashboard session={session} />} />
-        <Route path="pacientes" element={<PatientsView session={session} />} />
-        <Route path="exercicios" element={<ExercisesView session={session} />} />
-        <Route path="criar" element={<CreateExerciseView session={session} />} />
-        <Route path="progresso" element={<TherapistProgress session={session} />} />
-        <Route path="respostas" element={<ResponsesView session={session} />} />
-        <Route path="notificacoes" element={<NotificationsView session={session} />} />
-        <Route path="orientacoes" element={<MessagesView session={session} />} />
-        <Route path="*" element={<Navigate to={THERAPIST_ROUTES.dashboard} replace />} />
-      </Route>
+        <Route
+          path="/entrar"
+          element={
+            session ? <Navigate to={defaultRedirect} replace /> :
+            <LoginWrapper
+              onLogin={async (form) => {
+                try {
+                  const resolved = await resolveLogin(form);
+                  setSession(resolved);
+                  return null;
+                } catch (e) { return e.message; }
+              }}
+              onRegister={resolveRegister}
+            />
+          }
+        />
 
-      <Route path="/paciente" element={<RequireAuth session={session} role={ROLE.PATIENT} redirectTo="/entrar"><PatientLayout {...shared} /></RequireAuth>}>
-        <Route index element={<Navigate to={PATIENT_ROUTES.home} replace />} />
-        <Route path="inicio" element={<PatientHome session={session} setSession={setSession} />} />
-        <Route path="exercicios" element={<PatientExercises session={session} />} />
-        <Route path="diario" element={<PatientDiary session={session} />} />
-        <Route path="rotina" element={<PatientRoutine session={session} />} />
-        <Route path="progresso" element={<PatientProgress session={session} />} />
-        <Route path="historico" element={<PatientHistory session={session} />} />
-        <Route path="orientacoes" element={<MessagesView session={session} />} />
-        <Route path="notificacoes" element={<PatientNotificationsView />} />
-        <Route path="*" element={<Navigate to={PATIENT_ROUTES.home} replace />} />
-      </Route>
-      <Route path="*" element={<Navigate to={defaultRedirect} replace />} />
-    </Routes>
+        {/* RUTA DE ADMINISTRADOR */}
+        <Route
+          path="/admin"
+          element={
+            <RequireAuth session={session} role="admin" redirectTo="/entrar">
+              {/* ← setSession pasado al AdminDashboard */}
+              <AdminDashboard session={session} logout={logout} setSession={setSession} />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/terapeuta"
+          element={
+            <RequireAuth session={session} role={ROLE.THERAPIST} redirectTo="/entrar">
+              <TherapistLayout {...shared} />
+            </RequireAuth>
+          }
+        >
+          <Route index element={<Navigate to={THERAPIST_ROUTES.dashboard} replace />} />
+          <Route path="inicio"      element={<TherapistDashboard session={session} />} />
+          <Route path="pacientes"   element={<PatientsView session={session} />} />
+          <Route path="exercicios"  element={<ExercisesView session={session} />} />
+          <Route path="criar"       element={<CreateExerciseView session={session} />} />
+          <Route path="progresso"   element={<TherapistProgress session={session} />} />
+          <Route path="respostas"   element={<ResponsesView session={session} />} />
+          <Route path="notificacoes" element={<NotificationsView session={session} />} />
+          <Route path="orientacoes" element={<MessagesView session={session} />} />
+          <Route path="*"           element={<Navigate to={THERAPIST_ROUTES.dashboard} replace />} />
+        </Route>
+
+        <Route
+          path="/paciente"
+          element={
+            <RequireAuth session={session} role={ROLE.PATIENT} redirectTo="/entrar">
+              <PatientLayout {...shared} />
+            </RequireAuth>
+          }
+        >
+          <Route index element={<Navigate to={PATIENT_ROUTES.home} replace />} />
+          <Route path="inicio"      element={<PatientHome session={session} setSession={setSession} />} />
+          <Route path="exercicios"  element={<PatientExercises session={session} />} />
+          <Route path="diario"      element={<PatientDiary session={session} />} />
+          <Route path="rotina"      element={<PatientRoutine session={session} />} />
+          <Route path="progresso"   element={<PatientProgress session={session} />} />
+          <Route path="historico"   element={<PatientHistory session={session} />} />
+          <Route path="orientacoes" element={<MessagesView session={session} />} />
+          <Route path="notificacoes" element={<PatientNotificationsView />} />
+          <Route path="*"           element={<Navigate to={PATIENT_ROUTES.home} replace />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to={defaultRedirect} replace />} />
+      </Routes>
+    </>
   );
 }
 
@@ -259,7 +328,14 @@ export default function App() {
   return (
     <BrowserRouter>
       <ConnectionToast />
-      <AppRoutes session={session} setSession={setSession} updateSession={updateSession} logout={logout} theme={theme} toggleTheme={toggleTheme} />
+      <AppRoutes
+        session={session}
+        setSession={setSession}
+        updateSession={updateSession}
+        logout={logout}
+        theme={theme}
+        toggleTheme={toggleTheme}
+      />
     </BrowserRouter>
   );
 }
