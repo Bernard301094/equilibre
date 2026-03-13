@@ -1,0 +1,111 @@
+/* ═══════════════════════════════════════════════════════════
+   ImpersonateBanner.css
+   Barra fixa acima do BottomNav no mobile,
+   canto inferior direito no desktop.
+═══════════════════════════════════════════════════════════ */
+
+/* ── Banner base ────────────────────────────────────────── */
+.impersonate-banner {
+  position: fixed;
+  z-index: 102; /* acima do BottomNav (z-index: 101) */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  background: #1e293b;
+  color: white;
+  font-family: 'DM Sans', 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+
+  /* ── Mobile: barra full-width logo acima do BottomNav ── */
+  bottom: calc(64px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  border-bottom: none;
+  border-radius: 0;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.25);
+
+  /* Entrada suave */
+  animation: bannerSlideUp 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes bannerSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Label ──────────────────────────────────────────────── */
+.impersonate-banner__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: rgba(255,255,255,0.85);
+  font-size: 13px;
+}
+
+.impersonate-banner__label strong {
+  color: #fbbf24;
+  letter-spacing: 0.3px;
+}
+
+/* ── Botão voltar ───────────────────────────────────────── */
+.impersonate-banner__btn {
+  flex-shrink: 0;
+  background: #7c3aed;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.1s;
+  font-family: inherit;
+}
+
+.impersonate-banner__btn:hover {
+  background: #6d28d9;
+}
+
+.impersonate-banner__btn:active {
+  transform: scale(0.96);
+}
+
+/* ── Telas pequenas (360px) ─────────────────────────────── */
+@media (max-width: 360px) {
+  .impersonate-banner {
+    bottom: calc(58px + env(safe-area-inset-bottom));
+    font-size: 12px;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .impersonate-banner__btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+/* ── Desktop (>= 768px): floating card canto inferior direito */
+@media (min-width: 768px) {
+  .impersonate-banner {
+    /* Sem BottomNav no desktop — volta ao floating */
+    bottom: 24px;
+    left: auto;
+    right: 24px;
+    width: auto;
+    max-width: 340px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    padding: 12px 20px;
+  }
+}
