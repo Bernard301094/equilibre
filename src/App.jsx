@@ -13,7 +13,6 @@ import LoginPage       from "./components/auth/LoginPage";
 import TherapistLayout from "./components/layout/TherapistLayout";
 import PatientLayout   from "./components/layout/PatientLayout";
 
-/* ── TODOS OS IMPORTS DE TELAS AGORA ESTÃO NO TOPO ── */
 import TherapistDashboard        from "./features/therapist/Dashboard";
 import PatientsView              from "./features/therapist/PatientsView";
 import ExercisesView             from "./features/therapist/ExercisesView";
@@ -21,6 +20,7 @@ import CreateExerciseView        from "./features/therapist/CreateExerciseView";
 import ResponsesView             from "./features/therapist/ResponsesView";
 import TherapistProgress         from "./features/therapist/TherapistProgress";
 import NotificationsView         from "./features/therapist/NotificationsView";
+import ModelosEquilibreView      from "./features/therapist/ModelosEquilibreView";
 import PatientHome               from "./features/patient/Home";
 import PatientExercises          from "./features/patient/PatientExercises";
 import PatientDiary              from "./features/patient/DiaryView";
@@ -31,27 +31,13 @@ import PatientNotificationsView  from "./features/patient/PatientNotificationsVi
 import MessagesView              from "./components/shared/MessagesView";
 import AdminDashboard            from "./features/admin/AdminDashboard";
 
-/* ── E-MAIL DO ADMINISTRADOR GERAL ────────────────────────────── */
 const ADMIN_EMAIL = "bernard30101994@gmail.com";
 
-/**
- * Versão do seed. Incremente este número sempre que alterar
- * SEED_EXERCISES em constants.js — isso força o update no banco.
- */
 const SEED_VERSION = "2";
 const SEED_VERSION_KEY = "eq_seed_version";
 
-/* ══════════════════════════════════════════════════════════════
-   seedExercisesIfNeeded
-   — Na v1: inseria apenas se o banco estava vazio.
-   — A partir da v2: compara SEED_VERSION com o valor salvo e
-     faz upsert (update se existe, insert se não existe) para
-     garantir que mudanças no seed sejam aplicadas.
-   ══════════════════════════════════════════════════════════════ */
 async function seedExercisesIfNeeded() {
   const savedVersion = localStorage.getItem(SEED_VERSION_KEY);
-
-  // Se a versão já está atualizada, não faz nada
   if (savedVersion === SEED_VERSION) return;
 
   try {
@@ -63,16 +49,13 @@ async function seedExercisesIfNeeded() {
     for (const ex of SEED_EXERCISES) {
       const payload = { ...ex, questions: JSON.stringify(ex.questions) };
       if (existingIds.has(ex.id)) {
-        // Exercício já existe → atualiza as perguntas
         await db.update("exercises", { id: ex.id }, payload);
       } else {
-        // Exercício novo → insere
         await db.insert("exercises", payload);
       }
     }
 
     localStorage.setItem(SEED_VERSION_KEY, SEED_VERSION);
-    // Mantém compatibilidade com a chave antiga
     localStorage.setItem(LS_SEEDED_KEY, "true");
   } catch (e) {
     console.warn("[seed] failed:", e.message);
@@ -89,7 +72,6 @@ async function resolveLogin({ email, password, role }) {
   const token  = authData.access_token;
   const userId = authData.user?.id;
 
-  // INTERCEPTOR DE ADMIN
   if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
     return {
       id: userId,
@@ -215,9 +197,6 @@ async function resolveRegister(form) {
   } catch (e) { return `Erro ao finalizar criação de conta: ${e.message}`; }
 }
 
-/* ═════════════════════════════════════════════════════════════
-   ROTAS — id → pathname
-═════════════════════════════════════════════════════════════ */
 export const THERAPIST_ROUTES = {
   dashboard:     "/terapeuta/inicio",
   patients:      "/terapeuta/pacientes",
@@ -227,6 +206,7 @@ export const THERAPIST_ROUTES = {
   responses:     "/terapeuta/respostas",
   notifications: "/terapeuta/notificacoes",
   orientacoes:   "/terapeuta/orientacoes",
+  modelos:       "/terapeuta/modelos",
 };
 
 export const PATIENT_ROUTES = {
@@ -320,6 +300,7 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
           <Route path="respostas"    element={<ResponsesView session={session} />} />
           <Route path="notificacoes" element={<NotificationsView session={session} />} />
           <Route path="orientacoes"  element={<MessagesView session={session} />} />
+          <Route path="modelos"      element={<ModelosEquilibreView session={session} />} />
           <Route path="*"            element={<Navigate to={THERAPIST_ROUTES.dashboard} replace />} />
         </Route>
 

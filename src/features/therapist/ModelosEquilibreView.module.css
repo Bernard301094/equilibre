@@ -1,0 +1,106 @@
+.wrapper {
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.back {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #666);
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-bottom: 20px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s;
+}
+
+.back:hover {
+  color: var(--text-primary, #111);
+}
+
+.header {
+  margin-bottom: 28px;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary, #1a1a1a);
+  margin: 0 0 6px;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: var(--text-secondary, #666);
+  margin: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 22px 20px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border, #e8e8e8);
+  background: var(--bg-card, #fff);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+
+.card:hover {
+  border-color: #6a997c;
+  box-shadow: 0 4px 16px rgba(106,153,124,0.15);
+  transform: translateY(-2px);
+}
+
+.cardComingSoon {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+.cardIcon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.cardTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.cardDesc {
+  font-size: 0.82rem;
+  color: var(--text-secondary, #666);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.cardCta {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6a997c;
+  margin-top: 4px;
+}
+
+@media (max-width: 480px) {
+  .wrapper {
+    padding: 16px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

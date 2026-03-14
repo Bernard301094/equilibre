@@ -1,0 +1,215 @@
+.wrapper {
+  background: var(--bg-card, #fff);
+  border-radius: 20px;
+  padding: 28px;
+  max-width: 920px;
+  margin: 0 auto;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+}
+
+.topBar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary, #1a1a1a);
+  margin: 0 0 4px;
+}
+
+.subtitle {
+  font-size: 0.82rem;
+  color: var(--text-secondary, #888);
+  margin: 0;
+}
+
+.content {
+  display: flex;
+  gap: 36px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+/* ── Chart ─────────────────────────────────────────────────── */
+.chartWrapper {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--bg-surface, #f8faf9);
+  border-radius: 16px;
+  padding: 12px;
+  border: 1px solid var(--border, #eaeaea);
+}
+
+/* ── Sliders ────────────────────────────────────────────────── */
+.sliders {
+  flex: 1;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sliderRow {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.labelWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.colorDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.areaLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary, #333);
+  cursor: pointer;
+  border-bottom: 1.5px dashed transparent;
+  transition: border-color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.areaLabel:hover {
+  border-bottom-color: #6a997c;
+}
+
+.editHint {
+  font-size: 0.7rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.areaLabel:hover .editHint {
+  opacity: 1;
+}
+
+.labelInput {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary, #333);
+  border: none;
+  border-bottom: 2px solid #6a997c;
+  outline: none;
+  background: transparent;
+  width: 160px;
+  padding: 0 2px;
+}
+
+.rangeWrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.range {
+  flex: 1;
+  cursor: pointer;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.score {
+  width: 22px;
+  text-align: right;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+/* ── Actions ────────────────────────────────────────────────── */
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btnReset {
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border, #ddd);
+  background: transparent;
+  color: var(--text-secondary, #666);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+
+.btnReset:hover {
+  background: var(--bg-surface, #f5f5f5);
+  border-color: #bbb;
+}
+
+.btnPdf {
+  padding: 8px 20px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #6a997c, #5a8a6c);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(106,153,124,0.35);
+  transition: opacity 0.2s, transform 0.15s;
+  white-space: nowrap;
+}
+
+.btnPdf:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btnPdf:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 680px) {
+  .wrapper {
+    padding: 18px;
+  }
+
+  .topBar {
+    flex-direction: column;
+  }
+
+  .content {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .chartWrapper svg {
+    width: 300px !important;
+    height: 300px !important;
+  }
+
+  .actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .btnPdf, .btnReset {
+    flex: 1;
+    text-align: center;
+  }
+}

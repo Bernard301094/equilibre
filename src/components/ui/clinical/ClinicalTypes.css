@@ -1,0 +1,170 @@
+/* ───────────────────────────────────────────────────────────
+   Shared
+─────────────────────────────────────────────────────────── */
+.ep-question-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text, #1a202c);
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+/* ───────────────────────────────────────────────────────────
+   Emotion Wheel
+─────────────────────────────────────────────────────────── */
+.ew { display: flex; flex-direction: column; gap: 12px; }
+.ew__selected {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; border-radius: 10px;
+  font-weight: 600; font-size: 1rem;
+}
+.ew__selected-emoji { font-size: 1.4rem; }
+.ew__selected-label { flex: 1; }
+.ew__clear {
+  background: none; border: none; font-size: 1.2rem;
+  cursor: pointer; color: var(--text-muted, #718096); line-height: 1;
+}
+.ew__parents { display: flex; flex-direction: column; gap: 8px; }
+.ew__parent-btn {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 12px 16px; border-radius: 10px;
+  border: 2px solid var(--border, #e2e8f0);
+  background: var(--ew-color, #f7fafc);
+  font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+}
+.ew__parent-btn--open  { border-color: var(--primary, #2e7fab); }
+.ew__parent-btn--selected { border-color: #2e7fab; box-shadow: 0 0 0 3px rgba(46,127,171,0.15); }
+.ew__children {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 8px 8px 8px 24px;
+}
+.ew__child-btn {
+  padding: 8px 14px; border-radius: 20px;
+  border: 2px solid var(--border, #e2e8f0);
+  background: var(--ew-child-color, #f7fafc);
+  font-size: 0.87rem; font-weight: 500; cursor: pointer;
+  transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+}
+.ew__child-btn--selected { border-color: #2e7fab; box-shadow: 0 0 0 3px rgba(46,127,171,0.2); }
+
+/* ───────────────────────────────────────────────────────────
+   Thought Record
+─────────────────────────────────────────────────────────── */
+.tr { display: flex; flex-direction: column; gap: 16px; }
+.tr__subtitle { font-size: 0.82rem; color: var(--text-muted, #718096); margin-top: -8px; }
+.tr__field { display: flex; flex-direction: column; gap: 4px; }
+.tr__label { font-weight: 700; font-size: 0.9rem; color: var(--primary, #2e7fab); }
+.tr__hint  { font-size: 0.8rem; color: var(--text-muted, #718096); }
+.tr__textarea, .tr__input {
+  padding: 10px 12px; border-radius: 8px;
+  border: 2px solid var(--border, #e2e8f0);
+  background: var(--card-bg, #fff);
+  font-size: 0.93rem; color: var(--text, #1a202c);
+  resize: vertical; font-family: inherit;
+  transition: border-color 0.15s;
+}
+.tr__textarea:focus, .tr__input:focus { outline: none; border-color: var(--primary, #2e7fab); }
+.tr__range { width: 100%; accent-color: var(--primary, #2e7fab); }
+.tr__intensity-val {
+  min-width: 36px; text-align: center;
+  font-weight: 700; font-size: 1.1rem;
+  color: var(--primary, #2e7fab);
+}
+
+/* ───────────────────────────────────────────────────────────
+   Body Map
+─────────────────────────────────────────────────────────── */
+.bm { display: flex; flex-direction: column; gap: 12px; }
+.bm__hint { font-size: 0.82rem; color: var(--text-muted, #718096); margin-top: -6px; }
+.bm__figure-wrap {
+  display: flex; justify-content: center; align-items: center;
+  background: var(--bg-secondary, #f7fafc);
+  border-radius: 12px; padding: 12px;
+}
+.bm__svg { width: 160px; height: 160px; }
+.bm__dot { transition: fill 0.15s; }
+.bm__dot:hover { fill: rgba(229,62,62,0.4); }
+.bm__tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.bm__tag {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 12px; border-radius: 20px;
+  background: #fed7d7; color: #9b2c2c;
+  font-size: 0.82rem; font-weight: 600;
+}
+.bm__tag-remove {
+  background: none; border: none; cursor: pointer;
+  color: #9b2c2c; font-size: 1rem; line-height: 1; padding: 0;
+}
+.bm__empty { font-size: 0.82rem; color: var(--text-muted, #718096); text-align: center; padding: 8px 0; }
+
+/* ───────────────────────────────────────────────────────────
+   SUDS Scale
+─────────────────────────────────────────────────────────── */
+.suds { display: flex; flex-direction: column; gap: 12px; }
+.suds__subtitle { font-size: 0.8rem; color: var(--text-muted, #718096); margin-top: -6px; }
+.suds__display {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 14px 24px; border-radius: 12px;
+  transition: background 0.3s;
+}
+.suds__val   { font-size: 2.2rem; font-weight: 800; color: #1a202c; }
+.suds__label { font-size: 1rem;   font-weight: 600; color: #2d3748; }
+.suds__range { width: 100%; accent-color: var(--primary, #2e7fab); height: 8px; }
+.suds__ticks {
+  display: flex; justify-content: space-between;
+  font-size: 0.75rem; color: var(--text-muted, #718096);
+  padding: 0 2px;
+}
+.suds__legend {
+  display: flex; justify-content: space-between;
+  font-size: 0.75rem; font-weight: 600;
+}
+
+/* ───────────────────────────────────────────────────────────
+   Mood Grid
+─────────────────────────────────────────────────────────── */
+.mg { display: flex; flex-direction: column; gap: 10px; }
+.mg__axis-labels { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.mg__axis-label { font-size: 0.75rem; color: var(--text-muted, #718096); font-weight: 600; }
+.mg__axis-row { display: flex; justify-content: space-between; width: 100%; }
+.mg__grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(3, auto);
+  gap: 8px;
+}
+.mg__item {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px 6px; border-radius: 10px;
+  border: 2px solid var(--border, #e2e8f0);
+  background: var(--card-bg, #fff);
+  cursor: pointer; transition: all 0.15s;
+  font-size: 0.75rem; font-weight: 500;
+}
+.mg__item:hover { border-color: var(--primary, #2e7fab); background: var(--bg-hover, #f0f4f8); }
+.mg__item--active { border-color: #805ad5; background: #faf5ff; color: #553c9a; }
+.mg__item-emoji { font-size: 1.3rem; }
+.mg__item-label { text-align: center; line-height: 1.2; }
+
+/* ───────────────────────────────────────────────────────────
+   Gratitude List
+─────────────────────────────────────────────────────────── */
+.gl { display: flex; flex-direction: column; gap: 12px; }
+.gl__subtitle { font-size: 0.82rem; color: var(--text-muted, #718096); margin-top: -6px; }
+.gl__item { display: flex; align-items: center; gap: 10px; }
+.gl__num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--primary, #2e7fab); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+}
+.gl__input {
+  flex: 1; padding: 10px 12px; border-radius: 8px;
+  border: 2px solid var(--border, #e2e8f0);
+  background: var(--card-bg, #fff);
+  font-size: 0.93rem; color: var(--text, #1a202c);
+  transition: border-color 0.15s; font-family: inherit;
+}
+.gl__input:focus { outline: none; border-color: var(--primary, #2e7fab); }
