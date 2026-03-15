@@ -13,10 +13,6 @@ import {
 } from "../../App";
 import "./PatientLayout.css";
 
-/* ── Utilitário de som ─────────────────────────────────────
-   Coloca /notification.wav na pasta /public do projeto.
-   Falha silenciosamente se o browser bloquear autoplay.
-   ──────────────────────────────────────────────────────── */
 function playNotificationSound() {
   try {
     const audio = new Audio("/notification.wav");
@@ -25,9 +21,9 @@ function playNotificationSound() {
   } catch (_) {}
 }
 
-/* ════════════════════════════════════════════════════════════
-   NAV ITEMS — badge dinâmico para exercícios pendentes
-   ════════════════════════════════════════════════════════════ */
+/* Badge da campainha mostra só feedback não lido (mensagens do terapeuta).
+   Assignments pendentes aparecem na view de notificações mas NÃO somam
+   ao badge — eles já têm o badge próprio no item "Exercícios" da nav. */
 const buildNavItems = (pendingCount) => [
   { id: "home",        icon: "🏠",  label: "Início"      },
   { id: "exercises",   icon: "📋",  label: "Exercícios",  badge: pendingCount },
@@ -38,7 +34,6 @@ const buildNavItems = (pendingCount) => [
   { id: "orientacoes", icon: "📬",  label: "Orientações" },
 ];
 
-/* ── LogoutDialog ─────────────────────────────────────────── */
 function LogoutDialog({ onConfirm, onCancel }) {
   return (
     <div className="logout-overlay" onClick={onCancel}>
@@ -55,9 +50,6 @@ function LogoutDialog({ onConfirm, onCancel }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════
-   useBellState — física de pêndulo
-   ════════════════════════════════════════════════════════════ */
 function useBellState(unreadCount) {
   const [animKey,  setAnimKey]  = useState(0);
   const [animType, setAnimType] = useState(null);
@@ -96,7 +88,6 @@ function useBellState(unreadCount) {
   return { animKey, iconClass, triggerRing };
 }
 
-/* ── FloatingBell (mobile) ────────────────────────────────── */
 function FloatingBell({ unreadCount, isActive, onClick }) {
   const { animKey, iconClass, triggerRing } = useBellState(unreadCount);
   const handleClick = () => { triggerRing(); onClick(); };
@@ -125,7 +116,6 @@ function FloatingBell({ unreadCount, isActive, onClick }) {
   );
 }
 
-/* ── SidebarBell (desktop) ────────────────────────────────── */
 function SidebarBell({ unreadCount, onClick }) {
   const { animKey, iconClass, triggerRing } = useBellState(unreadCount);
   const handleClick = () => { triggerRing(); onClick(); };
@@ -146,9 +136,6 @@ function SidebarBell({ unreadCount, onClick }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════
-   PatientLayout
-   ════════════════════════════════════════════════════════════ */
 export default function PatientLayout({ session, setSession, logout, theme, toggleTheme }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -162,21 +149,12 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
   const isMobile         = useIsMobile();
   const prevPathRef      = useRef(location.pathname);
   const prevTherapistRef = useRef(session.therapist_id);
+  const prevFeedbackRef  = useRef(0);
 
-  /* Ref para comparar contagem anterior e disparar som */
-  const prevFeedbackRef = useRef(0);
+  // Badge da campainha = só feedback não lido (mensagens recebidas do terapeuta)
+  // Assignments já têm badge próprio no item "Exercícios" da nav
+  const notifCount = unreadFeedback;
 
-  /* Badge total do sino */
-  const notifCount = unreadFeedback + pendingCount;
-
-  /* ── Poll: pendentes + feedback não lido ─────────────────────
-     Intervalo de 30s. Toca som apenas quando o REMETENTE é
-     outro utilizador (não o próprio paciente da sessão).
-
-     ⚠️  IMPORTANTE: ajusta o nome da coluna "therapist_id" se a
-         tua tabela usar outro campo para identificar o remetente
-         (ex: "sender_id", "author_id", etc.).
-     ──────────────────────────────────────────────────────── */
   useEffect(() => {
     let active = true;
 
@@ -190,11 +168,7 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
           ).catch(() => []),
           db.query(
             "therapist_feedback",
-            {
-              filter: { patient_id: session.id, read: false },
-              // FIX: inclui o campo do remetente para poder filtrar
-              select: "id,therapist_id",
-            },
+            { filter: { patient_id: session.id, read: false }, select: "id,therapist_id" },
             session.access_token
           ).catch(() => []),
         ]);
@@ -203,18 +177,14 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
 
         const newPending = Array.isArray(assignRaw) ? assignRaw.length : 0;
 
-        // FIX: exclui mensagens onde o remetente é o próprio utilizador da sessão.
-        // Assim o som e o badge só disparam para mensagens RECEBIDAS, nunca enviadas.
         const receivedFeedback = Array.isArray(feedbackRaw)
           ? feedbackRaw.filter((f) => f.therapist_id !== session.id)
           : [];
         const newFeedback = receivedFeedback.length;
 
-        /* Som apenas quando chega mensagem nova (não no mount inicial) */
         if (newFeedback > prevFeedbackRef.current && prevFeedbackRef.current !== -1) {
           playNotificationSound();
         }
-        /* -1 marca o primeiro fetch (sem som) */
         if (prevFeedbackRef.current === -1) prevFeedbackRef.current = newFeedback;
         else prevFeedbackRef.current = newFeedback;
 
@@ -223,52 +193,28 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
       } catch (_) {}
     };
 
-    /* Primeiro fetch não deve tocar som — sinaliza com -1 */
     prevFeedbackRef.current = -1;
     fetchCounts();
     const id = setInterval(fetchCounts, 30_000);
     return () => { active = false; clearInterval(id); };
   }, [session.id, session.access_token]);
 
-  /* ── Ping de presença — last_active ─────────────────────────
-     Atualiza a cada 60s e ao recuperar foco.
-     O terapeuta usa isto para mostrar "🟢 Online / ⚪ Offline".
-     ──────────────────────────────────────────────────────── */
   useEffect(() => {
     if (!session?.id || !session?.access_token) return;
-
     const ping = () => {
-      db.update(
-        "users",
-        { id: session.id },
-        { last_active: new Date().toISOString() },
-        session.access_token
-      ).catch(() => {});
+      db.update("users", { id: session.id }, { last_active: new Date().toISOString() }, session.access_token).catch(() => {});
     };
-
     ping();
     const interval = setInterval(ping, 60_000);
-
-    const onVisible = () => {
-      if (document.visibilityState === "visible") ping();
-    };
+    const onVisible = () => { if (document.visibilityState === "visible") ping(); };
     document.addEventListener("visibilitychange", onVisible);
-
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
+    return () => { clearInterval(interval); document.removeEventListener("visibilitychange", onVisible); };
   }, [session?.id, session?.access_token]);
 
-  /* ── Sync quando terapeuta vincula ── */
   useEffect(() => {
     if (session.therapist_id === prevTherapistRef.current) return;
     prevTherapistRef.current = session.therapist_id;
-    db.query(
-      "users",
-      { filter: { id: session.id }, select: "therapist_id,name,avatar_url" },
-      session.access_token
-    )
+    db.query("users", { filter: { id: session.id }, select: "therapist_id,name,avatar_url" }, session.access_token)
       .then((r) => { if (Array.isArray(r) && r.length > 0) setSession((s) => ({ ...s, ...r[0] })); })
       .catch(() => {});
   }, [session.therapist_id, session.id, session.access_token, setSession]);
@@ -283,14 +229,13 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
   const activeView = PATH_TO_PATIENT_VIEW[location.pathname] ?? "home";
   const navItems   = buildNavItems(pendingCount);
 
-  /* ── Abre / fecha notificações ── */
   const handleBellClick = () => {
     if (activeView === "notifications") {
       navigate(prevPathRef.current || PATIENT_ROUTES.home);
     } else {
       prevPathRef.current = location.pathname;
       navigate(PATIENT_ROUTES.notifications);
-      /* Zera o badge após abrir (a view marca como lido na BD) */
+      // Zera o badge da campainha ao abrir — a view marca como lido no DB
       setUnreadFeedback(0);
       prevFeedbackRef.current = 0;
     }
@@ -298,7 +243,6 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
 
   return (
     <div className="patient-layout">
-
       {!isMobile && (
         <Sidebar
           brand="Equilibre"
@@ -319,12 +263,10 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
         />
       )}
 
-      <main
-        className={[
-          "patient-layout__main",
-          isMobile ? "patient-layout__main--mobile" : "",
-        ].filter(Boolean).join(" ")}
-      >
+      <main className={[
+        "patient-layout__main",
+        isMobile ? "patient-layout__main--mobile" : "",
+      ].filter(Boolean).join(" ")}>
         <Outlet context={{ session, setSession, navigateTo }} />
       </main>
 

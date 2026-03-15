@@ -3,13 +3,24 @@ import { useOutletContext } from "react-router-dom";
 import db          from "../../services/db";
 import EmptyState  from "../../components/ui/EmptyState";
 import { formatDateTime } from "../../utils/dates";
-import "../therapist/NotificationsView.css"; // reutiliza o CSS do terapeuta
+import "../therapist/NotificationsView.css";
 
-/* ════════════════════════════════════════════════════════════
-   PatientNotificationsView
-   Agrega mensagens não lidas (therapist_feedback) +
-   exercícios pendentes (assignments) numa lista unificada.
-   ════════════════════════════════════════════════════════════ */
+const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPA_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_KEY;
+
+// Busca títulos dos exercícios pelo array de IDs
+async function fetchExerciseTitles(ids, token) {
+  if (!ids.length) return {};
+  const list = ids.map(encodeURIComponent).join(",");
+  const res  = await fetch(
+    `${SUPA_URL}/rest/v1/exercises?id=in.(${list})&select=id,title`,
+    { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) return {};
+  const rows = await res.json();
+  return Object.fromEntries((Array.isArray(rows) ? rows : []).map((r) => [r.id, r.title]));
+}
+
 export default function PatientNotificationsView() {
   const { session, navigateTo } = useOutletContext();
 
@@ -21,19 +32,13 @@ export default function PatientNotificationsView() {
 
     (async () => {
       try {
-        /* ── 1. Mensagens não lidas do terapeuta ──────────────────
-           FIX: inclui "therapist_id" para filtrar o remetente.
-           ⚠️  Ajusta o nome do campo se a tua tabela usar outro
-               (ex: "sender_id", "author_id", etc.).
-           ──────────────────────────────────────────────────────── */
+        // 1. Feedback não lido do terapeuta
         const feedbackRaw = await db.query(
           "therapist_feedback",
           { filter: { patient_id: session.id, read: false }, order: "created_at.desc" },
           session.access_token
         ).catch(() => []);
 
-        // FIX: exclui mensagens enviadas pelo próprio utilizador da sessão.
-        // Garante que o paciente não vê (nem ouve) as suas próprias mensagens.
         const feedbackList = (Array.isArray(feedbackRaw) ? feedbackRaw : [])
           .filter((f) => f.therapist_id !== session.id)
           .map((f) => ({
@@ -47,36 +52,37 @@ export default function PatientNotificationsView() {
             read:        false,
           }));
 
-        /* ── 2. Exercícios pendentes ── */
+        // 2. Assignments pendentes — faz join com exercises para pegar o título
         const assignRaw = await db.query(
           "assignments",
           { filter: { patient_id: session.id, status: "pending" }, order: "created_at.desc" },
           session.access_token
         ).catch(() => []);
 
-        const assignList = (Array.isArray(assignRaw) ? assignRaw : []).map((a) => ({
+        const assignArr  = Array.isArray(assignRaw) ? assignRaw : [];
+        const exerciseIds = [...new Set(assignArr.map((a) => a.exercise_id).filter(Boolean))];
+        const titleMap    = await fetchExerciseTitles(exerciseIds, session.access_token);
+
+        const assignList = assignArr.map((a) => ({
           id:          `assign-${a.id}`,
           _raw_id:     a.id,
           type:        "assignment",
           icon:        "📋",
           title:       "Exercício pendente",
-          description: a.exercise_title ?? a.title ?? "Exercício sem título",
+          description: titleMap[a.exercise_id] ?? "Exercício sem título",
           date:        a.due_date ?? a.created_at,
-          read:        false, // pendentes são sempre "novos"
+          read:        false,
         }));
 
         if (!active) return;
 
-        /* ── 3. Junta e ordena por data decrescente ── */
+        // 3. Junta e ordena por data decrescente
         const merged = [...feedbackList, ...assignList].sort(
           (a, b) => new Date(b.date) - new Date(a.date)
         );
-
         setNotifs(merged);
 
-        /* ── 4. Marca mensagens recebidas como lidas ──────────────
-           Usa feedbackList (já filtrado) — não marca as próprias.
-           ──────────────────────────────────────────────────────── */
+        // 4. Marca apenas os feedbacks recebidos como lidos
         const unreadIds = feedbackList.map((f) => f._raw_id);
         await Promise.allSettled(
           unreadIds.map((fid) =>
@@ -94,13 +100,12 @@ export default function PatientNotificationsView() {
   }, [session.id, session.access_token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClick = (notif) => {
-    if (notif.type === "feedback")   navigateTo("chat");       // abre o TherapistFeedback
-    if (notif.type === "assignment") navigateTo("exercises");  // abre a lista de exercícios
+    if (notif.type === "feedback")   navigateTo("orientacoes");
+    if (notif.type === "assignment") navigateTo("exercises");
   };
 
   return (
     <div className="page-fade-in nv-wrapper">
-
       <div className="page-header">
         <h2>🔔 Notificações</h2>
         <p>As suas mensagens e exercícios pendentes</p>
@@ -109,7 +114,7 @@ export default function PatientNotificationsView() {
       {loading && <p className="nv-loading">Carregando...</p>}
 
       {!loading && notifs.length === 0 && (
-        <EmptyState icon="🔕" message="Nenhuma notificação de momento." />
+        <EmptyState icon="🔕" message="Nenhuma notificação de momento." sub="Em breve algo vai florescer." />
       )}
 
       <div className="nv-list">
@@ -133,27 +138,18 @@ export default function PatientNotificationsView() {
               }
             }}
           >
-            <div className="nv-item__icon" aria-hidden="true">
-              {n.icon}
-            </div>
-
+            <div className="nv-item__icon" aria-hidden="true">{n.icon}</div>
             <div className="nv-item__body">
               <div className="nv-item__text">
                 <strong>{n.title}</strong>
                 {n.description ? <> — <em>{n.description}</em></> : null}
               </div>
-              <div className="nv-item__date">
-                {formatDateTime(n.date)}
-              </div>
+              <div className="nv-item__date">{formatDateTime(n.date)}</div>
             </div>
-
-            {!n.read && (
-              <span className="nv-badge nv-badge--new">Novo</span>
-            )}
+            {!n.read && <span className="nv-badge nv-badge--new">Novo</span>}
           </div>
         ))}
       </div>
-
     </div>
   );
 }
