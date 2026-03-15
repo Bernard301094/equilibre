@@ -48,7 +48,7 @@ function SliderEmoji({ value, onChange, emojis = SLIDER_EMOJIS, question }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   BreathingExercise
+   BreathingExercise — otimizado com RAF + CSS animation
    ══════════════════════════════════════════════════════════════ */
 const BREATH_PHASES = [
   { key: "inhale", label: "Inspire", color: "#4a9c5d", seconds: 4 },
@@ -56,73 +56,172 @@ const BREATH_PHASES = [
   { key: "exhale", label: "Expire",  color: "#805ad5", seconds: 6 },
 ];
 
+const CIRC = 2 * Math.PI * 54; // 2πr onde r=54
+
 function BreathingExercise({ question, onComplete }) {
   const totalCycles = question.cycles ?? 3;
-  const phases      = BREATH_PHASES;
-  const [started,   setStarted]   = useState(false);
-  const [phaseIdx,  setPhaseIdx]  = useState(0);
-  const [cycle,     setCycle]     = useState(1);
-  const [countdown, setCountdown] = useState(phases[0].seconds);
-  const [finished,  setFinished]  = useState(false);
-  const timerRef = useRef(null);
-  const phase = phases[phaseIdx];
-  const clearTimer = () => { if (timerRef.current) clearInterval(timerRef.current); };
 
-  const advance = useCallback(() => {
-    setCountdown((prev) => {
-      if (prev > 1) return prev - 1;
-      clearTimer();
-      const nextPhaseIdx = (phaseIdx + 1) % phases.length;
-      const endOfCycle   = nextPhaseIdx === 0;
-      const nextCycle    = endOfCycle ? cycle + 1 : cycle;
-      if (endOfCycle && nextCycle > totalCycles) {
-        setFinished(true); setStarted(false);
-        onComplete && onComplete("done"); return 0;
-      }
-      setPhaseIdx(nextPhaseIdx);
-      if (endOfCycle) setCycle(nextCycle);
-      setCountdown(phases[nextPhaseIdx].seconds);
-      return phases[nextPhaseIdx].seconds;
+  // Estado mínimo — só o que precisa causar re-render
+  const [uiState, setUiState] = useState({
+    started:   false,
+    finished:  false,
+    phaseIdx:  0,
+    cycle:     1,
+    countdown: BREATH_PHASES[0].seconds,
+  });
+
+  // Tudo que controla o loop vive em refs → zero re-render desnecessário
+  const rafRef      = useRef(null);
+  const phaseRef    = useRef(0);          // índice da fase atual
+  const cycleRef    = useRef(1);
+  const phaseStartRef = useRef(null);     // timestamp do início da fase
+  const arcRef      = useRef(null);       // ref para o <circle> do arco SVG
+  const countRef    = useRef(null);       // ref para o span do countdown
+  const colorRef    = useRef(null);       // ref para o container de cor
+  const labelRef    = useRef(null);       // ref para o label da fase
+
+  // Atualiza o arco e o countdown diretamente no DOM via RAF
+  const tick = useCallback((timestamp) => {
+    const phase    = BREATH_PHASES[phaseRef.current];
+    const elapsed  = (timestamp - phaseStartRef.current) / 1000; // segundos
+    const progress = Math.min(elapsed / phase.seconds, 1);
+    const dash     = CIRC * progress;
+
+    // Atualização direta no DOM — sem setState, sem re-render
+    if (arcRef.current) {
+      arcRef.current.style.strokeDasharray = `${dash} ${CIRC}`;
+      arcRef.current.style.stroke          = phase.color;
+    }
+    const remaining = Math.max(Math.ceil(phase.seconds - elapsed), 0);
+    if (countRef.current) countRef.current.textContent = `${remaining}s`;
+
+    if (progress < 1) {
+      rafRef.current = requestAnimationFrame(tick);
+      return;
+    }
+
+    // Fase concluída → avança
+    const nextPhaseIdx = (phaseRef.current + 1) % BREATH_PHASES.length;
+    const endOfCycle   = nextPhaseIdx === 0;
+    const nextCycle    = endOfCycle ? cycleRef.current + 1 : cycleRef.current;
+
+    if (endOfCycle && nextCycle > totalCycles) {
+      // Exercício concluído
+      setUiState(s => ({ ...s, finished: true, started: false }));
+      onComplete && onComplete("done");
+      return;
+    }
+
+    phaseRef.current    = nextPhaseIdx;
+    phaseStartRef.current = performance.now();
+    if (endOfCycle) cycleRef.current = nextCycle;
+
+    const nextPhase = BREATH_PHASES[nextPhaseIdx];
+
+    // Reseta o arco imediatamente para 0 antes de animar a próxima fase
+    if (arcRef.current) {
+      arcRef.current.style.strokeDasharray = `0 ${CIRC}`;
+      arcRef.current.style.stroke          = nextPhase.color;
+    }
+    if (colorRef.current) colorRef.current.style.color = nextPhase.color;
+    if (labelRef.current) labelRef.current.textContent = nextPhase.label;
+    if (countRef.current) countRef.current.textContent = `${nextPhase.seconds}s`;
+
+    // Atualiza só o que precisa aparecer na UI (cycle label)
+    setUiState(s => ({
+      ...s,
+      phaseIdx:  nextPhaseIdx,
+      cycle:     cycleRef.current,
+      countdown: nextPhase.seconds,
+    }));
+
+    rafRef.current = requestAnimationFrame(tick);
+  }, [totalCycles, onComplete]);
+
+  const start = useCallback(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    phaseRef.current      = 0;
+    cycleRef.current      = 1;
+    phaseStartRef.current = performance.now();
+
+    const firstPhase = BREATH_PHASES[0];
+    if (arcRef.current) {
+      arcRef.current.style.strokeDasharray = `0 ${CIRC}`;
+      arcRef.current.style.stroke          = firstPhase.color;
+    }
+    if (colorRef.current) colorRef.current.style.color = firstPhase.color;
+    if (labelRef.current) labelRef.current.textContent = firstPhase.label;
+    if (countRef.current) countRef.current.textContent = `${firstPhase.seconds}s`;
+
+    setUiState({
+      started:   true,
+      finished:  false,
+      phaseIdx:  0,
+      cycle:     1,
+      countdown: firstPhase.seconds,
     });
-  }, [phaseIdx, cycle, totalCycles, phases, onComplete]);
 
+    rafRef.current = requestAnimationFrame(tick);
+  }, [tick]);
+
+  // Limpa RAF ao desmontar
   useEffect(() => {
-    if (!started) return;
-    timerRef.current = setInterval(advance, 1000);
-    return clearTimer;
-  }, [started, advance]);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, []);
 
-  const ringProgress = started ? 1 - (countdown - 1) / (phase.seconds - 1 || 1) : 0;
-  const radius = 54; const circ = 2 * Math.PI * radius;
-  const dash = circ * ringProgress;
+  const { started, finished, phaseIdx, cycle } = uiState;
+  const phase = BREATH_PHASES[phaseIdx];
 
   return (
     <div className="breathing">
       <p className="exercise-page__question-text">{question.text}</p>
+
       <div className="breathing__ring-wrap">
         <svg viewBox="0 0 120 120" className="breathing__svg" aria-hidden="true">
-          <circle cx="60" cy="60" r={radius} className="breathing__track" />
-          <circle cx="60" cy="60" r={radius} className="breathing__arc"
-            style={{ stroke: phase.color, strokeDasharray: `${dash} ${circ}`, transition: started ? "stroke-dasharray 1s linear" : "none" }}
+          <circle cx="60" cy="60" r={54} className="breathing__track" />
+          <circle
+            ref={arcRef}
+            cx="60" cy="60" r={54}
+            className="breathing__arc"
+            style={{
+              stroke:           phase.color,
+              strokeDasharray:  `0 ${CIRC}`,
+            }}
           />
         </svg>
-        <div className="breathing__center" style={{ color: phase.color }}>
+
+        <div
+          ref={colorRef}
+          className="breathing__center"
+          style={{ color: phase.color }}
+        >
           {finished ? (
-            <><span className="breathing__done-icon">✅</span><span className="breathing__done-txt">Concluído</span></>
+            <>
+              <span className="breathing__done-icon">✅</span>
+              <span className="breathing__done-txt">Concluído</span>
+            </>
           ) : started ? (
-            <><span className="breathing__phase-label">{phase.label}</span><span className="breathing__countdown">{countdown}s</span></>
+            <>
+              <span ref={labelRef} className="breathing__phase-label">{phase.label}</span>
+              <span ref={countRef} className="breathing__countdown">{phase.seconds}s</span>
+            </>
           ) : (
             <span className="breathing__idle">Pronto?</span>
           )}
         </div>
       </div>
+
       {!finished && (
         <p className="breathing__cycles" aria-live="polite">
-          {started ? `Ciclo ${cycle} de ${totalCycles}` : `${totalCycles} ciclos · ${phases.map((p) => p.seconds + "s").join(" – ")}`}
+          {started
+            ? `Ciclo ${cycle} de ${totalCycles}`
+            : `${totalCycles} ciclos · ${BREATH_PHASES.map((p) => p.seconds + "s").join(" – ")}`
+          }
         </p>
       )}
+
       {!finished && (
-        <button className="breathing__btn" onClick={() => { setPhaseIdx(0); setCycle(1); setCountdown(phases[0].seconds); setStarted(true); }}>
+        <button className="breathing__btn" onClick={start}>
           {started ? "Reiniciar" : "Começar respiração"}
         </button>
       )}
@@ -290,7 +389,7 @@ export default function ExercisePage({ exercise, session, onBack }) {
       const assignId = Array.isArray(assignments) && assignments.length > 0 ? assignments[0].id : null;
 
       await db.insert("responses", {
-        id:           "r" + Date.now(),
+        id:           crypto.randomUUID(),
         patient_id:   session.id,
         exercise_id:  exercise.id,
         completed_at: new Date().toISOString(),
@@ -303,7 +402,7 @@ export default function ExercisePage({ exercise, session, onBack }) {
 
       if (session.therapist_id) {
         await db.insert("notifications", {
-          id:             "n" + Date.now(),
+          id:             crypto.randomUUID(),
           therapist_id:   session.therapist_id,
           patient_id:     session.id,
           patient_name:   session.name,
