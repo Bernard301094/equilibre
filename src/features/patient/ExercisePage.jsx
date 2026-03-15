@@ -48,20 +48,13 @@ function SliderEmoji({ value, onChange, emojis = SLIDER_EMOJIS, question }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   Easing functions — aplicadas por fase no RAF
+   Easing functions
    ══════════════════════════════════════════════════════════════ */
-
-// Inspire: começa devagar, acelera no meio, desacelera no final (respirar fundo naturalmente)
 const easeInOutCubic = (t) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-// Segure: progress linear — o arco já está cheio, nada muda visivelmente
-const easeLinear = (t) => t;
-
-// Expire: começa rápido (solta o ar), desacelera muito no final (esvazia devagar)
+const easeLinear  = (t) => t;
 const easeOutQuart = (t) => 1 - Math.pow(1 - t, 4);
 
-// Mapa fase → easing
 const PHASE_EASING = {
   inhale: easeInOutCubic,
   hold:   easeLinear,
@@ -69,7 +62,7 @@ const PHASE_EASING = {
 };
 
 /* ══════════════════════════════════════════════════════════════
-   BreathingExercise — RAF + easing orgânico por fase
+   BreathingExercise
    ══════════════════════════════════════════════════════════════ */
 const BREATH_PHASES = [
   { key: "inhale", label: "Inspire", color: "#4a9c5d", seconds: 4 },
@@ -83,10 +76,10 @@ function BreathingExercise({ question, onComplete }) {
   const totalCycles = question.cycles ?? 3;
 
   const [uiState, setUiState] = useState({
-    started:   false,
-    finished:  false,
-    phaseIdx:  0,
-    cycle:     1,
+    started:  false,
+    finished: false,
+    phaseIdx: 0,
+    cycle:    1,
     countdown: BREATH_PHASES[0].seconds,
   });
 
@@ -98,22 +91,20 @@ function BreathingExercise({ question, onComplete }) {
   const countRef      = useRef(null);
   const colorRef      = useRef(null);
   const labelRef      = useRef(null);
+  // Garante que onComplete só dispara uma vez mesmo em re-renders
+  const completedRef  = useRef(false);
 
   const tick = useCallback((timestamp) => {
-    const phase    = BREATH_PHASES[phaseRef.current];
-    const elapsed  = (timestamp - phaseStartRef.current) / 1000;
-    const rawT     = Math.min(elapsed / phase.seconds, 1);
-
-    // Aplica o easing específico da fase — o arco não avança mais de forma linear
-    const easedT   = PHASE_EASING[phase.key](rawT);
-    const dash     = CIRC * easedT;
+    const phase   = BREATH_PHASES[phaseRef.current];
+    const elapsed = (timestamp - phaseStartRef.current) / 1000;
+    const rawT    = Math.min(elapsed / phase.seconds, 1);
+    const easedT  = PHASE_EASING[phase.key](rawT);
+    const dash    = CIRC * easedT;
 
     if (arcRef.current) {
       arcRef.current.style.strokeDasharray = `${dash} ${CIRC}`;
       arcRef.current.style.stroke          = phase.color;
     }
-
-    // Countdown usa o tempo real (rawT), não o easedT, para o usuário não estranhar
     const remaining = Math.max(Math.ceil(phase.seconds - elapsed), 0);
     if (countRef.current) countRef.current.textContent = `${remaining}s`;
 
@@ -122,14 +113,20 @@ function BreathingExercise({ question, onComplete }) {
       return;
     }
 
-    // Fase concluída → avança
     const nextPhaseIdx = (phaseRef.current + 1) % BREATH_PHASES.length;
     const endOfCycle   = nextPhaseIdx === 0;
     const nextCycle    = endOfCycle ? cycleRef.current + 1 : cycleRef.current;
 
     if (endOfCycle && nextCycle > totalCycles) {
-      setUiState(s => ({ ...s, finished: true, started: false }));
-      onComplete && onComplete("done");
+      // Marca finished no estado visual
+      setUiState((s) => ({ ...s, finished: true, started: false }));
+      // Avança automaticamente após 1.5s para o paciente ver o ✅
+      if (!completedRef.current) {
+        completedRef.current = true;
+        setTimeout(() => {
+          onComplete && onComplete("done");
+        }, 1500);
+      }
       return;
     }
 
@@ -138,7 +135,6 @@ function BreathingExercise({ question, onComplete }) {
     if (endOfCycle) cycleRef.current = nextCycle;
 
     const nextPhase = BREATH_PHASES[nextPhaseIdx];
-
     if (arcRef.current) {
       arcRef.current.style.strokeDasharray = `0 ${CIRC}`;
       arcRef.current.style.stroke          = nextPhase.color;
@@ -147,7 +143,7 @@ function BreathingExercise({ question, onComplete }) {
     if (labelRef.current) labelRef.current.textContent = nextPhase.label;
     if (countRef.current) countRef.current.textContent = `${nextPhase.seconds}s`;
 
-    setUiState(s => ({
+    setUiState((s) => ({
       ...s,
       phaseIdx:  nextPhaseIdx,
       cycle:     cycleRef.current,
@@ -159,6 +155,7 @@ function BreathingExercise({ question, onComplete }) {
 
   const start = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    completedRef.current  = false;
     phaseRef.current      = 0;
     cycleRef.current      = 1;
     phaseStartRef.current = performance.now();
@@ -184,7 +181,9 @@ function BreathingExercise({ question, onComplete }) {
   }, [tick]);
 
   useEffect(() => {
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, []);
 
   const { started, finished, phaseIdx, cycle } = uiState;
@@ -207,9 +206,15 @@ function BreathingExercise({ question, onComplete }) {
 
         <div ref={colorRef} className="breathing__center" style={{ color: phase.color }}>
           {finished ? (
-            <><span className="breathing__done-icon">✅</span><span className="breathing__done-txt">Concluído</span></>
+            <>
+              <span className="breathing__done-icon">✅</span>
+              <span className="breathing__done-txt">Muito bem!</span>
+            </>
           ) : started ? (
-            <><span ref={labelRef} className="breathing__phase-label">{phase.label}</span><span ref={countRef} className="breathing__countdown">{phase.seconds}s</span></>
+            <>
+              <span ref={labelRef} className="breathing__phase-label">{phase.label}</span>
+              <span ref={countRef} className="breathing__countdown">{phase.seconds}s</span>
+            </>
           ) : (
             <span className="breathing__idle">Pronto?</span>
           )}
@@ -222,6 +227,12 @@ function BreathingExercise({ question, onComplete }) {
             ? `Ciclo ${cycle} de ${totalCycles}`
             : `${totalCycles} ciclos · ${BREATH_PHASES.map((p) => p.seconds + "s").join(" – ")}`
           }
+        </p>
+      )}
+
+      {finished && (
+        <p className="breathing__cycles breathing__cycles--done" aria-live="polite">
+          Avançando...
         </p>
       )}
 
@@ -370,10 +381,9 @@ export default function ExercisePage({ exercise, session, onBack }) {
 
   const q        = questions[step];
   const progress = questions.length > 0 ? (step / questions.length) * 100 : 0;
-  const setAns   = (val) => setAnswers((prev) => ({ ...prev, [q.id]: val }));
+  const setAns   = (val) => setAnswers((prev) => ({ ...prev, [q?.id]: val }));
 
-  const next = async () => {
-    if (step < questions.length - 1) { setStep((s) => s + 1); return; }
+  const saveAndFinish = useCallback(async (currentAnswers) => {
     if (inflightRef.current || saving) return;
     inflightRef.current = true;
     setSaving(true);
@@ -383,14 +393,16 @@ export default function ExercisePage({ exercise, session, onBack }) {
         { filter: { patient_id: session.id, exercise_id: exercise.id, status: "pending" }, select: "id" },
         session.access_token
       );
-      const assignId = Array.isArray(assignments) && assignments.length > 0 ? assignments[0].id : null;
+      const assignId = Array.isArray(assignments) && assignments.length > 0
+        ? assignments[0].id
+        : null;
 
       await db.insert("responses", {
         id:           crypto.randomUUID(),
         patient_id:   session.id,
         exercise_id:  exercise.id,
         completed_at: new Date().toISOString(),
-        answers:      serializeAnswers(questions, answers),
+        answers:      serializeAnswers(questions, currentAnswers),
       }, session.access_token);
 
       if (assignId) {
@@ -419,7 +431,35 @@ export default function ExercisePage({ exercise, session, onBack }) {
       setSaving(false);
       inflightRef.current = false;
     }
-  };
+  }, [saving, session, exercise, questions]);
+
+  // Chamado pelo botão Próximo / Concluir
+  const next = useCallback(() => {
+    if (step < questions.length - 1) {
+      setStep((s) => s + 1);
+      return;
+    }
+    // Última pergunta — salva com o estado atual das respostas
+    setAnswers((current) => {
+      saveAndFinish(current);
+      return current;
+    });
+  }, [step, questions.length, saveAndFinish]);
+
+  // Chamado automaticamente pelo BreathingExercise ao terminar
+  const handleBreathingComplete = useCallback((val) => {
+    setAnswers((prev) => {
+      const updated = { ...prev, [q?.id]: val };
+      // Se é a última pergunta, salva e finaliza automaticamente
+      if (step === questions.length - 1) {
+        saveAndFinish(updated);
+      } else {
+        // Avança para a próxima pergunta
+        setStep((s) => s + 1);
+      }
+      return updated;
+    });
+  }, [q?.id, step, questions.length, saveAndFinish]);
 
   const canAdvance =
     !q ||
@@ -427,7 +467,7 @@ export default function ExercisePage({ exercise, session, onBack }) {
     q.type === "reflect" ||
     q.type === "breathing" ||
     q.type === "checklist" ||
-    answers[q.id] !== "";
+    answers[q?.id] !== "";
 
   if (done) {
     return (
@@ -443,7 +483,19 @@ export default function ExercisePage({ exercise, session, onBack }) {
     );
   }
 
-  if (!q) return null;
+  // Proteção: se não há pergunta (index fora do range), mostra tela de conclusão segura
+  if (!q) {
+    return (
+      <div className="exercise-page__done-screen">
+        <div className="exercise-page__done-card">
+          <img src={LOGO_PATH} alt="Equilibre" className="exercise-page__done-logo" />
+          <div className="exercise-page__done-icon" aria-hidden="true">✅</div>
+          <h2 className="exercise-page__done-title">Quase lá...</h2>
+          <p className="exercise-page__done-desc">Aguarde enquanto salvamos suas respostas.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -508,16 +560,31 @@ export default function ExercisePage({ exercise, session, onBack }) {
             {q.type === "number"          && <NumberInput    question={q} value={answers[q.id]} onChange={setAns} />}
             {q.type === "time"            && <TimeInput      question={q} value={answers[q.id]} onChange={setAns} />}
             {q.type === "slider_emoji"    && <SliderEmoji    question={q} value={answers[q.id]} onChange={setAns} emojis={q.emojis ?? undefined} />}
-            {q.type === "breathing"       && <BreathingExercise question={q} onComplete={() => setAns("done")} />}
 
-            <div className="exercise-page__nav">
-              <button className="exercise-page__nav-btn exercise-page__nav-btn--prev"
-                onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} aria-disabled={step === 0}
-              >← Anterior</button>
-              <button className="exercise-page__nav-btn exercise-page__nav-btn--next"
-                onClick={next} disabled={!canAdvance || saving || celebrating} aria-busy={saving}
-              >{saving ? "Salvando..." : step === questions.length - 1 ? "Concluir ✓" : "Próximo →"}</button>
-            </div>
+            {q.type === "breathing" && (
+              <BreathingExercise
+                question={q}
+                onComplete={handleBreathingComplete}
+              />
+            )}
+
+            {/* Botões de navegação — ocultos durante breathing para não confundir */}
+            {q.type !== "breathing" && (
+              <div className="exercise-page__nav">
+                <button className="exercise-page__nav-btn exercise-page__nav-btn--prev"
+                  onClick={() => setStep((s) => Math.max(0, s - 1))}
+                  disabled={step === 0}
+                  aria-disabled={step === 0}
+                >← Anterior</button>
+                <button className="exercise-page__nav-btn exercise-page__nav-btn--next"
+                  onClick={next}
+                  disabled={!canAdvance || saving || celebrating}
+                  aria-busy={saving}
+                >
+                  {saving ? "Salvando..." : step === questions.length - 1 ? "Concluir ✓" : "Próximo →"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
