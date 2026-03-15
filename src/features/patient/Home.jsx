@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useOutletContext } from "react-router-dom";
 import db from "../../services/db";
 import { calcStreak, localDateOffset, isThisWeek } from "../../utils/dates";
 import { getPlantStage, LS_LAST_ACTION } from "../../utils/constants";
@@ -28,7 +29,10 @@ const getGreetingSub = () => {
   return "Ainda acordado? Cuide-se — o descanso também é parte do processo.";
 };
 
-export default function PatientHome({ session, setSession, setView }) {
+export default function PatientHome({ session, setSession }) {
+  // navigateTo vem do PatientLayout via Outlet context
+  const { navigateTo } = useOutletContext();
+
   const [data, setData] = useState({
     pending: 0, done: 0, streak: 0, goal: null,
     weekDone: 0, overdue: 0, hasActivityToday: false, isLate: false,
@@ -49,7 +53,7 @@ export default function PatientHome({ session, setSession, setView }) {
   const [goalReached,   setGoalReached]   = useState(false);
 
   const { supported, permission, subscribed, subscribe } =
-    usePushNotifications({ session, setView });
+    usePushNotifications({ session, navigateTo });
 
   useEffect(() => {
     if (supported && permission === "default" && !subscribed) {
@@ -321,21 +325,15 @@ export default function PatientHome({ session, setSession, setView }) {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════
-            CTA principal
-            Regra corrigida:
-            1. Exercícios pendentes → sempre mostra o banner (independente de hasActivityToday)
-            2. Sem atividade hoje + sem pendentes → mostra CTA do diário
-            3. Tudo em dia → mensagem de parabenização
-        ══════════════════════════════════════════════════════ */}
+        {/* ── CTAs ── */}
         {data.pending > 0 ? (
           <div
             className="patient-home__cta patient-home__cta--exercises"
-            onClick={() => setView("exercises")}
+            onClick={() => navigateTo("exercises")}
             role="button"
             tabIndex={0}
             aria-label="Ir para meus exercícios"
-            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setView("exercises")}
+            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && navigateTo("exercises")}
           >
             <div className="patient-home__cta-body">
               <div className="patient-home__cta-text">
@@ -353,11 +351,11 @@ export default function PatientHome({ session, setSession, setView }) {
         ) : !data.hasActivityToday ? (
           <div
             className="patient-home__cta patient-home__cta--diary"
-            onClick={() => setView("diary")}
+            onClick={() => navigateTo("diary")}
             role="button"
             tabIndex={0}
             aria-label="Ir para o diário emocional"
-            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setView("diary")}
+            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && navigateTo("diary")}
           >
             <div className="patient-home__cta-body">
               <div className="patient-home__cta-text">
