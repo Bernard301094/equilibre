@@ -48,7 +48,28 @@ function SliderEmoji({ value, onChange, emojis = SLIDER_EMOJIS, question }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   BreathingExercise — otimizado com RAF + CSS animation
+   Easing functions — aplicadas por fase no RAF
+   ══════════════════════════════════════════════════════════════ */
+
+// Inspire: começa devagar, acelera no meio, desacelera no final (respirar fundo naturalmente)
+const easeInOutCubic = (t) =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+// Segure: progress linear — o arco já está cheio, nada muda visivelmente
+const easeLinear = (t) => t;
+
+// Expire: começa rápido (solta o ar), desacelera muito no final (esvazia devagar)
+const easeOutQuart = (t) => 1 - Math.pow(1 - t, 4);
+
+// Mapa fase → easing
+const PHASE_EASING = {
+  inhale: easeInOutCubic,
+  hold:   easeLinear,
+  exhale: easeOutQuart,
+};
+
+/* ══════════════════════════════════════════════════════════════
+   BreathingExercise — RAF + easing orgânico por fase
    ══════════════════════════════════════════════════════════════ */
 const BREATH_PHASES = [
   { key: "inhale", label: "Inspire", color: "#4a9c5d", seconds: 4 },
@@ -56,12 +77,11 @@ const BREATH_PHASES = [
   { key: "exhale", label: "Expire",  color: "#805ad5", seconds: 6 },
 ];
 
-const CIRC = 2 * Math.PI * 54; // 2πr onde r=54
+const CIRC = 2 * Math.PI * 54;
 
 function BreathingExercise({ question, onComplete }) {
   const totalCycles = question.cycles ?? 3;
 
-  // Estado mínimo — só o que precisa causar re-render
   const [uiState, setUiState] = useState({
     started:   false,
     finished:  false,
@@ -70,32 +90,34 @@ function BreathingExercise({ question, onComplete }) {
     countdown: BREATH_PHASES[0].seconds,
   });
 
-  // Tudo que controla o loop vive em refs → zero re-render desnecessário
-  const rafRef      = useRef(null);
-  const phaseRef    = useRef(0);          // índice da fase atual
-  const cycleRef    = useRef(1);
-  const phaseStartRef = useRef(null);     // timestamp do início da fase
-  const arcRef      = useRef(null);       // ref para o <circle> do arco SVG
-  const countRef    = useRef(null);       // ref para o span do countdown
-  const colorRef    = useRef(null);       // ref para o container de cor
-  const labelRef    = useRef(null);       // ref para o label da fase
+  const rafRef        = useRef(null);
+  const phaseRef      = useRef(0);
+  const cycleRef      = useRef(1);
+  const phaseStartRef = useRef(null);
+  const arcRef        = useRef(null);
+  const countRef      = useRef(null);
+  const colorRef      = useRef(null);
+  const labelRef      = useRef(null);
 
-  // Atualiza o arco e o countdown diretamente no DOM via RAF
   const tick = useCallback((timestamp) => {
     const phase    = BREATH_PHASES[phaseRef.current];
-    const elapsed  = (timestamp - phaseStartRef.current) / 1000; // segundos
-    const progress = Math.min(elapsed / phase.seconds, 1);
-    const dash     = CIRC * progress;
+    const elapsed  = (timestamp - phaseStartRef.current) / 1000;
+    const rawT     = Math.min(elapsed / phase.seconds, 1);
 
-    // Atualização direta no DOM — sem setState, sem re-render
+    // Aplica o easing específico da fase — o arco não avança mais de forma linear
+    const easedT   = PHASE_EASING[phase.key](rawT);
+    const dash     = CIRC * easedT;
+
     if (arcRef.current) {
       arcRef.current.style.strokeDasharray = `${dash} ${CIRC}`;
       arcRef.current.style.stroke          = phase.color;
     }
+
+    // Countdown usa o tempo real (rawT), não o easedT, para o usuário não estranhar
     const remaining = Math.max(Math.ceil(phase.seconds - elapsed), 0);
     if (countRef.current) countRef.current.textContent = `${remaining}s`;
 
-    if (progress < 1) {
+    if (rawT < 1) {
       rafRef.current = requestAnimationFrame(tick);
       return;
     }
@@ -106,19 +128,17 @@ function BreathingExercise({ question, onComplete }) {
     const nextCycle    = endOfCycle ? cycleRef.current + 1 : cycleRef.current;
 
     if (endOfCycle && nextCycle > totalCycles) {
-      // Exercício concluído
       setUiState(s => ({ ...s, finished: true, started: false }));
       onComplete && onComplete("done");
       return;
     }
 
-    phaseRef.current    = nextPhaseIdx;
+    phaseRef.current      = nextPhaseIdx;
     phaseStartRef.current = performance.now();
     if (endOfCycle) cycleRef.current = nextCycle;
 
     const nextPhase = BREATH_PHASES[nextPhaseIdx];
 
-    // Reseta o arco imediatamente para 0 antes de animar a próxima fase
     if (arcRef.current) {
       arcRef.current.style.strokeDasharray = `0 ${CIRC}`;
       arcRef.current.style.stroke          = nextPhase.color;
@@ -127,7 +147,6 @@ function BreathingExercise({ question, onComplete }) {
     if (labelRef.current) labelRef.current.textContent = nextPhase.label;
     if (countRef.current) countRef.current.textContent = `${nextPhase.seconds}s`;
 
-    // Atualiza só o que precisa aparecer na UI (cycle label)
     setUiState(s => ({
       ...s,
       phaseIdx:  nextPhaseIdx,
@@ -164,7 +183,6 @@ function BreathingExercise({ question, onComplete }) {
     rafRef.current = requestAnimationFrame(tick);
   }, [tick]);
 
-  // Limpa RAF ao desmontar
   useEffect(() => {
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, []);
@@ -183,28 +201,15 @@ function BreathingExercise({ question, onComplete }) {
             ref={arcRef}
             cx="60" cy="60" r={54}
             className="breathing__arc"
-            style={{
-              stroke:           phase.color,
-              strokeDasharray:  `0 ${CIRC}`,
-            }}
+            style={{ stroke: phase.color, strokeDasharray: `0 ${CIRC}` }}
           />
         </svg>
 
-        <div
-          ref={colorRef}
-          className="breathing__center"
-          style={{ color: phase.color }}
-        >
+        <div ref={colorRef} className="breathing__center" style={{ color: phase.color }}>
           {finished ? (
-            <>
-              <span className="breathing__done-icon">✅</span>
-              <span className="breathing__done-txt">Concluído</span>
-            </>
+            <><span className="breathing__done-icon">✅</span><span className="breathing__done-txt">Concluído</span></>
           ) : started ? (
-            <>
-              <span ref={labelRef} className="breathing__phase-label">{phase.label}</span>
-              <span ref={countRef} className="breathing__countdown">{phase.seconds}s</span>
-            </>
+            <><span ref={labelRef} className="breathing__phase-label">{phase.label}</span><span ref={countRef} className="breathing__countdown">{phase.seconds}s</span></>
           ) : (
             <span className="breathing__idle">Pronto?</span>
           )}
@@ -237,13 +242,11 @@ function YesNo({ question, value, onChange }) {
     <div className="ep-yesno">
       <p className="exercise-page__question-text">{question.text}</p>
       <div className="ep-yesno__btns">
-        <button
-          type="button"
+        <button type="button"
           className={`ep-yesno__btn ep-yesno__btn--yes${value === "sim" ? " ep-yesno__btn--active" : ""}`}
           onClick={() => onChange("sim")} aria-pressed={value === "sim"}
         >✅ Sim</button>
-        <button
-          type="button"
+        <button type="button"
           className={`ep-yesno__btn ep-yesno__btn--no${value === "não" ? " ep-yesno__btn--active" : ""}`}
           onClick={() => onChange("não")} aria-pressed={value === "não"}
         >❌ Não</button>
@@ -262,8 +265,7 @@ function MultipleChoice({ question, value, onChange }) {
       <p className="exercise-page__question-text">{question.text}</p>
       <div className="ep-mc__list">
         {options.map((opt, i) => (
-          <button
-            key={i} type="button"
+          <button key={i} type="button"
             className={`ep-mc__option${value === opt ? " ep-mc__option--active" : ""}`}
             onClick={() => onChange(opt)} aria-pressed={value === opt}
           >
@@ -282,14 +284,12 @@ function MultipleChoice({ question, value, onChange }) {
 function Checklist({ question, value, onChange }) {
   const options  = question.options ?? [];
   const selected = value ? value.split("|") : [];
-
   const toggle = (opt) => {
     const next = selected.includes(opt)
       ? selected.filter((s) => s !== opt)
       : [...selected, opt];
     onChange(next.join("|"));
   };
-
   return (
     <div className="ep-checklist">
       <p className="exercise-page__question-text">{question.text}</p>
@@ -298,8 +298,7 @@ function Checklist({ question, value, onChange }) {
         {options.map((opt, i) => {
           const checked = selected.includes(opt);
           return (
-            <button
-              key={i} type="button"
+            <button key={i} type="button"
               className={`ep-checklist__item${checked ? " ep-checklist__item--checked" : ""}`}
               onClick={() => toggle(opt)} aria-pressed={checked}
             >
@@ -321,8 +320,7 @@ function NumberInput({ question, value, onChange }) {
     <div className="ep-number">
       <p className="exercise-page__question-text">{question.text}</p>
       <div className="ep-number__row">
-        <input
-          type="number" min={0} step="any"
+        <input type="number" min={0} step="any"
           className="ep-number__input"
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -342,8 +340,7 @@ function TimeInput({ question, value, onChange }) {
   return (
     <div className="ep-time">
       <p className="exercise-page__question-text">{question.text}</p>
-      <input
-        type="time"
+      <input type="time"
         className="ep-time__input"
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -505,33 +502,13 @@ export default function ExercisePage({ exercise, session, onBack }) {
               </>
             )}
 
-            {q.type === "yes_no" && (
-              <YesNo question={q} value={answers[q.id]} onChange={setAns} />
-            )}
-
-            {q.type === "multiple_choice" && (
-              <MultipleChoice question={q} value={answers[q.id]} onChange={setAns} />
-            )}
-
-            {q.type === "checklist" && (
-              <Checklist question={q} value={answers[q.id]} onChange={setAns} />
-            )}
-
-            {q.type === "number" && (
-              <NumberInput question={q} value={answers[q.id]} onChange={setAns} />
-            )}
-
-            {q.type === "time" && (
-              <TimeInput question={q} value={answers[q.id]} onChange={setAns} />
-            )}
-
-            {q.type === "slider_emoji" && (
-              <SliderEmoji question={q} value={answers[q.id]} onChange={setAns} emojis={q.emojis ?? undefined} />
-            )}
-
-            {q.type === "breathing" && (
-              <BreathingExercise question={q} onComplete={() => setAns("done")} />
-            )}
+            {q.type === "yes_no"          && <YesNo          question={q} value={answers[q.id]} onChange={setAns} />}
+            {q.type === "multiple_choice" && <MultipleChoice question={q} value={answers[q.id]} onChange={setAns} />}
+            {q.type === "checklist"       && <Checklist      question={q} value={answers[q.id]} onChange={setAns} />}
+            {q.type === "number"          && <NumberInput    question={q} value={answers[q.id]} onChange={setAns} />}
+            {q.type === "time"            && <TimeInput      question={q} value={answers[q.id]} onChange={setAns} />}
+            {q.type === "slider_emoji"    && <SliderEmoji    question={q} value={answers[q.id]} onChange={setAns} emojis={q.emojis ?? undefined} />}
+            {q.type === "breathing"       && <BreathingExercise question={q} onComplete={() => setAns("done")} />}
 
             <div className="exercise-page__nav">
               <button className="exercise-page__nav-btn exercise-page__nav-btn--prev"
