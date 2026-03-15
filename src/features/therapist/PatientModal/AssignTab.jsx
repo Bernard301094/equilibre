@@ -67,7 +67,7 @@ export default function AssignTab({ patient, session, exercises, assignments, go
 
         // Clona o exercício global na tabela do terapeuta
         if (isGlobal) {
-          const newId = "ex_" + Date.now() + Math.random().toString(36).slice(2, 6);
+          const newId = crypto.randomUUID();
           await db.insert(
             "exercises",
             {
@@ -86,16 +86,16 @@ export default function AssignTab({ patient, session, exercises, assignments, go
         }
 
         if (isGlobal || !existingIds.includes(finalExId)) {
-          // ⚠️  Não enviamos therapist_id aqui — a coluna não existe em assignments
           const inserted = await db.insert(
             "assignments",
             {
-              id:          "a" + Date.now() + Math.random().toString(36).slice(2, 5),
-              patient_id:  patient.id,
-              exercise_id: finalExId,
-              assigned_at: new Date().toISOString(),
-              status:      "pending",
-              due_date:    dueDates[exId] || null,
+              id:           crypto.randomUUID(),
+              patient_id:   patient.id,
+              exercise_id:  finalExId,
+              therapist_id: session.id,
+              assigned_at:  new Date().toISOString(),
+              status:       "pending",
+              due_date:     dueDates[exId] || null,
             },
             session.access_token
           );
@@ -114,7 +114,7 @@ export default function AssignTab({ patient, session, exercises, assignments, go
         await db.insert(
           "goals",
           {
-            id:            "g" + Date.now(),
+            id:            crypto.randomUUID(),
             patient_id:    patient.id,
             therapist_id:  session.id,
             weekly_target: weeklyGoal,
@@ -178,6 +178,7 @@ export default function AssignTab({ patient, session, exercises, assignments, go
                     >
                       ✕
                     </button>
+
                   </div>
                 );
               }
