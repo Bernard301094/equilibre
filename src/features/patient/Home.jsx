@@ -30,7 +30,6 @@ const getGreetingSub = () => {
 };
 
 export default function PatientHome({ session, setSession }) {
-  // navigateTo vem do PatientLayout via Outlet context
   const { navigateTo } = useOutletContext();
 
   const [data, setData] = useState({
@@ -96,9 +95,8 @@ export default function PatientHome({ session, setSession }) {
 
         const lastAction = localStorage.getItem(LS_LAST_ACTION);
         if (lastAction && Date.now() - parseInt(lastAction, 10) < 5000) {
-          setShowWater(true);
+          triggerWater();
           localStorage.removeItem(LS_LAST_ACTION);
-          setTimeout(() => setShowWater(false), 2000);
         }
 
         setData({
@@ -123,6 +121,12 @@ export default function PatientHome({ session, setSession }) {
     return () => { active = false; clearInterval(id); };
   }, [session.id, session.access_token]);
 
+  // Dispara o efeito de rega: 3 gotas + brilho por 2.4s
+  const triggerWater = () => {
+    setShowWater(true);
+    setTimeout(() => setShowWater(false), 2400);
+  };
+
   useEffect(() => {
     if (loading) return;
     if (prevStreak === null) {
@@ -133,6 +137,7 @@ export default function PatientHome({ session, setSession }) {
     if (data.streak > prevStreak) {
       setPlantPulse(true);
       setStreakLevelUp(true);
+      triggerWater();
       setTimeout(() => setPlantPulse(false),    800);
       setTimeout(() => setStreakLevelUp(false),  950);
     }
@@ -193,13 +198,11 @@ export default function PatientHome({ session, setSession }) {
 
       <div className="patient-home page-fade-in">
 
-        {/* ── Header ── */}
         <header className="patient-home__header">
           <h2 className="patient-home__greeting">{getGreeting(firstName)}</h2>
           <p className="patient-home__greeting-sub">{getGreetingSub()}</p>
         </header>
 
-        {/* ── Vincular profissional ── */}
         {!session.therapist_id && !isImpersonating && (
           <div className="patient-home__link-card">
             <span className="patient-home__link-icon" aria-hidden="true">🤝</span>
@@ -244,20 +247,28 @@ export default function PatientHome({ session, setSession }) {
           </div>
         )}
 
-        {/* ── Stats ── */}
         <div className="patient-home__stats-grid">
           <div className={[
             "patient-home__plant-card",
             streakLevelUp ? "streak-levelup" : "",
+            showWater     ? "plant-card--watering" : "",
           ].filter(Boolean).join(" ")}>
+
+            {/* ── 3 gotas independentes ── */}
             {showWater && (
-              <span className="patient-home__water-drop" aria-hidden="true">💧</span>
+              <>
+                <span className="water-drop water-drop--1" aria-hidden="true">💧</span>
+                <span className="water-drop water-drop--2" aria-hidden="true">💧</span>
+                <span className="water-drop water-drop--3" aria-hidden="true">💧</span>
+              </>
             )}
+
             <div className="patient-home__plant-emoji-wrap">
               <span
                 className={[
                   "patient-home__plant-emoji",
-                  plantPulse ? "plant-pulse" : "",
+                  plantPulse  ? "plant-pulse"    : "",
+                  showWater   ? "plant-swaying"  : "",
                 ].filter(Boolean).join(" ")}
                 role="img"
                 aria-label={`Planta: ${stage.label}`}
@@ -265,6 +276,7 @@ export default function PatientHome({ session, setSession }) {
                 {stage.icon}
               </span>
             </div>
+
             <div className="patient-home__plant-data">
               <span className="patient-home__streak-val" style={{ color: stage.color }}>
                 {data.streak}
@@ -288,7 +300,6 @@ export default function PatientHome({ session, setSession }) {
           )}
         </div>
 
-        {/* ── Aviso de streak ── */}
         {!data.hasActivityToday && data.streak > 0 && (
           <div
             className={[
@@ -315,7 +326,6 @@ export default function PatientHome({ session, setSession }) {
           </div>
         )}
 
-        {/* ── Meta semanal ── */}
         {data.goal && (
           <div className={[
             "patient-home__goal-card",
@@ -325,7 +335,6 @@ export default function PatientHome({ session, setSession }) {
           </div>
         )}
 
-        {/* ── CTAs ── */}
         {data.pending > 0 ? (
           <div
             className="patient-home__cta patient-home__cta--exercises"

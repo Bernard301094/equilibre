@@ -1,15 +1,9 @@
 /* ── micro-interactions.css ──────────────────────────────────
-   Drop this into your global CSS or import in the component
-   that needs plant / goal micro-interactions.
-
-   Usage:
-     Plant pulse     →  add class `plant-pulse`   to .patient-home__plant-emoji
-     Streak level-up →  add class `streak-levelup` to .patient-home__plant-card
-     Goal reached    →  add class `goal-reached`   to .patient-home__goal-card
-     Stat pop        →  add class `stat-pop`        to any StatCard root
+   Micro-interações visuais da aplicação Equilibre.
+   Importado nos componentes que precisam de animações.
 ───────────────────────────────────────────────────────────── */
 
-/* ── Plant pulse  (gentle heartbeat when streak increases) ── */
+/* ── Plant pulse  (heartbeat quando streak aumenta) ── */
 @keyframes mi-plant-pulse {
   0%   { transform: scale(1); }
   18%  { transform: scale(1.18) rotate(-4deg); }
@@ -23,16 +17,119 @@
   animation: mi-plant-pulse 750ms cubic-bezier(.22, 1, .36, 1) both;
 }
 
-/* ── Streak level-up  (card glow + ripple) ── */
+/* ════════════════════════════════════════════════════════════
+   EFEITO DE REGA — Gota de água melhorado
+   3 gotas independentes, ripple e brilho aquoso no card
+   ════════════════════════════════════════════════════════════ */
+
+/* Gota base */
+.water-drop {
+  position:       absolute;
+  font-size:      1rem;
+  line-height:    1;
+  pointer-events: none;
+  z-index:        10;
+  will-change:    transform, opacity;
+}
+
+/* Posições iniciais de cada gota (topo do card, posições X distintas) */
+.water-drop--1 { top: 6px;  left: 28%; }
+.water-drop--2 { top: 2px;  left: 50%; }
+.water-drop--3 { top: 8px;  left: 68%; }
+
+/* ── Keyframes de queda com curva e bounce ── */
+@keyframes drop-fall-1 {
+  0%   { transform: translate(0,    0)    scale(1);    opacity: 0; }
+  8%   { opacity: 1; }
+  60%  { transform: translate(-4px, 38px) scale(0.95); opacity: 0.9; }
+  80%  { transform: translate(-4px, 44px) scale(1.2, 0.6); opacity: 0.7; }
+  100% { transform: translate(-4px, 48px) scale(0);   opacity: 0; }
+}
+
+@keyframes drop-fall-2 {
+  0%   { transform: translate(0,    0)    scale(1.1);  opacity: 0; }
+  5%   { opacity: 1; }
+  55%  { transform: translate(2px,  40px) scale(0.9);  opacity: 1; }
+  75%  { transform: translate(2px,  46px) scale(1.3, 0.5); opacity: 0.6; }
+  100% { transform: translate(2px,  50px) scale(0);   opacity: 0; }
+}
+
+@keyframes drop-fall-3 {
+  0%   { transform: translate(0,    0)    scale(0.9);  opacity: 0; }
+  10%  { opacity: 1; }
+  65%  { transform: translate(5px,  35px) scale(1);    opacity: 0.85; }
+  82%  { transform: translate(5px,  42px) scale(1.15, 0.55); opacity: 0.5; }
+  100% { transform: translate(5px,  46px) scale(0);   opacity: 0; }
+}
+
+/* Delays escalonados: gota 1 inicia já, 2 com 180ms, 3 com 360ms */
+.water-drop--1 { animation: drop-fall-1 1.6s cubic-bezier(.4, 0, .2, 1) both; }
+.water-drop--2 { animation: drop-fall-2 1.7s cubic-bezier(.4, 0, .2, 1) 0.18s both; }
+.water-drop--3 { animation: drop-fall-3 1.5s cubic-bezier(.4, 0, .2, 1) 0.36s both; }
+
+/* ── Brilho aquoso no card durante a rega ── */
+@keyframes watering-glow {
+  0%   { box-shadow: var(--card-shadow, 0 2px 12px rgba(0,0,0,.06)); }
+  30%  { box-shadow: var(--card-shadow, 0 2px 12px rgba(0,0,0,.06)),
+                     0 0 0 2px  rgba(79, 172, 224, 0.35),
+                     0 0 22px   rgba(79, 172, 224, 0.25); }
+  70%  { box-shadow: var(--card-shadow, 0 2px 12px rgba(0,0,0,.06)),
+                     0 0 0 1px  rgba(79, 172, 224, 0.15),
+                     0 0 10px   rgba(79, 172, 224, 0.10); }
+  100% { box-shadow: var(--card-shadow, 0 2px 12px rgba(0,0,0,.06)); }
+}
+
+.plant-card--watering {
+  animation: watering-glow 2.4s ease both;
+}
+
+/* ── Ripple de ondulação ao receber as gotas ── */
+.plant-card--watering::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at 50% 70%,
+    rgba(79, 172, 224, 0.18) 0%,
+    transparent 65%
+  );
+  animation: watering-ripple 2.4s ease both;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes watering-ripple {
+  0%   { opacity: 0; transform: scale(0.85); }
+  25%  { opacity: 1; transform: scale(1);    }
+  75%  { opacity: 0.4; }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+
+/* ── Planta oscila suavemente ao ser regada ── */
+@keyframes mi-plant-sway-watering {
+  0%   { transform: rotate(0deg); }
+  15%  { transform: rotate(-3.5deg) scale(1.04); }
+  35%  { transform: rotate(3deg)   scale(1.02); }
+  55%  { transform: rotate(-2deg); }
+  75%  { transform: rotate(1.5deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.plant-swaying {
+  animation: mi-plant-sway-watering 2s cubic-bezier(.22, 1, .36, 1) both !important;
+}
+
+/* ── Streak level-up (glow + ripple de expansão) ── */
 @keyframes mi-levelup-glow {
-  0%   { box-shadow: 0 0  0px rgba(123, 179, 105, 0);   }
-  40%  { box-shadow: 0 0 28px rgba(123, 179, 105, .6);  }
-  100% { box-shadow: 0 0  0px rgba(123, 179, 105, 0);   }
+  0%   { box-shadow: 0 0  0px rgba(123, 179, 105, 0);  }
+  40%  { box-shadow: 0 0 28px rgba(123, 179, 105, .6); }
+  100% { box-shadow: 0 0  0px rgba(123, 179, 105, 0);  }
 }
 
 @keyframes mi-levelup-ripple {
-  0%   { transform: scale(1);    opacity: .5; }
-  100% { transform: scale(2.2);  opacity: 0;  }
+  0%   { transform: scale(1);   opacity: .5; }
+  100% { transform: scale(2.2); opacity: 0;  }
 }
 
 .streak-levelup {
@@ -41,16 +138,16 @@
 }
 
 .streak-levelup::after {
-  content:       "";
-  position:      absolute;
-  inset:         0;
-  border-radius: inherit;
-  border:        2px solid rgba(123, 179, 105, .7);
-  animation:     mi-levelup-ripple 800ms ease both;
+  content:        "";
+  position:       absolute;
+  inset:          0;
+  border-radius:  inherit;
+  border:         2px solid rgba(123, 179, 105, .7);
+  animation:      mi-levelup-ripple 800ms ease both;
   pointer-events: none;
 }
 
-/* ── Goal reached  (bar flash + checkmark pop) ── */
+/* ── Goal reached ── */
 @keyframes mi-goal-flash {
   0%, 100% { background: transparent; }
   30%       { background: rgba(123, 179, 105, .12); }
@@ -58,21 +155,16 @@
 }
 
 @keyframes mi-goal-scale {
-  0%   { transform: scaleX(1); }
+  0%   { transform: scaleX(1);    }
   20%  { transform: scaleX(1.03); }
-  50%  { transform: scaleX(.98); }
-  100% { transform: scaleX(1); }
+  50%  { transform: scaleX(.98);  }
+  100% { transform: scaleX(1);    }
 }
 
-.goal-reached {
-  animation: mi-goal-flash 700ms ease both;
-}
+.goal-reached { animation: mi-goal-flash 700ms ease both; }
+.goal-reached .week-goal-bar__fill { animation: mi-goal-scale 600ms cubic-bezier(.22, 1, .36, 1) both; }
 
-.goal-reached .week-goal-bar__fill {
-  animation: mi-goal-scale 600ms cubic-bezier(.22, 1, .36, 1) both;
-}
-
-/* ── Stat pop  (number count-up visual bounce) ── */
+/* ── Stat pop ── */
 @keyframes mi-stat-pop {
   0%   { transform: scale(1);    }
   40%  { transform: scale(1.22); }
@@ -82,12 +174,12 @@
 }
 
 .stat-pop .stat-card__value {
-  display:         inline-block;
-  animation:       mi-stat-pop 500ms cubic-bezier(.22, 1, .36, 1) both;
+  display:          inline-block;
+  animation:        mi-stat-pop 500ms cubic-bezier(.22, 1, .36, 1) both;
   transform-origin: center bottom;
 }
 
-/* ── Streak value colour transition on growth ── */
+/* ── Streak color transition ── */
 @keyframes mi-streak-color {
   0%   { color: inherit; }
   40%  { color: #f4c542; }
@@ -98,22 +190,10 @@
   animation: mi-streak-color 900ms ease both;
 }
 
-/* ── Water drop bounce (already in Home, enhanced here) ── */
-@keyframes mi-water-bounce {
-  0%   { transform: translateY(0)  scale(1);    opacity: 1; }
-  35%  { transform: translateY(-16px) scale(1.15); }
-  70%  { transform: translateY(-24px) scale(.9); opacity: .8; }
-  100% { transform: translateY(-36px) scale(.7); opacity: 0; }
-}
-
-.patient-home__water-drop {
-  animation: mi-water-bounce 1.8s ease both !important;
-}
-
-/* ── Gentle CTA shimmer on all-done ── */
+/* ── All-done icon float ── */
 @keyframes mi-all-done-float {
-  0%, 100% { transform: translateY(0) rotate(-1deg); }
-  50%       { transform: translateY(-6px) rotate(1deg); }
+  0%, 100% { transform: translateY(0)    rotate(-1deg); }
+  50%       { transform: translateY(-6px) rotate(1deg);  }
 }
 
 .patient-home__all-done-icon {
@@ -123,3 +203,19 @@
 
 /* ── Helper: run once, then settle ── */
 .run-once { animation-iteration-count: 1 !important; }
+
+/* ── Preferência do utilizador: sem animações ── */
+@media (prefers-reduced-motion: reduce) {
+  .water-drop,
+  .plant-card--watering,
+  .plant-card--watering::before,
+  .plant-swaying,
+  .plant-pulse,
+  .streak-levelup,
+  .goal-reached .week-goal-bar__fill,
+  .stat-pop .stat-card__value,
+  .patient-home__all-done-icon {
+    animation: none !important;
+    transition: none !important;
+  }
+}
