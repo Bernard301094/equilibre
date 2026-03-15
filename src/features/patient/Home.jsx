@@ -40,19 +40,14 @@ export default function PatientHome({ session, setSession, setView }) {
   const [linkMsg,    setLinkMsg]    = useState({ type: "", text: "" });
   const inflightRef = useRef(false);
 
-  // ── Sessão de impersonação ativa? ──
-  // Se o admin está navegando como paciente teste, oculta o card
-  // de vinculação — não faz sentido vincular uma conta de dev.
   const isImpersonating = !!localStorage.getItem(LS_ADMIN_BACKUP);
 
-  // ── Micro-interaction state ──
   const [prevStreak,    setPrevStreak]    = useState(null);
   const [prevWeekDone,  setPrevWeekDone]  = useState(null);
   const [plantPulse,    setPlantPulse]    = useState(false);
   const [streakLevelUp, setStreakLevelUp] = useState(false);
   const [goalReached,   setGoalReached]   = useState(false);
 
-  // ── Push notifications ──
   const { supported, permission, subscribed, subscribe } =
     usePushNotifications({ session, setView });
 
@@ -63,7 +58,6 @@ export default function PatientHome({ session, setSession, setView }) {
     }
   }, [supported, permission, subscribed, subscribe]);
 
-  // ── Data fetch ──
   useEffect(() => {
     let active = true;
     const fetchData = async () => {
@@ -125,29 +119,24 @@ export default function PatientHome({ session, setSession, setView }) {
     return () => { active = false; clearInterval(id); };
   }, [session.id, session.access_token]);
 
-  // ── Detect streak / goal growth and trigger micro-animations ──
   useEffect(() => {
     if (loading) return;
-
     if (prevStreak === null) {
       setPrevStreak(data.streak);
       setPrevWeekDone(data.weekDone);
       return;
     }
-
     if (data.streak > prevStreak) {
       setPlantPulse(true);
       setStreakLevelUp(true);
       setTimeout(() => setPlantPulse(false),    800);
       setTimeout(() => setStreakLevelUp(false),  950);
     }
-
     const target = data.goal?.weekly_target;
     if (target && prevWeekDone < target && data.weekDone >= target) {
       setGoalReached(true);
       setTimeout(() => setGoalReached(false), 750);
     }
-
     setPrevStreak(data.streak);
     setPrevWeekDone(data.weekDone);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -181,7 +170,6 @@ export default function PatientHome({ session, setSession, setView }) {
     }
   };
 
-  /* ── Loading ── */
   if (loading) {
     return (
       <div className="patient-home-loading">
@@ -197,7 +185,6 @@ export default function PatientHome({ session, setSession, setView }) {
 
   return (
     <>
-      {/* ── Onboarding tour — shown only on first visit ── */}
       <OnboardingTour />
 
       <div className="patient-home page-fade-in">
@@ -208,10 +195,7 @@ export default function PatientHome({ session, setSession, setView }) {
           <p className="patient-home__greeting-sub">{getGreetingSub()}</p>
         </header>
 
-        {/* ── Vincular profissional ──
-            Oculto durante impersonação (sessão de dev),
-            pois a conta de teste pode não ter therapist_id
-            e o card seria inútil / confuso nesse contexto. */}
+        {/* ── Vincular profissional ── */}
         {!session.therapist_id && !isImpersonating && (
           <div className="patient-home__link-card">
             <span className="patient-home__link-icon" aria-hidden="true">🤝</span>
@@ -258,7 +242,6 @@ export default function PatientHome({ session, setSession, setView }) {
 
         {/* ── Stats ── */}
         <div className="patient-home__stats-grid">
-
           <div className={[
             "patient-home__plant-card",
             streakLevelUp ? "streak-levelup" : "",
@@ -279,10 +262,7 @@ export default function PatientHome({ session, setSession, setView }) {
               </span>
             </div>
             <div className="patient-home__plant-data">
-              <span
-                className="patient-home__streak-val"
-                style={{ color: stage.color }}
-              >
+              <span className="patient-home__streak-val" style={{ color: stage.color }}>
                 {data.streak}
               </span>
               <span className="patient-home__streak-label">Dias seguidos</span>
@@ -302,7 +282,6 @@ export default function PatientHome({ session, setSession, setView }) {
           ) : (
             <StatCard icon="✅" value={data.done} label="Concluídos" />
           )}
-
         </div>
 
         {/* ── Aviso de streak ── */}
@@ -315,7 +294,7 @@ export default function PatientHome({ session, setSession, setView }) {
             role="alert"
           >
             <span className="patient-home__streak-warn-icon" aria-hidden="true">
-              {data.isLate ? "⚠️" : "🪴"}
+              {data.isLate ? "⚠️" : "🪺"}
             </span>
             <div className="patient-home__streak-warn-body">
               <h3 className={[
@@ -342,28 +321,14 @@ export default function PatientHome({ session, setSession, setView }) {
           </div>
         )}
 
-        {/* ── CTA principal ── */}
-        {!data.hasActivityToday ? (
-          <div
-            className="patient-home__cta patient-home__cta--diary"
-            onClick={() => setView("diary")}
-            role="button"
-            tabIndex={0}
-            aria-label="Ir para o diário emocional"
-            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setView("diary")}
-          >
-            <div className="patient-home__cta-body">
-              <div className="patient-home__cta-text">
-                <h3 className="patient-home__cta-title">Vamos regar agora?</h3>
-                <p className="patient-home__cta-desc">
-                  Registe como você está hoje no diário e mantenha seu jardim vivo.
-                </p>
-              </div>
-              <span className="patient-home__cta-icon" aria-hidden="true">🚿</span>
-            </div>
-          </div>
-
-        ) : data.pending > 0 ? (
+        {/* ══════════════════════════════════════════════════════
+            CTA principal
+            Regra corrigida:
+            1. Exercícios pendentes → sempre mostra o banner (independente de hasActivityToday)
+            2. Sem atividade hoje + sem pendentes → mostra CTA do diário
+            3. Tudo em dia → mensagem de parabenização
+        ══════════════════════════════════════════════════════ */}
+        {data.pending > 0 ? (
           <div
             className="patient-home__cta patient-home__cta--exercises"
             onClick={() => setView("exercises")}
@@ -382,6 +347,26 @@ export default function PatientHome({ session, setSession, setView }) {
                   Clique aqui para começar quando estiver pronto(a).
                 </p>
               </div>
+            </div>
+          </div>
+
+        ) : !data.hasActivityToday ? (
+          <div
+            className="patient-home__cta patient-home__cta--diary"
+            onClick={() => setView("diary")}
+            role="button"
+            tabIndex={0}
+            aria-label="Ir para o diário emocional"
+            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setView("diary")}
+          >
+            <div className="patient-home__cta-body">
+              <div className="patient-home__cta-text">
+                <h3 className="patient-home__cta-title">Vamos regar agora?</h3>
+                <p className="patient-home__cta-desc">
+                  Registe como você está hoje no diário e mantenha seu jardim vivo.
+                </p>
+              </div>
+              <span className="patient-home__cta-icon" aria-hidden="true">🛃</span>
             </div>
           </div>
 
