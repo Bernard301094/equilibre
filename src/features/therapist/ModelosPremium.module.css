@@ -1,12 +1,13 @@
 /* Container base estilo documento A4 na tela */
 .container {
-  background: #ffffff;
+  background: var(--card-bg, #ffffff);
   border-radius: 16px;
   padding: 40px;
   max-width: 900px;
   margin: 0 auto;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
-  border: 1px solid #f1f5f9;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);
+  border: 1px solid var(--border, #f1f5f9);
+  color: var(--text, #1e293b);
 }
 
 /* Cabeçalho do Documento Clínico */
@@ -14,26 +15,28 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  border-bottom: 2px solid #f1f5f9;
+  border-bottom: 2px solid var(--border, #f1f5f9);
   padding-bottom: 24px;
   margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .docTitle {
   font-size: 1.75rem;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text-heading, #0f172a);
   margin: 0 0 8px 0;
   letter-spacing: -0.025em;
 }
 
 .docSubtitle {
   font-size: 1rem;
-  color: #64748b;
+  color: var(--text-muted, #64748b);
   margin: 0;
 }
 
-/* Placar de Escalas (Scoreboard) */
+/* Placar de Escalas */
 .scoreBoard {
   display: flex;
   flex-direction: column;
@@ -41,7 +44,7 @@
   padding: 12px 24px;
   border-radius: 12px;
   border: 2px solid;
-  min-width: 140px;
+  min-width: 120px;
 }
 
 .scoreInfo {
@@ -55,7 +58,7 @@
   text-transform: uppercase;
   font-weight: 700;
   letter-spacing: 0.05em;
-  color: #475569;
+  color: var(--text-muted, #475569);
 }
 
 .scoreValue {
@@ -73,7 +76,7 @@
 /* Barra de Progresso */
 .progressContainer {
   height: 6px;
-  background: #f1f5f9;
+  background: var(--surface, #f1f5f9);
   border-radius: 3px;
   margin-bottom: 32px;
   overflow: hidden;
@@ -81,21 +84,21 @@
 
 .progressBar {
   height: 100%;
-  background: #6a997c; /* Cor marca Equilibre */
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #6a997c;
+  transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
 }
 
-/* Lista de Questões */
+/* Questões */
 .instruction {
   font-weight: 500;
-  color: #334155;
+  color: var(--text, #334155);
   margin-bottom: 24px;
   font-size: 1.05rem;
 }
 
 .questionCard {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--surface, #f8fafc);
+  border: 1px solid var(--border, #e2e8f0);
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 20px;
@@ -103,14 +106,14 @@
 }
 
 .questionCard.answered {
-  background: #ffffff;
-  border-color: #cbd5e1;
+  background: var(--card-bg, #ffffff);
+  border-color: var(--border, #cbd5e1);
 }
 
 .questionText {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-heading, #1e293b);
   margin: 0 0 20px 0;
 }
 
@@ -122,7 +125,7 @@
 /* Botões Likert */
 .optionsGroup {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 12px;
 }
 
@@ -132,40 +135,42 @@
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: #ffffff;
-  border: 2px solid #e2e8f0;
+  background: var(--card-bg, #ffffff);
+  border: 2px solid var(--border, #e2e8f0);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
   text-align: center;
+  color: var(--text-heading, #0f172a);
 }
 
 .optionBtn:hover {
   border-color: #94a3b8;
-  background: #f8fafc;
+  background: var(--surface, #f8fafc);
 }
 
 .optionSelected {
   border-color: #6a997c !important;
   background: #f0fdf4 !important;
-  box-shadow: 0 4px 12px rgba(106, 153, 124, 0.15);
+  box-shadow: 0 4px 12px rgba(106,153,124,0.15);
 }
 
 .optValue {
   font-size: 1.25rem;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text-heading, #0f172a);
   margin-bottom: 4px;
 }
 
-.optionSelected .optValue, .optionSelected .optLabel {
+.optionSelected .optValue,
+.optionSelected .optLabel {
   color: #166534;
 }
 
 .optLabel {
   font-size: 0.85rem;
   font-weight: 500;
-  color: #64748b;
+  color: var(--text-muted, #64748b);
 }
 
 /* RPD / Formulários Textuais */
@@ -183,19 +188,19 @@
 
 .inputGroup label {
   font-weight: 700;
-  color: #334155;
+  color: var(--text, #334155);
   font-size: 0.95rem;
 }
 
 .inputGroup textarea {
   width: 100%;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border, #cbd5e1);
   border-radius: 8px;
   padding: 16px;
   font-family: inherit;
   font-size: 1rem;
-  color: #0f172a;
-  background: #f8fafc;
+  color: var(--text-heading, #0f172a);
+  background: var(--surface, #f8fafc);
   resize: vertical;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -203,8 +208,8 @@
 .inputGroup textarea:focus {
   outline: none;
   border-color: #6a997c;
-  box-shadow: 0 0 0 3px rgba(106, 153, 124, 0.2);
-  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(106,153,124,0.2);
+  background: var(--card-bg, #ffffff);
 }
 
 /* Ações */
@@ -212,8 +217,10 @@
   margin-top: 40px;
   display: flex;
   justify-content: flex-end;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border, #e2e8f0);
   padding-top: 24px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .btnPrimary {
@@ -237,132 +244,226 @@
   cursor: not-allowed;
 }
 
-/* Formatação de Impressão Profissional (Para o exportar PDF) */
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  .container, .container * {
-    visibility: visible;
-  }
-  .container {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    box-shadow: none;
-    border: none;
-    padding: 0;
-  }
-  .actions, .backButton, .navBar {
-    display: none !important;
-  }
-  .questionCard {
-    break-inside: avoid;
-    border: 1px solid #000;
-    padding: 12px;
-  }
-  .optionBtn {
-    border: 1px solid #000;
-  }
-}
-
-/* Container Base SaaS (Reutilizado do RodaDaVida) */
+/* ─── ULTRA CONTAINER (SaaS / RodaDaVida) ─── */
 .ultraContainer {
-  background: #ffffff;
+  background: var(--card-bg, #ffffff);
   border-radius: 24px;
   padding: 48px;
   max-width: 1080px;
   margin: 0 auto;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 20px 25px -5px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 20px 25px -5px rgba(0,0,0,0.04);
+  border: 1px solid var(--border, rgba(226,232,240,0.8));
   font-family: 'Inter', system-ui, sans-serif;
   position: relative;
+  color: var(--text, #1e293b);
 }
 
-/* Restantes headers e botões... (Mantenha os que já tinha ou use estes) */
-.docHeader {
-  display: flex; justify-content: space-between; align-items: flex-end;
-  border-bottom: 1px solid #f1f5f9; padding-bottom: 32px; margin-bottom: 32px;
-}
-.docTitle { font-size: 2rem; font-weight: 800; color: #0f172a; margin: 0 0 8px 0; letter-spacing: -0.03em; }
-.docSubtitle { font-size: 1rem; color: #64748b; margin: 0; }
-.actions { display: flex; gap: 16px; align-items: center; }
-.btnGhost { background: transparent; border: none; color: #64748b; font-weight: 600; cursor: pointer; padding: 12px 16px; border-radius: 12px; transition: all 0.2s; }
-.btnGhost:hover { background: #f8fafc; color: #0f172a; }
-.btnSolid { background: #0f172a; color: #ffffff; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
-.btnSolid:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(15, 23, 42, 0.2); }
+.docTitle { font-size: 2rem; font-weight: 800; color: var(--text-heading, #0f172a); margin: 0 0 8px 0; letter-spacing: -0.03em; }
+.docSubtitle { font-size: 1rem; color: var(--text-muted, #64748b); margin: 0; }
+.btnGhost { background: transparent; border: none; color: var(--text-muted, #64748b); font-weight: 600; cursor: pointer; padding: 12px 16px; border-radius: 12px; transition: all 0.2s; }
+.btnGhost:hover { background: var(--surface, #f8fafc); color: var(--text-heading, #0f172a); }
+.btnSolid { background: var(--text-heading, #0f172a); color: #ffffff; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+.btnSolid:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(15,23,42,0.2); }
 .btnSolid:disabled { background: #cbd5e1; cursor: not-allowed; }
 
 /* Logo Uploader */
-.logoUploader { display: flex; align-items: center; gap: 12px; border-right: 2px solid #e2e8f0; padding-right: 16px; }
+.logoUploader { display: flex; align-items: center; gap: 12px; border-right: 2px solid var(--border, #e2e8f0); padding-right: 16px; }
 .logoPreview { height: 32px; max-width: 100px; object-fit: contain; border-radius: 4px; }
 
-/* ─── ESCALAS CLÍNICAS (Dinâmicas) ─── */
-.instruction { font-size: 1.1rem; color: #475569; font-weight: 500; margin-bottom: 32px; }
-
+/* ─── ESCALAS CLÍNICAS ─── */
 .stickyScoreBoard {
   position: sticky;
   top: 20px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255,255,255,0.95);
   backdrop-filter: blur(8px);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border, #e2e8f0);
   border-radius: 16px;
   padding: 16px 24px;
   z-index: 10;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
   margin-bottom: 40px;
 }
 
-.progressContainer { height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
-.progressBar { height: 100%; background: #0f172a; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-
 .scoreDetails { display: flex; justify-content: space-between; align-items: center; border-left: 4px solid transparent; padding-left: 12px; transition: border-color 0.3s; }
 .scoreText { display: flex; flex-direction: column; }
-.scoreLabel { font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; }
-.scoreValue { font-size: 1.5rem; font-weight: 800; transition: color 0.3s; }
 .scoreBadge { padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; transition: all 0.3s; }
 
+/* Cartões de perguntas (versão Ultra) */
 .questionCard {
-  background: #ffffff; border: 2px solid #f1f5f9; border-radius: 16px; padding: 32px; margin-bottom: 24px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--card-bg, #ffffff);
+  border: 2px solid var(--border, #f1f5f9);
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 24px;
+  transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
 }
-.questionCard.highlightNext { border-color: #cbd5e1; box-shadow: 0 0 0 4px rgba(241, 245, 249, 0.5); transform: scale(1.01); }
-.questionCard.answered { border-color: #e2e8f0; background: #f8fafc; opacity: 0.7; }
+.questionCard.highlightNext { border-color: #cbd5e1; box-shadow: 0 0 0 4px rgba(241,245,249,0.5); transform: scale(1.01); }
+.questionCard.answered { border-color: var(--border, #e2e8f0); background: var(--surface, #f8fafc); opacity: 0.7; }
 .questionCard.answered:hover { opacity: 1; }
 
-.questionText { font-size: 1.15rem; font-weight: 600; color: #0f172a; margin: 0 0 24px 0; }
-.questionText span { color: #64748b; margin-right: 8px; }
+.questionText { font-size: 1.15rem; font-weight: 600; color: var(--text-heading, #0f172a); margin: 0 0 24px 0; }
+.questionText span { color: var(--text-muted, #64748b); margin-right: 8px; }
 
-.optionsGroup { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; }
+.optionsGroup { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; }
 .optionBtn {
-  background: #ffffff; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px;
+  background: var(--card-bg, #ffffff); border: 2px solid var(--border, #e2e8f0); border-radius: 12px; padding: 20px;
   display: flex; flex-direction: column; align-items: center; cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+  color: var(--text-heading, #0f172a);
 }
 .optionBtn:hover { border-color: #94a3b8; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
-.optionSelected { border-color: #0f172a !important; background: #f8fafc !important; box-shadow: inset 0 0 0 1px #0f172a; transform: scale(0.98); }
-.optValue { font-size: 1.5rem; font-weight: 800; color: #334155; margin-bottom: 8px; }
-.optionSelected .optValue { color: #0f172a; }
-.optLabel { font-size: 0.85rem; font-weight: 600; color: #64748b; text-align: center; }
+.optionSelected { border-color: var(--text-heading, #0f172a) !important; background: var(--surface, #f8fafc) !important; box-shadow: inset 0 0 0 1px var(--text-heading, #0f172a); transform: scale(0.98); }
+.optValue { font-size: 1.5rem; font-weight: 800; color: var(--text, #334155); margin-bottom: 8px; }
+.optionSelected .optValue { color: var(--text-heading, #0f172a); }
+.optLabel { font-size: 0.85rem; font-weight: 600; color: var(--text-muted, #64748b); text-align: center; }
 
-/* ─── RPD (Focus Mode Dinâmico) ─── */
-.rpdMasonry { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; }
+/* ─── RPD ─── */
+.rpdMasonry { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 24px; }
 .rpdCard {
-  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--surface, #f8fafc); border: 1px solid var(--border, #e2e8f0); border-radius: 16px; padding: 24px;
+  transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
   display: flex; flex-direction: column; gap: 16px;
 }
-.rpdCardFocused { background: #ffffff; border-color: #6a997c; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 0 0 4px rgba(106, 153, 124, 0.1); transform: translateY(-4px); z-index: 2; }
-.rpdCardHeader h3 { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0 0 4px 0; }
-.rpdCardHeader p { font-size: 0.9rem; color: #64748b; margin: 0; line-height: 1.4; }
+.rpdCardFocused { background: var(--card-bg, #ffffff); border-color: #6a997c; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 0 0 4px rgba(106,153,124,0.1); transform: translateY(-4px); z-index: 2; }
+.rpdCardHeader h3 { font-size: 1.1rem; font-weight: 700; color: var(--text-heading, #0f172a); margin: 0 0 4px 0; }
+.rpdCardHeader p { font-size: 0.9rem; color: var(--text-muted, #64748b); margin: 0; line-height: 1.4; }
 .rpdTextarea {
-  width: 100%; border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; font-family: inherit; font-size: 1rem;
-  background: #ffffff; resize: none; transition: all 0.3s;
+  width: 100%; border: 1px solid var(--border, #cbd5e1); border-radius: 12px; padding: 16px; font-family: inherit; font-size: 1rem;
+  background: var(--card-bg, #ffffff); color: var(--text-heading, #0f172a); resize: none; transition: all 0.3s;
 }
 .rpdTextarea:focus { outline: none; border-color: #6a997c; }
 
-/* ─── MODO IMPRESSÃO (LAUDO PROFISSIONAL) ─── */
+/* ─── DARK MODE ─── */
+[data-theme="dark"] .container,
+[data-theme="dark"] .ultraContainer {
+  background: var(--card-bg, #1e293b);
+  border-color: var(--border, rgba(255,255,255,0.06));
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+}
+
+[data-theme="dark"] .docTitle {
+  color: var(--text-heading, #f1f5f9);
+}
+
+[data-theme="dark"] .docSubtitle,
+[data-theme="dark"] .instruction,
+[data-theme="dark"] .optLabel,
+[data-theme="dark"] .rpdCardHeader p {
+  color: var(--text-muted, #94a3b8);
+}
+
+[data-theme="dark"] .questionCard {
+  background: var(--surface, #0f172a);
+  border-color: var(--border, rgba(255,255,255,0.06));
+}
+
+[data-theme="dark"] .questionCard.answered {
+  background: var(--card-bg, #1e293b);
+}
+
+[data-theme="dark"] .questionText {
+  color: var(--text-heading, #f1f5f9);
+}
+
+[data-theme="dark"] .optionBtn {
+  background: var(--surface, #0f172a);
+  border-color: var(--border, rgba(255,255,255,0.08));
+  color: var(--text-heading, #f1f5f9);
+}
+
+[data-theme="dark"] .optionBtn:hover {
+  background: var(--card-bg, #1e293b);
+  border-color: #475569;
+}
+
+[data-theme="dark"] .optionSelected {
+  border-color: #6a997c !important;
+  background: rgba(106,153,124,0.12) !important;
+  box-shadow: inset 0 0 0 1px #6a997c;
+}
+
+[data-theme="dark"] .optionSelected .optValue,
+[data-theme="dark"] .optionSelected .optLabel {
+  color: #86efac;
+}
+
+[data-theme="dark"] .optValue {
+  color: var(--text-heading, #f1f5f9);
+}
+
+[data-theme="dark"] .stickyScoreBoard {
+  background: rgba(30,41,59,0.95);
+  border-color: var(--border, rgba(255,255,255,0.06));
+}
+
+[data-theme="dark"] .progressContainer {
+  background: var(--surface, #0f172a);
+}
+
+[data-theme="dark"] .rpdCard {
+  background: var(--surface, #0f172a);
+  border-color: var(--border, rgba(255,255,255,0.06));
+}
+
+[data-theme="dark"] .rpdCardFocused {
+  background: var(--card-bg, #1e293b);
+}
+
+[data-theme="dark"] .rpdCardHeader h3 {
+  color: var(--text-heading, #f1f5f9);
+}
+
+[data-theme="dark"] .rpdTextarea {
+  background: var(--card-bg, #1e293b);
+  border-color: var(--border, rgba(255,255,255,0.08));
+  color: var(--text-heading, #f1f5f9);
+}
+
+[data-theme="dark"] .inputGroup label {
+  color: var(--text-heading, #e2e8f0);
+}
+
+[data-theme="dark"] .inputGroup textarea {
+  background: var(--surface, #0f172a);
+  border-color: var(--border, rgba(255,255,255,0.08));
+  color: var(--text-heading, #f1f5f9);
+}
+
+[data-theme="dark"] .inputGroup textarea:focus {
+  background: var(--card-bg, #1e293b);
+}
+
+[data-theme="dark"] .actions {
+  border-top-color: var(--border, rgba(255,255,255,0.06));
+}
+
+[data-theme="dark"] .btnGhost {
+  color: var(--text-muted, #94a3b8);
+}
+
+[data-theme="dark"] .btnGhost:hover {
+  background: var(--surface, #0f172a);
+  color: var(--text-heading, #f1f5f9);
+}
+
+[data-theme="dark"] .btnSolid {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .logoUploader {
+  border-right-color: var(--border, rgba(255,255,255,0.06));
+}
+
+[data-theme="dark"] .docHeader {
+  border-bottom-color: var(--border, rgba(255,255,255,0.06));
+}
+
+[data-theme="dark"] .scoreLabel {
+  color: var(--text-muted, #94a3b8);
+}
+
+/* ─── IMPRESSÃO ─── */
 .printOnlyHeader { display: none; }
 
 @media print {
@@ -370,11 +471,7 @@
   body * { visibility: hidden; }
   .ultraContainer, .ultraContainer * { visibility: visible; }
   .ultraContainer { position: absolute; left: 0; top: 0; width: 100%; padding: 0; border: none; box-shadow: none; }
-  
-  /* Ocultar UI de ecrã */
   .docHeader, .stickyScoreBoard, .actions, .instruction { display: none !important; }
-  
-  /* Mostrar Cabeçalho Profissional de PDF */
   .printOnlyHeader {
     display: flex; justify-content: space-between; align-items: center;
     border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 32px;
@@ -385,11 +482,105 @@
   .printInfo h1 { font-size: 1.5rem; color: #0f172a; margin: 0 0 4px 0; }
   .printInfo p { font-size: 0.9rem; color: #64748b; margin: 0 0 12px 0; }
   .printScoreBox { display: inline-flex; gap: 16px; border: 2px solid; padding: 8px 16px; border-radius: 8px; }
-  
-  /* Limpeza de Cartões para Gastar Menos Tinta e ficar Formal */
   .questionCard, .rpdCard { break-inside: avoid; border: 1px solid #cbd5e1; padding: 16px; margin-bottom: 12px; background: transparent; opacity: 1 !important; transform: none !important; box-shadow: none !important; }
   .optionsGroup { display: flex; flex-wrap: wrap; gap: 8px; }
   .optionBtn { padding: 8px 12px; border-radius: 6px; flex-direction: row; gap: 8px; }
   .optionSelected { border-color: #000 !important; background: #f1f5f9 !important; font-weight: bold; }
   .rpdTextarea { border: none; border-bottom: 1px dashed #cbd5e1; border-radius: 0; padding: 8px 0; }
+}
+
+/* ─── RESPONSIVIDADE ─── */
+@media (max-width: 768px) {
+  .container {
+    padding: 24px 16px;
+    border-radius: 12px;
+  }
+
+  .ultraContainer {
+    padding: 24px 16px;
+    border-radius: 16px;
+  }
+
+  .docHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .docTitle { font-size: 1.4rem; }
+
+  .scoreBoard {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 12px 16px;
+    min-width: unset;
+  }
+
+  .stickyScoreBoard {
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    top: 8px;
+  }
+
+  .questionCard {
+    padding: 18px 14px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+  }
+
+  .questionText { font-size: 1rem; margin-bottom: 16px; }
+
+  .optionsGroup {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .optionBtn {
+    padding: 12px 8px;
+    border-radius: 10px;
+  }
+
+  .optValue { font-size: 1.1rem; }
+  .optLabel { font-size: 0.78rem; }
+
+  .rpdGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .rpdMasonry {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .rpdCard {
+    padding: 18px 14px;
+    border-radius: 12px;
+  }
+
+  .actions {
+    justify-content: stretch;
+    margin-top: 28px;
+    padding-top: 18px;
+  }
+
+  .btnPrimary,
+  .btnSolid {
+    width: 100%;
+    justify-content: center;
+    padding: 14px;
+    font-size: 1rem;
+  }
+
+  .scoreValue { font-size: 1.8rem; }
+}
+
+@media (max-width: 400px) {
+  .optionsGroup {
+    grid-template-columns: 1fr;
+  }
+  .ultraContainer, .container {
+    padding: 16px 12px;
+  }
 }
