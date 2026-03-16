@@ -15,10 +15,10 @@
           @media (min-width: 1025px)  →  sidebar completa
    ============================================================ */
 
-/* ── Variáveis locais ────────────────────────────────────────── */
+/* ── Variables locales ────────────────────────────────────────── */
 .sidebar {
-  --sb-width-full:      256px;
-  --sb-width-collapsed:  68px;
+  --sb-width-full:       256px;
+  --sb-width-collapsed:   68px;
 }
 
 /* ── Contenedor principal ─────────────────────────────────────── */
@@ -31,10 +31,13 @@
   position: fixed;
   top: 0;
   left: 0;
-  height: 100vh;
+  /* dvh en lugar de vh: corrección para iOS Safari barra dinámica */
+  height: 100dvh;
   z-index: var(--z-sidebar, 100);
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.18);
   overflow: hidden;
+  /* will-change reduce repaints en la transición de ancho */
+  will-change: width;
   transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -87,7 +90,7 @@
   flex-shrink: 0;
   overflow: hidden;
   transition: opacity 0.2s, max-width 0.25s;
-  max-width: 40px;
+  max-width: 44px;  /* +4px para que el badge no se recorte */
   opacity: 1;
 }
 
@@ -287,6 +290,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Área táctil mínima 44px en tablet */
   width: 30px;
   height: 30px;
   border: none;
@@ -330,6 +334,7 @@
 
   .sidebar {
     width: var(--sb-width-collapsed);
+    /* overflow visible necesario para el tooltip */
     overflow: visible;
   }
 
@@ -363,7 +368,8 @@
     border-radius: 10px;
     width: 100%;
     overflow: visible;
-    min-height: 44px;   /* touch target mínimo 44px — iPad 9 */
+    /* Área táctil mínima 44px — iPad */
+    min-height: 44px;
   }
 
   .sidebar__nav-label {
@@ -384,18 +390,18 @@
     padding: 0 3px;
   }
 
-  /* Íconos ligeramente más grandes en tablet — iPad 9 */
   .sidebar__nav-icon {
     font-size: 1.25rem;
   }
 
-  /* Botones de acción más grandes en tablet */
   .sidebar__icon-btn {
     width: 40px;
     height: 40px;
   }
 
-  /* Tooltip CSS puro via data-label */
+  /* ── Tooltip CSS puro via data-label ──
+     FIX: z-index elevado para que no quede bajo otros elementos.
+     max-width limita el tooltip en tablets con viewport angosto. */
   .sidebar__nav-item[data-label]::after {
     content: attr(data-label);
     position: absolute;
@@ -409,14 +415,15 @@
     padding: 6px 12px;
     border-radius: 8px;
     white-space: nowrap;
+    max-width: 180px;       /* evita salirse del viewport en tablets angostas */
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.15s ease;
-    z-index: var(--z-dropdown, 50);
+    z-index: 200;           /* por encima de cualquier contenido */
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
   }
 
-  /* Triângulo do tooltip */
+  /* Triángulo del tooltip */
   .sidebar__nav-item[data-label]::before {
     content: "";
     position: absolute;
@@ -428,10 +435,10 @@
     opacity: 0;
     transition: opacity 0.15s ease;
     pointer-events: none;
-    z-index: var(--z-dropdown, 50);
+    z-index: 200;
   }
 
-  /* Indicador ativo — sobrescreve ::before do tooltip */
+  /* Indicador activo — sobreescribe ::before del tooltip */
   .sidebar__nav-item--active::before {
     content: "";
     position: absolute;
@@ -452,7 +459,7 @@
     opacity: 1;
   }
 
-  /* Footer colapsado: avatar + botões em coluna */
+  /* Footer colapsado */
   .sidebar__footer {
     padding: 12px 6px calc(12px + env(safe-area-inset-bottom));
   }
@@ -482,48 +489,27 @@
   }
 }
 
+/* ── 1440px+ — sidebar sigue en 256px pero el logo puede escalar ── */
+@media (min-width: 1440px) {
+  .sidebar__logo {
+    width: 34px;
+    height: 34px;
+  }
+  .sidebar__brand {
+    font-size: 1.45rem;
+  }
+}
+
 /* ============================================================
    MOBILE — < 768px
-   ──────────────────────────────────────────────────────────
-   FIX · visibility + translate em vez de display:none
-   ──────────────────────────────────────────────────────────
-   PROBLEMA COM display:none:
-     React controla a montagem da sidebar via {!isMobile && <Sidebar>}.
-     Se o listener JS falha em detectar a mudança de orientação
-     (ex: iOS Safari com `resize`), a sidebar permanece no DOM
-     com isMobile=false, mas o CSS aplica display:none.
-     O elemento fica num estado zumbi: existe no DOM, isMobile=false
-     (BottomNav também some), mas é invisível. Tela travada até F5.
-
-   SOLUÇÃO — duas camadas de proteção:
-
-   1. JS (useIsMobile): usa matchMedia('change') em vez de resize.
-      Agora o listener é confiável e React desmonta a sidebar
-      corretamente quando volta para portrait. Esta é a correção
-      principal.
-
-   2. CSS (esta regra): usa visibility:hidden + translate(-100%)
-      em vez de display:none como fallback defensivo.
-      - visibility:hidden preserva o flow e não "trava" o elemento
-        num estado irrecuperável pelo browser
-      - translate(-100%) move a sidebar para fora da viewport
-        sem alterar o modelo de layout
-      - O elemento continua "existindo" para o React no DOM,
-        mas é completamente imperceptível para o usuário
-      - Quando matchMedia re-dispara e React re-renderiza,
-        a transição de retorno funciona normalmente
+   Usa visibility + translate en lugar de display:none
+   para evitar el estado zombie descrito en la versión original.
    ============================================================ */
 @media (max-width: 767px) {
   .sidebar {
-    /* Desloca para fora da viewport — mais seguro que display:none */
     transform: translateX(-100%);
-
-    /* Invisível e sem interação, mas não "travado" no DOM */
     visibility: hidden;
     pointer-events: none;
-
-    /* Transição suave — ao voltar para desktop/tablet
-       a sidebar desliza de volta em 250ms */
     transition:
       transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
       visibility 0s linear 0.25s;
@@ -534,7 +520,7 @@
    DARK MODE
    ════════════════════════════════════════════════════════════ */
 body.dark-mode .sidebar {
-  background: var(--white); 
+  background: var(--white);
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4);
 }
 body.dark-mode .sidebar__header {

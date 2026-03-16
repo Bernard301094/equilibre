@@ -1,30 +1,44 @@
 /* ============================================================
    THERAPIST LAYOUT — TherapistLayout.css
+   Mobile-first. Breakpoints progresivos 0 → 4K.
    ============================================================ */
 
-/* ── Contenedor raíz ────────────────────────────────────────────── */
+/* ── Variables globales de layout ──────────────────────────── */
+:root {
+  --sb-width-full:        256px;
+  --sb-width-collapsed:    68px;
+  --nav-bottom-height:     64px;
+  --page-pad-x:            16px;
+  --page-pad-y:            20px;
+}
+
+/* ── Contenedor raíz ────────────────────────────────────────── */
 .therapist-layout {
   display: flex;
-  min-height: 100dvh;
+  min-height: 100dvh;        /* dvh: iOS Safari barra dinámica */
   background: var(--cream);
-  /* Garante que o scroll acontece SEM scrollbar visível */
   overflow: hidden;
 }
 
-/* ── Área de contenido principal ────────────────────────────── */
+/* ════════════════════════════════════════════════════════════
+   ÁREA PRINCIPAL — BASE MOBILE (0 – 767px)
+   Sin sidebar. Padding inferior reserva espacio para BottomNav.
+   ════════════════════════════════════════════════════════════ */
 .therapist-layout__main {
   flex: 1;
   width: 100%;
+  min-width: 0;              /* evita overflow en flex child */
   box-sizing: border-box;
   min-height: 100dvh;
-  /* Scroll no container filho, não no body — assim a scrollbar
-     fica dentro de um elemento que já tem display:none via App.css */
   overflow-y: auto;
   overflow-x: hidden;
-  /* Esconder a scrollbar também neste elemento específico */
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding: 20px 16px calc(72px + env(safe-area-inset-bottom)) 16px;
+  padding:
+    var(--page-pad-y)
+    var(--page-pad-x)
+    calc(var(--nav-bottom-height) + env(safe-area-inset-bottom) + 8px)
+    var(--page-pad-x);
   background: var(--cream);
   transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -33,35 +47,116 @@
   display: none;
 }
 
-/* iPad 9ª gen portrait: 768–1024px — sidebar colapsada a 68px */
-@media (min-width: 768px) and (max-width: 1024px) {
-  .therapist-layout__main {
-    margin-left: 68px;
-    padding: var(--space-page-y, 28px) var(--space-page-x, 24px);
-  }
-}
-
-/* iPad 9ª gen landscape */
-@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
-  .therapist-layout__main {
-    padding: 24px 28px;
-  }
-}
-
-@media (min-width: 1025px) {
-  .therapist-layout__main {
-    margin-left: 256px;
-    padding: var(--space-page-y, 32px) var(--space-page-x, 32px);
-  }
-}
-
+/* Clase aplicada por JS cuando isMobile=true */
 .therapist-layout__main--mobile {
   margin-left: 0 !important;
-  padding: 20px 16px calc(72px + env(safe-area-inset-bottom)) 16px;
+  padding:
+    var(--page-pad-y)
+    var(--page-pad-x)
+    calc(var(--nav-bottom-height) + env(safe-area-inset-bottom) + 8px)
+    var(--page-pad-x);
+}
+
+/* ── 0–359px — móviles muy pequeños ────────────────────────── */
+@media (max-width: 359px) {
+  :root {
+    --page-pad-x: 12px;
+    --page-pad-y: 14px;
+    --nav-bottom-height: 58px;
+  }
+}
+
+/* ── 360–479px — Android promedio (Galaxy A55, etc.) ─────── */
+@media (min-width: 360px) and (max-width: 479px) {
+  :root {
+    --page-pad-x: 14px;
+    --page-pad-y: 16px;
+    --nav-bottom-height: 62px;
+  }
+}
+
+/* ── 480–599px — móviles grandes / foldables cerrados ──────── */
+@media (min-width: 480px) and (max-width: 599px) {
+  :root {
+    --page-pad-x: 16px;
+    --page-pad-y: 18px;
+  }
+}
+
+/* ── 600–767px — tablets pequeñas / foldables abiertos ─────── */
+@media (min-width: 600px) and (max-width: 767px) {
+  :root {
+    --page-pad-x: 20px;
+    --page-pad-y: 20px;
+  }
+}
+
+/* ── 768–1024px — tablets / iPads portrait ─────────────────── */
+/* Sidebar colapsada a 68px. Se usa margin-left exacto. */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .therapist-layout__main {
+    margin-left: var(--sb-width-collapsed);
+    padding:
+      clamp(20px, 3vw, 32px)
+      clamp(20px, 3vw, 32px);
+  }
+}
+
+/* iPad landscape 768–1024 */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+  .therapist-layout__main {
+    padding: 24px clamp(24px, 4vw, 40px);
+  }
+}
+
+/* ── 1025–1279px — laptops pequeñas / tablets landscape ────── */
+@media (min-width: 1025px) and (max-width: 1279px) {
+  .therapist-layout__main {
+    margin-left: var(--sb-width-full);
+    padding: 28px clamp(24px, 3vw, 40px);
+  }
+}
+
+/* ── 1280–1439px — laptops estándar ────────────────────────── */
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .therapist-layout__main {
+    margin-left: var(--sb-width-full);
+    padding: 32px clamp(28px, 3.5vw, 48px);
+  }
+}
+
+/* ── 1440–1919px — monitores grandes ───────────────────────── */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .therapist-layout__main {
+    margin-left: var(--sb-width-full);
+    padding: 36px clamp(32px, 4vw, 64px);
+    /* Limita el ancho del contenido para mejor legibilidad */
+    max-width: calc(1400px + var(--sb-width-full));
+  }
+}
+
+/* ── 1920–2559px — Full HD+ ─────────────────────────────────── */
+@media (min-width: 1920px) and (max-width: 2559px) {
+  .therapist-layout__main {
+    margin-left: var(--sb-width-full);
+    padding: 40px clamp(48px, 5vw, 80px);
+    max-width: calc(1600px + var(--sb-width-full));
+  }
+}
+
+/* ── 2560px+ — 2K / 4K ──────────────────────────────────────── */
+@media (min-width: 2560px) {
+  .therapist-layout__main {
+    margin-left: var(--sb-width-full);
+    padding: 48px clamp(64px, 6vw, 120px);
+    /* Centra el contenido en pantallas ultrawide */
+    max-width: calc(1800px + var(--sb-width-full));
+    margin-right: auto;
+  }
 }
 
 /* ════════════════════════════════════════════════════════════
-   SISTEMA DE ANIMAÇÃO DE SINO
+   SISTEMA DE ANIMACIÓN DE SINO
    ════════════════════════════════════════════════════════════ */
 .bell-icon {
   display: inline-block;
@@ -75,7 +170,7 @@
   animation: bell-hover 0.65s cubic-bezier(0.37, 0, 0.63, 1) forwards;
 }
 
-.bell-icon--shaking { animation: bell-swing 0.9s linear forwards; }
+.bell-icon--shaking { animation: bell-swing 0.9s  linear forwards; }
 .bell-icon--ringing { animation: bell-tap   0.48s linear forwards; }
 .bell-icon--idle    { animation: bell-idle  0.75s linear forwards; }
 
@@ -102,12 +197,12 @@
 }
 
 @keyframes bell-idle {
-  0%   { transform: rotate(0deg);   animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1); }
-  15%  { transform: rotate(-13deg); animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1); }
-  32%  { transform: rotate(11deg);  animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1); }
-  48%  { transform: rotate(-6deg);  animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1); }
-  62%  { transform: rotate(3.5deg); animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1); }
-  74%  { transform: rotate(-1.5deg);animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1); }
+  0%   { transform: rotate(0deg);    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1); }
+  15%  { transform: rotate(-13deg);  animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1); }
+  32%  { transform: rotate(11deg);   animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1); }
+  48%  { transform: rotate(-6deg);   animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1); }
+  62%  { transform: rotate(3.5deg);  animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1); }
+  74%  { transform: rotate(-1.5deg); animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1); }
   100% { transform: rotate(0deg); }
 }
 
@@ -121,11 +216,13 @@
 
 /* ════════════════════════════════════════════════════════════
    FLOATING BELL — mobile
+   FIX: top usa safe-area-inset-top para notch / Dynamic Island
    ════════════════════════════════════════════════════════════ */
 .floating-bell {
   position: fixed;
-  top: 14px;
-  right: 14px;
+  /* safe-area-inset-top evita solapamiento con notch/Dynamic Island */
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  right: calc(14px + env(safe-area-inset-right, 0px));
   z-index: var(--z-fab);
   width: 48px;
   height: 48px;
@@ -138,6 +235,19 @@
   -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   transition: background 0.25s, transform 0.2s;
+  /* Área táctil mínima 44px garantizada */
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* En móviles muy pequeños, ligeramente más compacto */
+@media (max-width: 359px) {
+  .floating-bell {
+    width: 44px;
+    height: 44px;
+    top: calc(10px + env(safe-area-inset-top, 0px));
+    right: calc(10px + env(safe-area-inset-right, 0px));
+  }
 }
 
 .floating-bell:hover          { background: rgba(23, 82, 124, 1); }
@@ -192,6 +302,9 @@
   border-radius: 50%;
   transition: background 0.2s;
   color: inherit;
+  /* Área táctil mínima 44px en tablet */
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .sidebar-bell:hover        { background: rgba(0, 0, 0, 0.08); }
@@ -229,7 +342,7 @@
 .logout-modal {
   background: var(--white, #fff);
   border-radius: 16px;
-  padding: 32px 28px 24px;
+  padding: clamp(20px, 4vw, 32px) clamp(16px, 4vw, 28px) clamp(16px, 3vw, 24px);
   width: 100%; max-width: 380px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   display: flex; flex-direction: column; align-items: center;
@@ -237,18 +350,20 @@
   box-sizing: border-box;
 }
 
-.logout-modal__icon  { font-size: 2.5rem; margin-bottom: 4px; }
-.logout-modal__title { font-size: 1.2rem; font-weight: 700; color: var(--text, #1a202c); }
-.logout-modal__desc  { font-size: 0.9rem; color: var(--text-muted, #718096); line-height: 1.5; margin-bottom: 8px; }
+.logout-modal__icon  { font-size: clamp(1.8rem, 5vw, 2.5rem); margin-bottom: 4px; }
+.logout-modal__title { font-size: clamp(1rem, 3vw, 1.2rem); font-weight: 700; color: var(--text, #1a202c); }
+.logout-modal__desc  { font-size: clamp(0.8rem, 2.5vw, 0.9rem); color: var(--text-muted, #718096); line-height: 1.5; margin-bottom: 8px; }
 
 .logout-modal__actions {
   display: flex; gap: 12px; width: 100%; margin-top: 8px;
 }
 
 .logout-modal__btn {
-  flex: 1; height: 44px;
+  flex: 1;
+  /* Altura mínima de 44px para área táctil cómoda en móvil */
+  height: clamp(44px, 6vw, 48px);
   border-radius: 10px;
-  font-size: 0.95rem; font-weight: 600;
+  font-size: clamp(0.85rem, 2.5vw, 0.95rem); font-weight: 600;
   cursor: pointer; border: none;
   transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
 }
@@ -259,8 +374,9 @@
 .logout-modal__btn--confirm       { background: #e53e3e; color: #fff; box-shadow: 0 4px 12px rgba(229,62,62,0.3); }
 .logout-modal__btn--confirm:hover { background: #c53030; }
 
-@media (max-width: 360px) {
-  .logout-modal { padding: 24px 16px 20px; }
+/* Móviles muy pequeños: botones apilados */
+@media (max-width: 359px) {
+  .logout-modal { padding: 20px 14px 16px; }
   .logout-modal__actions { flex-direction: column; }
 }
 

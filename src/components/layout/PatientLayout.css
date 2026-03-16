@@ -1,7 +1,10 @@
 /* ============================================================
    PATIENT LAYOUT — PatientLayout.css
+   Mobile-first. Sincronizado con TherapistLayout.css.
+   Variables :root definidas en TherapistLayout.css (cargado antes).
    ============================================================ */
 
+/* ── Contenedor raíz ────────────────────────────────────────── */
 .patient-layout {
   display: flex;
   min-height: 100dvh;
@@ -9,16 +12,24 @@
   overflow: hidden;
 }
 
+/* ════════════════════════════════════════════════════════════
+   ÁREA PRINCIPAL — BASE MOBILE (0 – 767px)
+   ════════════════════════════════════════════════════════════ */
 .patient-layout__main {
   flex: 1;
   width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   min-height: 100dvh;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding: 20px 16px calc(72px + env(safe-area-inset-bottom)) 16px;
+  padding:
+    var(--page-pad-y, 20px)
+    var(--page-pad-x, 16px)
+    calc(var(--nav-bottom-height, 64px) + env(safe-area-inset-bottom) + 8px)
+    var(--page-pad-x, 16px);
   background: var(--cream);
   transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -27,21 +38,72 @@
   display: none;
 }
 
-@media (min-width: 768px) and (max-width: 1024px) {
-  .patient-layout__main {
-    margin-left: 68px;
-    padding: var(--space-page-y, 28px) var(--space-page-x, 24px);
-  }
-}
-
-@media (min-width: 1025px) {
-  .patient-layout__main {
-    margin-left: 256px;
-    padding: var(--space-page-y, 32px) var(--space-page-x, 32px);
-  }
-}
-
+/* Clase aplicada por JS cuando isMobile=true */
 .patient-layout__main--mobile {
   margin-left: 0 !important;
-  padding: 20px 16px calc(72px + env(safe-area-inset-bottom)) 16px;
+  padding:
+    var(--page-pad-y, 20px)
+    var(--page-pad-x, 16px)
+    calc(var(--nav-bottom-height, 64px) + env(safe-area-inset-bottom) + 8px)
+    var(--page-pad-x, 16px);
+}
+
+/* ── 768–1024px — tablets / iPads portrait ─────────────────── */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .patient-layout__main {
+    margin-left: var(--sb-width-collapsed, 68px);
+    padding:
+      clamp(20px, 3vw, 32px)
+      clamp(20px, 3vw, 32px);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+  .patient-layout__main {
+    padding: 24px clamp(24px, 4vw, 40px);
+  }
+}
+
+/* ── 1025–1279px — laptops pequeñas ────────────────────────── */
+@media (min-width: 1025px) and (max-width: 1279px) {
+  .patient-layout__main {
+    margin-left: var(--sb-width-full, 256px);
+    padding: 28px clamp(24px, 3vw, 40px);
+  }
+}
+
+/* ── 1280–1439px — laptops estándar ────────────────────────── */
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .patient-layout__main {
+    margin-left: var(--sb-width-full, 256px);
+    padding: 32px clamp(28px, 3.5vw, 48px);
+  }
+}
+
+/* ── 1440–1919px — monitores grandes ───────────────────────── */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .patient-layout__main {
+    margin-left: var(--sb-width-full, 256px);
+    padding: 36px clamp(32px, 4vw, 64px);
+    max-width: calc(1400px + var(--sb-width-full, 256px));
+  }
+}
+
+/* ── 1920–2559px — Full HD+ ─────────────────────────────────── */
+@media (min-width: 1920px) and (max-width: 2559px) {
+  .patient-layout__main {
+    margin-left: var(--sb-width-full, 256px);
+    padding: 40px clamp(48px, 5vw, 80px);
+    max-width: calc(1600px + var(--sb-width-full, 256px));
+  }
+}
+
+/* ── 2560px+ — 2K / 4K ──────────────────────────────────────── */
+@media (min-width: 2560px) {
+  .patient-layout__main {
+    margin-left: var(--sb-width-full, 256px);
+    padding: 48px clamp(64px, 6vw, 120px);
+    max-width: calc(1800px + var(--sb-width-full, 256px));
+    margin-right: auto;
+  }
 }
