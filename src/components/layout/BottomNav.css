@@ -3,7 +3,7 @@
    Mobile-first. Solo visible en pantallas < 768px.
    ============================================================ */
 
-/* ── Barra principal ──────────────────────────────────────── */
+/* ── Barra principal ─────────────────────────────────────────────── */
 .bottom-nav__bar {
   position: fixed;
   bottom: 0;
@@ -29,7 +29,7 @@
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* ── Botón genérico de nav ────────────────────────────────── */
+/* ── Botón genérico de nav ───────────────────────────────────────────── */
 .bottom-nav__btn {
   position: relative;
   flex: 1;
@@ -59,7 +59,7 @@
   border-radius: 8px;
 }
 
-/* ── Indicador superior del ítem activo ───────────────────── */
+/* ── Indicador superior del ítem activo ───────────────────────────── */
 .bottom-nav__indicator {
   position: absolute;
   top: 0;
@@ -74,7 +74,7 @@
   pointer-events: none;
 }
 
-/* ── Icono con badge ──────────────────────────────────────── */
+/* ── Icono con badge ────────────────────────────────────────────────── */
 .bottom-nav__icon-wrap {
   position: relative;
   width: 28px;
@@ -86,7 +86,7 @@
   overflow: hidden;
 }
 
-/* ── Ícono ────────────────────────────────────────────────── */
+/* ── Ícono ──────────────────────────────────────────────────────────── */
 .bottom-nav__icon {
   font-size: 1.3rem;
   line-height: 1;
@@ -99,7 +99,7 @@
   transform: scale(1.12);
 }
 
-/* ── Badge numérico ───────────────────────────────────────── */
+/* ── Badge numérico ───────────────────────────────────────────────────── */
 .bottom-nav__badge {
   position: absolute;
   top: -5px;
@@ -121,7 +121,7 @@
   pointer-events: none;
 }
 
-/* ── Label ────────────────────────────────────────────────── */
+/* ── Label ────────────────────────────────────────────────────────────── */
 .bottom-nav__label {
   font-size: 0.625rem;
   /* CHANGE · Blanco semitransparente, igual que sidebar__nav-item */
@@ -141,7 +141,7 @@
   font-weight: 700;
 }
 
-/* ── Botón "Mais" — los tres puntitos ─────────────────────── */
+/* ── Botón "Mais" — los tres puntitos ────────────────────────────── */
 .bottom-nav__more-dots {
   font-size: 1rem;
   /* CHANGE · Blanco semitransparente coherente con los labels */
@@ -161,7 +161,7 @@
   color: #ffffff;
 }
 
-/* ── Slot de perfil ───────────────────────────────────────── */
+/* ── Slot de perfil ──────────────────────────────────────────────────── */
 .bottom-nav__profile {
   display: flex;
   flex-direction: column;
@@ -205,7 +205,7 @@
   border-radius: 50%;
 }
 
-/* ── Backdrop del drawer ──────────────────────────────────── */
+/* ── Backdrop del drawer ───────────────────────────────────────────── */
 .bottom-nav__backdrop {
   position: fixed;
   inset: 0;
@@ -221,7 +221,7 @@
   to   { opacity: 1; }
 }
 
-/* ── Drawer "Mais opções" ─────────────────────────────────── */
+/* ── Drawer "Mais opções" ──────────────────────────────────────────── */
 .bottom-nav__drawer {
   position: fixed;
   bottom: 0;
@@ -323,7 +323,7 @@
   font-weight: 700;
 }
 
-/* ── Responsive: ocultar en desktop ───────────────────────── */
+/* ── Responsive: ocultar en desktop ─────────────────────────────────── */
 @media (min-width: 768px) {
   .bottom-nav__bar,
   .bottom-nav__drawer,
@@ -332,21 +332,49 @@
   }
 }
 
-/* ── Pantallas muy pequeñas ───────────────────────────────── */
+/* ── Galaxy A55 exacto: ≤ 360px ────────────────────────────────────── */
 @media (max-width: 360px) {
   .bottom-nav__bar {
     height: calc(58px + env(safe-area-inset-bottom));
   }
 
+  .bottom-nav__btn {
+    padding: 4px 2px 4px;
+    min-width: 40px;
+  }
+
   .bottom-nav__drawer {
-    padding-bottom: calc(58px + env(safe-area-inset-bottom) + 12px);
+    padding: 8px 12px calc(58px + env(safe-area-inset-bottom) + 12px);
   }
 
   .bottom-nav__icon {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
   }
 
   .bottom-nav__label {
-    font-size: 0.575rem;
+    font-size: 0.55rem;
+  }
+}
+
+/* ── Galaxy A56: 361–430px ──────────────────────────────────────────── */
+@media (min-width: 361px) and (max-width: 430px) {
+  .bottom-nav__bar {
+    height: calc(62px + env(safe-area-inset-bottom));
+  }
+
+  .bottom-nav__btn {
+    padding: 5px 3px 4px;
+  }
+
+  .bottom-nav__icon {
+    font-size: 1.2rem;
+  }
+
+  .bottom-nav__label {
+    font-size: 0.6rem;
+  }
+
+  .bottom-nav__drawer {
+    padding: 8px 14px calc(62px + env(safe-area-inset-bottom) + 12px);
   }
 }
