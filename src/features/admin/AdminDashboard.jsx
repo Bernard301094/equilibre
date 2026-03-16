@@ -125,7 +125,7 @@ function DevCard({ roleKey, icon, title, extraInfo, exists, devLoading, onEnsure
 export default function AdminDashboard({ session, logout, setSession }) {
   const [activeTab,   setActiveTab]   = useState("overview");
   const [data,        setData]        = useState({ therapists: [], patients: [], invites: [] });
-  const [loading,     setLoading]     = useState(false);
+  const [loading,     setLoading]     = useState(true); // Inicializado en TRUE para evitar el flash del "0"
   const [error,       setError]       = useState("");
   const [devLog,      setDevLog]      = useState([]);
   const [devLoading,  setDevLoading]  = useState(false);
@@ -355,13 +355,17 @@ export default function AdminDashboard({ session, logout, setSession }) {
           <div className="admin-stat-card ev-preview__card">
             <span className="admin-stat-card__icon">🧠</span>
             <div className="admin-stat-card__info">
-              <h3>Psicólogas</h3><p>{data.therapists.length}</p>
-              {pending > 0 && <span className="stat-badge-warn">{pending} pendentes</span>}
+              <h3>Psicólogas</h3>
+              <p>{loading ? "" : data.therapists.length}</p>
+              {!loading && pending > 0 && <span className="stat-badge-warn">{pending} pendentes</span>}
             </div>
           </div>
           <div className="admin-stat-card ev-preview__card">
             <span className="admin-stat-card__icon">🌱</span>
-            <div className="admin-stat-card__info"><h3>Pacientes</h3><p>{data.patients.length}</p></div>
+            <div className="admin-stat-card__info">
+              <h3>Pacientes</h3>
+              <p>{loading ? "" : data.patients.length}</p>
+            </div>
           </div>
           <div className="admin-stat-card ev-preview__card">
             <span className="admin-stat-card__icon">📚</span>
@@ -373,7 +377,10 @@ export default function AdminDashboard({ session, logout, setSession }) {
           </div>
           <div className="admin-stat-card ev-preview__card">
             <span className="admin-stat-card__icon">🎟️</span>
-            <div className="admin-stat-card__info"><h3>Convites</h3><p>{data.invites.length}</p></div>
+            <div className="admin-stat-card__info">
+              <h3>Convites</h3>
+              <p>{loading ? "" : data.invites.length}</p>
+            </div>
           </div>
         </div>
       </div>

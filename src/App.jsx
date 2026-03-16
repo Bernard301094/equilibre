@@ -36,29 +36,53 @@ const ADMIN_EMAIL = "bernard30101994@gmail.com";
 const SEED_VERSION = "2";
 const SEED_VERSION_KEY = "eq_seed_version";
 
+// CORREÇÃO: Função reescrita com fetch nativo para contornar o logout global do db.js
 async function seedExercisesIfNeeded() {
   const savedVersion = localStorage.getItem(SEED_VERSION_KEY);
   if (savedVersion === SEED_VERSION) return;
 
-  try {
-    const existing = await db.query("exercises", { select: "id" });
-    const existingIds = new Set(
-      Array.isArray(existing) ? existing.map((e) => e.id) : []
-    );
+  const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
+  const SUPA_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_KEY;
 
+  if (!SUPA_URL || !SUPA_KEY) return;
+
+  try {
+    // 1. Busca os IDs existentes (bypass ao db.js)
+    const getRes = await fetch(`${SUPA_URL}/rest/v1/exercises?select=id`, {
+      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` }
+    });
+
+    if (!getRes.ok) throw new Error("Leitura bloqueada por RLS.");
+    const existing = await getRes.json();
+    const existingIds = new Set(Array.isArray(existing) ? existing.map((e) => e.id) : []);
+
+    // 2. Insere/Atualiza os exercícios silenciosamente
     for (const ex of SEED_EXERCISES) {
       const payload = { ...ex, questions: JSON.stringify(ex.questions) };
-      if (existingIds.has(ex.id)) {
-        await db.update("exercises", { id: ex.id }, payload);
-      } else {
-        await db.insert("exercises", payload);
-      }
+      const isUpdate = existingIds.has(ex.id);
+      
+      const method = isUpdate ? "PATCH" : "POST";
+      const url = isUpdate
+        ? `${SUPA_URL}/rest/v1/exercises?id=eq.${ex.id}`
+        : `${SUPA_URL}/rest/v1/exercises`;
+
+      await fetch(url, {
+        method,
+        headers: {
+          apikey: SUPA_KEY,
+          Authorization: `Bearer ${SUPA_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal"
+        },
+        body: JSON.stringify(payload)
+      });
     }
 
     localStorage.setItem(SEED_VERSION_KEY, SEED_VERSION);
     localStorage.setItem(LS_SEEDED_KEY, "true");
   } catch (e) {
-    console.warn("[seed] failed:", e.message);
+    // Se o Supabase devolver 401 devido ao RLS, morre silenciosamente sem forçar logout
+    console.warn("[seed] Ignorado silenciosamente. Para adicionar exercícios base, insira via Painel Supabase.", e.message);
   }
 }
 

@@ -50,8 +50,7 @@ function SliderEmoji({ value, onChange, emojis = SLIDER_EMOJIS, question }) {
 /* ══════════════════════════════════════════════════════════════
    Easing functions
    ══════════════════════════════════════════════════════════════ */
-const easeInOutCubic = (t) =>
-  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const easeInOutCubic = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 const easeLinear  = (t) => t;
 const easeOutQuart = (t) => 1 - Math.pow(1 - t, 4);
 
@@ -62,7 +61,7 @@ const PHASE_EASING = {
 };
 
 /* ══════════════════════════════════════════════════════════════
-   BreathingExercise
+   BreathingExercise (Corrigido o Crash do Node.removeChild)
    ══════════════════════════════════════════════════════════════ */
 const BREATH_PHASES = [
   { key: "inhale", label: "Inspire", color: "#4a9c5d", seconds: 4 },
@@ -73,7 +72,12 @@ const BREATH_PHASES = [
 const CIRC = 2 * Math.PI * 54;
 
 function BreathingExercise({ question, onComplete }) {
-  const totalCycles = question.cycles ?? 3;
+  const totalCycles = Number(question?.cycles || 3);
+  
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   const [uiState, setUiState] = useState({
     started:  false,
@@ -91,21 +95,32 @@ function BreathingExercise({ question, onComplete }) {
   const countRef      = useRef(null);
   const colorRef      = useRef(null);
   const labelRef      = useRef(null);
-  // Garante que onComplete só dispara uma vez mesmo em re-renders
   const completedRef  = useRef(false);
+  
+  const isMountedRef  = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
   const tick = useCallback((timestamp) => {
+    if (!isMountedRef.current || !arcRef.current) return;
+
     const phase   = BREATH_PHASES[phaseRef.current];
     const elapsed = (timestamp - phaseStartRef.current) / 1000;
     const rawT    = Math.min(elapsed / phase.seconds, 1);
     const easedT  = PHASE_EASING[phase.key](rawT);
     const dash    = CIRC * easedT;
 
-    if (arcRef.current) {
-      arcRef.current.style.strokeDasharray = `${dash} ${CIRC}`;
-      arcRef.current.style.stroke          = phase.color;
-    }
+    arcRef.current.style.strokeDasharray = `${dash} ${CIRC}`;
+    arcRef.current.style.stroke          = phase.color;
+    
     const remaining = Math.max(Math.ceil(phase.seconds - elapsed), 0);
+    // Apenas manipula o textContent via ref, sem o React atrapalhar
     if (countRef.current) countRef.current.textContent = `${remaining}s`;
 
     if (rawT < 1) {
@@ -118,16 +133,17 @@ function BreathingExercise({ question, onComplete }) {
     const nextCycle    = endOfCycle ? cycleRef.current + 1 : cycleRef.current;
 
     if (endOfCycle && nextCycle > totalCycles) {
-      // Marca finished no estado visual
       setUiState((s) => ({ ...s, finished: true, started: false }));
-      // Avança automaticamente após 1.5s para o paciente ver o ✅
+      
       if (!completedRef.current) {
         completedRef.current = true;
         setTimeout(() => {
-          onComplete && onComplete("done");
+          if (isMountedRef.current && onCompleteRef.current) {
+            onCompleteRef.current("done");
+          }
         }, 1500);
       }
-      return;
+      return; 
     }
 
     phaseRef.current      = nextPhaseIdx;
@@ -135,10 +151,9 @@ function BreathingExercise({ question, onComplete }) {
     if (endOfCycle) cycleRef.current = nextCycle;
 
     const nextPhase = BREATH_PHASES[nextPhaseIdx];
-    if (arcRef.current) {
-      arcRef.current.style.strokeDasharray = `0 ${CIRC}`;
-      arcRef.current.style.stroke          = nextPhase.color;
-    }
+    arcRef.current.style.strokeDasharray = `0 ${CIRC}`;
+    arcRef.current.style.stroke          = nextPhase.color;
+    
     if (colorRef.current) colorRef.current.style.color = nextPhase.color;
     if (labelRef.current) labelRef.current.textContent = nextPhase.label;
     if (countRef.current) countRef.current.textContent = `${nextPhase.seconds}s`;
@@ -151,7 +166,7 @@ function BreathingExercise({ question, onComplete }) {
     }));
 
     rafRef.current = requestAnimationFrame(tick);
-  }, [totalCycles, onComplete]);
+  }, [totalCycles]); 
 
   const start = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -180,18 +195,12 @@ function BreathingExercise({ question, onComplete }) {
     rafRef.current = requestAnimationFrame(tick);
   }, [tick]);
 
-  useEffect(() => {
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
-
   const { started, finished, phaseIdx, cycle } = uiState;
   const phase = BREATH_PHASES[phaseIdx];
 
   return (
     <div className="breathing">
-      <p className="exercise-page__question-text">{question.text}</p>
+      <p className="exercise-page__question-text">{question?.text}</p>
 
       <div className="breathing__ring-wrap">
         <svg viewBox="0 0 120 120" className="breathing__svg" aria-hidden="true">
@@ -200,11 +209,11 @@ function BreathingExercise({ question, onComplete }) {
             ref={arcRef}
             cx="60" cy="60" r={54}
             className="breathing__arc"
-            style={{ stroke: phase.color, strokeDasharray: `0 ${CIRC}` }}
+            style={{ stroke: phase?.color || "#4a9c5d", strokeDasharray: `0 ${CIRC}` }}
           />
         </svg>
 
-        <div ref={colorRef} className="breathing__center" style={{ color: phase.color }}>
+        <div ref={colorRef} className="breathing__center" style={{ color: phase?.color || "#4a9c5d" }}>
           {finished ? (
             <>
               <span className="breathing__done-icon">✅</span>
@@ -212,8 +221,10 @@ function BreathingExercise({ question, onComplete }) {
             </>
           ) : started ? (
             <>
-              <span ref={labelRef} className="breathing__phase-label">{phase.label}</span>
-              <span ref={countRef} className="breathing__countdown">{phase.seconds}s</span>
+              {/* CORREÇÃO CRÍTICA AQUI: Estas duas spans ficam VAZIAS. 
+                  O React nunca lhes irá injectar conteúdo para não causar conflitos com o Vanilla JS */}
+              <span ref={labelRef} className="breathing__phase-label"></span>
+              <span ref={countRef} className="breathing__countdown"></span>
             </>
           ) : (
             <span className="breathing__idle">Pronto?</span>
@@ -365,11 +376,13 @@ function TimeInput({ question, value, onChange }) {
    ExercisePage — player principal
    ══════════════════════════════════════════════════════════════ */
 export default function ExercisePage({ exercise, session, onBack }) {
-  const questions = parseQuestions(exercise);
+  const questions = parseQuestions(exercise) || [];
 
   const [answers, setAnswers] = useState(() => {
     const init = {};
-    questions.forEach((q) => { init[q.id] = ""; });
+    if (questions) {
+      questions.forEach((q) => { if (q?.id) init[q.id] = ""; });
+    }
     return init;
   });
 
@@ -379,23 +392,26 @@ export default function ExercisePage({ exercise, session, onBack }) {
   const [celebrating, setCelebrating] = useState(false);
   const inflightRef = useRef(false);
 
-  const q        = questions[step];
-  const progress = questions.length > 0 ? (step / questions.length) * 100 : 0;
-  const setAns   = (val) => setAnswers((prev) => ({ ...prev, [q?.id]: val }));
+  const q = questions[step] || null;
+  const progress = questions?.length > 0 ? (step / questions.length) * 100 : 0;
+  
+  const setAns = (val) => {
+    if (q?.id) setAnswers((prev) => ({ ...prev, [q.id]: val }));
+  };
 
   const saveAndFinish = useCallback(async (currentAnswers) => {
     if (inflightRef.current || saving) return;
     inflightRef.current = true;
     setSaving(true);
+    
     try {
       const assignments = await db.query(
         "assignments",
         { filter: { patient_id: session.id, exercise_id: exercise.id, status: "pending" }, select: "id" },
         session.access_token
       );
-      const assignId = Array.isArray(assignments) && assignments.length > 0
-        ? assignments[0].id
-        : null;
+      
+      const assignId = Array.isArray(assignments) && assignments.length > 0 ? assignments[0].id : null;
 
       await db.insert("responses", {
         id:           crypto.randomUUID(),
@@ -424,8 +440,9 @@ export default function ExercisePage({ exercise, session, onBack }) {
       localStorage.setItem(LS_LAST_ACTION, String(Date.now()));
       setCelebrating(true);
       setTimeout(() => { setCelebrating(false); setDone(true); }, 3400);
+      
     } catch (e) {
-      console.error("[ExercisePage]", e);
+      console.error("[ExercisePage Error]", e);
       alert("Erro ao salvar respostas: " + e.message);
     } finally {
       setSaving(false);
@@ -433,33 +450,26 @@ export default function ExercisePage({ exercise, session, onBack }) {
     }
   }, [saving, session, exercise, questions]);
 
-  // Chamado pelo botão Próximo / Concluir
   const next = useCallback(() => {
     if (step < questions.length - 1) {
-      setStep((s) => s + 1);
-      return;
+      setStep(step + 1);
+    } else {
+      saveAndFinish(answers);
     }
-    // Última pergunta — salva com o estado atual das respostas
-    setAnswers((current) => {
-      saveAndFinish(current);
-      return current;
-    });
-  }, [step, questions.length, saveAndFinish]);
+  }, [step, questions.length, answers, saveAndFinish]);
 
-  // Chamado automaticamente pelo BreathingExercise ao terminar
   const handleBreathingComplete = useCallback((val) => {
-    setAnswers((prev) => {
-      const updated = { ...prev, [q?.id]: val };
-      // Se é a última pergunta, salva e finaliza automaticamente
-      if (step === questions.length - 1) {
-        saveAndFinish(updated);
-      } else {
-        // Avança para a próxima pergunta
-        setStep((s) => s + 1);
-      }
-      return updated;
-    });
-  }, [q?.id, step, questions.length, saveAndFinish]);
+    if (!q?.id) return;
+    
+    const updatedAnswers = { ...answers, [q.id]: val };
+    setAnswers(updatedAnswers);
+    
+    if (step < questions.length - 1) {
+      setStep(step + 1);
+    } else {
+      saveAndFinish(updatedAnswers);
+    }
+  }, [answers, q, step, questions.length, saveAndFinish]);
 
   const canAdvance =
     !q ||
@@ -483,7 +493,6 @@ export default function ExercisePage({ exercise, session, onBack }) {
     );
   }
 
-  // Proteção: se não há pergunta (index fora do range), mostra tela de conclusão segura
   if (!q) {
     return (
       <div className="exercise-page__done-screen">
@@ -519,22 +528,26 @@ export default function ExercisePage({ exercise, session, onBack }) {
           <div className="exercise-page__question-card">
             <div className="exercise-page__step-label">Pergunta {step + 1}</div>
 
-            {q.type === "instruction" && <div className="exercise-page__instruction">{q.text}</div>}
+            {q.type === "instruction" && <div key={q.id} className="exercise-page__instruction">{q.text}</div>}
 
             {q.type === "reflect" && (
-              <><div className="exercise-page__reflect-text">{q.text}</div>
+              <div key={q.id}>
+                <div className="exercise-page__reflect-text">{q.text}</div>
                 <label htmlFor={`ans-${q.id}`} className="sr-only">Reflexão (opcional)</label>
-                <textarea id={`ans-${q.id}`} className="exercise-page__textarea" placeholder="Escreva sua reflexão aqui... (opcional)" value={answers[q.id]} onChange={(e) => setAns(e.target.value)} /></>
+                <textarea id={`ans-${q.id}`} className="exercise-page__textarea" placeholder="Escreva sua reflexão aqui... (opcional)" value={answers[q.id]} onChange={(e) => setAns(e.target.value)} />
+              </div>
             )}
 
             {q.type === "open" && (
-              <><div className="exercise-page__question-text">{q.text}</div>
+              <div key={q.id}>
+                <div className="exercise-page__question-text">{q.text}</div>
                 <label htmlFor={`ans-${q.id}`} className="sr-only">Sua resposta</label>
-                <textarea id={`ans-${q.id}`} className="exercise-page__textarea" placeholder="Escreva sua resposta aqui..." value={answers[q.id]} onChange={(e) => setAns(e.target.value)} /></>
+                <textarea id={`ans-${q.id}`} className="exercise-page__textarea" placeholder="Escreva sua resposta aqui..." value={answers[q.id]} onChange={(e) => setAns(e.target.value)} />
+              </div>
             )}
 
             {q.type === "scale" && (
-              <>
+              <div key={q.id}>
                 <div className="exercise-page__question-text">{q.text}</div>
                 <fieldset className="exercise-page__scale-fieldset">
                   <legend className="sr-only">Escolha um valor de 0 a 10</legend>
@@ -551,18 +564,19 @@ export default function ExercisePage({ exercise, session, onBack }) {
                     <span>{q.maxLabel || "Máximo"}</span>
                   </div>
                 </fieldset>
-              </>
+              </div>
             )}
 
-            {q.type === "yes_no"          && <YesNo          question={q} value={answers[q.id]} onChange={setAns} />}
-            {q.type === "multiple_choice" && <MultipleChoice question={q} value={answers[q.id]} onChange={setAns} />}
-            {q.type === "checklist"       && <Checklist      question={q} value={answers[q.id]} onChange={setAns} />}
-            {q.type === "number"          && <NumberInput    question={q} value={answers[q.id]} onChange={setAns} />}
-            {q.type === "time"            && <TimeInput      question={q} value={answers[q.id]} onChange={setAns} />}
-            {q.type === "slider_emoji"    && <SliderEmoji    question={q} value={answers[q.id]} onChange={setAns} emojis={q.emojis ?? undefined} />}
+            {q.type === "yes_no"          && <YesNo          key={q.id} question={q} value={answers[q.id]} onChange={setAns} />}
+            {q.type === "multiple_choice" && <MultipleChoice key={q.id} question={q} value={answers[q.id]} onChange={setAns} />}
+            {q.type === "checklist"       && <Checklist      key={q.id} question={q} value={answers[q.id]} onChange={setAns} />}
+            {q.type === "number"          && <NumberInput    key={q.id} question={q} value={answers[q.id]} onChange={setAns} />}
+            {q.type === "time"            && <TimeInput      key={q.id} question={q} value={answers[q.id]} onChange={setAns} />}
+            {q.type === "slider_emoji"    && <SliderEmoji    key={q.id} question={q} value={answers[q.id]} onChange={setAns} emojis={q.emojis ?? undefined} />}
 
             {q.type === "breathing" && (
               <BreathingExercise
+                key={q.id}
                 question={q}
                 onComplete={handleBreathingComplete}
               />

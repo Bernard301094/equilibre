@@ -1,0 +1,395 @@
+/* Container base estilo documento A4 na tela */
+.container {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 900px;
+  margin: 0 auto;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+  border: 1px solid #f1f5f9;
+}
+
+/* Cabeçalho do Documento Clínico */
+.docHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+}
+
+.docTitle {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.025em;
+}
+
+.docSubtitle {
+  font-size: 1rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Placar de Escalas (Scoreboard) */
+.scoreBoard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: 2px solid;
+  min-width: 140px;
+}
+
+.scoreInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.scoreLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #475569;
+}
+
+.scoreValue {
+  font-size: 2.5rem;
+  font-weight: 900;
+  line-height: 1;
+  margin: 4px 0;
+}
+
+.scoreSeverity {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+/* Barra de Progresso */
+.progressContainer {
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 3px;
+  margin-bottom: 32px;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: #6a997c; /* Cor marca Equilibre */
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Lista de Questões */
+.instruction {
+  font-weight: 500;
+  color: #334155;
+  margin-bottom: 24px;
+  font-size: 1.05rem;
+}
+
+.questionCard {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  transition: all 0.2s;
+}
+
+.questionCard.answered {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+.questionText {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 20px 0;
+}
+
+.questionText span {
+  color: #6a997c;
+  margin-right: 8px;
+}
+
+/* Botões Likert */
+.optionsGroup {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.optionBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.optionBtn:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.optionSelected {
+  border-color: #6a997c !important;
+  background: #f0fdf4 !important;
+  box-shadow: 0 4px 12px rgba(106, 153, 124, 0.15);
+}
+
+.optValue {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.optionSelected .optValue, .optionSelected .optLabel {
+  color: #166534;
+}
+
+.optLabel {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* RPD / Formulários Textuais */
+.rpdGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inputGroup label {
+  font-weight: 700;
+  color: #334155;
+  font-size: 0.95rem;
+}
+
+.inputGroup textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 16px;
+  font-family: inherit;
+  font-size: 1rem;
+  color: #0f172a;
+  background: #f8fafc;
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.inputGroup textarea:focus {
+  outline: none;
+  border-color: #6a997c;
+  box-shadow: 0 0 0 3px rgba(106, 153, 124, 0.2);
+  background: #ffffff;
+}
+
+/* Ações */
+.actions {
+  margin-top: 40px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 24px;
+}
+
+.btnPrimary {
+  background: #6a997c;
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: #507d61;
+}
+
+.btnPrimary:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+/* Formatação de Impressão Profissional (Para o exportar PDF) */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .container, .container * {
+    visibility: visible;
+  }
+  .container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+  }
+  .actions, .backButton, .navBar {
+    display: none !important;
+  }
+  .questionCard {
+    break-inside: avoid;
+    border: 1px solid #000;
+    padding: 12px;
+  }
+  .optionBtn {
+    border: 1px solid #000;
+  }
+}
+
+/* Container Base SaaS (Reutilizado do RodaDaVida) */
+.ultraContainer {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 48px;
+  max-width: 1080px;
+  margin: 0 auto;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 20px 25px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  font-family: 'Inter', system-ui, sans-serif;
+  position: relative;
+}
+
+/* Restantes headers e botões... (Mantenha os que já tinha ou use estes) */
+.docHeader {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  border-bottom: 1px solid #f1f5f9; padding-bottom: 32px; margin-bottom: 32px;
+}
+.docTitle { font-size: 2rem; font-weight: 800; color: #0f172a; margin: 0 0 8px 0; letter-spacing: -0.03em; }
+.docSubtitle { font-size: 1rem; color: #64748b; margin: 0; }
+.actions { display: flex; gap: 16px; align-items: center; }
+.btnGhost { background: transparent; border: none; color: #64748b; font-weight: 600; cursor: pointer; padding: 12px 16px; border-radius: 12px; transition: all 0.2s; }
+.btnGhost:hover { background: #f8fafc; color: #0f172a; }
+.btnSolid { background: #0f172a; color: #ffffff; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+.btnSolid:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(15, 23, 42, 0.2); }
+.btnSolid:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+/* Logo Uploader */
+.logoUploader { display: flex; align-items: center; gap: 12px; border-right: 2px solid #e2e8f0; padding-right: 16px; }
+.logoPreview { height: 32px; max-width: 100px; object-fit: contain; border-radius: 4px; }
+
+/* ─── ESCALAS CLÍNICAS (Dinâmicas) ─── */
+.instruction { font-size: 1.1rem; color: #475569; font-weight: 500; margin-bottom: 32px; }
+
+.stickyScoreBoard {
+  position: sticky;
+  top: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px 24px;
+  z-index: 10;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 40px;
+}
+
+.progressContainer { height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+.progressBar { height: 100%; background: #0f172a; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+
+.scoreDetails { display: flex; justify-content: space-between; align-items: center; border-left: 4px solid transparent; padding-left: 12px; transition: border-color 0.3s; }
+.scoreText { display: flex; flex-direction: column; }
+.scoreLabel { font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; }
+.scoreValue { font-size: 1.5rem; font-weight: 800; transition: color 0.3s; }
+.scoreBadge { padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; transition: all 0.3s; }
+
+.questionCard {
+  background: #ffffff; border: 2px solid #f1f5f9; border-radius: 16px; padding: 32px; margin-bottom: 24px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.questionCard.highlightNext { border-color: #cbd5e1; box-shadow: 0 0 0 4px rgba(241, 245, 249, 0.5); transform: scale(1.01); }
+.questionCard.answered { border-color: #e2e8f0; background: #f8fafc; opacity: 0.7; }
+.questionCard.answered:hover { opacity: 1; }
+
+.questionText { font-size: 1.15rem; font-weight: 600; color: #0f172a; margin: 0 0 24px 0; }
+.questionText span { color: #64748b; margin-right: 8px; }
+
+.optionsGroup { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; }
+.optionBtn {
+  background: #ffffff; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px;
+  display: flex; flex-direction: column; align-items: center; cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.optionBtn:hover { border-color: #94a3b8; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+.optionSelected { border-color: #0f172a !important; background: #f8fafc !important; box-shadow: inset 0 0 0 1px #0f172a; transform: scale(0.98); }
+.optValue { font-size: 1.5rem; font-weight: 800; color: #334155; margin-bottom: 8px; }
+.optionSelected .optValue { color: #0f172a; }
+.optLabel { font-size: 0.85rem; font-weight: 600; color: #64748b; text-align: center; }
+
+/* ─── RPD (Focus Mode Dinâmico) ─── */
+.rpdMasonry { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; }
+.rpdCard {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex; flex-direction: column; gap: 16px;
+}
+.rpdCardFocused { background: #ffffff; border-color: #6a997c; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 0 0 4px rgba(106, 153, 124, 0.1); transform: translateY(-4px); z-index: 2; }
+.rpdCardHeader h3 { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0 0 4px 0; }
+.rpdCardHeader p { font-size: 0.9rem; color: #64748b; margin: 0; line-height: 1.4; }
+.rpdTextarea {
+  width: 100%; border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; font-family: inherit; font-size: 1rem;
+  background: #ffffff; resize: none; transition: all 0.3s;
+}
+.rpdTextarea:focus { outline: none; border-color: #6a997c; }
+
+/* ─── MODO IMPRESSÃO (LAUDO PROFISSIONAL) ─── */
+.printOnlyHeader { display: none; }
+
+@media print {
+  @page { margin: 15mm; size: A4 portrait; }
+  body * { visibility: hidden; }
+  .ultraContainer, .ultraContainer * { visibility: visible; }
+  .ultraContainer { position: absolute; left: 0; top: 0; width: 100%; padding: 0; border: none; box-shadow: none; }
+  
+  /* Ocultar UI de ecrã */
+  .docHeader, .stickyScoreBoard, .actions, .instruction { display: none !important; }
+  
+  /* Mostrar Cabeçalho Profissional de PDF */
+  .printOnlyHeader {
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 32px;
+  }
+  .printBrand img { max-height: 40px; }
+  .printBrand h2 { color: #6a997c; font-size: 1.5rem; margin: 0; }
+  .printInfo { text-align: right; }
+  .printInfo h1 { font-size: 1.5rem; color: #0f172a; margin: 0 0 4px 0; }
+  .printInfo p { font-size: 0.9rem; color: #64748b; margin: 0 0 12px 0; }
+  .printScoreBox { display: inline-flex; gap: 16px; border: 2px solid; padding: 8px 16px; border-radius: 8px; }
+  
+  /* Limpeza de Cartões para Gastar Menos Tinta e ficar Formal */
+  .questionCard, .rpdCard { break-inside: avoid; border: 1px solid #cbd5e1; padding: 16px; margin-bottom: 12px; background: transparent; opacity: 1 !important; transform: none !important; box-shadow: none !important; }
+  .optionsGroup { display: flex; flex-wrap: wrap; gap: 8px; }
+  .optionBtn { padding: 8px 12px; border-radius: 6px; flex-direction: row; gap: 8px; }
+  .optionSelected { border-color: #000 !important; background: #f1f5f9 !important; font-weight: bold; }
+  .rpdTextarea { border: none; border-bottom: 1px dashed #cbd5e1; border-radius: 0; padding: 8px 0; }
+}
