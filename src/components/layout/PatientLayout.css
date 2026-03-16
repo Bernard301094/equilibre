@@ -8,7 +8,7 @@
           @media (min-width: 768px)  →  desktop/tablet (com sidebar)
    ============================================================ */
 
-/* ── Contenedor raíz ──────────────────────────────────────── */
+/* ── Contenedor raíz ──────────────────────────────────────────── */
 .patient-layout {
   display: flex;
   /* dvh: recalculado quando a barra do browser aparece/some
@@ -17,12 +17,12 @@
   background: var(--cream);
 }
 
-/* ── Sidebar variante paciente ────────────────────────────── */
+/* ── Sidebar variante paciente ────────────────────────────────── */
 .patient-layout__sidebar {
   background: var(--sidebar-patient-bg, linear-gradient(180deg, #0f3d5c 0%, #17527c 100%));
 }
 
-/* ── Área de contenido principal ─────────────────────────── */
+/* ── Área de contenido principal ────────────────────────────── */
 .patient-layout__main {
   flex: 1;
   width: 100%;
@@ -35,10 +35,27 @@
 }
 
 /*
-  Desktop/Tablet (≥ 768px): desloca o conteúdo para não sobrepor
-  a Sidebar. Breakpoint espelha exatamente MOBILE_BREAKPOINT_PX + 1.
+  iPad 9ª gen portrait (768–1024px): sidebar colapsada a 68px.
+  Espelha exatamente o comportamento do TherapistLayout.
 */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (max-width: 1024px) {
+  .patient-layout__main {
+    margin-left: 68px;
+    padding: var(--space-page-y, 28px) var(--space-page-x, 24px);
+  }
+}
+
+/* iPad 9ª gen landscape: orientación horizontal */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+  .patient-layout__main {
+    padding: 24px 28px;
+  }
+}
+
+/*
+  Desktop ≥ 1025px: sidebar completa de 256px.
+*/
+@media (min-width: 1025px) {
   .patient-layout__main {
     margin-left: 256px; /* = --sb-width-full da Sidebar */
     padding: var(--space-page-y, 32px) var(--space-page-x, 32px);
@@ -56,7 +73,7 @@
   padding: 20px 16px calc(72px + env(safe-area-inset-bottom)) 16px;
 }
 
-/* ── Logout Dialog ────────────────────────────────────────── */
+/* ── Logout Dialog ──────────────────────────────────────────── */
 .logout-overlay {
   position: fixed;
   inset: 0;
@@ -146,7 +163,7 @@
   background: #c53030;
 }
 
-/* ── Responsive fine-tuning ───────────────────────────────── */
+/* ── Responsive fine-tuning ────────────────────────────────────── */
 @media (max-width: 360px) {
   .logout-modal {
     padding: 24px 16px 20px;
