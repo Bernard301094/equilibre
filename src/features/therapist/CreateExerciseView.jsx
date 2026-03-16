@@ -14,17 +14,26 @@ function makeQuestion() {
 }
 
 const TYPE_META = {
-  open:            { icon: "📝", label: "Resposta aberta",    color: "var(--blue-dark)"     },
-  scale:           { icon: "🔢", label: "Escala Numérica",    color: "var(--blue-mid)"      },
-  reflect:         { icon: "💭", label: "Reflexão",           color: "var(--orange)"        },
-  instruction:     { icon: "📢", label: "Instrução",          color: "var(--sage, #2e7fab)" },
-  yes_no:          { icon: "✅", label: "Sim / Não",          color: "#38a169"             },
-  multiple_choice: { icon: "🔘", label: "Múltipla escolha",   color: "#805ad5"             },
-  checklist:       { icon: "☑️", label: "Checklist",          color: "#2b6cb0"             },
-  number:          { icon: "🔢", label: "Número livre",       color: "#d69e2e"             },
-  time:            { icon: "⏰", label: "Horário",            color: "#e53e3e"             },
-  slider_emoji:    { icon: "😄", label: "Slider emocional",   color: "#e88fb4"             },
-  breathing:       { icon: "🌬️", label: "Respiração animada", color: "#4a9c5d"             },
+  // ─ Básicos
+  open:            { icon: "📝", label: "Resposta aberta",         color: "var(--blue-dark)"     },
+  scale:           { icon: "🔢", label: "Escala Numérica",          color: "var(--blue-mid)"      },
+  reflect:         { icon: "💭", label: "Reflexão",                 color: "var(--orange)"        },
+  instruction:     { icon: "📢", label: "Instrução",                color: "var(--sage, #2e7fab)" },
+  yes_no:          { icon: "✅", label: "Sim / Não",                color: "#38a169"             },
+  multiple_choice: { icon: "🔘", label: "Múltipla escolha",         color: "#805ad5"             },
+  checklist:       { icon: "☑️", label: "Checklist",                color: "#2b6cb0"             },
+  number:          { icon: "🔢", label: "Número livre",             color: "#d69e2e"             },
+  time:            { icon: "⏰", label: "Horário",                  color: "#e53e3e"             },
+  // ─ Clínicos
+  emotion_wheel:   { icon: "🎡", label: "Roda das emoções",         color: "#e8941a"             },
+  thought_record:  { icon: "🧠", label: "Registro de pensamento",   color: "#7c5cbf"             },
+  body_map:        { icon: "🫀", label: "Mapa corporal",            color: "#e05252"             },
+  suds:            { icon: "📊", label: "Nível de sofrimento (SUDS)",color: "#dd6b20"            },
+  mood_grid:       { icon: "📋", label: "Grade de humor",           color: "#4a7d57"             },
+  gratitude_list:  { icon: "🙏", label: "Lista de gratidão",        color: "#2b6cb0"             },
+  // ─ Interativos
+  slider_emoji:    { icon: "😄", label: "Slider emocional",         color: "#e88fb4"             },
+  breathing:       { icon: "🌬️", label: "Respiração animada",       color: "#4a9c5d"             },
 };
 
 const TYPE_HINT = {
@@ -37,6 +46,12 @@ const TYPE_HINT = {
   checklist:       "O paciente poderá marcar VÁRIAS opções entre as que você definir.",
   number:          "O paciente digitará um número (ex: horas de sono, copos de água).",
   time:            "O paciente informará um horário (ex: hora que acordou).",
+  emotion_wheel:   "O paciente selecionará a emoção mais próxima do que está sentindo numa roda interativa.",
+  thought_record:  "O paciente registrará um pensamento automático para identificação e reestruturação cognitiva.",
+  body_map:        "O paciente tocará nas regiões do corpo onde sente tensão ou desconforto.",
+  suds:            "O paciente avaliará o nível subjetivo de sofrimento em uma escala de 0 a 100.",
+  mood_grid:       "O paciente registrará seu humor em uma grade de ativação × valência.",
+  gratitude_list:  "O paciente listará coisas pelas quais é grato, fortalecendo o foco no positivo.",
   slider_emoji:    "O paciente arrasta um slider para indicar como está se sentindo (emoji 1–5).",
   breathing:       "Exibe um anel animado com contagem regressiva para guiar a respiração.",
 };
@@ -156,6 +171,12 @@ function QuestionEditor({ q, index, onUpdate }) {
             q.type === "checklist"       ? "Ex: Quais sintomas você percebeu hoje?" :
             q.type === "number"          ? "Ex: Quantas horas você dormiu?" :
             q.type === "time"            ? "Ex: A que horas você acordou?" :
+            q.type === "emotion_wheel"   ? "Ex: Como você está se sentindo agora?" :
+            q.type === "thought_record"  ? "Ex: Descreva o pensamento automático que surgiu." :
+            q.type === "body_map"        ? "Ex: Onde no corpo você sente tensão ou desconforto?" :
+            q.type === "suds"            ? "Ex: Qual é o seu nível de sofrimento agora? (0–100)" :
+            q.type === "mood_grid"       ? "Ex: Como está seu humor hoje?" :
+            q.type === "gratitude_list"  ? "Ex: Liste 3 coisas pelas quais você é grato(a) hoje." :
             "Escreva a pergunta…"
           }
           value={q.text}
@@ -328,6 +349,63 @@ function QuestionEditor({ q, index, onUpdate }) {
               </div>
             </>
           )}
+
+          {q.type === "emotion_wheel" && (
+            <>
+              <p className="cev-preview__q-text">{q.text}</p>
+              <div style={{ marginTop: "10px", padding: "12px 16px", borderRadius: "10px", background: "var(--accent-soft, #fff3e0)", fontSize: "14px", color: "var(--text-muted)" }}>
+                🎡 Roda das emoções interativa (exibida ao paciente)
+              </div>
+            </>
+          )}
+
+          {q.type === "thought_record" && (
+            <>
+              <p className="cev-preview__q-text">{q.text}</p>
+              <div style={{ marginTop: "10px", padding: "12px 16px", borderRadius: "10px", background: "var(--pt-violet-050, #f4f0fc)", fontSize: "14px", color: "var(--text-muted)" }}>
+                🧠 Formulário de registro de pensamento (exibido ao paciente)
+              </div>
+            </>
+          )}
+
+          {q.type === "body_map" && (
+            <>
+              <p className="cev-preview__q-text">{q.text}</p>
+              <div style={{ marginTop: "10px", padding: "12px 16px", borderRadius: "10px", background: "var(--pt-danger-050, #fff5f5)", fontSize: "14px", color: "var(--text-muted)" }}>
+                🫀 Mapa corporal interativo (exibido ao paciente)
+              </div>
+            </>
+          )}
+
+          {q.type === "suds" && (
+            <>
+              <p className="cev-preview__q-text">{q.text}</p>
+              <div style={{ marginTop: "10px", display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ padding: "10px 18px", borderRadius: "8px", border: "2px solid var(--border, #e2e8f0)", minWidth: "60px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}>0</div>
+                <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>de 0 a 100</span>
+              </div>
+            </>
+          )}
+
+          {q.type === "mood_grid" && (
+            <>
+              <p className="cev-preview__q-text">{q.text}</p>
+              <div style={{ marginTop: "10px", padding: "12px 16px", borderRadius: "10px", background: "var(--pt-sage-050, #edf7ee)", fontSize: "14px", color: "var(--text-muted)" }}>
+                📋 Grade de humor interativa (exibida ao paciente)
+              </div>
+            </>
+          )}
+
+          {q.type === "gratitude_list" && (
+            <>
+              <p className="cev-preview__q-text">{q.text}</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "10px" }}>
+                {["1.", "2.", "3."].map((n) => (
+                  <div key={n} style={{ padding: "8px 14px", borderRadius: "8px", border: "2px solid var(--border, #e2e8f0)", fontSize: "14px", color: "var(--text-muted)" }}>{n} …</div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -391,6 +469,24 @@ export default function CreateExerciseView({ session, onSaved, onCancel, initial
         }
         if (val === "time") {
           if (!u.text?.trim()) u.text = "A que horas você acordou?";
+        }
+        if (val === "emotion_wheel") {
+          if (!u.text?.trim()) u.text = "Como você está se sentindo agora? Escolha a emoção mais próxima.";
+        }
+        if (val === "thought_record") {
+          if (!u.text?.trim()) u.text = "Descreva o pensamento automático que surgiu.";
+        }
+        if (val === "body_map") {
+          if (!u.text?.trim()) u.text = "Onde no corpo você sente tensão ou desconforto? Toque nas regiões.";
+        }
+        if (val === "suds") {
+          if (!u.text?.trim()) u.text = "Qual é o seu nível de sofrimento agora? (SUDS 0–100)";
+        }
+        if (val === "mood_grid") {
+          if (!u.text?.trim()) u.text = "Como está seu humor hoje?";
+        }
+        if (val === "gratitude_list") {
+          if (!u.text?.trim()) u.text = "Liste 3 coisas pelas quais você é grato(a) hoje.";
         }
       }
       return u;
