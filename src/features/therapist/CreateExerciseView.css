@@ -3,7 +3,7 @@
    Mobile-first · CSS variables only · Dark mode ready
    ============================================================ */
 
-/* ── Page wrapper ─────────────────────────────────────────── */
+/* ── Page wrapper ─────────────────────────────────────────────── */
 .cev-page {
   display: flex;
   flex-direction: column;
@@ -11,7 +11,7 @@
 }
 
 .cev-page--mobile {
-  padding-bottom: 100px; /* espaço para a barra fixa de salvar */
+  padding-bottom: 100px;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -95,20 +95,11 @@
   transition: background 0.18s, box-shadow 0.18s, transform 0.15s;
 }
 
-.cev-save-btn:hover  { background: var(--blue-mid); box-shadow: var(--shadow-md); }
-.cev-save-btn:active { transform: scale(0.97); }
-.cev-save-btn--full  { flex: 1; justify-content: center; }
-
-.cev-save-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.cev-save-btn:focus-visible {
-  outline: 2px solid var(--blue-mid);
-  outline-offset: 2px;
-}
+.cev-save-btn:hover   { background: var(--blue-mid); box-shadow: var(--shadow-md); }
+.cev-save-btn:active  { transform: scale(0.97); }
+.cev-save-btn--full   { flex: 1; justify-content: center; }
+.cev-save-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.cev-save-btn:focus-visible { outline: 2px solid var(--blue-mid); outline-offset: 2px; }
 
 .cev-add-btn {
   height: 34px;
@@ -125,15 +116,8 @@
   transition: background 0.18s, color 0.18s;
 }
 
-.cev-add-btn:hover {
-  background: var(--blue-dark);
-  color: var(--text-on-dark);
-}
-
-.cev-add-btn:focus-visible {
-  outline: 2px solid var(--blue-mid);
-  outline-offset: 2px;
-}
+.cev-add-btn:hover { background: var(--blue-dark); color: var(--text-on-dark); }
+.cev-add-btn:focus-visible { outline: 2px solid var(--blue-mid); outline-offset: 2px; }
 
 /* ════════════════════════════════════════════════════════════
    BANNERS
@@ -147,23 +131,9 @@
   line-height: 1.55;
 }
 
-.cev-banner--success {
-  background: rgba(46, 127, 171, 0.08);
-  border: 1px solid rgba(46, 127, 171, 0.25);
-  color: var(--blue-dark);
-}
-
-.cev-banner--error {
-  background: var(--danger-soft, rgba(176, 48, 48, 0.06));
-  border: 1px solid rgba(176, 48, 48, 0.2);
-  color: var(--danger, #b03030);
-}
-
-.cev-banner--warn {
-  background: rgba(224, 120, 32, 0.07);
-  border: 1px solid rgba(224, 120, 32, 0.25);
-  color: var(--orange);
-}
+.cev-banner--success { background: rgba(46, 127, 171, 0.08); border: 1px solid rgba(46, 127, 171, 0.25); color: var(--blue-dark); }
+.cev-banner--error   { background: var(--danger-soft, rgba(176, 48, 48, 0.06)); border: 1px solid rgba(176, 48, 48, 0.2); color: var(--danger, #b03030); }
+.cev-banner--warn    { background: rgba(224, 120, 32, 0.07); border: 1px solid rgba(224, 120, 32, 0.25); color: var(--orange); }
 
 /* ════════════════════════════════════════════════════════════
    LAYOUT — two-column split
@@ -182,40 +152,31 @@
   }
 }
 
-/* ── Columns ──────────────────────────────────────────────── */
-.cev-left {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.cev-right {
-  position: static;
-}
+.cev-left  { display: flex; flex-direction: column; gap: 16px; }
+.cev-right { position: static; }
 
 @media (min-width: 768px) {
-  .cev-right {
-    position: sticky;
-    top: 20px;
-  }
+  .cev-right { position: sticky; top: 20px; }
 }
 
-.cev-right__mobile-label {
-  margin-bottom: 8px;
-}
+.cev-right__mobile-label { margin-bottom: 8px; }
 
 /* ════════════════════════════════════════════════════════════
-   CARD — container base
+   CARD
    ════════════════════════════════════════════════════════════ */
 .cev-card {
   background: var(--card);
   border-radius: var(--radius-lg, 16px);
   border: 1px solid var(--warm);
   box-shadow: var(--shadow-sm);
-  padding: 20px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 0;
+}
+
+@media (min-width: 480px) {
+  .cev-card { padding: 20px; }
 }
 
 @media (min-width: 768px) {
@@ -244,14 +205,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 22px;
+  min-width: 22px; height: 22px;
   padding: 0 6px;
   border-radius: 999px;
   background: var(--blue-dark);
   color: var(--text-on-dark);
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: 0.72rem; font-weight: 700;
 }
 
 .cev-card__hint {
@@ -273,7 +232,6 @@
 
 .cev-field:last-child { margin-bottom: 0; }
 
-/* Shared label */
 .cev-label {
   display: flex;
   align-items: center;
@@ -296,7 +254,6 @@
   opacity: 0.65;
 }
 
-/* Base input — aplicado a input, select e textarea */
 .cev-input {
   width: 100%;
   min-height: 44px;
@@ -321,58 +278,27 @@
   background: var(--card);
 }
 
-.cev-input--textarea {
-  min-height: 80px;
-  resize: vertical;
-  line-height: 1.55;
-  padding-top: 12px;
-}
+.cev-input--textarea  { min-height: 80px; resize: vertical; line-height: 1.55; padding-top: 12px; }
+.cev-input--question  { min-height: 96px; }
 
-.cev-input--question { min-height: 96px; }
-
-/* Select wrapper — seta customizada */
-.cev-select-wrap {
-  position: relative;
-}
-
+.cev-select-wrap { position: relative; }
 .cev-select-wrap::after {
   content: "";
   position: absolute;
-  right: 14px;
-  top: 50%;
+  right: 14px; top: 50%;
   transform: translateY(-50%);
-  width: 10px;
-  height: 6px;
+  width: 10px; height: 6px;
   background: var(--text-muted);
   clip-path: polygon(0 0, 100% 0, 50% 100%);
   pointer-events: none;
 }
 
-.cev-input--select {
-  cursor: pointer;
-  padding-right: 36px;
-}
+.cev-input--select { cursor: pointer; padding-right: 36px; }
 
 /* ════════════════════════════════════════════════════════════
    QUESTION LIST ITEMS
-   ════════════════════════════════════════════════════════════
-
-   ERGONOMIA:
-   Cada pergunta vive no seu próprio sub-card com:
-   • Número destacado (pill azul quando activo)
-   • Badge de tipo colorido
-   • Preview do texto
-   • Controles de ordem e remoção isolados por stopPropagation
-
-   O estado activo usa border-left colorida + fundo tinted
-   para tornar imediatamente óbvio qual pergunta está
-   a ser editada no painel direito.
    ════════════════════════════════════════════════════════════ */
-.cev-qlist {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+.cev-qlist { display: flex; flex-direction: column; gap: 8px; }
 
 .cev-qitem {
   display: flex;
@@ -382,8 +308,7 @@
   border-radius: var(--radius-md, 12px);
   border: 1.5px solid var(--warm);
   background: var(--cream);
-  cursor: pointer;
-  outline: none;
+  cursor: pointer; outline: none;
   transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
   position: relative;
 }
@@ -394,7 +319,6 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* Estado activo: linha lateral + fundo azul suave */
 .cev-qitem--active {
   border-color: var(--blue-dark);
   background: var(--card);
@@ -402,52 +326,33 @@
   border-left: 4px solid var(--blue-dark);
 }
 
-.cev-qitem:focus-visible {
-  outline: 2px solid var(--blue-mid);
-  outline-offset: 1px;
-}
+.cev-qitem:focus-visible { outline: 2px solid var(--blue-mid); outline-offset: 1px; }
 
-/* Número pill */
 .cev-qitem__num {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 28px; height: 28px;
   border-radius: 50%;
   background: var(--warm);
   color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.75rem; font-weight: 700;
   transition: background 0.18s, color 0.18s;
 }
 
-.cev-qitem__num--active {
-  background: var(--blue-dark);
-  color: var(--text-on-dark);
-}
+.cev-qitem__num--active { background: var(--blue-dark); color: var(--text-on-dark); }
 
-/* Body */
 .cev-qitem__body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 3px;
 }
 
-/* Badge de tipo — usa a cor via CSS custom property */
 .cev-qitem__type-badge {
   display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  align-items: center; gap: 4px;
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em;
   color: var(--badge-color, var(--text-muted));
 }
 
@@ -455,30 +360,17 @@
   font-family: 'DM Sans', sans-serif;
   font-size: 0.83rem;
   color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   margin: 0;
 }
 
-.cev-qitem__preview em {
-  color: var(--text-muted);
-  font-style: italic;
-}
+.cev-qitem__preview em { color: var(--text-muted); font-style: italic; }
 
-/* Controles: mover + remover */
-.cev-qitem__controls {
-  flex-shrink: 0;
-  display: flex;
-  gap: 4px;
-}
+.cev-qitem__controls { flex-shrink: 0; display: flex; gap: 4px; }
 
 .cev-qitem__ctrl {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px;
   border-radius: var(--radius-sm, 8px);
   border: 1.5px solid var(--warm);
   background: var(--card);
@@ -488,112 +380,75 @@
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.cev-qitem__ctrl:hover:not(:disabled) {
-  background: var(--warm);
-  border-color: var(--blue-mid);
-  color: var(--text);
-}
-
-.cev-qitem__ctrl:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-/* Botão de remover: vermelho suave */
-.cev-qitem__ctrl--remove {
-  border-color: var(--danger-soft, rgba(176, 48, 48, 0.2));
-  color: var(--danger, #b03030);
-}
-
-.cev-qitem__ctrl--remove:hover:not(:disabled) {
-  background: var(--danger-soft, rgba(176, 48, 48, 0.08));
-  border-color: var(--danger, #b03030);
-  color: var(--danger, #b03030);
-}
+.cev-qitem__ctrl:hover:not(:disabled) { background: var(--warm); border-color: var(--blue-mid); color: var(--text); }
+.cev-qitem__ctrl:disabled             { opacity: 0.3; cursor: not-allowed; }
+.cev-qitem__ctrl--remove              { border-color: var(--danger-soft, rgba(176, 48, 48, 0.2)); color: var(--danger, #b03030); }
+.cev-qitem__ctrl--remove:hover:not(:disabled) { background: var(--danger-soft, rgba(176, 48, 48, 0.08)); border-color: var(--danger, #b03030); color: var(--danger, #b03030); }
 
 /* ════════════════════════════════════════════════════════════
    QUESTION EDITOR (painel direito)
    ════════════════════════════════════════════════════════════ */
-.cev-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
+.cev-editor { display: flex; flex-direction: column; gap: 0; }
 
 .cev-editor__header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px; padding-bottom: 16px;
   border-bottom: 1px solid var(--warm);
 }
 
 .cev-editor__num {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 40px; height: 40px;
   border-radius: 50%;
-  background: var(--blue-dark);
-  color: var(--text-on-dark);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: var(--blue-dark); color: var(--text-on-dark);
+  display: flex; align-items: center; justify-content: center;
   font-family: 'DM Sans', sans-serif;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1rem; font-weight: 700;
 }
 
-.cev-editor__heading {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--text);
-  margin: 0 0 2px;
-}
+.cev-editor__heading { font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 700; color: var(--text); margin: 0 0 2px; }
+.cev-editor__sub     { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
 
-.cev-editor__sub {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin: 0;
-}
-
-/* Type selector */
+/* ────────────────────────────────────────────────────────────
+   TYPE SELECTOR — grid de tipos de pergunta
+   Galaxy A55 (360px): 1 coluna com botões altos e fáceis de tocar
+   480–767px: 2 colunas
+   768px+: 2 colunas (já no painel sticky)
+   ──────────────────────────────────────────────────────────── */
 .cev-type-fieldset {
-  border: none;
-  padding: 0;
+  border: none; padding: 0;
   margin: 0 0 16px;
 }
 
 .cev-type-fieldset legend {
-  /* usa .cev-label via className — esta regra é fallback */
-  float: left;
-  width: 100%;
-  margin-bottom: 8px;
+  float: left; width: 100%; margin-bottom: 8px;
 }
 
 .cev-type-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;   /* mobile-first: 1 coluna */
   gap: 8px;
   clear: both;
 }
 
-@media (max-width: 479px) {
-  .cev-type-grid { grid-template-columns: 1fr; }
+/* Acima de 480px já cabe 2 colunas sem apertar */
+@media (min-width: 480px) {
+  .cev-type-grid { grid-template-columns: 1fr 1fr; }
 }
 
 .cev-type-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
-  min-height: 44px;
+  padding: 12px 14px;    /* táctil: mínimo 48px de altura */
+  min-height: 52px;      /* confortável para o polegar no A55 */
   border-radius: var(--radius-md, 10px);
   border: 1.5px solid var(--warm);
   background: var(--cream);
   cursor: pointer;
   text-align: left;
+  width: 100%;
+  box-sizing: border-box;
   transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
   outline: none;
 }
@@ -603,31 +458,25 @@
   background: var(--card);
 }
 
-/* Estado activo: usa a cor do tipo via custom property */
 .cev-type-btn--active {
   border-color: var(--btn-accent, var(--blue-dark));
   background: var(--card);
   box-shadow: inset 0 0 0 1px var(--btn-accent, var(--blue-dark));
 }
 
-.cev-type-btn:focus-visible {
-  outline: 2px solid var(--blue-mid);
-  outline-offset: 2px;
-}
+.cev-type-btn:focus-visible { outline: 2px solid var(--blue-mid); outline-offset: 2px; }
 
-.cev-type-btn__icon { font-size: 1.1rem; line-height: 1; flex-shrink: 0; }
+.cev-type-btn__icon  { font-size: 1.25rem; line-height: 1; flex-shrink: 0; }
 .cev-type-btn__label {
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.82rem;
-  font-weight: 500;
+  font-size: 0.85rem; font-weight: 600;
   color: var(--text);
+  line-height: 1.3;
 }
 
-/* Type hint */
 .cev-type-hint {
   display: flex;
-  align-items: flex-start;
-  gap: 6px;
+  align-items: flex-start; gap: 6px;
   font-family: 'DM Sans', sans-serif;
   font-size: 0.78rem;
   color: var(--text-muted);
@@ -643,11 +492,8 @@
    ════════════════════════════════════════════════════════════ */
 .cev-preview {
   border-top: 1px dashed var(--warm);
-  padding-top: 16px;
-  margin-top: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  padding-top: 16px; margin-top: 4px;
+  display: flex; flex-direction: column; gap: 10px;
 }
 
 .cev-preview .cev-label { margin-bottom: 0; }
@@ -659,45 +505,27 @@
   background: rgba(46, 127, 171, 0.06);
   border-left: 3px solid var(--sage, #2e7fab);
   border-radius: 0 var(--radius-sm, 8px) var(--radius-sm, 8px) 0;
-  padding: 10px 14px;
-  line-height: 1.6;
+  padding: 10px 14px; line-height: 1.6;
 }
 
 .cev-preview__q-text {
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.875rem;
-  color: var(--text);
-  line-height: 1.6;
-  margin: 0;
+  font-size: 0.875rem; color: var(--text); line-height: 1.6; margin: 0;
 }
 
-.cev-preview__placeholder {
-  height: 44px;
-  border-radius: var(--radius-sm, 8px);
-  background: var(--card);
-  border: 1.5px dashed var(--warm);
-}
-
+.cev-preview__placeholder      { height: 44px; border-radius: var(--radius-sm, 8px); background: var(--card); border: 1.5px dashed var(--warm); }
 .cev-preview__placeholder--tall { height: 72px; }
 
-.cev-scale-dots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
+.cev-scale-dots { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .cev-scale-dots__dot {
-  width: 32px;
-  height: 32px;
+  width: 32px; height: 32px;
   border-radius: 50%;
   border: 1.5px solid var(--warm);
   background: var(--cream);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.75rem; font-weight: 600;
   color: var(--text-muted);
 }
 
@@ -705,40 +533,88 @@
    EMPTY EDITOR STATE
    ════════════════════════════════════════════════════════════ */
 .cev-editor-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 24px;
-  text-align: center;
-  gap: 12px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 16px; text-align: center; gap: 12px;
 }
 
 .cev-editor-empty__icon { font-size: 2.2rem; line-height: 1; }
-.cev-editor-empty__text {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  margin: 0;
-  line-height: 1.5;
-}
+.cev-editor-empty__text { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; color: var(--text-muted); margin: 0; line-height: 1.5; }
 
 /* ════════════════════════════════════════════════════════════
    MOBILE FIXED SAVE BAR
    ════════════════════════════════════════════════════════════ */
 .cev-mobile-bar {
   position: fixed;
-  bottom: 64px; /* acima da BottomNav */
-  left: 0;
-  right: 0;
-  display: flex;
-  gap: 10px;
+  bottom: 64px;
+  left: 0; right: 0;
+  display: flex; gap: 10px;
   padding: 12px 16px;
   padding-bottom: calc(12px + env(safe-area-inset-bottom));
   background: var(--card);
   border-top: 1px solid var(--warm);
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
   z-index: var(--z-fab, 40);
+}
+
+/* ════════════════════════════════════════════════════════════
+   GALAXY A55 (≤ 420px) — ajustes específicos
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 420px) {
+  .cev-topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .cev-topbar__left {
+    gap: 8px;
+  }
+
+  .cev-topbar__title { font-size: 1.1rem; }
+  .cev-topbar__sub   { font-size: 0.78rem; }
+
+  /* Botões da topbar esticam 100% */
+  .cev-back-btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* Card com menos padding */
+  .cev-card { padding: 14px 12px; border-radius: 12px; }
+
+  /* Tipo de pergunta: 1 coluna grande, fácil de tocar */
+  .cev-type-grid { grid-template-columns: 1fr; gap: 6px; }
+
+  .cev-type-btn {
+    min-height: 56px;
+    padding: 12px 14px;
+  }
+
+  .cev-type-btn__icon  { font-size: 1.4rem; }
+  .cev-type-btn__label { font-size: 0.88rem; }
+
+  /* Editor: mais espaço para o texto */
+  .cev-editor__header { gap: 10px; margin-bottom: 14px; }
+  .cev-editor__num    { width: 36px; height: 36px; font-size: 0.9rem; }
+
+  /* Textarea de pergunta menor no mobile */
+  .cev-input--question { min-height: 80px; }
+
+  /* Barra fixa de salvar no móvel */
+  .cev-mobile-bar {
+    padding: 10px 12px;
+    gap: 8px;
+    bottom: 60px;
+  }
+
+  /* Item de pergunta na lista */
+  .cev-qitem { padding: 10px 10px; gap: 8px; }
+  .cev-qitem__ctrl { width: 34px; height: 34px; }
+
+  /* Escala dots menores */
+  .cev-scale-dots__dot { width: 28px; height: 28px; font-size: 0.7rem; }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -750,7 +626,5 @@
   .cev-type-btn,
   .cev-save-btn,
   .cev-add-btn,
-  .cev-back-btn {
-    transition: none;
-  }
+  .cev-back-btn { transition: none; }
 }
