@@ -73,8 +73,6 @@
 
   /* ════════════════════════════════════════════════════════════
      DESIGN SYSTEM "CLÍNICA NATURAL" — tokens --pt-*
-     Usados pelas telas de paciente:
-     PatientHistory, PatientProgress, PatientExercises, RoutineView
      ════════════════════════════════════════════════════════════ */
 
   /* ── Superfícies ─────────────────────────────────────────── */
@@ -87,19 +85,19 @@
 
   /* ── Azul-petróleo ───────────────────────────────────────── */
   --pt-blue-900: #0f3552;
-  --pt-blue-700: #17527c;   /* = --blue-dark */
-  --pt-blue-500: #2e7fab;   /* = --blue-mid  */
+  --pt-blue-700: #17527c;
+  --pt-blue-500: #2e7fab;
   --pt-blue-300: #90c7e8;
   --pt-blue-100: #ddedf9;
   --pt-blue-050: #eef6fc;
 
-  /* ── Sálvia (sucesso / saúde) ────────────────────────────── */
+  /* ── Sálvia ──────────────────────────────────────────────── */
   --pt-sage-700: #4a7d57;
   --pt-sage-500: #6b9e78;
   --pt-sage-100: #d6edd9;
   --pt-sage-050: #edf7ee;
 
-  /* ── Âmbar (alertas) ─────────────────────────────────────── */
+  /* ── Âmbar ───────────────────────────────────────────────── */
   --pt-amber-700: #a05e0a;
   --pt-amber-500: #e8941a;
   --pt-amber-100: #fde9c0;
@@ -111,7 +109,7 @@
   --pt-danger-100: #fde0e0;
   --pt-danger-050: #fff5f5;
 
-  /* ── Violeta (histórico / autoconhecimento) ──────────────── */
+  /* ── Violeta ─────────────────────────────────────────────── */
   --pt-violet-500: #7c5cbf;
   --pt-violet-100: #e8e0f8;
   --pt-violet-050: #f4f0fc;
@@ -160,47 +158,49 @@
   --pt-t-slow:   0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Agrega esto para evitar que la pantalla se recargue al deslizar hacia abajo en móviles */
+/* ============================================================
+   SCROLL — ocultar scrollbar em mobile sem bloquear conteúdo
+   ============================================================ */
+
+/* Evita bounce/pull-to-refresh e scroll lateral indesejado */
 html, body {
+  overscroll-behavior: none;
   overscroll-behavior-y: none;
+}
+
+/* Oculta a scrollbar em todos os elementos no mobile.
+   O scroll CONTINUA funcionando — só a barra some visualmente. */
+@media (max-width: 1024px) {
+  * {
+    scrollbar-width: none;       /* Firefox */
+    -ms-overflow-style: none;    /* IE / Edge legado */
+  }
+  *::-webkit-scrollbar {
+    display: none;               /* Chrome / Samsung Internet / Safari */
+  }
+}
+
+/* Desktop: mantém scrollbar discreta */
+@media (min-width: 1025px) {
+  ::-webkit-scrollbar         { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-thumb   { background: var(--warm); border-radius: 3px; }
 }
 
 /* ============================================================
    DARK MODE — paleta "Noite Terapêutica" v2
-   ──────────────────────────────────────────────────────────
-   HIERARQUIA DE SUPERFÍCIES (do mais escuro ao mais claro):
-     --cream  #0c1923  →  fundo de página         (nível 0)
-     --warm   #152333  →  bordas / hover sutil     (nível 0.5)
-     --white  #1b2f42  →  sidebar, inputs          (nível 1)
-     --card   #213d56  →  cards, modais            (nível 2)
-   Cada nível é ~6–8% mais claro em luminosidade HSL que o
-   anterior, suficiente para criar profundidade sem vibração.
-
-   TEXTO:
-     --text         #d8e8f2  →  branco-azulado suave  (~92% branco)
-     --text-muted   #7da4be  →  azul-acinzentado médio (~60%)
-   Evita branco puro (#fff) que causa halos em fundos escuros.
-
-   SOMBRAS:
-     Substituem rgba claro por rgba preto com alpha maior,
-     tornando-as visíveis sobre fundos escuros.
-   ──────────────────────────────────────────────────────────
    ============================================================ */
 body.dark-mode {
 
-  /* ── Superfícies — 4 níveis de profundidade ──────────────── */
-  --cream:  #0c1923;   /* página: azul-noite profundo, nunca preto puro  */
-  --warm:   #152333;   /* bordas, separadores, hover sutil               */
-  --white:  #1b2f42;   /* superfície base — sidebar, inputs              */
-  --card:   #213d56;   /* cards e modais — ~8% mais claro que a página   */
+  --cream:  #0c1923;
+  --warm:   #152333;
+  --white:  #1b2f42;
+  --card:   #213d56;
 
-  /* ── Texto — hierarquia sem branco puro ──────────────────── */
-  --text:           #d8e8f2;   /* branco-azulado suave — principal       */
-  --text-muted:     #7da4be;   /* azul-acinzentado médio — secundário    */
-  --text-on-dark:   #d8e8f2;   /* igual ao --text neste tema             */
-  --text-on-accent: #0c1923;   /* texto sobre botões de acento           */
+  --text:           #d8e8f2;
+  --text-muted:     #7da4be;
+  --text-on-dark:   #d8e8f2;
+  --text-on-accent: #0c1923;
 
-  /* ── Acentos — calibrados para contraste WCAG AA ─────────── */
   --blue-dark:   #6fb8de;
   --blue-mid:    #4fa0cc;
   --blue-light:  #2a6a90;
@@ -209,28 +209,19 @@ body.dark-mode {
   --accent-soft: rgba(245, 160, 58, 0.14);
   --yellow:      #ffd27a;
 
-  /* ── Perigo e sage ────────────────────────────────────────── */
   --danger:      #e07070;
   --danger-soft: rgba(224, 112, 112, 0.14);
   --sage-dark:   #0c1923;
   --sage:        #5ab07a;
   --sage-light:  #162e20;
 
-  /* ── Sombras globais — visíveis sobre fundo escuro ───────────
-     PROBLEMA ORIGINAL: as sombras de :root usam rgba(15,30,42,…)
-     que é quase invisível sobre fundos escuros.
-     SOLUÇÃO: substituir por rgba preto com alpha mais alto.
-     Os valores de Y-offset e blur permanecem iguais para não
-     alterar a sensação de elevação dos componentes.
-  ─────────────────────────────────────────────────────────── */
   --shadow-sm:  0 1px 4px  rgba(0, 0, 0, 0.36);
   --shadow-md:  0 4px 16px rgba(0, 0, 0, 0.44);
   --shadow-lg:  0 8px 36px rgba(0, 0, 0, 0.52);
 
-  /* ── Tokens --pt-* em dark mode ─────────────────────────── */
-  --pt-bg:           #0c1923;   /* = --cream  */
-  --pt-surface:      #213d56;   /* = --card   */
-  --pt-surface-alt:  #1b2f42;   /* = --white  */
+  --pt-bg:           #0c1923;
+  --pt-surface:      #213d56;
+  --pt-surface-alt:  #1b2f42;
   --pt-surface-warm: #1a2f40;
   --pt-border:       #243d52;
   --pt-border-warm:  #2a3d4e;
@@ -266,7 +257,6 @@ body.dark-mode {
   --pt-text-muted: #5a88a8;
   --pt-text-faint: #2e5068;
 
-  /* ── Sombras pt-* — versão dark ──────────────────────────── */
   --pt-shadow-sm:
     0 1px 3px  rgba(0, 0, 0, 0.40),
     0 3px 10px rgba(0, 0, 0, 0.32);
@@ -331,11 +321,8 @@ h1, h2, h3 {
 }
 
 /* ============================================================
-   UTILITÁRIOS DE SCROLL E GRID
+   UTILITÁRIOS DE GRID
    ============================================================ */
-::-webkit-scrollbar         { width: 5px; height: 5px; }
-::-webkit-scrollbar-thumb   { background: var(--warm); border-radius: 3px; }
-
 .grid-2 {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
@@ -349,9 +336,7 @@ h1, h2, h3 {
 }
 
 /* ============================================================
-   PAGE HEADER — cabeçalho padronizado de todas as páginas
-   Usado em: ResponsesView, TherapistProgress, ExercisesView
-   e qualquer futura view que use <div className="page-header">
+   PAGE HEADER
    ============================================================ */
 .page-header {
   margin-bottom: clamp(20px, 3vh, 32px);
@@ -379,10 +364,8 @@ h1, h2, h3 {
 
 /* ============================================================
    RESPONSIVE — Galaxy A55 (360px), A56 (390px), iPad 9 (810px)
-   Reglas aditivas — no sobreescriben ni eliminan nada anterior.
    ============================================================ */
 
-/* Galaxy A55: 360px — pantalla más estrecha */
 @media (max-width: 360px) {
   :root {
     --space-page-x: 12px;
@@ -392,19 +375,10 @@ h1, h2, h3 {
     --pt-sp-4: 12px;
     --pt-sp-6: 18px;
   }
-
-  .grid-2 {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .grid-3 {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
+  .grid-2 { grid-template-columns: 1fr; gap: 12px; }
+  .grid-3 { grid-template-columns: 1fr; gap: 12px; }
 }
 
-/* Galaxy A55 y A56: 361–430px */
 @media (min-width: 361px) and (max-width: 430px) {
   :root {
     --space-page-x: 14px;
@@ -412,19 +386,10 @@ h1, h2, h3 {
     --font-page-title: 18px;
     --font-stat-val: 26px;
   }
-
-  .grid-2 {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-
-  .grid-3 {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
+  .grid-2 { grid-template-columns: 1fr; gap: 14px; }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); gap: 12px; }
 }
 
-/* iPad 9ª gen portrait: 768px–1024px — sidebar colapsada */
 @media (min-width: 768px) and (max-width: 1024px) {
   :root {
     --space-page-x: 24px;
@@ -432,26 +397,14 @@ h1, h2, h3 {
     --font-page-title: 22px;
     --font-stat-val: 30px;
   }
-
-  .grid-2 {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-  }
-
-  .grid-3 {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 18px;
-  }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); gap: 18px; }
 }
 
-/* iPad 9ª gen landscape: 1025–1180px */
 @media (min-width: 1025px) and (max-width: 1180px) {
   :root {
     --space-page-x: 28px;
     --space-page-y: 32px;
   }
-
-  .grid-3 {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
 }
