@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import db from "../../../services/db";
 import { daysUntil } from "../../../utils/dates";
+import { notifyNewExercise } from "../../../services/pushSender";
 import "./AssignTab.css";
 
 function DueChip({ dueDate }) {
@@ -60,10 +61,13 @@ export default function AssignTab({ patient, session, exercises, assignments, go
     setError("");
     try {
       const newAssigns = [];
+      const assignedTitles = [];
 
       for (const exId of selected) {
         let finalExId = exId;
         const isGlobal = globalExercises.find((g) => g.id === exId);
+        const localEx  = exercises.find((e) => e.id === exId);
+        const exTitle  = isGlobal?.title ?? localEx?.title ?? "Exercício";
 
         // Clona o exercício global na tabela do terapeuta
         if (isGlobal) {
@@ -99,7 +103,10 @@ export default function AssignTab({ patient, session, exercises, assignments, go
             },
             session.access_token
           );
-          if (inserted) newAssigns.push(inserted);
+          if (inserted) {
+            newAssigns.push(inserted);
+            assignedTitles.push(exTitle);
+          }
         }
       }
 
@@ -122,6 +129,15 @@ export default function AssignTab({ patient, session, exercises, assignments, go
           },
           session.access_token
         );
+      }
+
+      // ── Enviar notificação push ao paciente ──
+      // Fire-and-forget: não bloqueia o save se o push falhar
+      if (newAssigns.length > 0) {
+        const title = assignedTitles.length === 1
+          ? assignedTitles[0]
+          : `${assignedTitles[0]} (+${assignedTitles.length - 1})`;
+        notifyNewExercise(session, patient.id, title).catch(() => {});
       }
 
       const updated = [...localAssign, ...newAssigns];
@@ -178,7 +194,6 @@ export default function AssignTab({ patient, session, exercises, assignments, go
                     >
                       ✕
                     </button>
-
                   </div>
                 );
               }
