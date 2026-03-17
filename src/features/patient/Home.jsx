@@ -6,7 +6,7 @@ import { getPlantStage, LS_LAST_ACTION } from "../../utils/constants";
 import StatCard from "../../components/ui/StatCard";
 import WeekGoalBar from "../../components/ui/WeekGoalBar";
 import OnboardingTour from "../../components/ui/OnboardingTour";
-import { usePushNotifications } from "../../hooks/usePushNotifications";
+import PushNotificationPrompt from "../../components/ui/PushNotificationPrompt";
 import { validateInviteCode } from "../../utils/validation";
 import "./Home.css";
 import "../../styles/micro-interactions.css";
@@ -50,16 +50,6 @@ export default function PatientHome({ session, setSession }) {
   const [plantPulse,    setPlantPulse]    = useState(false);
   const [streakLevelUp, setStreakLevelUp] = useState(false);
   const [goalReached,   setGoalReached]   = useState(false);
-
-  const { supported, permission, subscribed, subscribe } =
-    usePushNotifications({ session, navigateTo });
-
-  useEffect(() => {
-    if (supported && permission === "default" && !subscribed) {
-      const t = setTimeout(() => subscribe(), 4000);
-      return () => clearTimeout(t);
-    }
-  }, [supported, permission, subscribed, subscribe]);
 
   useEffect(() => {
     let active = true;
@@ -121,7 +111,6 @@ export default function PatientHome({ session, setSession }) {
     return () => { active = false; clearInterval(id); };
   }, [session.id, session.access_token]);
 
-  // Dispara o efeito de rega: 3 gotas + brilho por 2.4s
   const triggerWater = () => {
     setShowWater(true);
     setTimeout(() => setShowWater(false), 2400);
@@ -196,6 +185,9 @@ export default function PatientHome({ session, setSession }) {
     <>
       <OnboardingTour />
 
+      {/* Banner de permissão push — aparece flutuante acima da nav bar */}
+      <PushNotificationPrompt session={session} setView={navigateTo} />
+
       <div className="patient-home page-fade-in">
 
         <header className="patient-home__header">
@@ -254,7 +246,6 @@ export default function PatientHome({ session, setSession }) {
             showWater     ? "plant-card--watering" : "",
           ].filter(Boolean).join(" ")}>
 
-            {/* ── 3 gotas independentes ── */}
             {showWater && (
               <>
                 <span className="water-drop water-drop--1" aria-hidden="true">💧</span>
