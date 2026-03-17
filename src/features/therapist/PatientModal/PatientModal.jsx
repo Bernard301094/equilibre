@@ -5,6 +5,7 @@ import AssignTab from "./AssignTab";
 import RoutineTab from "./RoutineTab";
 import ClinicalNotesTab from "./ClinicalNotesTab";
 import WellbeingTab from "./WellbeingTab";
+import ExportPDFButton from "../../../components/ui/ExportPDFButton";
 import "./PatientModal.css";
 
 // ← FeedbackTab removida: as orientações agora vivem em MessagesView (/orientacoes)
@@ -76,6 +77,16 @@ export default function PatientModal({ patient, session, onClose }) {
     return () => { active = false; };
   }, [patient.id, session.id, session.access_token]);
 
+  /* ── Completed exercises (for PDF report) ── */
+  const completedExercises = data
+    ? data.assignments
+        .filter((a) => a.status === "completed")
+        .map((a) => ({
+          title: data.exercises.find((e) => e.id === a.exercise_id)?.title ?? "Exercício",
+          completed_at: a.completed_at,
+        }))
+    : [];
+
   return (
     <div className="patient-modal-overlay" onClick={onClose}>
       <div
@@ -98,6 +109,19 @@ export default function PatientModal({ patient, session, onClose }) {
             <h3 id={labelId} className="patient-modal__title">
               {patient.name}
             </h3>
+
+            {/* ── Botão exportar PDF — só aparece depois de carregar os dados ── */}
+            {!loading && data && (
+              <ExportPDFButton
+                mode="report"
+                patient={{ name: patient.name, email: patient.email }}
+                exercises={completedExercises}
+                diaryEntries={data.diaryEntries}
+                therapistName={session?.name ?? "Terapeuta"}
+                label="📄 PDF"
+              />
+            )}
+
             <button
               className="patient-modal__close-btn"
               onClick={onClose}
