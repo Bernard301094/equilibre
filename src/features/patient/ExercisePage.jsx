@@ -3,6 +3,7 @@ import db from "../../services/db";
 import { parseQuestions, serializeAnswers } from "../../utils/parsing";
 import { LOGO_PATH, LS_LAST_ACTION } from "../../utils/constants";
 import CelebrationOverlay from "../../components/ui/CelebrationOverlay";
+import { notifyExerciseCompleted } from "../../services/pushSender";
 import "./ExercisePage.css";
 
 /* ══════════════════════════════════════════════════════════════
@@ -47,9 +48,6 @@ function SliderEmoji({ value, onChange, emojis = SLIDER_EMOJIS, question }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════
-   Easing functions
-   ══════════════════════════════════════════════════════════════ */
 const easeInOutCubic = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 const easeLinear  = (t) => t;
 const easeOutQuart = (t) => 1 - Math.pow(1 - t, 4);
@@ -60,9 +58,6 @@ const PHASE_EASING = {
   exhale: easeOutQuart,
 };
 
-/* ══════════════════════════════════════════════════════════════
-   BreathingExercise (Corrigido o Crash do Node.removeChild)
-   ══════════════════════════════════════════════════════════════ */
 const BREATH_PHASES = [
   { key: "inhale", label: "Inspire", color: "#4a9c5d", seconds: 4 },
   { key: "hold",   label: "Segure",  color: "#2b6cb0", seconds: 4 },
@@ -96,7 +91,6 @@ function BreathingExercise({ question, onComplete }) {
   const colorRef      = useRef(null);
   const labelRef      = useRef(null);
   const completedRef  = useRef(false);
-  
   const isMountedRef  = useRef(true);
 
   useEffect(() => {
@@ -120,7 +114,6 @@ function BreathingExercise({ question, onComplete }) {
     arcRef.current.style.stroke          = phase.color;
     
     const remaining = Math.max(Math.ceil(phase.seconds - elapsed), 0);
-    // Apenas manipula o textContent via ref, sem o React atrapalhar
     if (countRef.current) countRef.current.textContent = `${remaining}s`;
 
     if (rawT < 1) {
@@ -134,7 +127,6 @@ function BreathingExercise({ question, onComplete }) {
 
     if (endOfCycle && nextCycle > totalCycles) {
       setUiState((s) => ({ ...s, finished: true, started: false }));
-      
       if (!completedRef.current) {
         completedRef.current = true;
         setTimeout(() => {
@@ -201,7 +193,6 @@ function BreathingExercise({ question, onComplete }) {
   return (
     <div className="breathing">
       <p className="exercise-page__question-text">{question?.text}</p>
-
       <div className="breathing__ring-wrap">
         <svg viewBox="0 0 120 120" className="breathing__svg" aria-hidden="true">
           <circle cx="60" cy="60" r={54} className="breathing__track" />
@@ -212,7 +203,6 @@ function BreathingExercise({ question, onComplete }) {
             style={{ stroke: phase?.color || "#4a9c5d", strokeDasharray: `0 ${CIRC}` }}
           />
         </svg>
-
         <div ref={colorRef} className="breathing__center" style={{ color: phase?.color || "#4a9c5d" }}>
           {finished ? (
             <>
@@ -221,8 +211,6 @@ function BreathingExercise({ question, onComplete }) {
             </>
           ) : started ? (
             <>
-              {/* CORREÇÃO CRÍTICA AQUI: Estas duas spans ficam VAZIAS. 
-                  O React nunca lhes irá injectar conteúdo para não causar conflitos com o Vanilla JS */}
               <span ref={labelRef} className="breathing__phase-label"></span>
               <span ref={countRef} className="breathing__countdown"></span>
             </>
@@ -231,7 +219,6 @@ function BreathingExercise({ question, onComplete }) {
           )}
         </div>
       </div>
-
       {!finished && (
         <p className="breathing__cycles" aria-live="polite">
           {started
@@ -240,13 +227,9 @@ function BreathingExercise({ question, onComplete }) {
           }
         </p>
       )}
-
       {finished && (
-        <p className="breathing__cycles breathing__cycles--done" aria-live="polite">
-          Avançando...
-        </p>
+        <p className="breathing__cycles breathing__cycles--done" aria-live="polite">Avançando...</p>
       )}
-
       {!finished && (
         <button className="breathing__btn" onClick={start}>
           {started ? "Reiniciar" : "Começar respiração"}
@@ -256,9 +239,6 @@ function BreathingExercise({ question, onComplete }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════
-   YesNo
-   ══════════════════════════════════════════════════════════════ */
 function YesNo({ question, value, onChange }) {
   return (
     <div className="ep-yesno">
@@ -277,9 +257,6 @@ function YesNo({ question, value, onChange }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════
-   MultipleChoice
-   ══════════════════════════════════════════════════════════════ */
 function MultipleChoice({ question, value, onChange }) {
   const options = question.options ?? [];
   return (
@@ -300,9 +277,6 @@ function MultipleChoice({ question, value, onChange }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════
-   Checklist
-   ══════════════════════════════════════════════════════════════ */
 function Checklist({ question, value, onChange }) {
   const options  = question.options ?? [];
   const selected = value ? value.split("|") : [];
@@ -334,9 +308,6 @@ function Checklist({ question, value, onChange }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════
-   NumberInput
-   ══════════════════════════════════════════════════════════════ */
 function NumberInput({ question, value, onChange }) {
   return (
     <div className="ep-number">
@@ -355,9 +326,6 @@ function NumberInput({ question, value, onChange }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════
-   TimeInput
-   ══════════════════════════════════════════════════════════════ */
 function TimeInput({ question, value, onChange }) {
   return (
     <div className="ep-time">
@@ -372,9 +340,6 @@ function TimeInput({ question, value, onChange }) {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════
-   ExercisePage — player principal
-   ══════════════════════════════════════════════════════════════ */
 export default function ExercisePage({ exercise, session, onBack }) {
   const questions = parseQuestions(exercise) || [];
 
@@ -426,6 +391,7 @@ export default function ExercisePage({ exercise, session, onBack }) {
       }
 
       if (session.therapist_id) {
+        // Salva notificação na tabela
         await db.insert("notifications", {
           id:             crypto.randomUUID(),
           therapist_id:   session.therapist_id,
@@ -435,6 +401,14 @@ export default function ExercisePage({ exercise, session, onBack }) {
           created_at:     new Date().toISOString(),
           read:           false,
         }, session.access_token).catch(() => {});
+
+        // Envia push ao terapeuta — fire-and-forget
+        notifyExerciseCompleted(
+          session,
+          session.therapist_id,
+          session.name,
+          exercise.title
+        ).catch(() => {});
       }
 
       localStorage.setItem(LS_LAST_ACTION, String(Date.now()));
@@ -460,10 +434,8 @@ export default function ExercisePage({ exercise, session, onBack }) {
 
   const handleBreathingComplete = useCallback((val) => {
     if (!q?.id) return;
-    
     const updatedAnswers = { ...answers, [q.id]: val };
     setAnswers(updatedAnswers);
-    
     if (step < questions.length - 1) {
       setStep(step + 1);
     } else {
@@ -529,7 +501,6 @@ export default function ExercisePage({ exercise, session, onBack }) {
             <div className="exercise-page__step-label">Pergunta {step + 1}</div>
 
             {q.type === "instruction" && <div key={q.id} className="exercise-page__instruction">{q.text}</div>}
-
             {q.type === "reflect" && (
               <div key={q.id}>
                 <div className="exercise-page__reflect-text">{q.text}</div>
@@ -537,7 +508,6 @@ export default function ExercisePage({ exercise, session, onBack }) {
                 <textarea id={`ans-${q.id}`} className="exercise-page__textarea" placeholder="Escreva sua reflexão aqui... (opcional)" value={answers[q.id]} onChange={(e) => setAns(e.target.value)} />
               </div>
             )}
-
             {q.type === "open" && (
               <div key={q.id}>
                 <div className="exercise-page__question-text">{q.text}</div>
@@ -545,7 +515,6 @@ export default function ExercisePage({ exercise, session, onBack }) {
                 <textarea id={`ans-${q.id}`} className="exercise-page__textarea" placeholder="Escreva sua resposta aqui..." value={answers[q.id]} onChange={(e) => setAns(e.target.value)} />
               </div>
             )}
-
             {q.type === "scale" && (
               <div key={q.id}>
                 <div className="exercise-page__question-text">{q.text}</div>
@@ -566,29 +535,21 @@ export default function ExercisePage({ exercise, session, onBack }) {
                 </fieldset>
               </div>
             )}
-
             {q.type === "yes_no"          && <YesNo          key={q.id} question={q} value={answers[q.id]} onChange={setAns} />}
             {q.type === "multiple_choice" && <MultipleChoice key={q.id} question={q} value={answers[q.id]} onChange={setAns} />}
             {q.type === "checklist"       && <Checklist      key={q.id} question={q} value={answers[q.id]} onChange={setAns} />}
             {q.type === "number"          && <NumberInput    key={q.id} question={q} value={answers[q.id]} onChange={setAns} />}
             {q.type === "time"            && <TimeInput      key={q.id} question={q} value={answers[q.id]} onChange={setAns} />}
             {q.type === "slider_emoji"    && <SliderEmoji    key={q.id} question={q} value={answers[q.id]} onChange={setAns} emojis={q.emojis ?? undefined} />}
-
             {q.type === "breathing" && (
-              <BreathingExercise
-                key={q.id}
-                question={q}
-                onComplete={handleBreathingComplete}
-              />
+              <BreathingExercise key={q.id} question={q} onComplete={handleBreathingComplete} />
             )}
 
-            {/* Botões de navegação — ocultos durante breathing para não confundir */}
             {q.type !== "breathing" && (
               <div className="exercise-page__nav">
                 <button className="exercise-page__nav-btn exercise-page__nav-btn--prev"
                   onClick={() => setStep((s) => Math.max(0, s - 1))}
-                  disabled={step === 0}
-                  aria-disabled={step === 0}
+                  disabled={step === 0} aria-disabled={step === 0}
                 >← Anterior</button>
                 <button className="exercise-page__nav-btn exercise-page__nav-btn--next"
                   onClick={next}
