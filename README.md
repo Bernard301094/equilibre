@@ -1,156 +1,203 @@
-# 🌿 Equilibre
+<p align="center">
+  <img src="public/logo.svg" alt="Equilibre Logo" width="80" />
+</p>
 
-**Equilibre** é uma plataforma web de acompanhamento psicológico que conecta terapeutas e pacientes de forma segura, intuitiva e acessível. Desenvolvida com foco em saúde mental, permite ao terapeuta monitorar o progresso dos seus pacientes e ao paciente realizar exercícios terapêuticos, registrar o diário emocional e acompanhar sua evolução.
+<h1 align="center">Equilibre</h1>
+
+<p align="center">
+  Plataforma web de acompanhamento psicológico que conecta terapeutas e pacientes de forma segura, intuitiva e acessível.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white&style=flat-square" />
+  <img src="https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white&style=flat-square" />
+  <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase&logoColor=white&style=flat-square" />
+  <img src="https://img.shields.io/badge/Deploy-Vercel-000000?logo=vercel&logoColor=white&style=flat-square" />
+  <img src="https://img.shields.io/badge/License-Private-red?style=flat-square" />
+</p>
 
 ---
 
-## ✨ Funcionalidades
+## Índice
+
+- [Sobre o Projeto](#sobre-o-projeto)
+- [Funcionalidades](#funcionalidades)
+- [Stack Tecnológica](#stack-tecnológica)
+- [Arquitetura](#arquitetura)
+- [Segurança](#segurança)
+- [Como Rodar Localmente](#como-rodar-localmente)
+- [PWA & Mobile](#pwa--mobile)
+- [Roadmap](#roadmap)
+- [Autor](#autor)
+
+---
+
+## Sobre o Projeto
+
+**Equilibre** é uma plataforma web focada em saúde mental que facilita o acompanhamento terapêutico entre profissionais e seus pacientes. O terapeuta pode monitorar o progresso, criar exercícios personalizados e registrar prontuários clínicos; o paciente realiza os exercícios, mantém um diário emocional e acompanha sua evolução através de gráficos.
+
+---
+
+## Funcionalidades
 
 ### 👩‍⚕️ Terapeuta
-- Dashboard com visão geral dos pacientes e atividades recentes
-- Gestão de pacientes — vinculação por código de convite
+- Dashboard com visão geral de pacientes e atividades recentes
+- Vinculação de pacientes por **código de convite**
 - Criação de exercícios terapêuticos personalizados (escalas, perguntas abertas, instruções)
-- Atribuição de exercícios a pacientes com data limite
-- Visualização das respostas e progresso de cada paciente
-- Prontuário clínico privado por paciente
+- Atribuição de exercícios com data limite
+- Visualização de respostas e progresso individual
+- **Prontuário clínico** privado por paciente
 - Mural de orientações (mensagens diretas ao paciente)
-- Acompanhamento de bem-estar (humor, energia, ansiedade, motivação)
-- Gestão de rotina comportamental (Behavioral Activation)
+- Acompanhamento de bem-estar: humor, energia, ansiedade e motivação
+- Gestão de rotina comportamental (*Behavioral Activation*)
 - Notificações em tempo real
 
 ### 🧑‍💻 Paciente
 - Tela inicial com resumo do progresso semanal
 - Lista de exercícios pendentes e concluídos
 - Player de exercícios com suporte a escalas, texto livre e instruções
-- Diário emocional com registro diário de humor
+- **Diário emocional** com registro diário de humor
 - Rotina semanal de atividades
-- Histórico completo de exercícios realizados com feedback do terapeuta
+- Histórico de exercícios com feedback do terapeuta
 - Gráficos de progresso (escalas e humor)
-- Orientações recebidas do terapeuta
 - Notificações de novas tarefas
 
 ### 🔐 Admin
-- Dashboard administrativo com controlo de terapeutas
-- Aprovação/rejeição de contas de terapeutas (verificação de CRP)
+- Dashboard administrativo com controle de terapeutas
+- Aprovação/rejeição de contas com **verificação de CRP**
 - Visão geral da plataforma
 
 ---
 
-## 🛠️ Stack Tecnológica
+## Stack Tecnológica
 
-| Camada | Tecnologia |
-|---|---|
-| Frontend | React 18 + Vite |
-| Estilização | CSS Modules (sem framework) |
-| Backend / DB | Supabase (PostgreSQL + Auth + REST) |
-| Autenticação | JWT com refresh token |
-| Deploy | Vercel |
-| Controlo de versão | Git + GitHub |
+| Camada           | Tecnologia                              |
+|------------------|-----------------------------------------|
+| Frontend         | React 19 + Vite 7                       |
+| Roteamento       | React Router DOM 7                      |
+| Estilização      | CSS Modules (sem framework externo)     |
+| Backend / DB     | Supabase (PostgreSQL + Auth + REST)     |
+| Autenticação     | JWT com refresh token automático        |
+| Geração de PDF   | jsPDF + html2canvas                     |
+| Deploy           | Vercel                                  |
+| Controle de versão | Git + GitHub                          |
 
 ---
 
-## 🏗️ Arquitetura
+## Arquitetura
 
 ```
-src/
-├── components/
-│   ├── auth/          # Login e registo
-│   ├── layout/        # TherapistLayout, PatientLayout, Sidebar, BottomNav
-│   ├── shared/        # ProfileModal, MessagesView, AvatarDisplay
-│   └── ui/            # Spinner, Toast, EmptyState, Skeleton...
-├── features/
-│   ├── admin/         # AdminDashboard
-│   ├── therapist/     # Dashboard, PatientsView, ExercisesView, PatientModal...
-│   └── patient/       # Home, PatientExercises, ExercisePage, DiaryView...
-├── hooks/             # useSession, useTheme, useIsMobile
-├── services/          # db.js, auth.js (Supabase REST direto)
-└── utils/             # constants, dates, parsing, toast
+equilibre/
+├── public/                   # Assets estáticos e manifesto PWA
+└── src/
+    ├── components/
+    │   ├── auth/             # Login, registro e fluxos de autenticação
+    │   ├── layout/           # TherapistLayout, PatientLayout, Sidebar, BottomNav
+    │   ├── shared/           # ProfileModal, MessagesView, AvatarDisplay
+    │   └── ui/               # Spinner, Toast, EmptyState, Skeleton...
+    ├── features/
+    │   ├── admin/            # AdminDashboard
+    │   ├── therapist/        # Dashboard, PatientsView, ExercisesView, PatientModal...
+    │   └── patient/          # Home, PatientExercises, ExercisePage, DiaryView...
+    ├── hooks/                # useSession, useTheme, useIsMobile
+    ├── services/             # db.js, auth.js — integração Supabase REST
+    ├── utils/                # constants, dates, parsing, toast helpers
+    ├── App.jsx
+    └── main.jsx
 ```
 
----
-
-## 🔒 Segurança
-
-- **Row Level Security (RLS)** ativa em todas as tabelas
-- Cada utilizador acede apenas aos seus próprios dados
-- Terapeutas não acedem a dados de colegas
-- Pacientes não acedem a dados de outros pacientes
-- Autenticação por JWT com expiração e refresh automático
-- Senhas armazenadas com **bcrypt** pelo Supabase Auth
-- Conformidade em desenvolvimento com a **LGPD** (Lei Geral de Proteção de Dados)
+A estrutura segue uma arquitetura **feature-based**, separando a lógica de negócio por domínio (`admin`, `therapist`, `patient`) e mantendo componentes de UI reutilizáveis na camada `components/ui`.
 
 ---
 
-## 🚀 Como rodar localmente
+## Segurança
+
+- **Row Level Security (RLS)** ativa em todas as tabelas do Supabase
+- Cada utilizador acessa **exclusivamente os seus próprios dados**
+- Terapeutas não têm acesso a dados de colegas; pacientes não têm acesso a dados de outros pacientes
+- Autenticação via **JWT** com expiração e refresh automático
+- Senhas armazenadas com **bcrypt** (gerenciado pelo Supabase Auth)
+- Projeto desenvolvido em conformidade com a **LGPD** (Lei Geral de Proteção de Dados — Brasil)
+
+---
+
+## Como Rodar Localmente
 
 ### Pré-requisitos
-- Node.js 18+
+
+- [Node.js](https://nodejs.org/) 18+
 - Conta no [Supabase](https://supabase.com)
 
 ### Instalação
 
 ```bash
-# Clone o repositório
+# 1. Clone o repositório
 git clone https://github.com/Bernard301094/equilibre.git
 cd equilibre
 
-# Instala as dependências
+# 2. Instale as dependências
 npm install
 
-# Cria o arquivo de variáveis de ambiente
+# 3. Configure as variáveis de ambiente
 cp .env.example .env
 ```
 
-### Variáveis de ambiente
+### Variáveis de Ambiente
 
-Cria um arquivo `.env` na raiz com:
+Edite o arquivo `.env` criado na raiz com suas credenciais do Supabase:
 
 ```env
 VITE_SUPABASE_URL=https://SEU_PROJETO.supabase.co
 VITE_SUPABASE_ANON_KEY=sua_anon_key_aqui
 ```
 
-### Rodando
+> ⚠️ Nunca faça commit do arquivo `.env`. Ele já está incluído no `.gitignore`.
 
-```bash
-npm run dev
-```
+### Scripts Disponíveis
 
-Acesse em: `http://localhost:5173`
-
----
-
-## 📱 Progressive Web App (PWA)
-
-O Equilibre é desenvolvido como PWA, sendo instalável em dispositivos móveis diretamente pelo browser. Para publicação na **Play Store**, está prevista integração via **Trusted Web Activity (TWA)**.
+| Comando           | Descrição                          |
+|-------------------|------------------------------------|
+| `npm run dev`     | Inicia o servidor de desenvolvimento (`http://localhost:5173`) |
+| `npm run build`   | Gera o build de produção em `/dist` |
+| `npm run preview` | Visualiza o build de produção localmente |
+| `npm run lint`    | Executa o ESLint no projeto        |
 
 ---
 
-## 📋 Roadmap
+## PWA & Mobile
 
-- [x] Autenticação de terapeutas e pacientes
-- [x] Sistema de convites por código
-- [x] Criação e atribuição de exercícios
-- [x] Diário emocional
-- [x] Prontuário clínico
-- [x] Gráficos de progresso
-- [x] Mural de orientações
-- [x] Row Level Security completa
-- [ ] Notificações push (mobile)
-- [ ] Videoconferência integrada
-- [ ] Exportação de relatórios PDF
-- [ ] Publicação na Play Store via TWA
-- [ ] Multi-idioma (PT / ES / EN)
+O Equilibre é desenvolvido como **Progressive Web App (PWA)**, sendo instalável em dispositivos móveis diretamente pelo browser, sem necessidade de loja de aplicativos. Para publicação futura na **Play Store**, está prevista integração via **Trusted Web Activity (TWA)**.
 
 ---
 
-## 👨‍💻 Autor
+## Roadmap
 
-Desenvolvido por **Bernard De Freitas**  
-🔗 [github.com/Bernard301094](https://github.com/Bernard301094)
+| Status | Funcionalidade |
+|--------|---------------|
+| ✅ | Autenticação de terapeutas e pacientes |
+| ✅ | Sistema de convites por código |
+| ✅ | Criação e atribuição de exercícios |
+| ✅ | Diário emocional |
+| ✅ | Prontuário clínico |
+| ✅ | Gráficos de progresso |
+| ✅ | Mural de orientações |
+| ✅ | Row Level Security completa |
+| 🔜 | Notificações push (mobile) |
+| 🔜 | Videoconferência integrada |
+| 🔜 | Exportação de relatórios PDF |
+| 🔜 | Publicação na Play Store via TWA |
+| 🔜 | Multi-idioma (PT / ES / EN) |
 
 ---
 
-## 📄 Licença
+## Autor
 
-Este projeto é de uso privado. Todos os direitos reservados © 2025 Bernard De Freitas.
+Desenvolvido com ❤️ por **Bernard De Freitas**
+
+[![GitHub](https://img.shields.io/badge/GitHub-Bernard301094-181717?logo=github&style=flat-square)](https://github.com/Bernard301094)
+
+---
+
+<p align="center">
+  © 2025 Bernard De Freitas · Todos os direitos reservados · Uso privado
+</p>
