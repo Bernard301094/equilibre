@@ -7,6 +7,7 @@ import { SkeletonDashboard } from "../../components/ui/Skeleton";
 import StatCard from "../../components/ui/StatCard";
 import AvatarDisplay from "../../components/shared/AvatarDisplay";
 import EmptyState from "../../components/ui/EmptyState";
+import PushNotificationPrompt from "../../components/ui/PushNotificationPrompt";
 import "./Dashboard.css";
 
 const getGreeting = (name) => {
@@ -26,7 +27,6 @@ const getGreetingSub = () => {
 };
 
 export default function TherapistDashboard({ session, setView }) {
-  /* ── onOpenPatient vem do TherapistLayout via Outlet context ── */
   const outletCtx     = useOutletContext() ?? {};
   const onOpenPatient = outletCtx.onOpenPatient ?? (() => {});
   const [stats,    setStats]    = useState({ patients: 0, done: 0, pending: 0, recent: [] });
@@ -75,7 +75,6 @@ export default function TherapistDashboard({ session, setView }) {
 
         if (!active) return;
 
-        /* ── Red Flags ── */
         const threeDaysAgo = localDateOffset(3);
         const flags = [];
 
@@ -139,20 +138,20 @@ export default function TherapistDashboard({ session, setView }) {
   return (
     <div className="dashboard page-fade-in">
 
-      {/* ── Header ── */}
+      {/* Banner de permissão push para o terapeuta */}
+      <PushNotificationPrompt session={session} setView={setView} />
+
       <div className="dashboard__header">
         <h2 className="dashboard__greeting">{getGreeting(firstName)}</h2>
         <p className="dashboard__greeting-sub">{getGreetingSub()}</p>
       </div>
 
-      {/* ── Stats — apenas visuais/informativos ── */}
       <div className="dashboard__stats-grid">
         <StatCard icon="👥" value={stats.patients} label="Pacientes ativos" />
         <StatCard icon="✅" value={stats.done}     label="Exercícios concluídos" />
         <StatCard icon="⏳" value={stats.pending}  label="Pendentes" />
       </div>
 
-      {/* ── Red Flags ── */}
       {redFlags.length > 0 && (
         <div className="dashboard__flags-card">
           <div className="dashboard__flags-header">
@@ -181,14 +180,12 @@ export default function TherapistDashboard({ session, setView }) {
                   }
                 }}
               >
-
                 <AvatarDisplay
                   name={patient.name}
                   avatarUrl={patient.avatar_url}
                   size={36}
                   className="dashboard__flag-avatar"
                 />
-
                 <div className="dashboard__flag-info">
                   <div className="dashboard__flag-name">{patient.name}</div>
                   <div className="dashboard__flag-tags">
@@ -206,14 +203,11 @@ export default function TherapistDashboard({ session, setView }) {
                     )}
                   </div>
                 </div>
-
                 <div
                   className="dashboard__flag-plant"
                   title={`${stage.label} — ${streak} dias seguidos`}
                 >
-                  <span className="dashboard__flag-plant-icon" aria-hidden="true">
-                    {stage.icon}
-                  </span>
+                  <span className="dashboard__flag-plant-icon" aria-hidden="true">{stage.icon}</span>
                   <span
                     className={["dashboard__flag-plant-streak", streak === 0 ? "dashboard__flag-plant-streak--zero" : ""].filter(Boolean).join(" ")}
                     style={{ color: streak === 0 ? undefined : stage.color }}
@@ -221,27 +215,20 @@ export default function TherapistDashboard({ session, setView }) {
                     {streak}d
                   </span>
                 </div>
-
                 <button
                   className="dashboard__flag-btn"
-                  onClick={(e) => {
-                    e.stopPropagation(); // evita duplo disparo com o row
-                    onOpenPatient(patient);
-                  }}
+                  onClick={(e) => { e.stopPropagation(); onOpenPatient(patient); }}
                 >
                   Ver paciente
                 </button>
-
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* ── Pacientes recentes ── */}
       <div className="dashboard__recent-card">
         <h3 className="dashboard__recent-title">Pacientes recentes</h3>
-
         {stats.recent.length === 0 ? (
           <EmptyState
             icon="👥"
@@ -265,12 +252,7 @@ export default function TherapistDashboard({ session, setView }) {
                   }
                 }}
               >
-                <AvatarDisplay
-                  name={p.name}
-                  avatarUrl={p.avatar_url}
-                  size={38}
-                  className="dashboard__patient-avatar"
-                />
+                <AvatarDisplay name={p.name} avatarUrl={p.avatar_url} size={38} className="dashboard__patient-avatar" />
                 <div className="dashboard__patient-info">
                   <div className="dashboard__patient-name">{p.name}</div>
                   <div className="dashboard__patient-email">{p.email}</div>
