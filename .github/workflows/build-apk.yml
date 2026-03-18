@@ -39,7 +39,7 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | tr -d '\n\r' | base64 -d > twa-project/keystore.jks
           CLEAN_HOST=$(echo "${{ secrets.APP_HOST }}" | tr -d ' \n\r')
           
-          # Hacemos que Bubblewrap busque las imágenes en el servidor local (localhost)
+          # Añadimos las variables de notificaciones y splash screen obligatorias
           cat > twa-project/twa-manifest.json << EOF
           {
             "packageId": "com.equilibre.app",
@@ -55,6 +55,10 @@ jobs:
             "maskableIconUrl": "http://localhost:8080/icon-512.png",
             "appVersion": "1",
             "appVersionName": "1.0.0",
+            "enableNotifications": true,
+            "splashScreenFadeOutDuration": 300,
+            "fallbackType": "customtabs",
+            "features": {},
             "signingKey": {
               "path": "./keystore.jks",
               "alias": "equilibre"
@@ -67,7 +71,7 @@ jobs:
       - name: Build APK
         working-directory: ./twa-project
         run: |
-          # Levantamos el servidor interno de Python para servir el ícono en secreto
+          # Levantamos el servidor interno de Python
           python3 -m http.server 8080 --directory ../public &
           sleep 3
           
