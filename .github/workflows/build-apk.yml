@@ -36,13 +36,10 @@ jobs:
       - name: Prepare TWA Project Configuration
         run: |
           mkdir -p twa-project
-          
-          # Limpiamos cualquier "Enter" invisible de la llave de seguridad
           echo "${{ secrets.KEYSTORE_BASE64 }}" | tr -d '\n\r' | base64 -d > twa-project/keystore.jks
-          
-          # Limpiamos cualquier "Enter" o espacio invisible del dominio
           CLEAN_HOST=$(echo "${{ secrets.APP_HOST }}" | tr -d ' \n\r')
           
+          # Hacemos que Bubblewrap busque las imágenes en el servidor local (localhost)
           cat > twa-project/twa-manifest.json << EOF
           {
             "packageId": "com.equilibre.app",
@@ -54,8 +51,8 @@ jobs:
             "themeColor": "#17527c",
             "backgroundColor": "#f4f8fc",
             "startUrl": "/",
-            "iconUrl": "https://$CLEAN_HOST/icon-512.png",
-            "maskableIconUrl": "https://$CLEAN_HOST/icon-512.png",
+            "iconUrl": "http://localhost:8080/icon-512.png",
+            "maskableIconUrl": "http://localhost:8080/icon-512.png",
             "appVersion": "1",
             "appVersionName": "1.0.0",
             "signingKey": {
@@ -70,6 +67,10 @@ jobs:
       - name: Build APK
         working-directory: ./twa-project
         run: |
+          # Levantamos el servidor interno de Python para servir el ícono en secreto
+          python3 -m http.server 8080 --directory ../public &
+          sleep 3
+          
           bubblewrap update
           bubblewrap build --skipPwaValidation
         env:
