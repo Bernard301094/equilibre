@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.equilibre.app",
+    "sha256_cert_fingerprints": [
+      "2C:E8:7D:68:F7:29:81:2D:DA:BB:D2:3E:2F:08:4E:31:E9:EB:9B:D7:2A:82:98:24:B6:B6:24:24:04:B3:9F:B5"
+    ]
+  }
+}]
