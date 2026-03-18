@@ -19,6 +19,7 @@ export default function CalendarView({ session }) {
   const [selected,    setSelected]    = useState(null);
   const [showModal,   setShowModal]   = useState(false);
   const [form,        setForm]        = useState({ patient_id: '', date: '', time: '09:00', notes: '' });
+  const [dateFixed,   setDateFixed]   = useState(false);
   const [saving,      setSaving]      = useState(false);
   const [editTarget,  setEditTarget]  = useState(null);
 
@@ -55,20 +56,24 @@ export default function CalendarView({ session }) {
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
-  const dateStr      = (d) => `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const dateStr       = (d) => `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   const sessionsOnDay = (d) => sessions.filter((s) => s.date === dateStr(d));
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
+  // Nueva sesión desde celda — fecha fija (no editable)
   const openNew = (d) => {
     setEditTarget(null);
+    setDateFixed(true);
     setForm({ patient_id: patients[0]?.id || '', date: dateStr(d), time: '09:00', notes: '' });
     setShowModal(true);
   };
 
+  // Editar sesión existente — fecha editable
   const openEdit = (sess) => {
     setEditTarget(sess);
+    setDateFixed(false);
     setForm({ patient_id: sess.patient_id, date: sess.date, time: sess.time || '09:00', notes: sess.notes || '' });
     setShowModal(true);
   };
@@ -128,7 +133,6 @@ export default function CalendarView({ session }) {
   return (
     <div className="cal-view page-fade-in">
 
-      {/* Header */}
       <header className="cal-header">
         <h2 className="cal-title">📅 Agenda de Sessões</h2>
         <div className="cal-nav">
@@ -138,10 +142,8 @@ export default function CalendarView({ session }) {
         </div>
       </header>
 
-      {/* Body: grid + painel lado a lado */}
       <div className={`cal-body${selected ? ' cal-body--with-panel' : ''}`}>
 
-        {/* Grid */}
         <div className="cal-grid-wrapper">
           <div className="cal-weekdays">
             {DAYS_PT.map((d) => <span key={d} className="cal-weekday">{d}</span>)}
@@ -174,7 +176,6 @@ export default function CalendarView({ session }) {
           </div>
         </div>
 
-        {/* Painel lateral — só renderiza se há data selecionada */}
         {selected && (
           <div className="cal-side">
             <div className="cal-side-header">
@@ -222,7 +223,6 @@ export default function CalendarView({ session }) {
         )}
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="cal-modal-overlay" onClick={() => setShowModal(false)}>
           <div className="cal-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="cal-modal-title">
@@ -243,9 +243,24 @@ export default function CalendarView({ session }) {
               </select>
             </label>
 
-            <label className="cal-modal-label">Data
-              <input type="date" className="cal-modal-input" value={form.date}
-                onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
+            <label className="cal-modal-label">
+              Data
+              {dateFixed ? (
+                /* Fecha fija: solo muestra texto, no permite cambiar */
+                <div className="cal-modal-date-display">
+                  📅 
+                  {new Date(form.date + 'T12:00:00').toLocaleDateString('pt-BR', {
+                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+                  })}
+                </div>
+              ) : (
+                <input
+                  type="date"
+                  className="cal-modal-input"
+                  value={form.date}
+                  onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                />
+              )}
             </label>
 
             <label className="cal-modal-label">Horário
