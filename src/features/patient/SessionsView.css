@@ -1,0 +1,43 @@
+.sess-view { padding:1.5rem; max-width:680px; margin:0 auto; }
+.sess-loading { display:flex; flex-direction:column; align-items:center; gap:.5rem; padding:3rem; color:var(--text-secondary); }
+.sess-offline-banner { background:color-mix(in srgb,#f59e0b 12%,transparent); border:1px solid #f59e0b;
+  border-radius:10px; padding:.65rem 1rem; font-size:.85rem; font-weight:500;
+  color:#92400e; margin-bottom:1rem; }
+
+/* Header */
+.sess-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem; }
+.sess-title  { font-size:1.4rem; font-weight:700; color:var(--text-primary); margin:0; }
+.sess-filter { display:flex; gap:.5rem; }
+.sess-filter-btn { background:var(--surface); border:1px solid var(--border); border-radius:8px;
+  padding:.4rem .9rem; font-size:.8rem; font-weight:500; cursor:pointer; color:var(--text-secondary); transition:all .15s; }
+.sess-filter-btn--active { background:var(--orange); color:#fff; border-color:var(--orange); }
+
+/* Próxima sessão */
+.sess-next-card { background:var(--surface); border:1.5px solid var(--orange);
+  border-radius:14px; padding:1.1rem 1.25rem; display:flex; align-items:flex-start;
+  gap:1rem; margin-bottom:1.5rem; }
+.sess-next-icon  { font-size:1.75rem; line-height:1; flex-shrink:0; }
+.sess-next-info  { display:flex; flex-direction:column; gap:.25rem; }
+.sess-next-label { font-size:.75rem; font-weight:600; text-transform:uppercase;
+  letter-spacing:.05em; color:var(--orange); margin:0; }
+.sess-next-date  { font-size:1rem; font-weight:700; color:var(--text-primary); margin:0; text-transform:capitalize; }
+.sess-next-notes { font-size:.825rem; color:var(--text-secondary); margin:0; }
+
+/* Lista */
+.sess-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:.75rem; }
+.sess-card { background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:.9rem 1.1rem; display:flex; align-items:flex-start; gap:1rem; transition:opacity .15s; }
+.sess-card--past { opacity:.6; }
+.sess-card-left  { flex-shrink:0; }
+.sess-card-date  { display:flex; flex-direction:column; align-items:center; background:var(--bg);
+  border-radius:8px; padding:.4rem .6rem; min-width:48px; gap:2px; }
+.sess-card-day  { font-size:.8rem; font-weight:700; color:var(--text-primary); text-transform:capitalize; white-space:nowrap; }
+.sess-card-time { font-size:.7rem; color:var(--text-secondary); }
+.sess-card-body { display:flex; flex-direction:column; gap:.3rem; flex:1; }
+.sess-card-notes { font-size:.825rem; color:var(--text-secondary); margin:0; font-style:italic; }
+
+/* Status badges */
+.sess-status           { font-size:.75rem; font-weight:600; padding:2px 8px; border-radius:999px; width:fit-content; }
+.sess-status--scheduled { background:color-mix(in srgb,var(--blue) 12%,transparent); color:var(--blue); }
+.sess-status--done      { background:color-mix(in srgb,#22c55e 12%,transparent); color:#16a34a; }
+.sess-status--cancelled { background:color-mix(in srgb,#ef4444 12%,transparent); color:#dc2626; }
