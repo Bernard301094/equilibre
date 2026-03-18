@@ -28,20 +28,25 @@ jobs:
       - name: Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli@latest
 
-      # SOLUCIÓN DEFINITIVA: Crea el archivo de configuración directamente sin usar comandos interactivos
       - name: Configure Bubblewrap Paths
         run: |
           mkdir -p ~/.bubblewrap
-          echo "{\"jdkPath\":\"$JAVA_HOME\",\"androidSdkPath\":\"$ANDROID_SDK_ROOT\"}" > ~/.bubblewrap/config.json
+          node -e "const fs = require('fs'); fs.writeFileSync(require('os').homedir() + '/.bubblewrap/config.json', JSON.stringify({ jdkPath: process.env.JAVA_HOME, androidSdkPath: process.env.ANDROID_SDK_ROOT }))"
 
       - name: Prepare TWA Project Configuration
         run: |
           mkdir -p twa-project
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > twa-project/keystore.jks
-          cat > twa-project/twa-manifest.json << 'EOF'
+          
+          # Limpiamos cualquier "Enter" invisible de la llave de seguridad
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | tr -d '\n\r' | base64 -d > twa-project/keystore.jks
+          
+          # Limpiamos cualquier "Enter" o espacio invisible del dominio
+          CLEAN_HOST=$(echo "${{ secrets.APP_HOST }}" | tr -d ' \n\r')
+          
+          cat > twa-project/twa-manifest.json << EOF
           {
             "packageId": "com.equilibre.app",
-            "host": "${{ secrets.APP_HOST }}",
+            "host": "$CLEAN_HOST",
             "name": "Equilibre - Terapia Digital",
             "launcherName": "Equilibre",
             "display": "standalone",
@@ -49,8 +54,8 @@ jobs:
             "themeColor": "#17527c",
             "backgroundColor": "#f4f8fc",
             "startUrl": "/",
-            "iconUrl": "https://${{ secrets.APP_HOST }}/icon-512.png",
-            "maskableIconUrl": "https://${{ secrets.APP_HOST }}/icon-512.png",
+            "iconUrl": "https://$CLEAN_HOST/icon-512.png",
+            "maskableIconUrl": "https://$CLEAN_HOST/icon-512.png",
             "appVersion": "1",
             "appVersionName": "1.0.0",
             "signingKey": {
@@ -74,7 +79,6 @@ jobs:
 
       - name: Find and move APK
         run: |
-          find ./twa-project -name '*.apk' | head -5
           cp $(find ./twa-project -name 'app-release-signed.apk' | head -1) equilibre-v1.0.0.apk || \
           cp $(find ./twa-project -name '*.apk' | head -1) equilibre-v1.0.0.apk
 
@@ -84,12 +88,3 @@ jobs:
           name: equilibre-apk
           path: equilibre-v1.0.0.apk
           retention-days: 30
-
-      - name: Create GitHub Release with APK
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: equilibre-v1.0.0.apk
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
