@@ -10,7 +10,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      # Fixes the Node.js 20 deprecation warning you received
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
@@ -29,13 +28,12 @@ jobs:
       - name: Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli@latest
 
-      # NEW: Explicitly configure Bubblewrap to use the provided Java and Android SDK paths
+      # SOLUCIÓN DEFINITIVA: Crea el archivo de configuración directamente sin usar comandos interactivos
       - name: Configure Bubblewrap Paths
         run: |
           mkdir -p ~/.bubblewrap
           echo "{\"jdkPath\":\"$JAVA_HOME\",\"androidSdkPath\":\"$ANDROID_SDK_ROOT\"}" > ~/.bubblewrap/config.json
 
-      # SIMPLIFIED: Create the project directory and configure the manifest and keystore directly
       - name: Prepare TWA Project Configuration
         run: |
           mkdir -p twa-project
@@ -64,7 +62,6 @@ jobs:
           }
           EOF
 
-      # REPLACED 'init' WITH 'update': Generates the Android project non-interactively
       - name: Build APK
         working-directory: ./twa-project
         run: |
