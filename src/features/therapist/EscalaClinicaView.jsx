@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import styles from "./ModelosPremium.module.css";
+import styles from "./ModelosEquilibreView.module.css";
 
 export default function EscalaClinicaView({ config, patientName }) {
   const [respostas, setRespostas] = useState(Array(config.questions.length).fill(null));
