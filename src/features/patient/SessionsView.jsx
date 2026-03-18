@@ -11,19 +11,26 @@ const STATUS_LABEL = {
   cancelled: { emoji: '❌', label: 'Cancelada',  cls: 'sess-status--cancelled' },
 };
 
+function formatDay(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const day   = d.toLocaleDateString('pt-BR', { day: '2-digit' });
+  const month = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+  const week  = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+  return { day, month, week };
+}
+
 export default function SessionsView({ session }) {
   const today = toLocalDateStr();
   const { isOffline } = useOfflineCache();
   const [sessions, setSessions] = useState([]);
   const [loading,  setLoading]  = useState(true);
-  const [filter,   setFilter]   = useState('upcoming'); // 'upcoming' | 'all'
+  const [filter,   setFilter]   = useState('upcoming');
 
   useEffect(() => {
     let active = true;
     const CACHE_KEY = `sessions_${session.id}`;
 
     const load = async () => {
-      // Tenta cache primeiro se offline
       if (isOffline) {
         const cached = cacheRead(CACHE_KEY);
         if (cached) { setSessions(cached); setLoading(false); return; }
@@ -36,9 +43,8 @@ export default function SessionsView({ session }) {
         );
         const list = Array.isArray(data) ? data : [];
         if (active) setSessions(list);
-        cacheWrite(CACHE_KEY, list); // salva para uso offline
+        cacheWrite(CACHE_KEY, list);
       } catch (e) {
-        // Se falhar, tenta cache como fallback
         const cached = cacheRead(CACHE_KEY);
         if (cached && active) setSessions(cached);
         console.error('[SessionsView]', e);
@@ -51,18 +57,20 @@ export default function SessionsView({ session }) {
     return () => { active = false; };
   }, [session.id, session.access_token, isOffline]);
 
-  const upcoming = sessions.filter((s) => s.date >= today && s.status !== 'cancelled');
+  const upcoming  = sessions.filter((s) => s.date >= today && s.status !== 'cancelled');
   const displayed = filter === 'upcoming' ? upcoming : sessions;
-  const next = upcoming[0];
+  const next      = upcoming[0];
 
   if (loading) return (
     <div className="sess-loading">
-      <span>📅</span><p>Carregando sessões...</p>
+      <span>📅</span>
+      <p>Carregando sessões...</p>
     </div>
   );
 
   return (
     <div className="sess-view page-fade-in">
+
       {isOffline && (
         <div className="sess-offline-banner" role="alert">
           📴 Você está offline — exibindo dados em cache
@@ -75,18 +83,22 @@ export default function SessionsView({ session }) {
           <button
             className={`sess-filter-btn${filter === 'upcoming' ? ' sess-filter-btn--active' : ''}`}
             onClick={() => setFilter('upcoming')}
-          >Próximas ({upcoming.length})</button>
+          >
+            Próximas ({upcoming.length})
+          </button>
           <button
             className={`sess-filter-btn${filter === 'all' ? ' sess-filter-btn--active' : ''}`}
             onClick={() => setFilter('all')}
-          >Todas ({sessions.length})</button>
+          >
+            Todas ({sessions.length})
+          </button>
         </div>
       </header>
 
-      {/* Banner: próxima sessão */}
+      {/* Banner da próxima sessão */}
       {next && (
         <div className="sess-next-card">
-          <div className="sess-next-icon" aria-hidden="true">📍</div>
+          <div className="sess-next-icon" aria-hidden="true">📅</div>
           <div className="sess-next-info">
             <p className="sess-next-label">Próxima sessão</p>
             <p className="sess-next-date">
@@ -110,20 +122,31 @@ export default function SessionsView({ session }) {
           {displayed.map((s) => {
             const st     = STATUS_LABEL[s.status] ?? STATUS_LABEL.scheduled;
             const isPast = s.date < today;
+            const { day, month, week } = formatDay(s.date);
             return (
               <li key={s.id} className={`sess-card${isPast ? ' sess-card--past' : ''}`}>
+
+                {/* Coluna de data */}
                 <div className="sess-card-left">
-                  <div className="sess-card-date">
-                    <span className="sess-card-day">
-                      {new Date(s.date + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short' })}
-                    </span>
-                    {s.time && <span className="sess-card-time">{s.time}</span>}
-                  </div>
+                  <span className="sess-card-day">
+                    {day}
+                    <br />
+                    <span style={{ fontSize: '.68rem', opacity: .85 }}>{month}</span>
+                  </span>
+                  <span className="sess-card-time">{week}</span>
                 </div>
+
+                {/* Conteúdo */}
                 <div className="sess-card-body">
                   <span className={`sess-status ${st.cls}`}>{st.emoji} {st.label}</span>
+                  {s.time && (
+                    <span style={{ fontSize: '.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                      🕐 {s.time}
+                    </span>
+                  )}
                   {s.notes && <p className="sess-card-notes">{s.notes}</p>}
                 </div>
+
               </li>
             );
           })}
