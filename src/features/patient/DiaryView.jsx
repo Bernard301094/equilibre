@@ -5,9 +5,9 @@ import { validateDiaryEntry } from "../../utils/validation";
 import { MOOD_OPTIONS, resolveMood, DIARY_RISK_WORDS, LS_LAST_ACTION } from "../../utils/constants";
 import MiniLineChart from "../../components/ui/MiniLineChart";
 import EmptyState from "../../components/ui/EmptyState";
+import { notifyDiaryEntry } from "../../services/pushSender";
 import "./DiaryView.css";
 
-/* ─── Sliders ────────────────────────────────────────────────────────────────*/
 const SLIDERS_CONFIG = [
   { id: "energy",     label: "⚡ Energia",    colorVar: "--diary-color-energy"     },
   { id: "anxiety",    label: "🌪️ Ansiedade",  colorVar: "--diary-color-anxiety"    },
@@ -20,7 +20,6 @@ const ENTRY_METRICS = [
   { key: "motivation", icon: "🎯", label: "Motivação",  colorClass: "diary-metric--motivation" },
 ];
 
-/* ─── Grid de humores: primeira fileira (difíceis) e segunda (positivos) ─── */
 const MOODS_ROW_1 = MOOD_OPTIONS.slice(0, 5);
 const MOODS_ROW_2 = MOOD_OPTIONS.slice(5);
 
@@ -35,25 +34,16 @@ export default function PatientDiary({ session }) {
   const [reminder,      setReminder]      = useState(false);
   const [saving,        setSaving]        = useState(false);
   const [formError,     setFormError]     = useState("");
-
-  /* ── activeTab: controla qual painel está visível ──────────────────────────
-     Valores possíveis: "hoje" | "historico" | "grafico"
-     Estado inicial = "hoje" para novos utilizadores;
-     muda automaticamente para "historico" quando já há registo do dia.       */
-  const [activeTab, setActiveTab] = useState("hoje");
+  const [activeTab,     setActiveTab]     = useState("hoje");
 
   const inflightRef = useRef(false);
 
-  /* ── Estado do formulário ── */
-  // selectedMoodId armazena o `id` único do humor (string), evitando a
-  // ambiguidade de múltiplos humores com o mesmo `val` numérico.
   const [selectedMoodId, setSelectedMoodId] = useState(null);
   const [text,       setText]       = useState("");
   const [energy,     setEnergy]     = useState(5);
   const [anxiety,    setAnxiety]    = useState(5);
   const [motivation, setMotivation] = useState(5);
 
-  /* ── Carregar dados ── */
   useEffect(() => {
     let active = true;
     (async () => {
@@ -68,7 +58,7 @@ export default function PatientDiary({ session }) {
         const te = list.find((x) => x.date === today);
         if (te) {
           setTodayEntry(te);
-          setActiveTab("historico"); // já registrou hoje → abre no histórico
+          setActiveTab("historico");
         }
         if (Array.isArray(u) && u.length > 0) setReminder(!!u[0].reminder_email);
       } catch (err) {
@@ -80,7 +70,6 @@ export default function PatientDiary({ session }) {
     return () => { active = false; };
   }, [session.id, session.access_token, today]);
 
-  /* ── Helpers de formulário ── */
   const resetForm = () => {
     setSelectedMoodId(null);
     setText(""); setEnergy(5); setAnxiety(5); setMotivation(5);
@@ -89,7 +78,6 @@ export default function PatientDiary({ session }) {
 
   const startEdit = (entry) => {
     setEditingEntry(entry);
-    // Restaura mood pelo id estável; cai no val se entry for legado
     const resolved = resolveMood(entry.mood_id, entry.mood);
     setSelectedMoodId(resolved?.id ?? null);
     setText(entry.text || "");
@@ -97,13 +85,12 @@ export default function PatientDiary({ session }) {
     setAnxiety(entry.anxiety ?? 5);
     setMotivation(entry.motivation ?? 5);
     setFormError("");
-    setActiveTab("hoje"); // abre aba de registo para edição
+    setActiveTab("hoje");
   };
 
   const sliderValues  = { energy, anxiety, motivation };
   const sliderSetters = { energy: setEnergy, anxiety: setAnxiety, motivation: setMotivation };
 
-  /* ── Salvar / Atualizar ── */
   const save = async () => {
     const selectedMood = MOOD_OPTIONS.find((m) => m.id === selectedMoodId);
     const err = validateDiaryEntry({ mood: selectedMood?.val ?? null });
@@ -137,7 +124,7 @@ export default function PatientDiary({ session }) {
           { id: editingEntry.id },
           {
             mood:       moodVal,
-            mood_id:    selectedMoodId,   // ← id estável para lookup sem ambiguidade
+            mood_id:    selectedMoodId,
             text,
             energy, anxiety, motivation,
             updated_at: new Date().toISOString(),
@@ -156,12 +143,6 @@ export default function PatientDiary({ session }) {
         resetForm();
         setActiveTab("historico");
       } else {
-        /* ── PAYLOAD SEM `id` ────────────────────────────────────────────────
-           O Supabase rejeita (HTTP 400) qualquer valor que não seja um UUID
-           válido na coluna `id`. Omitindo o campo, o banco gera o UUID
-           automaticamente via `gen_random_uuid()` (padrão Supabase).
-           A resposta do insert retorna o registro completo com o id real,
-           que usamos para atualizar o estado local.                         */
         const payload = {
           patient_id: session.id,
           date:       today,
@@ -174,18 +155,8 @@ export default function PatientDiary({ session }) {
           created_at: new Date().toISOString(),
         };
 
-        // db.insert deve retornar o registro inserido (com id gerado pelo banco).
-        // Ajuste o destructuring conforme a assinatura do seu wrapper db.insert:
-        //   • Supabase JS v2 → const { data, error } = await supabase.from(...).insert(payload).select().single()
-        //   • Se o wrapper já resolve o valor, basta: const saved = await db.insert(...)
         const saved = await db.insert("diary_entries", payload, session.access_token);
-
-        // `saved` pode ser o objeto direto ou estar embrulhado em { data }.
-        // Normalizamos para os dois casos:
         const insertedEntry = saved?.data ?? saved;
-
-        // Garantia de fallback: se o wrapper não devolver o registro, montamos
-        // um objeto local temporário. Na próxima carga da página o id real virá do banco.
         const finalEntry = (insertedEntry && insertedEntry.id)
           ? insertedEntry
           : { ...payload, id: `tmp_${Date.now()}` };
@@ -195,12 +166,13 @@ export default function PatientDiary({ session }) {
         resetForm();
         setActiveTab("historico");
         localStorage.setItem(LS_LAST_ACTION, String(Date.now()));
+
+        // Notifica terapeuta via push — fire-and-forget
+        if (session.therapist_id) {
+          notifyDiaryEntry(session, session.therapist_id, session.name).catch(() => {});
+        }
       }
     } catch (err) {
-      // Log detalhado para debug: veja a aba Console do navegador.
-      // Procure por: status HTTP, message, code e details — isso vai
-      // indicar se o erro 400 é de UUID, de coluna ausente (energy /
-      // anxiety / motivation / mood_id) ou de permissão RLS.
       console.error("[DiaryView] Erro ao salvar entrada:", err);
       setFormError("Erro ao salvar. Tente novamente.");
     } finally {
@@ -238,7 +210,6 @@ export default function PatientDiary({ session }) {
     );
   }
 
-  /* ── Dados para gráficos ── */
   const chartData  = [...entries].slice(0, 14).reverse();
   const moodPoints = chartData.map((e) => e.mood ?? 0);
   const moodLabels = chartData.map((e) =>
@@ -256,7 +227,6 @@ export default function PatientDiary({ session }) {
 
   const showForm = !todayEntry || !!editingEntry;
 
-  /* ── Rótulos dinâmicos das abas ── */
   const TABS = [
     { id: "hoje",      label: todayEntry && !editingEntry ? "✅ Hoje" : "✏️ Registrar" },
     { id: "historico", label: `📋 Histórico (${entries.length})` },
@@ -266,7 +236,6 @@ export default function PatientDiary({ session }) {
   return (
     <div className="diary-view page-fade-in">
 
-      {/* ── Header ── */}
       <header className="diary-view__header">
         <div className="diary-view__header-left">
           <h2 className="diary-view__title">📓 Diário Emocional</h2>
@@ -276,7 +245,6 @@ export default function PatientDiary({ session }) {
             })}
           </p>
         </div>
-
         <div className="diary-view__reminder">
           <span className="diary-view__reminder-label">⏰ Lembrete</span>
           <button
@@ -289,12 +257,6 @@ export default function PatientDiary({ session }) {
         </div>
       </header>
 
-      {/* ── Tab bar ──────────────────────────────────────────────────────────────
-          Cada botão atualiza `activeTab`; a classe --active aplica o estilo
-          visual de "selecionado". Os painéis abaixo usam renderização
-          condicional explícita ({activeTab === "x" && <div>…</div>}) em vez
-          do atributo HTML `hidden` para evitar conflito com `display:flex`
-          definido no CSS do painel.                                           */}
       <div className="diary-view__tabs" role="tablist" aria-label="Seções do diário">
         {TABS.map((t) => (
           <button
@@ -313,17 +275,8 @@ export default function PatientDiary({ session }) {
         ))}
       </div>
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          PAINEL: HOJE / REGISTRAR
-          Visível apenas quando activeTab === "hoje"
-      ══════════════════════════════════════════════════════════════════════ */}
       {activeTab === "hoje" && (
-        <div
-          role="tabpanel"
-          id="diary-panel-hoje"
-          className="diary-view__panel"
-        >
-          {/* Banner: já registrou hoje */}
+        <div role="tabpanel" id="diary-panel-hoje" className="diary-view__panel">
           {todayEntry && !editingEntry && (
             <div className="diary-view__today-banner">
               <div className="diary-view__today-info">
@@ -338,50 +291,27 @@ export default function PatientDiary({ session }) {
                   </p>
                 </div>
               </div>
-              <button className="diary-view__edit-btn" onClick={() => startEdit(todayEntry)}>
-                ✏️ Editar
-              </button>
+              <button className="diary-view__edit-btn" onClick={() => startEdit(todayEntry)}>✏️ Editar</button>
             </div>
           )}
 
-          {/* Formulário */}
           {showForm && (
             <div className="diary-view__form-grid">
-
-              {/* Card esquerda: humor + sliders */}
               <div className="diary-view__form-card">
                 <p className="diary-view__section-label">Como você está?</p>
-
-                {/* Grid de humores 5×2 */}
                 <fieldset className="diary-view__mood-fieldset">
                   <legend className="sr-only">Selecione seu humor</legend>
-
-                  {/* Fileira superior: humores difíceis */}
                   <div className="diary-view__mood-row">
                     {MOODS_ROW_1.map((m) => (
-                      <MoodButton
-                        key={m.id}
-                        mood={m}
-                        selected={selectedMoodId === m.id}
-                        onSelect={() => setSelectedMoodId(m.id)}
-                      />
+                      <MoodButton key={m.id} mood={m} selected={selectedMoodId === m.id} onSelect={() => setSelectedMoodId(m.id)} />
                     ))}
                   </div>
-
-                  {/* Fileira inferior: humores neutros e positivos */}
                   <div className="diary-view__mood-row diary-view__mood-row--second">
                     {MOODS_ROW_2.map((m) => (
-                      <MoodButton
-                        key={m.id}
-                        mood={m}
-                        selected={selectedMoodId === m.id}
-                        onSelect={() => setSelectedMoodId(m.id)}
-                      />
+                      <MoodButton key={m.id} mood={m} selected={selectedMoodId === m.id} onSelect={() => setSelectedMoodId(m.id)} />
                     ))}
                   </div>
                 </fieldset>
-
-                {/* Sliders */}
                 <div className="diary-view__sliders">
                   {SLIDERS_CONFIG.map(({ id, label, colorVar }) => {
                     const val = sliderValues[id];
@@ -389,35 +319,18 @@ export default function PatientDiary({ session }) {
                     return (
                       <div key={id} className="diary-view__slider-row">
                         <div className="diary-view__slider-header">
-                          <label htmlFor={`slider-${id}`} className="diary-view__slider-label">
-                            {label}
-                          </label>
-                          <span
-                            className="diary-view__slider-val"
-                            style={{ color: `var(${colorVar})` }}
-                            aria-live="polite"
-                          >
-                            {val}
-                          </span>
+                          <label htmlFor={`slider-${id}`} className="diary-view__slider-label">{label}</label>
+                          <span className="diary-view__slider-val" style={{ color: `var(${colorVar})` }} aria-live="polite">{val}</span>
                         </div>
                         <div className="diary-view__slider-track" aria-hidden="true">
-                          <div
-                            className="diary-view__slider-fill"
-                            style={{ width: `${val * 10}%`, background: `var(${colorVar})` }}
-                          />
+                          <div className="diary-view__slider-fill" style={{ width: `${val * 10}%`, background: `var(${colorVar})` }} />
                         </div>
                         <input
-                          id={`slider-${id}`}
-                          type="range"
-                          min="0"
-                          max="10"
-                          value={val}
+                          id={`slider-${id}`} type="range" min="0" max="10" value={val}
                           onChange={(e) => set(Number(e.target.value))}
                           className="diary-view__slider-input"
                           style={{ accentColor: `var(${colorVar})` }}
-                          aria-valuenow={val}
-                          aria-valuemin={0}
-                          aria-valuemax={10}
+                          aria-valuenow={val} aria-valuemin={0} aria-valuemax={10}
                         />
                       </div>
                     );
@@ -425,14 +338,12 @@ export default function PatientDiary({ session }) {
                 </div>
               </div>
 
-              {/* Card direita: textarea + salvar */}
               <div className="diary-view__form-card diary-view__form-card--text">
                 <p className="diary-view__section-label">
                   {editingEntry
                     ? `Editando: ${new Date(editingEntry.date + "T12:00:00").toLocaleDateString("pt-BR")}`
                     : "Como foi o seu dia?"}
                 </p>
-
                 <label htmlFor="diary-text" className="sr-only">Comentário livre</label>
                 <textarea
                   id="diary-text"
@@ -441,16 +352,10 @@ export default function PatientDiary({ session }) {
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                 />
-
-                {formError && (
-                  <p className="diary-view__error" role="alert">{formError}</p>
-                )}
-
+                {formError && <p className="diary-view__error" role="alert">{formError}</p>}
                 <div className="diary-view__save-row">
                   {editingEntry && (
-                    <button className="diary-view__cancel-btn" onClick={resetForm}>
-                      Cancelar
-                    </button>
+                    <button className="diary-view__cancel-btn" onClick={resetForm}>Cancelar</button>
                   )}
                   <button
                     className="diary-view__save-btn"
@@ -462,22 +367,13 @@ export default function PatientDiary({ session }) {
                   </button>
                 </div>
               </div>
-
             </div>
           )}
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          PAINEL: HISTÓRICO
-          Visível apenas quando activeTab === "historico"
-      ══════════════════════════════════════════════════════════════════════ */}
       {activeTab === "historico" && (
-        <div
-          role="tabpanel"
-          id="diary-panel-historico"
-          className="diary-view__panel"
-        >
+        <div role="tabpanel" id="diary-panel-historico" className="diary-view__panel">
           {entries.length === 0 ? (
             <div className="diary-view__empty-card">
               <EmptyState icon="📖" message="Nenhum registo ainda. Começa hoje!" />
@@ -490,45 +386,25 @@ export default function PatientDiary({ session }) {
                 return (
                   <article
                     key={e.id}
-                    className={[
-                      "diary-view__entry-card",
-                      isToday ? "diary-view__entry-card--today" : "",
-                    ].filter(Boolean).join(" ")}
+                    className={["diary-view__entry-card", isToday ? "diary-view__entry-card--today" : ""].filter(Boolean).join(" ")}
                   >
                     <div className="diary-view__entry-header">
                       <div className="diary-view__entry-info">
-                        <span className="diary-view__entry-emoji" aria-hidden="true">
-                          {m?.emoji ?? "😐"}
-                        </span>
+                        <span className="diary-view__entry-emoji" aria-hidden="true">{m?.emoji ?? "😐"}</span>
                         <div>
                           <p className="diary-view__entry-name">{m?.label}</p>
                           <p className="diary-view__entry-date">
-                            {new Date(e.date + "T12:00:00").toLocaleDateString("pt-BR", {
-                              weekday: "short", day: "2-digit", month: "short",
-                            })}
+                            {new Date(e.date + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" })}
                             {isToday && <span className="diary-view__today-badge">HOJE</span>}
                           </p>
                         </div>
                       </div>
-
                       <div className="diary-view__entry-actions">
-                        <button
-                          className="diary-view__entry-btn"
-                          onClick={() => startEdit(e)}
-                          aria-label={`Editar registo de ${e.date}`}
-                        >✏️</button>
-                        <button
-                          className="diary-view__entry-btn diary-view__entry-btn--delete"
-                          onClick={() => setDeletingEntry(e)}
-                          aria-label={`Excluir registo de ${e.date}`}
-                        >🗑️</button>
+                        <button className="diary-view__entry-btn" onClick={() => startEdit(e)} aria-label={`Editar registo de ${e.date}`}>✏️</button>
+                        <button className="diary-view__entry-btn diary-view__entry-btn--delete" onClick={() => setDeletingEntry(e)} aria-label={`Excluir registo de ${e.date}`}>🗑️</button>
                       </div>
                     </div>
-
-                    <div className={[
-                      "diary-view__metrics-row",
-                      e.text ? "diary-view__metrics-row--mb" : "",
-                    ].filter(Boolean).join(" ")}>
+                    <div className={["diary-view__metrics-row", e.text ? "diary-view__metrics-row--mb" : ""].filter(Boolean).join(" ")}>
                       {ENTRY_METRICS.map(({ key, icon, label, colorClass }) => (
                         <div key={key} className={`diary-view__metric ${colorClass}`}>
                           <span className="diary-view__metric-icon" aria-hidden="true">{icon}</span>
@@ -537,11 +413,8 @@ export default function PatientDiary({ session }) {
                         </div>
                       ))}
                     </div>
-
                     {e.text && (
-                      <p className="diary-view__entry-text">
-                        "{e.text.length > 120 ? e.text.slice(0, 120) + "…" : e.text}"
-                      </p>
+                      <p className="diary-view__entry-text">"{e.text.length > 120 ? e.text.slice(0, 120) + "…" : e.text}"</p>
                     )}
                   </article>
                 );
@@ -551,16 +424,8 @@ export default function PatientDiary({ session }) {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          PAINEL: GRÁFICO / EVOLUÇÃO
-          Visível apenas quando activeTab === "grafico"
-      ══════════════════════════════════════════════════════════════════════ */}
       {activeTab === "grafico" && (
-        <div
-          role="tabpanel"
-          id="diary-panel-grafico"
-          className="diary-view__panel"
-        >
+        <div role="tabpanel" id="diary-panel-grafico" className="diary-view__panel">
           {moodPoints.length < 2 ? (
             <div className="diary-view__empty-card">
               <EmptyState icon="📊" message="Precisa de pelo menos 2 registos para ver o gráfico." />
@@ -581,13 +446,11 @@ export default function PatientDiary({ session }) {
                   </div>
                 ))}
               </div>
-
               <div className="diary-view__chart-card">
                 <h3 className="diary-view__chart-title">Evolução do Humor</h3>
                 <p className="diary-view__chart-legend">1 = Muito difícil · 5 = Ótimo</p>
                 <MiniLineChart points={moodPoints} labels={moodLabels} height={160} color="var(--orange)" />
               </div>
-
               <div className="diary-view__chart-grid">
                 <div className="diary-view__chart-card">
                   <h3 className="diary-view__chart-title">⚡ Energia</h3>
@@ -603,31 +466,19 @@ export default function PatientDiary({ session }) {
         </div>
       )}
 
-      {/* ── Modal de confirmação de exclusão ── */}
       {deletingEntry && (
-        <div
-          className="diary-view__delete-overlay"
-          onClick={() => setDeletingEntry(null)}
-        >
+        <div className="diary-view__delete-overlay" onClick={() => setDeletingEntry(null)}>
           <div
             className="diary-view__delete-modal"
             onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="del-diary-title"
+            role="dialog" aria-modal="true" aria-labelledby="del-diary-title"
           >
             <span className="diary-view__delete-icon" aria-hidden="true">🗑️</span>
             <h3 id="del-diary-title" className="diary-view__delete-title">Excluir registo?</h3>
             <p className="diary-view__delete-desc">Esta ação não pode ser desfeita.</p>
             <div className="diary-view__delete-actions">
-              <button
-                className="diary-view__delete-btn diary-view__delete-btn--cancel"
-                onClick={() => setDeletingEntry(null)}
-              >Cancelar</button>
-              <button
-                className="diary-view__delete-btn diary-view__delete-btn--confirm"
-                onClick={confirmDelete}
-              >Excluir</button>
+              <button className="diary-view__delete-btn diary-view__delete-btn--cancel" onClick={() => setDeletingEntry(null)}>Cancelar</button>
+              <button className="diary-view__delete-btn diary-view__delete-btn--confirm" onClick={confirmDelete}>Excluir</button>
             </div>
           </div>
         </div>
@@ -637,19 +488,12 @@ export default function PatientDiary({ session }) {
   );
 }
 
-/* ── Subcomponente MoodButton ──────────────────────────────────────────────────
-   `selected` é baseado em `mood.id` (string única), não em `mood.val`
-   (que pode ser compartilhado por múltiplos humores). Isso garante que
-   apenas UM botão fique marcado visualmente de cada vez.                      */
 function MoodButton({ mood, selected, onSelect }) {
   return (
     <div className="diary-view__mood-item">
       <button
         type="button"
-        className={[
-          "diary-view__mood-btn",
-          selected ? "diary-view__mood-btn--selected" : "",
-        ].filter(Boolean).join(" ")}
+        className={["diary-view__mood-btn", selected ? "diary-view__mood-btn--selected" : ""].filter(Boolean).join(" ")}
         onClick={onSelect}
         aria-pressed={selected}
         aria-label={mood.label}
