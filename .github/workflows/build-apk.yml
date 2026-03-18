@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Fixes the Node.js 20 deprecation warning you received
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout
@@ -23,15 +26,19 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Bubblewrap CLI (non-interactive)
+      - name: Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli@latest
 
-      - name: Decode keystore
-        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+      # NEW: Explicitly configure Bubblewrap to use the provided Java and Android SDK paths
+      - name: Configure Bubblewrap Paths
+        run: bubblewrap updateConfig --jdkPath="$JAVA_HOME" --androidSdkPath="$ANDROID_SDK_ROOT"
 
-      - name: Create twa-manifest.json
+      # SIMPLIFIED: Create the project directory and configure the manifest and keystore directly
+      - name: Prepare TWA Project Configuration
         run: |
-          cat > twa-manifest.json << EOF
+          mkdir -p twa-project
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > twa-project/keystore.jks
+          cat > twa-project/twa-manifest.json << 'EOF'
           {
             "packageId": "com.equilibre.app",
             "host": "${{ secrets.APP_HOST }}",
@@ -55,60 +62,22 @@ jobs:
           }
           EOF
 
-      - name: Initialize Bubblewrap project
-        run: |
-          bubblewrap init \
-            --manifest https://${{ secrets.APP_HOST }}/manifest.json \
-            --directory ./twa-project \
-            --skipPwaValidation
-        env:
-          BUBBLEWRAP_DISABLE_TELEMETRY: 1
-
-      - name: Copy keystore into project
-        run: cp keystore.jks ./twa-project/keystore.jks
-
-      - name: Update signing config
-        run: |
-          cd twa-project
-          cat > twa-manifest.json << EOF
-          {
-            "packageId": "com.equilibre.app",
-            "host": "${{ secrets.APP_HOST }}",
-            "name": "Equilibre - Terapia Digital",
-            "launcherName": "Equilibre",
-            "display": "standalone",
-            "orientation": "portrait",
-            "themeColor": "#17527c",
-            "backgroundColor": "#f4f8fc",
-            "startUrl": "/",
-            "iconUrl": "https://${{ secrets.APP_HOST }}/icon-512.png",
-            "maskableIconUrl": "https://${{ secrets.APP_HOST }}/icon-512.png",
-            "appVersion": "1",
-            "appVersionName": "1.0.0",
-            "signingKey": {
-              "path": "./keystore.jks",
-              "alias": "equilibre"
-            },
-            "minSdkVersion": 23,
-            "targetSdkVersion": 34
-          }
-          EOF
-
+      # REPLACED 'init' WITH 'update': Generates the Android project non-interactively
       - name: Build APK
+        working-directory: ./twa-project
         run: |
-          cd twa-project
+          bubblewrap update
           bubblewrap build --skipPwaValidation
         env:
           BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           BUBBLEWRAP_DISABLE_TELEMETRY: 1
-          JAVA_HOME: ${{ env.JAVA_HOME }}
 
       - name: Find and move APK
         run: |
-          find . -name '*.apk' | head -5
-          cp $(find . -name 'app-release-signed.apk' | head -1) equilibre-v1.0.0.apk || \
-          cp $(find . -name '*.apk' | head -1) equilibre-v1.0.0.apk
+          find ./twa-project -name '*.apk' | head -5
+          cp $(find ./twa-project -name 'app-release-signed.apk' | head -1) equilibre-v1.0.0.apk || \
+          cp $(find ./twa-project -name '*.apk' | head -1) equilibre-v1.0.0.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
