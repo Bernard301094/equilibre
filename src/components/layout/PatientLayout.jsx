@@ -21,12 +21,12 @@ function playNotificationSound() {
   } catch (_) {}
 }
 
+// "progress" e "history" unificados num único item "history" (com tab Progresso interno)
 const buildNavItems = (pendingCount) => [
   { id: "home",        icon: "🏠",  label: "Início"      },
-  { id: "exercises",   icon: "📋",  label: "Exercícios",  badge: pendingCount },
+  { id: "exercises",   icon: "📋",  label: "Exercícios", badge: pendingCount },
   { id: "diary",       icon: "📓",  label: "Diário"      },
   { id: "routine",     icon: "🗓️",  label: "Rotina"      },
-  { id: "progress",    icon: "📈",  label: "Progresso"   },
   { id: "history",     icon: "🕰️", label: "Histórico"   },
   { id: "orientacoes", icon: "📬",  label: "Orientações" },
   { id: "sessions",    icon: "📅",  label: "Sessões"     },

@@ -19,16 +19,16 @@ function playNotificationSound() {
   } catch (_) {}
 }
 
+// "progress" removido — absorvido como tab dentro de ResponsesView
 const NAV_ITEMS = [
-  { id: "dashboard",   icon: "🏠",  label: "Início"       },
-  { id: "patients",    icon: "👥",  label: "Pacientes"    },
-  { id: "exercises",   icon: "📚",  label: "Exercícios"   },
-  { id: "create",      icon: "✏️",  label: "Criar"        },
-  { id: "progress",    icon: "📈",  label: "Progresso"    },
-  { id: "responses",   icon: "💬",  label: "Respostas"    },
-  { id: "orientacoes", icon: "📬",  label: "Orientações"  },
-  { id: "modelos",     icon: "🧩",  label: "Modelos"      },
-  { id: "agenda",      icon: "📅",  label: "Agenda"       },
+  { id: "dashboard",   icon: "🏠",  label: "Início"      },
+  { id: "patients",    icon: "👥",  label: "Pacientes"   },
+  { id: "exercises",   icon: "📚",  label: "Exercícios"  },
+  { id: "create",      icon: "✏️",  label: "Criar"       },
+  { id: "responses",   icon: "💬",  label: "Respostas"   },
+  { id: "orientacoes", icon: "📬",  label: "Orientações" },
+  { id: "modelos",     icon: "🧩",  label: "Modelos"     },
+  { id: "agenda",      icon: "📅",  label: "Agenda"      },
 ];
 
 function useBellState(unreadCount) {
@@ -177,7 +177,6 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
     if (url.includes("paciente") || url.includes("patient")) return "patients";
     if (url.includes("exercicio") || url.includes("exercise")) return "exercises";
     if (url.includes("criar") || url.includes("create")) return "create";
-    if (url.includes("progresso") || url.includes("progress")) return "progress";
     if (url.includes("resposta") || url.includes("response")) return "responses";
     if (url.includes("orientaco") || url.includes("orientacoes")) return "orientacoes";
     if (url.includes("notificaco") || url.includes("notification")) return "notifications";

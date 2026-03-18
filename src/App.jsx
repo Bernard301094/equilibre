@@ -1,6 +1,6 @@
 // src/App.jsx
 import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useSession } from "./hooks/useSession";
 import { useTheme }   from "./hooks/useTheme";
 import db   from "./services/db";
@@ -18,7 +18,6 @@ import PatientsView              from "./features/therapist/PatientsView";
 import ExercisesView             from "./features/therapist/ExercisesView";
 import CreateExerciseView        from "./features/therapist/CreateExerciseView";
 import ResponsesView             from "./features/therapist/ResponsesView";
-import TherapistProgress         from "./features/therapist/TherapistProgress";
 import NotificationsView         from "./features/therapist/NotificationsView";
 import ModelosEquilibreView      from "./features/therapist/ModelosEquilibreView";
 import CalendarView              from "./features/therapist/CalendarView";
@@ -26,63 +25,66 @@ import PatientHome               from "./features/patient/Home";
 import PatientExercises          from "./features/patient/PatientExercises";
 import PatientDiary              from "./features/patient/DiaryView";
 import PatientRoutine            from "./features/patient/RoutineView";
-import PatientProgress           from "./features/patient/PatientProgress";
-import PatientHistory            from "./features/patient/PatientHistory";
+import PatientHistory            from "./features/patient/PatientHistory"; // inclui tab Progresso
 import PatientNotificationsView  from "./features/patient/PatientNotificationsView";
 import SessionsView              from "./features/patient/SessionsView";
 import MessagesView              from "./components/shared/MessagesView";
 import AdminDashboard            from "./features/admin/AdminDashboard";
 
-const ADMIN_EMAIL = "bernard30101994@gmail.com";
-
-const SEED_VERSION = "2";
+// ─── Seed (lazy, apenas uma vez por versão) ───────────────────────────────────
+const SEED_VERSION     = "2";
 const SEED_VERSION_KEY = "eq_seed_version";
 
-async function seedExercisesIfNeeded() {
-  const savedVersion = localStorage.getItem(SEED_VERSION_KEY);
-  if (savedVersion === SEED_VERSION) return;
+let seedPromise = null;
+function seedExercisesIfNeeded() {
+  if (seedPromise) return seedPromise;
+  if (localStorage.getItem(SEED_VERSION_KEY) === SEED_VERSION) {
+    seedPromise = Promise.resolve();
+    return seedPromise;
+  }
 
   const SUPA_URL = import.meta.env.VITE_SUPABASE_URL;
   const SUPA_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_KEY;
 
-  if (!SUPA_URL || !SUPA_KEY) return;
+  if (!SUPA_URL || !SUPA_KEY) { seedPromise = Promise.resolve(); return seedPromise; }
 
-  try {
-    const getRes = await fetch(`${SUPA_URL}/rest/v1/exercises?select=id`, {
-      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` }
-    });
-
-    if (!getRes.ok) throw new Error("Leitura bloqueada por RLS.");
-    const existing = await getRes.json();
-    const existingIds = new Set(Array.isArray(existing) ? existing.map((e) => e.id) : []);
-
-    for (const ex of SEED_EXERCISES) {
-      const payload = { ...ex, questions: JSON.stringify(ex.questions) };
-      const isUpdate = existingIds.has(ex.id);
-      const method = isUpdate ? "PATCH" : "POST";
-      const url = isUpdate
-        ? `${SUPA_URL}/rest/v1/exercises?id=eq.${ex.id}`
-        : `${SUPA_URL}/rest/v1/exercises`;
-
-      await fetch(url, {
-        method,
-        headers: {
-          apikey: SUPA_KEY,
-          Authorization: `Bearer ${SUPA_KEY}`,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal"
-        },
-        body: JSON.stringify(payload)
+  seedPromise = (async () => {
+    try {
+      const getRes = await fetch(`${SUPA_URL}/rest/v1/exercises?select=id`, {
+        headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
       });
-    }
+      if (!getRes.ok) throw new Error("Leitura bloqueada por RLS.");
+      const existing    = await getRes.json();
+      const existingIds = new Set(Array.isArray(existing) ? existing.map((e) => e.id) : []);
 
-    localStorage.setItem(SEED_VERSION_KEY, SEED_VERSION);
-    localStorage.setItem(LS_SEEDED_KEY, "true");
-  } catch (e) {
-    console.warn("[seed] Ignorado silenciosamente.", e.message);
-  }
+      for (const ex of SEED_EXERCISES) {
+        const payload  = { ...ex, questions: JSON.stringify(ex.questions) };
+        const isUpdate = existingIds.has(ex.id);
+        await fetch(
+          isUpdate
+            ? `${SUPA_URL}/rest/v1/exercises?id=eq.${ex.id}`
+            : `${SUPA_URL}/rest/v1/exercises`,
+          {
+            method: isUpdate ? "PATCH" : "POST",
+            headers: {
+              apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`,
+              "Content-Type": "application/json", Prefer: "return=minimal",
+            },
+            body: JSON.stringify(payload),
+          }
+        );
+      }
+      localStorage.setItem(SEED_VERSION_KEY, SEED_VERSION);
+      localStorage.setItem(LS_SEEDED_KEY, "true");
+    } catch (e) {
+      console.warn("[seed] Ignorado silenciosamente.", e.message);
+    }
+  })();
+
+  return seedPromise;
 }
 
+// ─── Login / Register ─────────────────────────────────────────────────────────
 async function resolveLogin({ email, password, role }) {
   const authData = await auth.signIn(email, password);
 
@@ -93,19 +95,8 @@ async function resolveLogin({ email, password, role }) {
   const token  = authData.access_token;
   const userId = authData.user?.id;
 
-  if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-    return {
-      id: userId,
-      email: authData.user.email,
-      name: "Administrador Geral",
-      role: "admin",
-      access_token: token,
-      refresh_token: authData.refresh_token,
-    };
-  }
-
+  // ── Admin: verificado pela tabela users (role = 'admin') ──
   let userRow = null;
-
   try {
     const byId = await db.query("users", { filter: { id: userId } }, token);
     if (Array.isArray(byId) && byId.length > 0) userRow = byId[0];
@@ -116,6 +107,11 @@ async function resolveLogin({ email, password, role }) {
       const byEmail = await db.query("users", { filter: { email } }, token);
       if (Array.isArray(byEmail) && byEmail.length > 0) userRow = byEmail[0];
     } catch (e) { console.warn("[resolveLogin] query por email falhou:", e.message); }
+  }
+
+  // Permite acesso admin se role na tabela for 'admin'
+  if (userRow?.role === "admin") {
+    return { ...userRow, access_token: token, refresh_token: authData.refresh_token };
   }
 
   if (!userRow) {
@@ -199,18 +195,14 @@ async function resolveRegister(form) {
       await db.insert(
         "users",
         {
-          id: userId,
-          name: form.name,
-          email: form.email,
-          role: form.role,
+          id: userId, name: form.name, email: form.email, role: form.role,
           therapist_id: therapistId,
           crp: form.role === ROLE.THERAPIST ? form.crp : null,
-          status: form.role === ROLE.THERAPIST ? "pending" : "active"
+          status: form.role === ROLE.THERAPIST ? "pending" : "active",
         },
         token
       );
     }
-
     if (form.role === ROLE.PATIENT) {
       await db.update("invites", { code: form.inviteCode.trim().toUpperCase() }, { status: "used", used_by: userId, used_at: new Date().toISOString() }, token);
     }
@@ -218,12 +210,12 @@ async function resolveRegister(form) {
   } catch (e) { return `Erro ao finalizar criação de conta: ${e.message}`; }
 }
 
+// ─── Rotas ────────────────────────────────────────────────────────────────────
 export const THERAPIST_ROUTES = {
   dashboard:     "/terapeuta/inicio",
   patients:      "/terapeuta/pacientes",
   exercises:     "/terapeuta/exercicios",
   create:        "/terapeuta/criar",
-  progress:      "/terapeuta/progresso",
   responses:     "/terapeuta/respostas",
   notifications: "/terapeuta/notificacoes",
   orientacoes:   "/terapeuta/orientacoes",
@@ -231,13 +223,13 @@ export const THERAPIST_ROUTES = {
   agenda:        "/terapeuta/agenda",
 };
 
+// /terapeuta/progresso redirige a respostas (mantém links antigos funcionando)
 export const PATIENT_ROUTES = {
   home:          "/paciente/inicio",
   exercises:     "/paciente/exercicios",
   diary:         "/paciente/diario",
   routine:       "/paciente/rotina",
-  progress:      "/paciente/progresso",
-  history:       "/paciente/historico",
+  history:       "/paciente/historico",   // inclui tab Progresso
   orientacoes:   "/paciente/orientacoes",
   notifications: "/paciente/notificacoes",
   sessions:      "/paciente/sessoes",
@@ -253,13 +245,12 @@ export const PATH_TO_PATIENT_VIEW = Object.fromEntries(
 
 function RequireAuth({ session, role, redirectTo, children }) {
   if (!session) return <Navigate to="/entrar" replace />;
-  if (session.role !== role) return <Navigate to={redirectTo} replace />;
+  if (role !== "any" && session.role !== role) return <Navigate to={redirectTo} replace />;
   return children;
 }
 
 function LoginWrapper({ onLogin, onRegister }) {
-  const handleLogin = async (form) => { return await onLogin(form); };
-  return <LoginPage onLogin={handleLogin} onRegister={onRegister} />;
+  return <LoginPage onLogin={onLogin} onRegister={onRegister} />;
 }
 
 function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTheme }) {
@@ -286,11 +277,8 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
             session ? <Navigate to={defaultRedirect} replace /> :
             <LoginWrapper
               onLogin={async (form) => {
-                try {
-                  const resolved = await resolveLogin(form);
-                  setSession(resolved);
-                  return null;
-                } catch (e) { return e.message; }
+                try { const resolved = await resolveLogin(form); setSession(resolved); return null; }
+                catch (e) { return e.message; }
               }}
               onRegister={resolveRegister}
             />
@@ -319,7 +307,8 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
           <Route path="pacientes"    element={<PatientsView session={session} />} />
           <Route path="exercicios"   element={<ExercisesView session={session} />} />
           <Route path="criar"        element={<CreateExerciseView session={session} />} />
-          <Route path="progresso"    element={<TherapistProgress session={session} />} />
+          {/* progresso absorvido como tab em respostas — redirige para não quebrar links antigos */}
+          <Route path="progresso"    element={<Navigate to={THERAPIST_ROUTES.responses} replace />} />
           <Route path="respostas"    element={<ResponsesView session={session} />} />
           <Route path="notificacoes" element={<NotificationsView session={session} />} />
           <Route path="orientacoes"  element={<MessagesView session={session} />} />
@@ -341,7 +330,8 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
           <Route path="exercicios"   element={<PatientExercises session={session} />} />
           <Route path="diario"       element={<PatientDiary session={session} />} />
           <Route path="rotina"       element={<PatientRoutine session={session} />} />
-          <Route path="progresso"    element={<PatientProgress session={session} />} />
+          {/* progresso absorvido como tab em historico */}
+          <Route path="progresso"    element={<Navigate to={PATIENT_ROUTES.history} replace />} />
           <Route path="historico"    element={<PatientHistory session={session} />} />
           <Route path="orientacoes"  element={<MessagesView session={session} />} />
           <Route path="notificacoes" element={<PatientNotificationsView />} />
@@ -359,14 +349,13 @@ export default function App() {
   const { session, setSession, updateSession, logout, sessionReady } = useSession();
   const { theme, toggleTheme } = useTheme(session?.id ?? null);
   const [appReady, setAppReady] = useState(false);
-  const [dbError,  setDbError]  = useState(false);
 
   useEffect(() => {
-    seedExercisesIfNeeded().catch(() => setDbError(true)).finally(() => setAppReady(true));
+    // Seed corre em background — nunca bloqueia a UI
+    seedExercisesIfNeeded().finally(() => setAppReady(true));
   }, []);
 
   if (!sessionReady || !appReady) return <Spinner message="Conectando ao Equilibre..." />;
-  if (dbError) return <Spinner message="Erro ao conectar ao banco de dados. Verifique as configurações." />;
 
   return (
     <BrowserRouter>

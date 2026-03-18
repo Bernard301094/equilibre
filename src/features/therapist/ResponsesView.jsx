@@ -5,6 +5,7 @@ import { formatDate } from "../../utils/dates";
 import { SkeletonResponses } from "../../components/ui/Skeleton";
 import AvatarDisplay from "../../components/shared/AvatarDisplay";
 import EmptyState from "../../components/ui/EmptyState";
+import TherapistProgress from "./TherapistProgress";
 import toast from "../../utils/toast";
 import "./ResponsesView.css";
 
@@ -16,10 +17,8 @@ const VALIDATIONS = [
   { emoji: "❤️", label: "Aqui por você"   },
 ];
 
-/* GERADOR DE PDF CLÍNICO */
 function exportClinicalPDF(response, patient, exercise, qaList) {
   const dataConclusao = formatDate(response.completed_at, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute:"2-digit" });
-  
   let htmlContent = `
     <html>
       <head>
@@ -50,37 +49,15 @@ function exportClinicalPDF(response, patient, exercise, qaList) {
         </div>
         <div class="content">
   `;
-
   qaList.forEach(({ q, val }) => {
     let displayValue = val;
-    if (typeof val === 'object') {
-      displayValue = JSON.stringify(val, null, 2).replace(/[\{\}\[\]"]/g, '');
-    }
-    htmlContent += `
-      <div class="qa-block">
-        <div class="qa-question">${q.text}</div>
-        <div class="qa-answer">${displayValue || 'Nenhuma resposta inserida.'}</div>
-      </div>
-    `;
+    if (typeof val === 'object') displayValue = JSON.stringify(val, null, 2).replace(/[\{\}\[\]"]/g, '');
+    htmlContent += `<div class="qa-block"><div class="qa-question">${q.text}</div><div class="qa-answer">${displayValue || 'Nenhuma resposta inserida.'}</div></div>`;
   });
-
   if (response.therapist_note || response.therapist_stamp) {
-    htmlContent += `
-      <div style="margin-top: 40px; padding: 20px; border-left: 4px solid #3b82f6; background: #eff6ff;">
-        <strong style="color: #1e3a8a; display: block; margin-bottom: 10px;">Anotação Clínica (Feedback do Terapeuta)</strong>
-        ${response.therapist_note ? `<p style="margin:0; font-style: italic;">"${response.therapist_note}"</p>` : ''}
-        ${response.therapist_stamp ? `<span class="stamp">${response.therapist_stamp}</span>` : ''}
-      </div>
-    `;
+    htmlContent += `<div style="margin-top:40px;padding:20px;border-left:4px solid #3b82f6;background:#eff6ff;"><strong style="color:#1e3a8a;display:block;margin-bottom:10px;">Anotação Clínica</strong>${response.therapist_note ? `<p style="margin:0;font-style:italic;">"${response.therapist_note}"</p>` : ''}${response.therapist_stamp ? `<span class="stamp">${response.therapist_stamp}</span>` : ''}</div>`;
   }
-
-  htmlContent += `
-        </div>
-        <div class="footer">Gerado confidencialmente pelo sistema Equilibre em ${new Date().toLocaleDateString()}. Documento de uso clínico exclusivo.</div>
-      </body>
-    </html>
-  `;
-
+  htmlContent += `</div><div class="footer">Gerado confidencialmente pelo sistema Equilibre em ${new Date().toLocaleDateString()}.</div></body></html>`;
   const printWindow = window.open('', '_blank');
   printWindow.document.write(htmlContent);
   printWindow.document.close();
@@ -158,14 +135,14 @@ function ResponseCard({ response, patient, exercise, animIndex, session, onFeedb
   const questions = exercise ? parseQuestions(exercise) : [];
   const answers   = parseAnswers(response);
   const answerMap = matchAnswersToQuestions(questions, answers);
-  const visibleQA = questions.filter((q) => q.type !== "instruction" && answerMap[q.id]).map((q)  => ({ q, val: answerMap[q.id] }));
+  const visibleQA = questions.filter((q) => q.type !== "instruction" && answerMap[q.id]).map((q) => ({ q, val: answerMap[q.id] }));
 
   return (
     <article className="rv-card" style={{ "--anim-delay": `${animIndex * 60}ms` }}>
       <header className="rv-card__header">
-        <div style={{display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'flex-start'}}>
+        <div style={{display:'flex',justifyContent:'space-between',width:'100%',alignItems:'flex-start'}}>
           <div className="rv-card__exercise-name">{exercise?.title || "Exercício removido"}</div>
-          <button className="rv-btn-pdf" onClick={() => exportClinicalPDF(response, patient, exercise, visibleQA)} title="Exportar Resposta como PDF Clínico">📄 PDF</button>
+          <button className="rv-btn-pdf" onClick={() => exportClinicalPDF(response, patient, exercise, visibleQA)} title="Exportar PDF">📄 PDF</button>
         </div>
         <div className="rv-card__meta">
           {patient && (
@@ -174,7 +151,7 @@ function ResponseCard({ response, patient, exercise, animIndex, session, onFeedb
               <span className="rv-card__patient-name">{patient.name}</span>
             </div>
           )}
-          <time className="rv-card__date">{formatDate(response.completed_at, { day: "2-digit", month: "2-digit", year: "numeric" })}</time>
+          <time className="rv-card__date">{formatDate(response.completed_at, { day:"2-digit", month:"2-digit", year:"numeric" })}</time>
         </div>
         <span className="rv-card__badge">✓ Concluído</span>
       </header>
@@ -195,7 +172,13 @@ function ResponseCard({ response, patient, exercise, animIndex, session, onFeedb
   );
 }
 
+const TABS = [
+  { id: "responses", label: "💬 Respostas" },
+  { id: "progress",  label: "📈 Progresso" },
+];
+
 export default function ResponsesView({ session }) {
+  const [tab,        setTab]        = useState("responses");
   const [patients,   setPatients]   = useState([]);
   const [responses,  setResponses]  = useState([]);
   const [exercises,  setExercises]  = useState([]);
@@ -221,6 +204,7 @@ export default function ResponsesView({ session }) {
   }, [session.id, session.access_token]);
 
   const handleFeedbackSaved = (responseId, updates) => setResponses((prev) => prev.map((r) => (r.id === responseId ? { ...r, ...updates } : r)));
+
   if (loading) return <SkeletonResponses />;
 
   const filtered = responses.filter((r) => {
@@ -238,32 +222,52 @@ export default function ResponsesView({ session }) {
     <div className="rv page-fade-in">
       <div className="page-header">
         <h2>Respostas dos Pacientes</h2>
-        <p>Acompanhe e dê feedback às respostas dos exercícios</p>
+        <p>Acompanhe respostas e evolução dos seus pacientes</p>
       </div>
-      <div className="rv__controls">
-        <div className="rv__search-wrap">
-          <span className="rv__search-icon">🔍</span>
-          <input type="search" className="rv__search" placeholder="Buscar por paciente ou exercício…" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-        <div className="rv__chips">
-          <button className={`rv__chip${!selPatient ? " rv__chip--active" : ""}`} onClick={() => setSelPatient(null)}>Todos <span className="rv__chip-count">{responses.length}</span></button>
-          {patients.map((p) => {
-            const count = responses.filter((r) => r.patient_id === p.id).length;
-            return (
-              <button key={p.id} className={`rv__chip rv__chip--patient${selPatient?.id === p.id ? " rv__chip--active" : ""}`} onClick={() => setSelPatient(selPatient?.id === p.id ? null : p)}>
-                <AvatarDisplay name={p.name} avatarUrl={p.avatar_url} size={20} />
-                <span className="rv__chip-name">{p.name.split(" ")[0]}</span>
-                <span className="rv__chip-count">{count}</span>
-              </button>
-            );
-          })}
-        </div>
+
+      {/* Tabs */}
+      <div className="rv-tabs">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            className={`rv-tab${tab === t.id ? " rv-tab--active" : ""}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
-      {!loading && <p className="rv__count">{filtered.length === 0 ? "Nenhuma resposta encontrada" : `${filtered.length} resposta${filtered.length !== 1 ? "s" : ""}`}</p>}
-      {filtered.length === 0 ? <EmptyState icon="🔍" message="Nenhuma resposta encontrada." /> : (
-        <div className="rv__grid">
-          {filtered.map((r, i) => <ResponseCard key={r.id} response={r} animIndex={i} patient={patients.find((p) => p.id === r.patient_id)} exercise={exercises.find((e) => e.id === r.exercise_id)} session={session} onFeedbackSaved={handleFeedbackSaved} />)}
-        </div>
+
+      {tab === "progress" ? (
+        <TherapistProgress session={session} />
+      ) : (
+        <>
+          <div className="rv__controls">
+            <div className="rv__search-wrap">
+              <span className="rv__search-icon">🔍</span>
+              <input type="search" className="rv__search" placeholder="Buscar por paciente ou exercício…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+            <div className="rv__chips">
+              <button className={`rv__chip${!selPatient ? " rv__chip--active" : ""}`} onClick={() => setSelPatient(null)}>Todos <span className="rv__chip-count">{responses.length}</span></button>
+              {patients.map((p) => {
+                const count = responses.filter((r) => r.patient_id === p.id).length;
+                return (
+                  <button key={p.id} className={`rv__chip rv__chip--patient${selPatient?.id === p.id ? " rv__chip--active" : ""}`} onClick={() => setSelPatient(selPatient?.id === p.id ? null : p)}>
+                    <AvatarDisplay name={p.name} avatarUrl={p.avatar_url} size={20} />
+                    <span className="rv__chip-name">{p.name.split(" ")[0]}</span>
+                    <span className="rv__chip-count">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {<p className="rv__count">{filtered.length === 0 ? "Nenhuma resposta encontrada" : `${filtered.length} resposta${filtered.length !== 1 ? "s" : ""}`}</p>}
+          {filtered.length === 0 ? <EmptyState icon="🔍" message="Nenhuma resposta encontrada." /> : (
+            <div className="rv__grid">
+              {filtered.map((r, i) => <ResponseCard key={r.id} response={r} animIndex={i} patient={patients.find((p) => p.id === r.patient_id)} exercise={exercises.find((e) => e.id === r.exercise_id)} session={session} onFeedbackSaved={handleFeedbackSaved} />)}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
