@@ -21,6 +21,7 @@ import ResponsesView             from "./features/therapist/ResponsesView";
 import TherapistProgress         from "./features/therapist/TherapistProgress";
 import NotificationsView         from "./features/therapist/NotificationsView";
 import ModelosEquilibreView      from "./features/therapist/ModelosEquilibreView";
+import CalendarView              from "./features/therapist/CalendarView";
 import PatientHome               from "./features/patient/Home";
 import PatientExercises          from "./features/patient/PatientExercises";
 import PatientDiary              from "./features/patient/DiaryView";
@@ -28,6 +29,7 @@ import PatientRoutine            from "./features/patient/RoutineView";
 import PatientProgress           from "./features/patient/PatientProgress";
 import PatientHistory            from "./features/patient/PatientHistory";
 import PatientNotificationsView  from "./features/patient/PatientNotificationsView";
+import SessionsView              from "./features/patient/SessionsView";
 import MessagesView              from "./components/shared/MessagesView";
 import AdminDashboard            from "./features/admin/AdminDashboard";
 
@@ -36,7 +38,6 @@ const ADMIN_EMAIL = "bernard30101994@gmail.com";
 const SEED_VERSION = "2";
 const SEED_VERSION_KEY = "eq_seed_version";
 
-// CORREÇÃO: Função reescrita com fetch nativo para contornar o logout global do db.js
 async function seedExercisesIfNeeded() {
   const savedVersion = localStorage.getItem(SEED_VERSION_KEY);
   if (savedVersion === SEED_VERSION) return;
@@ -47,7 +48,6 @@ async function seedExercisesIfNeeded() {
   if (!SUPA_URL || !SUPA_KEY) return;
 
   try {
-    // 1. Busca os IDs existentes (bypass ao db.js)
     const getRes = await fetch(`${SUPA_URL}/rest/v1/exercises?select=id`, {
       headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` }
     });
@@ -56,11 +56,9 @@ async function seedExercisesIfNeeded() {
     const existing = await getRes.json();
     const existingIds = new Set(Array.isArray(existing) ? existing.map((e) => e.id) : []);
 
-    // 2. Insere/Atualiza os exercícios silenciosamente
     for (const ex of SEED_EXERCISES) {
       const payload = { ...ex, questions: JSON.stringify(ex.questions) };
       const isUpdate = existingIds.has(ex.id);
-      
       const method = isUpdate ? "PATCH" : "POST";
       const url = isUpdate
         ? `${SUPA_URL}/rest/v1/exercises?id=eq.${ex.id}`
@@ -81,8 +79,7 @@ async function seedExercisesIfNeeded() {
     localStorage.setItem(SEED_VERSION_KEY, SEED_VERSION);
     localStorage.setItem(LS_SEEDED_KEY, "true");
   } catch (e) {
-    // Se o Supabase devolver 401 devido ao RLS, morre silenciosamente sem forçar logout
-    console.warn("[seed] Ignorado silenciosamente. Para adicionar exercícios base, insira via Painel Supabase.", e.message);
+    console.warn("[seed] Ignorado silenciosamente.", e.message);
   }
 }
 
@@ -231,6 +228,7 @@ export const THERAPIST_ROUTES = {
   notifications: "/terapeuta/notificacoes",
   orientacoes:   "/terapeuta/orientacoes",
   modelos:       "/terapeuta/modelos",
+  agenda:        "/terapeuta/agenda",
 };
 
 export const PATIENT_ROUTES = {
@@ -242,6 +240,7 @@ export const PATIENT_ROUTES = {
   history:       "/paciente/historico",
   orientacoes:   "/paciente/orientacoes",
   notifications: "/paciente/notificacoes",
+  sessions:      "/paciente/sessoes",
 };
 
 export const PATH_TO_THERAPIST_VIEW = Object.fromEntries(
@@ -325,6 +324,7 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
           <Route path="notificacoes" element={<NotificationsView session={session} />} />
           <Route path="orientacoes"  element={<MessagesView session={session} />} />
           <Route path="modelos"      element={<ModelosEquilibreView session={session} />} />
+          <Route path="agenda"       element={<CalendarView session={session} />} />
           <Route path="*"            element={<Navigate to={THERAPIST_ROUTES.dashboard} replace />} />
         </Route>
 
@@ -345,6 +345,7 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
           <Route path="historico"    element={<PatientHistory session={session} />} />
           <Route path="orientacoes"  element={<MessagesView session={session} />} />
           <Route path="notificacoes" element={<PatientNotificationsView />} />
+          <Route path="sessoes"      element={<SessionsView session={session} />} />
           <Route path="*"            element={<Navigate to={PATIENT_ROUTES.home} replace />} />
         </Route>
 

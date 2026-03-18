@@ -1,205 +1,116 @@
-// public/sw.js — Equilibre Service Worker
-// Handles: static caching, offline fallback, Web Push notifications
-
-const CACHE_NAME    = "equilibre-v2";
-const OFFLINE_URL   = "/offline.html";
-
-// Assets to pre-cache on install
-const PRECACHE_URLS = [
-  "/",
-  "/index.html",
-  "/offline.html",
-  "/manifest.json",
+// ─── Equilibre Service Worker ────────────────────────────────────────────────
+// Versão 2 — Push Notifications + Offline Cache
+const CACHE_NAME = 'equilibre-v2';
+const STATIC_ASSETS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
 ];
 
-/* ─────────────────────────────────────────────────────────────
-   Install — pre-cache shell assets
-───────────────────────────────────────────────────────────── */
-self.addEventListener("install", (event) => {
+// ── Recursos de dados que queremos servir offline (stale-while-revalidate)
+const DATA_CACHE = 'equilibre-data-v2';
+const CACHEABLE_API_PATTERNS = [
+  /\/rest\/v1\/exercises/,
+  /\/rest\/v1\/patient_exercises/,
+  /\/rest\/v1\/diary_entries/,
+  /\/rest\/v1\/sessions/,
+];
+
+// ── Install: pre-cache assets estáticos
+self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
-  // Take control immediately without waiting for old SW to expire
   self.skipWaiting();
 });
 
-/* ─────────────────────────────────────────────────────────────
-   Activate — clean up old caches
-───────────────────────────────────────────────────────────── */
-self.addEventListener("activate", (event) => {
+// ── Activate: limpa caches antigas
+self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((k) => k !== CACHE_NAME)
+          .filter((k) => k !== CACHE_NAME && k !== DATA_CACHE)
           .map((k) => caches.delete(k))
       )
     )
   );
-  // Claim all open clients immediately
   self.clients.claim();
 });
 
-/* ─────────────────────────────────────────────────────────────
-   Fetch — Network-first for API, Cache-first for assets
-───────────────────────────────────────────────────────────── */
-self.addEventListener("fetch", (event) => {
+// ── Fetch: estratégia por tipo de recurso
+self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // 1. Skip non-GET, browser-extension URLs and cross-origin API calls (Supabase)
-  if (
-    request.method !== "GET" ||
-    !url.origin.startsWith(self.location.origin.replace(/:\d+$/, "")) &&
-    url.origin !== self.location.origin
-  ) {
-    return;
-  }
+  // Ignora requests que não sejam GET
+  if (request.method !== 'GET') return;
 
-  // 2. Supabase REST calls — network only, no caching
-  if (request.url.includes("/rest/v1/") || request.url.includes("supabase")) {
-    return;
-  }
+  // Ignora Chrome Extensions
+  if (url.protocol === 'chrome-extension:') return;
 
-  // 3. Navigation requests — network first, fallback to offline page
-  if (request.mode === "navigate") {
+  // ── API Supabase → Stale-While-Revalidate
+  const isApiCall = CACHEABLE_API_PATTERNS.some((p) => p.test(url.pathname));
+  if (isApiCall) {
     event.respondWith(
-      fetch(request).catch(() =>
-        caches.match(OFFLINE_URL).then((r) => r || caches.match("/index.html"))
-      )
+      caches.open(DATA_CACHE).then(async (cache) => {
+        const cached = await cache.match(request);
+        const fetchPromise = fetch(request)
+          .then((res) => {
+            if (res.ok) cache.put(request, res.clone());
+            return res;
+          })
+          .catch(() => cached); // se offline, devolve cache
+        return cached || fetchPromise;
+      })
     );
     return;
   }
 
-  // 4. Static assets — cache first, then network
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
+  // ── Assets estáticos → Cache First
+  if (
+    url.origin === self.location.origin &&
+    (request.destination === 'script' ||
+      request.destination === 'style' ||
+      request.destination === 'image' ||
+      request.destination === 'font')
+  ) {
+    event.respondWith(
+      caches.match(request).then((cached) => cached || fetch(request))
+    );
+    return;
+  }
 
-      return fetch(request).then((response) => {
-        // Only cache successful same-origin responses
-        if (
-          response.ok &&
-          response.type === "basic" &&
-          url.origin === self.location.origin
-        ) {
-          const toCache = response.clone();
-          caches.open(CACHE_NAME).then((c) => c.put(request, toCache));
-        }
-        return response;
-      }).catch(() => caches.match(OFFLINE_URL));
+  // ── Navegação (HTML) → Network First com fallback ao index.html
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+});
+
+// ── Push Notifications (mantido da v1)
+self.addEventListener('push', (event) => {
+  const data = event.data?.json() ?? {};
+  const title = data.title || 'Equilibre';
+  const options = {
+    body: data.body || '',
+    icon: '/logo192.png',
+    badge: '/badge72.png',
+    data: { url: data.url || '/' },
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = event.notification.data?.url || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const existing = list.find((c) => c.url.includes(target));
+      if (existing) return existing.focus();
+      return clients.openWindow(target);
     })
   );
-});
-
-/* ─────────────────────────────────────────────────────────────
-   Push Notifications
-   Expected push payload (JSON):
-   {
-     "title":   "Novo exercício disponível 📋",
-     "body":    "Sua psicóloga enviou um novo exercício para você.",
-     "icon":    "/icons/icon-192.png",
-     "badge":   "/icons/badge-72.png",
-     "tag":     "new-exercise",           // collapses duplicates
-     "url":     "/exercises",             // opened on click
-     "data":    { ... }                   // optional extra payload
-   }
-───────────────────────────────────────────────────────────── */
-self.addEventListener("push", (event) => {
-  let payload = {
-    title:  "Equilibre",
-    body:   "Você tem uma nova atualização.",
-    icon:   "/icons/icon-192.png",
-    badge:  "/icons/badge-72.png",
-    tag:    "equilibre-default",
-    url:    "/",
-  };
-
-  if (event.data) {
-    try {
-      payload = { ...payload, ...event.data.json() };
-    } catch {
-      payload.body = event.data.text();
-    }
-  }
-
-  const options = {
-    body:             payload.body,
-    icon:             payload.icon,
-    badge:            payload.badge,
-    tag:              payload.tag,
-    renotify:         true,
-    requireInteraction: false,
-    vibrate:          [100, 50, 100],
-    data:             { url: payload.url, ...(payload.data ?? {}) },
-    actions: [
-      { action: "open",    title: "Ver agora" },
-      { action: "dismiss", title: "Fechar"    },
-    ],
-  };
-
-  event.waitUntil(
-    self.registration.showNotification(payload.title, options)
-  );
-});
-
-/* ─────────────────────────────────────────────────────────────
-   Notification click — open or focus the app
-───────────────────────────────────────────────────────────── */
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-
-  if (event.action === "dismiss") return;
-
-  const targetUrl = event.notification.data?.url ?? "/";
-
-  event.waitUntil(
-    clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then((clientList) => {
-        // If app is already open, focus it and navigate
-        for (const client of clientList) {
-          if ("focus" in client) {
-            client.focus();
-            client.postMessage({ type: "NAVIGATE", url: targetUrl });
-            return;
-          }
-        }
-        // Otherwise open a new window
-        if (clients.openWindow) {
-          return clients.openWindow(targetUrl);
-        }
-      })
-  );
-});
-
-/* ─────────────────────────────────────────────────────────────
-   Push subscription change (token rotation)
-───────────────────────────────────────────────────────────── */
-self.addEventListener("pushsubscriptionchange", (event) => {
-  event.waitUntil(
-    self.registration.pushManager
-      .subscribe({ userVisibleOnly: true })
-      .then((subscription) => {
-        // Notify all clients so they can re-save the subscription to the server
-        return self.clients.matchAll().then((clientList) => {
-          clientList.forEach((client) =>
-            client.postMessage({
-              type:         "PUSH_SUBSCRIPTION_CHANGED",
-              subscription: JSON.parse(JSON.stringify(subscription)),
-            })
-          );
-        });
-      })
-  );
-});
-
-/* ─────────────────────────────────────────────────────────────
-   Message handler — receive commands from the app
-   Supported: { type: "SKIP_WAITING" }
-───────────────────────────────────────────────────────────── */
-self.addEventListener("message", (event) => {
-  if (event.data?.type === "SKIP_WAITING") {
-    self.skipWaiting();
-  }
 });

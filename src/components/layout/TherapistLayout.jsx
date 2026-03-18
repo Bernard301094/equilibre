@@ -28,6 +28,7 @@ const NAV_ITEMS = [
   { id: "responses",   icon: "💬",  label: "Respostas"    },
   { id: "orientacoes", icon: "📬",  label: "Orientações"  },
   { id: "modelos",     icon: "🧩",  label: "Modelos"      },
+  { id: "agenda",      icon: "📅",  label: "Agenda"       },
 ];
 
 function useBellState(unreadCount) {
@@ -181,6 +182,7 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
     if (url.includes("orientaco") || url.includes("orientacoes")) return "orientacoes";
     if (url.includes("notificaco") || url.includes("notification")) return "notifications";
     if (url.includes("modelos")) return "modelos";
+    if (url.includes("agenda")) return "agenda";
     return "dashboard";
   };
 
