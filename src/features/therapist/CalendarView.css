@@ -287,6 +287,19 @@ select.cal-modal-input {
   padding-right: 2rem;
 }
 
+/* Fecha fija (no editable) — se muestra como texto destacado */
+.cal-modal-date-display {
+  padding: .6rem .75rem;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  border: 1.5px solid var(--orange);
+  color: var(--text);
+  font-size: .9rem;
+  font-weight: 500;
+  text-transform: capitalize;
+  line-height: 1.4;
+}
+
 .cal-modal-actions {
   display: flex;
   gap: .75rem;
