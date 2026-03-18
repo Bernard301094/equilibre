@@ -21,9 +21,6 @@ function playNotificationSound() {
   } catch (_) {}
 }
 
-/* Badge da campainha mostra só feedback não lido (mensagens do terapeuta).
-   Assignments pendentes aparecem na view de notificações mas NÃO somam
-   ao badge — eles já têm o badge próprio no item "Exercícios" da nav. */
 const buildNavItems = (pendingCount) => [
   { id: "home",        icon: "🏠",  label: "Início"      },
   { id: "exercises",   icon: "📋",  label: "Exercícios",  badge: pendingCount },
@@ -32,6 +29,7 @@ const buildNavItems = (pendingCount) => [
   { id: "progress",    icon: "📈",  label: "Progresso"   },
   { id: "history",     icon: "🕰️", label: "Histórico"   },
   { id: "orientacoes", icon: "📬",  label: "Orientações" },
+  { id: "sessions",    icon: "📅",  label: "Sessões"     },
 ];
 
 function LogoutDialog({ onConfirm, onCancel }) {
@@ -151,8 +149,6 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
   const prevTherapistRef = useRef(session.therapist_id);
   const prevFeedbackRef  = useRef(0);
 
-  // Badge da campainha = só feedback não lido (mensagens recebidas do terapeuta)
-  // Assignments já têm badge próprio no item "Exercícios" da nav
   const notifCount = unreadFeedback;
 
   useEffect(() => {
@@ -235,7 +231,6 @@ export default function PatientLayout({ session, setSession, logout, theme, togg
     } else {
       prevPathRef.current = location.pathname;
       navigate(PATIENT_ROUTES.notifications);
-      // Zera o badge da campainha ao abrir — a view marca como lido no DB
       setUnreadFeedback(0);
       prevFeedbackRef.current = 0;
     }
