@@ -1,5 +1,5 @@
 import { useState } from "react";
-import styles from "./ModelosPremium.module.css";
+import styles from "./ModelosEquilibreView.module.css";
 
 export default function RPDView({ patientName }) {
   const [activeStep, setActiveStep] = useState(null);

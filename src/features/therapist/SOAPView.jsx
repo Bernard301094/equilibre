@@ -1,5 +1,5 @@
 import React from "react";
-import styles from "./ModelosPremium.module.css";
+import styles from "./ModelosEquilibreView.module.css";
 
 export default function SOAPView({ patientName }) {
   return (
