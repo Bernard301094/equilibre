@@ -31,7 +31,9 @@ jobs:
 
       # NEW: Explicitly configure Bubblewrap to use the provided Java and Android SDK paths
       - name: Configure Bubblewrap Paths
-        run: bubblewrap updateConfig --jdkPath="$JAVA_HOME" --androidSdkPath="$ANDROID_SDK_ROOT"
+        run: |
+          mkdir -p ~/.bubblewrap
+          echo "{\"jdkPath\":\"$JAVA_HOME\",\"androidSdkPath\":\"$ANDROID_SDK_ROOT\"}" > ~/.bubblewrap/config.json
 
       # SIMPLIFIED: Create the project directory and configure the manifest and keystore directly
       - name: Prepare TWA Project Configuration
