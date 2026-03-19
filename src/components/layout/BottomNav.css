@@ -70,14 +70,13 @@
 /* ── Icono con badge ─────────────────────────────────────────── */
 .bottom-nav__icon-wrap {
   position: relative;
-  /* FIX: tamaño aumentado de 28px a 32px para mejor área táctil */
   width: 32px;
   height: 32px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: visible; /* visible para que el badge no se recorte */
+  overflow: visible;
 }
 
 /* ── Ícono ───────────────────────────────────────────────────── */
@@ -144,16 +143,24 @@
 .bottom-nav__more-dots--open   { transform: rotate(90deg); color: #ffffff; }
 .bottom-nav__more-dots--active { color: #ffffff; }
 
-/* ── Slot de perfil ──────────────────────────────────────────── */
+/* ── Slot de perfil ──────────────────────────────────────────────
+   FIX: aumentado min-width e removido padding horizontal excessivo
+   para evitar que nomes compridos fiquem cortados no Galaxy A55.
+   O label de perfil tem agora max-width explícito com ellipsis.
+   ─────────────────────────────────────────────────────────────── */
 .bottom-nav__profile {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 4px 10px;
+  /* FIX: era padding: 4px 10px — o padding lateral comprimia o slot */
+  padding: 4px 4px;
   flex-shrink: 0;
-  min-width: 52px;
+  /* FIX: era 52px — insuficiente para nomes com 6+ caracteres */
+  min-width: 60px;
+  /* Limita para não roubar espaço aos outros itens */
+  max-width: 80px;
 }
 
 .bottom-nav__profile-btn {
@@ -167,7 +174,6 @@
   justify-content: center;
   transition: opacity 0.18s, box-shadow 0.18s;
   -webkit-tap-highlight-color: transparent;
-  /* Área táctil mínima */
   min-width: 44px;
   min-height: 44px;
 }
@@ -178,6 +184,12 @@
   outline: none;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
   border-radius: 50%;
+}
+
+/* FIX: label do perfil com max-width e ellipsis explícitos */
+.bottom-nav__profile .bottom-nav__label {
+  max-width: 72px;
+  text-align: center;
 }
 
 /* ── Backdrop del drawer ─────────────────────────────────────── */
@@ -225,11 +237,9 @@
   margin: 0 auto 16px;
 }
 
-/* Grid de ítems del drawer — responsivo con auto-fill */
+/* Grid de ítems del drawer */
 .bottom-nav__drawer-grid {
   display: grid;
-  /* FIX: auto-fill con min 80px en lugar de columnas fijas por JS inline-style
-     Esto hace el grid responsive sin necesitar sobreescribir el style attribute */
   gap: 8px;
 }
 
@@ -247,7 +257,6 @@
   cursor: pointer;
   transition: background 0.18s, border-color 0.18s, transform 0.15s;
   -webkit-tap-highlight-color: transparent;
-  /* Área táctil mínima */
   min-height: 72px;
 }
 
@@ -291,8 +300,6 @@
 
 /* ════════════════════════════════════════════════════════════
    RESPONSIVE — ocultar en tablet/desktop
-   FIX: usa 767px (igual que useIsMobile) en lugar de 768px
-   para eliminar el gap de 1px.
    ════════════════════════════════════════════════════════════ */
 @media (min-width: 768px) {
   .bottom-nav__bar,
@@ -307,51 +314,34 @@
   .bottom-nav__bar {
     height: calc(58px + env(safe-area-inset-bottom));
   }
-
   .bottom-nav__btn {
     padding: 4px 2px;
     min-width: 40px;
   }
-
   .bottom-nav__drawer {
     padding: 8px 10px calc(58px + env(safe-area-inset-bottom) + 10px);
   }
-
-  .bottom-nav__icon {
-    font-size: 1.1rem;
-  }
-
-  .bottom-nav__label {
-    font-size: 0.55rem;
-  }
-
-  .bottom-nav__icon-wrap {
-    width: 28px;
-    height: 28px;
-  }
+  .bottom-nav__icon { font-size: 1.1rem; }
+  .bottom-nav__label { font-size: 0.55rem; }
+  .bottom-nav__icon-wrap { width: 28px; height: 28px; }
+  .bottom-nav__profile { min-width: 52px; max-width: 64px; }
+  .bottom-nav__profile .bottom-nav__label { max-width: 58px; }
 }
 
-/* ── 360–479px — Android promedio ───────────────────────────── */
+/* ── 360–479px — Galaxy A55 / Android promedio ───────────────── */
 @media (min-width: 360px) and (max-width: 479px) {
   .bottom-nav__bar {
     height: calc(62px + env(safe-area-inset-bottom));
   }
-
-  .bottom-nav__btn {
-    padding: 5px 3px 4px;
-  }
-
-  .bottom-nav__icon {
-    font-size: 1.2rem;
-  }
-
-  .bottom-nav__label {
-    font-size: 0.6rem;
-  }
-
+  .bottom-nav__btn { padding: 5px 3px 4px; }
+  .bottom-nav__icon { font-size: 1.2rem; }
+  .bottom-nav__label { font-size: 0.6rem; }
   .bottom-nav__drawer {
     padding: 8px 12px calc(62px + env(safe-area-inset-bottom) + 12px);
   }
+  /* FIX: slot de perfil ligeiramente mais largo no A55 */
+  .bottom-nav__profile { min-width: 62px; max-width: 76px; }
+  .bottom-nav__profile .bottom-nav__label { max-width: 70px; font-size: 0.6rem; }
 }
 
 /* ── 480–599px — móviles grandes / foldables cerrados ───────── */
@@ -359,15 +349,8 @@
   .bottom-nav__bar {
     height: calc(66px + env(safe-area-inset-bottom));
   }
-
-  .bottom-nav__icon {
-    font-size: 1.25rem;
-  }
-
-  .bottom-nav__label {
-    font-size: 0.65rem;
-  }
-
+  .bottom-nav__icon { font-size: 1.25rem; }
+  .bottom-nav__label { font-size: 0.65rem; }
   .bottom-nav__drawer {
     padding: 8px 16px calc(66px + env(safe-area-inset-bottom) + 12px);
   }
@@ -378,25 +361,15 @@
   .bottom-nav__bar {
     height: calc(68px + env(safe-area-inset-bottom));
   }
-
-  .bottom-nav__btn {
-    padding: 6px 8px 4px;
-  }
-
-  .bottom-nav__icon {
-    font-size: 1.3rem;
-  }
-
-  .bottom-nav__label {
-    font-size: 0.68rem;
-  }
-
+  .bottom-nav__btn { padding: 6px 8px 4px; }
+  .bottom-nav__icon { font-size: 1.3rem; }
+  .bottom-nav__label { font-size: 0.68rem; }
   .bottom-nav__drawer {
     padding: 10px 20px calc(68px + env(safe-area-inset-bottom) + 14px);
   }
-
-  /* En foldables abiertos el drawer puede mostrar más ítems en fila */
   .bottom-nav__drawer-grid {
     grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)) !important;
   }
+  .bottom-nav__profile { min-width: 68px; max-width: 84px; }
+  .bottom-nav__profile .bottom-nav__label { max-width: 76px; font-size: 0.68rem; }
 }

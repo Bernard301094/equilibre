@@ -9,9 +9,6 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-
-  /* Respeta el padding de 32px que Modal.css aplica al .modal-dialog
-     en desktop. En mobile Modal.css ya gestiona 24px 20px + safe-area. */
   gap: 10px;
   width: 100%;
   box-sizing: border-box;
@@ -19,7 +16,6 @@
 
 /* ── Título ───────────────────────────────────────────────── */
 .pm-title {
-  /* Playfair Display es el heading estándar de la app (App.css: h1,h2,h3) */
   font-family: 'Playfair Display', Georgia, serif;
   font-size: clamp(1.05rem, 2.2vw, 1.2rem);
   font-weight: 700;
@@ -36,28 +32,48 @@
   cursor: pointer;
 }
 
-/* Badge circular de cámara sobre la esquina inferior del avatar */
+/* ── Badge circular de cámara ─────────────────────────────────
+   FIX: aumentado para 34px em mobile (era 28px).
+   Melhor área táctil e visibilidade no Galaxy A55.
+   Reposicionado para bottom: 0 / right: 0 para não sobrepor
+   o avatar e ficar mais acessível.
+   ─────────────────────────────────────────────────────────── */
 .pm-avatar-badge {
   position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 28px;
-  height: 28px;
+  /* FIX: era bottom: 2px / right: 2px — agora alinhado à borda */
+  bottom: 0;
+  right: 0;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: var(--blue-dark, #17527c);
   color: #fff;
-  border: 2px solid var(--white, #fff);
+  /* FIX: borda mais grossa para separar visualmente do avatar */
+  border: 2.5px solid var(--white, #fff);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.18s, transform 0.15s;
+  transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
   padding: 0;
+  /* FIX: sombra suave para destacar o badge sobre qualquer avatar */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  /* FIX: área táctil expandida sem alterar layout visual */
+  -webkit-tap-highlight-color: transparent;
 }
 
-.pm-avatar-wrap:hover .pm-avatar-badge {
+/* FIX: ícone da câmera ligeiramente maior */
+.pm-avatar-badge svg,
+.pm-avatar-badge span {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.pm-avatar-wrap:hover .pm-avatar-badge,
+.pm-avatar-wrap:focus-within .pm-avatar-badge {
   background: var(--blue-mid, #2e7fab);
   transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* ── Nombre del usuario ───────────────────────────────────── */
@@ -101,9 +117,6 @@
 }
 
 /* ── Sistema de botones del modal ─────────────────────────── */
-
-/* Base compartida — alineada con los estándares de la app:
-   height 44px (WCAG mínimo táctil), radius-md, DM Sans, weight 600 */
 .pm-btn {
   width: 100%;
   min-height: 44px;
@@ -126,66 +139,51 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.pm-btn:active:not(:disabled) {
-  transform: scale(0.97);
-}
-
-.pm-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
+.pm-btn:active:not(:disabled) { transform: scale(0.97); }
+.pm-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .pm-btn:focus-visible {
   outline: 2px solid var(--blue-dark, #17527c);
   outline-offset: 2px;
 }
 
-/* Primario — usa el color de acción principal de la app */
 .pm-btn--primary {
   background: var(--blue-dark, #17527c);
   color: #fff;
   box-shadow: var(--shadow-sm);
 }
-
 .pm-btn--primary:hover:not(:disabled) {
   background: var(--blue-mid, #2e7fab);
   box-shadow: var(--shadow-md);
 }
 
-/* Ghost / outline — borde warm, sin fondo */
 .pm-btn--ghost {
   background: transparent;
   color: var(--text-muted, #3d5a70);
   border: 1.5px solid var(--warm, #cddcea);
 }
-
 .pm-btn--ghost:hover:not(:disabled) {
   background: var(--warm, #cddcea);
   color: var(--text, #0f1e2a);
 }
 
-/* System — acciones secundarias (tema, logout) */
 .pm-btn--system {
   background: transparent;
   color: var(--text, #0f1e2a);
   border: 1.5px solid var(--warm, #cddcea);
   font-size: 0.875rem;
 }
-
 .pm-btn--system:hover:not(:disabled) {
   background: var(--cream, #f0f6fb);
   border-color: var(--blue-light, #86bcde);
   color: var(--blue-dark, #17527c);
 }
 
-/* Danger — destrucción de cuenta */
 .pm-btn--danger {
   background: transparent;
   color: var(--danger, #b03030);
   border: 1.5px solid rgba(176, 48, 48, 0.3);
   font-size: 0.875rem;
 }
-
 .pm-btn--danger:hover:not(:disabled) {
   background: var(--danger-soft, #fde8e8);
   border-color: var(--danger, #b03030);
@@ -202,10 +200,7 @@
   animation: pm-spin 0.65s linear infinite;
   flex-shrink: 0;
 }
-
-@keyframes pm-spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes pm-spin { to { transform: rotate(360deg); } }
 
 /* ── Divisor ──────────────────────────────────────────────── */
 .pm-divider {
@@ -226,19 +221,42 @@
 }
 
 /* ── Responsive ───────────────────────────────────────────── */
-
-/* En mobile Modal.css ya gestiona el padding del sheet.
-   Solo ajustamos gaps y tamaños internos. */
 @media (max-width: 767px) {
-  .pm-body {
-    gap: 8px;
-  }
+  .pm-body { gap: 8px; }
+  .pm-title { font-size: 1rem; }
+  .pm-btn { font-size: 0.9rem; }
+}
 
-  .pm-title {
-    font-size: 1rem;
+/* FIX: badge da câmera no Galaxy A55 (360–479px) */
+@media (min-width: 360px) and (max-width: 479px) {
+  .pm-avatar-badge {
+    width: 36px;
+    height: 36px;
+    border-width: 2.5px;
   }
+  .pm-avatar-badge svg,
+  .pm-avatar-badge span {
+    font-size: 1.05rem;
+  }
+}
 
-  .pm-btn {
-    font-size: 0.9rem;
+/* FIX: badge da câmera em móviles muito pequenos */
+@media (max-width: 359px) {
+  .pm-avatar-badge {
+    width: 30px;
+    height: 30px;
+    border-width: 2px;
+  }
+}
+
+/* FIX: badge ligeiramente maior em tablets */
+@media (min-width: 600px) and (max-width: 767px) {
+  .pm-avatar-badge {
+    width: 38px;
+    height: 38px;
+  }
+  .pm-avatar-badge svg,
+  .pm-avatar-badge span {
+    font-size: 1.1rem;
   }
 }
