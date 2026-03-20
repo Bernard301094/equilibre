@@ -24,11 +24,12 @@ import PatientHome               from "./features/patient/Home";
 import PatientExercises          from "./features/patient/PatientExercises";
 import PatientDiary              from "./features/patient/DiaryView";
 import PatientRoutine            from "./features/patient/RoutineView";
-import PatientHistory            from "./features/patient/PatientHistory"; // inclui tab Progresso
+import PatientHistory            from "./features/patient/PatientHistory";
 import PatientNotificationsView  from "./features/patient/PatientNotificationsView";
 import SessionsView              from "./features/patient/SessionsView";
 import MessagesView              from "./components/shared/MessagesView";
 import AdminDashboard            from "./features/admin/AdminDashboard";
+import VideoCall                 from "./features/videocall/VideoCall";
 
 // ─── Seed (lazy, apenas uma vez por versão) ───────────────────────────────────
 const SEED_VERSION     = "2";
@@ -94,7 +95,6 @@ async function resolveLogin({ email, password, role }) {
   const token  = authData.access_token;
   const userId = authData.user?.id;
 
-  // ── Admin: verificado pela tabela users (role = 'admin') ──
   let userRow = null;
   try {
     const byId = await db.query("users", { filter: { id: userId } }, token);
@@ -108,7 +108,6 @@ async function resolveLogin({ email, password, role }) {
     } catch (e) { console.warn("[resolveLogin] query por email falhou:", e.message); }
   }
 
-  // Permite acesso admin se role na tabela for 'admin'
   if (userRow?.role === "admin") {
     return { ...userRow, access_token: token, refresh_token: authData.refresh_token };
   }
@@ -221,13 +220,12 @@ export const THERAPIST_ROUTES = {
   agenda:        "/terapeuta/agenda",
 };
 
-// /terapeuta/progresso redirige a respostas (mantém links antigos funcionando)
 export const PATIENT_ROUTES = {
   home:          "/paciente/inicio",
   exercises:     "/paciente/exercicios",
   diary:         "/paciente/diario",
   routine:       "/paciente/rotina",
-  history:       "/paciente/historico",   // inclui tab Progresso
+  history:       "/paciente/historico",
   orientacoes:   "/paciente/orientacoes",
   notifications: "/paciente/notificacoes",
   sessions:      "/paciente/sessoes",
@@ -292,6 +290,16 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
           }
         />
 
+        {/* ─── Videollamada con E2E encryption ─────────────────────────── */}
+        <Route
+          path="/videocall/:roomId"
+          element={
+            <RequireAuth session={session} role="any" redirectTo="/entrar">
+              <VideoCall userId={session?.id} />
+            </RequireAuth>
+          }
+        />
+
         <Route
           path="/terapeuta"
           element={
@@ -305,7 +313,6 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
           <Route path="pacientes"    element={<PatientsView session={session} />} />
           <Route path="exercicios"   element={<ExercisesView session={session} />} />
           <Route path="criar"        element={<CreateExerciseView session={session} />} />
-          {/* progresso absorvido como tab em respostas — redirige para não quebrar links antigos */}
           <Route path="progresso"    element={<Navigate to={THERAPIST_ROUTES.responses} replace />} />
           <Route path="respostas"    element={<ResponsesView session={session} />} />
           <Route path="notificacoes" element={<NotificationsView session={session} />} />
@@ -327,7 +334,6 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
           <Route path="exercicios"   element={<PatientExercises session={session} />} />
           <Route path="diario"       element={<PatientDiary session={session} />} />
           <Route path="rotina"       element={<PatientRoutine session={session} />} />
-          {/* progresso absorvido como tab em historico */}
           <Route path="progresso"    element={<Navigate to={PATIENT_ROUTES.history} replace />} />
           <Route path="historico"    element={<PatientHistory session={session} />} />
           <Route path="orientacoes"  element={<MessagesView session={session} />} />
@@ -348,7 +354,6 @@ export default function App() {
   const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
-    // Seed corre em background — nunca bloqueia a UI
     seedExercisesIfNeeded().finally(() => setAppReady(true));
   }, []);
 
