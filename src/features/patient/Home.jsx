@@ -34,7 +34,7 @@ export default function PatientHome({ session, setSession }) {
 
   const [data, setData] = useState({
     pending: 0, done: 0, streak: 0, goal: null,
-    weekDone: 0, overdue: 0, hasActivityToday: false, isLate: false,
+    weekDone: 0, overdue: 0, hasActivityToday: false, isLate: false, hasHistory: false
   });
   const [loading,    setLoading]    = useState(true);
   const [showWater,  setShowWater]  = useState(false);
@@ -70,15 +70,25 @@ export default function PatientHome({ session, setSession }) {
         const respList = Array.isArray(responses) ? responses : [];
         const dList    = Array.isArray(diary)     ? diary     : [];
 
+        const getLocalIsoDate = (isoString) => {
+          const d = new Date(isoString);
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          return `${y}-${m}-${day}`;
+        };
+
         const activeDates = [
           ...dList.map((e) => e.date),
-          ...respList.map((r) => r.completed_at?.slice(0, 10)).filter(Boolean),
+          ...respList.map((r) => r.completed_at ? getLocalIsoDate(r.completed_at) : null).filter(Boolean),
         ];
-        const streak   = calcStreak(activeDates);
-        const today    = localDateOffset(0);
-        const hasToday = activeDates.includes(today);
-        const weekDone = respList.filter((r) => isThisWeek(r.completed_at)).length;
-        const overdue  = pendList.filter((a) => {
+
+        const streak     = calcStreak(activeDates);
+        const hasHistory = activeDates.length > 0;
+        const today      = localDateOffset(0);
+        const hasToday   = activeDates.includes(today);
+        const weekDone   = respList.filter((r) => isThisWeek(r.completed_at)).length;
+        const overdue    = pendList.filter((a) => {
           if (!a.due_date) return false;
           return new Date(a.due_date) < new Date(now.getFullYear(), now.getMonth(), now.getDate());
         }).length;
@@ -98,6 +108,7 @@ export default function PatientHome({ session, setSession }) {
           overdue,
           hasActivityToday: hasToday,
           isLate:           hour >= 19,
+          hasHistory,
         });
       } catch (e) {
         console.error("[PatientHome]", e);
@@ -178,7 +189,7 @@ export default function PatientHome({ session, setSession }) {
     );
   }
 
-  const stage     = getPlantStage(data.streak);
+  const stage     = getPlantStage(data.streak, data.hasHistory);
   const firstName = session.name.split(" ")[0];
 
   return (

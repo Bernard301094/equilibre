@@ -19,7 +19,6 @@ import ExercisesView             from "./features/therapist/ExercisesView";
 import CreateExerciseView        from "./features/therapist/CreateExerciseView";
 import ResponsesView             from "./features/therapist/ResponsesView";
 import NotificationsView         from "./features/therapist/NotificationsView";
-import ModelosEquilibreView      from "./features/therapist/ModelosEquilibreView";
 import CalendarView              from "./features/therapist/CalendarView";
 import PatientHome               from "./features/patient/Home";
 import PatientExercises          from "./features/patient/PatientExercises";
@@ -219,7 +218,6 @@ export const THERAPIST_ROUTES = {
   responses:     "/terapeuta/respostas",
   notifications: "/terapeuta/notificacoes",
   orientacoes:   "/terapeuta/orientacoes",
-  modelos:       "/terapeuta/modelos",
   agenda:        "/terapeuta/agenda",
 };
 
@@ -312,7 +310,6 @@ function AppRoutes({ session, setSession, updateSession, logout, theme, toggleTh
           <Route path="respostas"    element={<ResponsesView session={session} />} />
           <Route path="notificacoes" element={<NotificationsView session={session} />} />
           <Route path="orientacoes"  element={<MessagesView session={session} />} />
-          <Route path="modelos"      element={<ModelosEquilibreView session={session} />} />
           <Route path="agenda"       element={<CalendarView session={session} />} />
           <Route path="*"            element={<Navigate to={THERAPIST_ROUTES.dashboard} replace />} />
         </Route>

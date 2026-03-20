@@ -20,6 +20,7 @@ function playNotificationSound() {
 }
 
 // "progress" removido — absorvido como tab dentro de ResponsesView
+// "modelos" removido da navegação principal
 const NAV_ITEMS = [
   { id: "dashboard",   icon: "🏠",  label: "Início"      },
   { id: "patients",    icon: "👥",  label: "Pacientes"   },
@@ -27,7 +28,6 @@ const NAV_ITEMS = [
   { id: "create",      icon: "✏️",  label: "Criar"       },
   { id: "responses",   icon: "💬",  label: "Respostas"   },
   { id: "orientacoes", icon: "📬",  label: "Orientações" },
-  { id: "modelos",     icon: "🧩",  label: "Modelos"     },
   { id: "agenda",      icon: "📅",  label: "Agenda"      },
 ];
 
@@ -180,7 +180,6 @@ export default function TherapistLayout({ session, setSession, logout, theme, to
     if (url.includes("resposta") || url.includes("response")) return "responses";
     if (url.includes("orientaco") || url.includes("orientacoes")) return "orientacoes";
     if (url.includes("notificaco") || url.includes("notification")) return "notifications";
-    if (url.includes("modelos")) return "modelos";
     if (url.includes("agenda")) return "agenda";
     return "dashboard";
   };

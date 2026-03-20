@@ -94,9 +94,17 @@ export default function PatientProgress({ session }) {
           val:  d.mood,
         }));
 
+        const getLocalIsoDate = (isoString) => {
+          const d = new Date(isoString);
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          return `${y}-${m}-${day}`;
+        };
+
         const activeDates = [
           ...dList.map((e) => e.date),
-          ...rList.map((r) => r.completed_at?.slice(0, 10)).filter(Boolean),
+          ...rList.map((r) => r.completed_at ? getLocalIsoDate(r.completed_at) : null).filter(Boolean),
         ];
 
         setData({

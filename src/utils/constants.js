@@ -123,16 +123,25 @@ export const BA_AVOIDANCE_REASONS = ["Falta de energia","Esqueci","Falta de temp
 
 // ─── Plant gamification ───────────────────────────────────────────────────────────────
 export const PLANT_STAGES = [
-  { minStreak: 0,  icon: "🌰", label: "Semente",        color: "#8b5a2b", desc: "Pronta para crescer." },
   { minStreak: 1,  icon: "🌱", label: "Brotinho",       color: "#a8d5ba", desc: "Começando a brotar." },
   { minStreak: 3,  icon: "🌿", label: "Planta Jovem",   color: "#7abd8c", desc: "Ganhando folhas." },
   { minStreak: 6,  icon: "🪴", label: "Planta no Vaso", color: "#4a9c5d", desc: "Crescendo forte." },
   { minStreak: 10, icon: "🌳", label: "Árvore Firme",   color: "#2d7a3a", desc: "Raízes profundas." },
   { minStreak: 15, icon: "🌸", label: "Árvore Florida", color: "#e88fb4", desc: "Seu jardim está lindo!" },
 ];
-export function getPlantStage(streak) {
+
+export function getPlantStage(streak, hasHistory = false) {
+  if (streak === 0) {
+    if (hasHistory) {
+      return { icon: "🥀", label: "Murcha", color: "#718096", desc: "Sua plantinha murchou. Volte a regar!" };
+    }
+    return { icon: "🌰", label: "Semente", color: "#8b5a2b", desc: "Pronta para crescer." };
+  }
+  
   let stage = PLANT_STAGES[0];
-  for (const s of PLANT_STAGES) { if (streak >= s.minStreak) stage = s; }
+  for (const s of PLANT_STAGES) { 
+    if (streak >= s.minStreak) stage = s; 
+  }
   return stage;
 }
 
