@@ -10,7 +10,7 @@ import { SkeletonList, SkeletonCard } from "../../components/ui/Skeleton";
 import "./PatientsView.css";
 
 /* URL pública do app — ajuste se o domínio mudar */
-const APP_URL = "https://equilibre-app.vercel.app";
+const APP_URL = "https://equilibreapp.vercel.app";
 
 export default function PatientsView({ session }) {
   const [patients,        setPatients]        = useState([]);
