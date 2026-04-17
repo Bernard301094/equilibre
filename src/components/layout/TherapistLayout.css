@@ -15,9 +15,12 @@
 /* ── Contenedor raíz ────────────────────────────────────────── */
 .therapist-layout {
   display: flex;
-  min-height: 100dvh;        /* dvh: iOS Safari barra dinámica */
+  /* FIX: height fija + overflow:hidden en el root crea el único
+     contexto de scroll; overflow:clip (no overflow:hidden) evita
+     que el contenedor robe el scroll del hijo __main. */
+  height: 100dvh;
+  overflow: clip;            /* bloquea scroll lateral sin atrapar el vertical */
   background: var(--cream);
-  overflow: hidden;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -29,9 +32,14 @@
   width: 100%;
   min-width: 0;              /* evita overflow en flex child */
   box-sizing: border-box;
-  min-height: 100dvh;
+  /* FIX: min-height eliminado — el flex ocupa 100dvh del padre.
+     height:100% + overflow-y:auto es el patrón correcto para
+     un área scrolleable dentro de un contenedor flex fijo. */
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
+  /* FIX: scroll con inercia nativa en iOS (Safari lo ignora sin esto) */
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
   padding:
@@ -130,7 +138,6 @@
   .therapist-layout__main {
     margin-left: var(--sb-width-full);
     padding: 36px clamp(32px, 4vw, 64px);
-    /* Limita el ancho del contenido para mejor legibilidad */
     max-width: calc(1400px + var(--sb-width-full));
   }
 }
@@ -149,7 +156,6 @@
   .therapist-layout__main {
     margin-left: var(--sb-width-full);
     padding: 48px clamp(64px, 6vw, 120px);
-    /* Centra el contenido en pantallas ultrawide */
     max-width: calc(1800px + var(--sb-width-full));
     margin-right: auto;
   }
@@ -220,7 +226,6 @@
    ════════════════════════════════════════════════════════════ */
 .floating-bell {
   position: fixed;
-  /* safe-area-inset-top evita solapamiento con notch/Dynamic Island */
   top: calc(14px + env(safe-area-inset-top, 0px));
   right: calc(14px + env(safe-area-inset-right, 0px));
   z-index: var(--z-fab);
@@ -235,12 +240,10 @@
   -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   transition: background 0.25s, transform 0.2s;
-  /* Área táctil mínima 44px garantizada */
   min-width: 44px;
   min-height: 44px;
 }
 
-/* En móviles muy pequeños, ligeramente más compacto */
 @media (max-width: 359px) {
   .floating-bell {
     width: 44px;
@@ -302,7 +305,6 @@
   border-radius: 50%;
   transition: background 0.2s;
   color: inherit;
-  /* Área táctil mínima 44px en tablet */
   min-width: 44px;
   min-height: 44px;
 }
@@ -360,7 +362,6 @@
 
 .logout-modal__btn {
   flex: 1;
-  /* Altura mínima de 44px para área táctil cómoda en móvil */
   height: clamp(44px, 6vw, 48px);
   border-radius: 10px;
   font-size: clamp(0.85rem, 2.5vw, 0.95rem); font-weight: 600;
@@ -374,7 +375,6 @@
 .logout-modal__btn--confirm       { background: #e53e3e; color: #fff; box-shadow: 0 4px 12px rgba(229,62,62,0.3); }
 .logout-modal__btn--confirm:hover { background: #c53030; }
 
-/* Móviles muy pequeños: botones apilados */
 @media (max-width: 359px) {
   .logout-modal { padding: 20px 14px 16px; }
   .logout-modal__actions { flex-direction: column; }
