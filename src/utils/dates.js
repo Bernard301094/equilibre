@@ -118,22 +118,51 @@ export function isThisWeek(completedAtISO) {
 }
 
 /**
+ * Parses a date string safely, preserving local timezone for date-only
+ * strings (YYYY-MM-DD).
+ *
+ * The Problem: new Date("2026-04-16") is parsed as midnight UTC.
+ * In BRT (UTC-3) that renders as 2026-04-15 — one day behind.
+ *
+ * Fix: date-only strings are split into parts and passed to the Date
+ * constructor as numbers, which uses local time instead of UTC.
+ * Full ISO strings with time/timezone info are parsed normally.
+ *
+ * @param {string} str
+ * @returns {Date}
+ */
+function parseDateSafe(str) {
+  // Match bare date: YYYY-MM-DD (no T, no Z, no offset)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, d] = str.split("-").map(Number);
+    return new Date(y, m - 1, d); // local midnight — no UTC shift
+  }
+  return new Date(str);
+}
+
+/**
  * Formats a date for display in pt-BR.
+ *
+ * Accepts a Date object, an ISO datetime string (e.g. Supabase created_at),
+ * or a bare date string (YYYY-MM-DD). Bare date strings are parsed as local
+ * midnight to avoid the UTC-offset-causes-wrong-day bug.
  *
  * @param {string|Date} date
  * @param {Intl.DateTimeFormatOptions} [opts]
  * @returns {string}
  */
 export function formatDate(date, opts = { day: "2-digit", month: "2-digit" }) {
-  const d = typeof date === "string" ? new Date(date) : date;
+  const d = typeof date === "string" ? parseDateSafe(date) : date;
   return d.toLocaleDateString("pt-BR", opts);
 }
 
 /**
  * Formats a datetime for display in pt-BR.
+ *
+ * Same safe-parse behavior as formatDate for string inputs.
  */
 export function formatDateTime(date) {
-  const d = typeof date === "string" ? new Date(date) : date;
+  const d = typeof date === "string" ? parseDateSafe(date) : date;
   return d.toLocaleString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
