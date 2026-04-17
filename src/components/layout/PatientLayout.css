@@ -7,9 +7,11 @@
 /* ── Contenedor raíz ────────────────────────────────────────── */
 .patient-layout {
   display: flex;
-  min-height: 100dvh;
+  /* FIX: mismo patrón que TherapistLayout —
+     height fija + overflow:clip para scroll vertical libre. */
+  height: 100dvh;
+  overflow: clip;
   background: var(--cream);
-  overflow: hidden;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -20,9 +22,11 @@
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  min-height: 100dvh;
+  /* FIX: height:100% en lugar de min-height:100dvh */
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
   padding:

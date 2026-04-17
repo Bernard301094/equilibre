@@ -166,30 +166,32 @@
 }
 
 /* ============================================================
-   SCROLL — ocultar scrollbar em mobile sem bloquear conteúdo
+   SCROLL — ocultar scrollbar en mobile sin bloquear contenido
    ============================================================ */
 
-/* Evita bounce/pull-to-refresh e scroll lateral indesejado */
+/* FIX: overflow-x:hidden en html/body puede bloquear el scroll
+   vertical en iOS Safari. Se reemplaza por overflow-x:clip que
+   corta el desbordamiento horizontal sin crear un nuevo contexto
+   de scroll que interfiera con el vertical. */
 html, body {
   overscroll-behavior: none;
   overscroll-behavior-y: none;
-  /* Guarda global contra overflow horizontal */
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
-/* Oculta a scrollbar em todos os elementos no mobile.
-   O scroll CONTINUA funcionando — só a barra some visualmente. */
+/* Oculta la scrollbar en todos los elementos en mobile.
+   El scroll SIGUE funcionando — solo la barra desaparece visualmente. */
 @media (max-width: 1024px) {
   * {
-    scrollbar-width: none;       /* Firefox */
-    -ms-overflow-style: none;    /* IE / Edge legado */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
   *::-webkit-scrollbar {
-    display: none;               /* Chrome / Samsung Internet / Safari */
+    display: none;
   }
 }
 
-/* Desktop: mantém scrollbar discreta */
+/* Desktop: mantiene scrollbar discreta */
 @media (min-width: 1025px) {
   ::-webkit-scrollbar         { width: 5px; height: 5px; }
   ::-webkit-scrollbar-thumb   { background: var(--warm); border-radius: 3px; }
@@ -290,7 +292,6 @@ body {
   min-height: 100dvh;
   transition: background 0.3s, color 0.3s;
   -webkit-font-smoothing: antialiased;
-  /* Safe area para dispositivos com notch/barra de navegação */
   padding-left:   env(safe-area-inset-left);
   padding-right:  env(safe-area-inset-right);
 }
@@ -299,14 +300,12 @@ h1, h2, h3 {
   font-family: 'Playfair Display', serif;
 }
 
-/* Garante que imagens nunca causem overflow */
 img, video, svg {
   max-width: 100%;
   height: auto;
   display: block;
 }
 
-/* Touch targets mínimos para acessibilidade mobile */
 button, a, [role="button"], input, select, textarea {
   min-height: var(--touch-target);
 }
@@ -405,8 +404,6 @@ button, a, [role="button"], input, select, textarea {
    Breakpoints: 0 / 360 / 480 / 600 / 768 / 1024 / 1280 / 1440 / 1920 / 2560
    ============================================================ */
 
-/* ── 0–359 px — Móveis muito pequenos ───────────────────────
-   Espaçamentos mínimos, grids de 1 coluna, fontes reduzidas   */
 @media (max-width: 359px) {
   :root {
     --space-page-x:    12px;
@@ -423,8 +420,6 @@ button, a, [role="button"], input, select, textarea {
   .page-header p  { font-size: 12px; }
 }
 
-/* ── 360–479 px — Móveis estándar (Galaxy A55, iPhone SE) ───
-   Grid 1 coluna, tipografia base, espaçamento confortável     */
 @media (min-width: 360px) and (max-width: 479px) {
   :root {
     --space-page-x:    14px;
@@ -438,8 +433,6 @@ button, a, [role="button"], input, select, textarea {
   .grid-3 { grid-template-columns: 1fr; gap: 12px; }
 }
 
-/* ── 480–599 px — Móveis grandes (iPhone Pro Max, Pixel 9) ──
-   grid-3 passa a 2 colunas; mais espaço horizontal            */
 @media (min-width: 480px) and (max-width: 599px) {
   :root {
     --space-page-x:    16px;
@@ -454,8 +447,6 @@ button, a, [role="button"], input, select, textarea {
   .page-header h2 { font-size: 18px; }
 }
 
-/* ── 600–767 px — Tablets pequenas / foldables ───────────────
-   Ambos os grids com 2 colunas; layout começa a abrir        */
 @media (min-width: 600px) and (max-width: 767px) {
   :root {
     --space-page-x:    20px;
@@ -472,7 +463,6 @@ button, a, [role="button"], input, select, textarea {
   .page-header p  { font-size: 13px; }
 }
 
-/* ── 768–1023 px — Tablets vertical (iPad 9ª gen, Galaxy Tab) */
 @media (min-width: 768px) and (max-width: 1023px) {
   :root {
     --space-page-x:    24px;
@@ -487,7 +477,6 @@ button, a, [role="button"], input, select, textarea {
   .grid-3 { grid-template-columns: repeat(2, 1fr); gap: 18px; }
 }
 
-/* ── 1024–1279 px — Tablets horizontal / laptops pequenas ───  */
 @media (min-width: 1024px) and (max-width: 1279px) {
   :root {
     --space-page-x:    28px;
@@ -499,7 +488,6 @@ button, a, [role="button"], input, select, textarea {
   .grid-3 { grid-template-columns: repeat(3, 1fr); gap: 20px; }
 }
 
-/* ── 1280–1439 px — Laptops estándar ────────────────────────  */
 @media (min-width: 1280px) and (max-width: 1439px) {
   :root {
     --space-page-x:    32px;
@@ -514,8 +502,6 @@ button, a, [role="button"], input, select, textarea {
   .page-header h2 { font-size: 26px; }
 }
 
-/* ── 1440–1919 px — Desktop grande ──────────────────────────
-   Container limitado; grid-3 pode ter 3 colunas largas       */
 @media (min-width: 1440px) and (max-width: 1919px) {
   :root {
     --space-page-x:    40px;
@@ -533,8 +519,6 @@ button, a, [role="button"], input, select, textarea {
   }
 }
 
-/* ── 1920–2559 px — Full HD / Wide ──────────────────────────
-   Ativa container máximo para não esticar demais o layout    */
 @media (min-width: 1920px) and (max-width: 2559px) {
   :root {
     --space-page-x:    clamp(40px, 3vw, 64px);
@@ -549,8 +533,6 @@ button, a, [role="button"], input, select, textarea {
   .page-header p  { font-size: 16px; }
 }
 
-/* ── 2560px+ — Ultra Wide / 2K / 4K ─────────────────────────
-   Layout centralizado com container estrito; fontes maiores   */
 @media (min-width: 2560px) {
   :root {
     --space-page-x:    clamp(48px, 2.5vw, 80px);
