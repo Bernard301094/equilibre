@@ -12,6 +12,21 @@ import "./PatientsView.css";
 /* URL pública do app */
 const APP_URL = "https://equilibreapp.vercel.app";
 
+function getSaoPauloNoonIso() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((p) => p.type === "year")?.value;
+  const month = parts.find((p) => p.type === "month")?.value;
+  const day = parts.find((p) => p.type === "day")?.value;
+
+  return `${year}-${month}-${day}T12:00:00-03:00`;
+}
+
 export default function PatientsView({ session }) {
   const [patients,        setPatients]        = useState([]);
   const [invites,         setInvites]         = useState([]);
@@ -83,7 +98,18 @@ export default function PatientsView({ session }) {
     setGenerating(true);
     try {
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-      await db.insert("invites", { code, therapist_id: session.id, status: "pending" }, session.access_token);
+      await db.insert(
+        "invites",
+        {
+          code,
+          therapist_id: session.id,
+          status: "pending",
+          // Persistimos created_at num horário "seguro" em São Paulo para evitar
+          // virar o dia ao serializar/parsear entre UTC e timezone local.
+          created_at: getSaoPauloNoonIso(),
+        },
+        session.access_token
+      );
       const fresh = await db.query("invites", { filter: { therapist_id: session.id }, order: "created_at.desc" }, session.access_token);
       setInvites(Array.isArray(fresh) ? fresh : []);
       toast.success("Código de convite gerado!");
