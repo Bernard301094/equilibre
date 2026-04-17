@@ -120,6 +120,17 @@ describe('formatDate', () => {
     expect(typeof result).toBe('string')
     expect(result.length).toBeGreaterThan(0)
   })
+
+  it('respects explicit timeZone (avoids day shift near UTC midnight)', () => {
+    // 2026-04-17 01:30Z == 2026-04-16 22:30 in America/Sao_Paulo (UTC-3)
+    const result = formatDate('2026-04-17T01:30:00.000Z', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'America/Sao_Paulo',
+    })
+    expect(result).toBe('16/04/2026')
+  })
 })
 
 describe('formatDateTime', () => {

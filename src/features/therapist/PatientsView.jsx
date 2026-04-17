@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import db from "../../services/db";
 import { calcStreak } from "../../utils/dates";
+import { formatDate as formatDatePtBr } from "../../utils/dates";
 import { getPlantStage } from "../../utils/constants";
 import toast from "../../utils/toast";
 import AvatarDisplay from "../../components/shared/AvatarDisplay";
@@ -128,12 +129,9 @@ export default function PatientsView({ session }) {
     }
   };
 
-  /* Formatea fecha respetando timezone de Brasil (evita desfase UTC) */
-  const formatDate = (isoString) => {
+  const formatInviteDate = (isoString) => {
     if (!isoString) return "";
-    return new Date(isoString).toLocaleDateString("pt-BR", {
-      timeZone: "America/Sao_Paulo",
-    });
+    return formatDatePtBr(isoString, { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "America/Sao_Paulo" });
   };
 
   if (loading) {
@@ -260,7 +258,7 @@ export default function PatientsView({ session }) {
                 className={["invite-row", inv.status === "used" ? "invite-row--used" : ""].filter(Boolean).join(" ")}
               >
                 <div className="invite-row__date">
-                  {formatDate(inv.created_at)}
+                  {formatInviteDate(inv.created_at)}
                 </div>
 
                 {inv.status === "used" ? (
