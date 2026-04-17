@@ -9,8 +9,8 @@ import PatientModal from "./PatientModal/PatientModal";
 import { SkeletonList, SkeletonCard } from "../../components/ui/Skeleton";
 import "./PatientsView.css";
 
-/* URL pública do app — ajuste se o domínio mudar */
-const APP_URL = "https://equilibre-app.vercel.app";
+/* URL pública do app */
+const APP_URL = "https://equilibreapp.vercel.app";
 
 export default function PatientsView({ session }) {
   const [patients,        setPatients]        = useState([]);
@@ -126,6 +126,14 @@ export default function PatientsView({ session }) {
       toast.error("Erro ao excluir convite: " + e.message);
       setDeleteInvTarget(null);
     }
+  };
+
+  /* Formatea fecha respetando timezone de Brasil (evita desfase UTC) */
+  const formatDate = (isoString) => {
+    if (!isoString) return "";
+    return new Date(isoString).toLocaleDateString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+    });
   };
 
   if (loading) {
@@ -252,7 +260,7 @@ export default function PatientsView({ session }) {
                 className={["invite-row", inv.status === "used" ? "invite-row--used" : ""].filter(Boolean).join(" ")}
               >
                 <div className="invite-row__date">
-                  {inv.created_at ? new Date(inv.created_at).toLocaleDateString("pt-BR") : ""}
+                  {formatDate(inv.created_at)}
                 </div>
 
                 {inv.status === "used" ? (
