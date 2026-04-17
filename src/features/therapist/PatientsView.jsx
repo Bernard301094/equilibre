@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import db from "../../services/db";
-import { calcStreak } from "../../utils/dates";
-import { formatDate as formatDatePtBr } from "../../utils/dates";
+import { calcStreak, formatSupabaseCreatedAt } from "../../utils/dates";
 import { getPlantStage } from "../../utils/constants";
 import toast from "../../utils/toast";
 import AvatarDisplay from "../../components/shared/AvatarDisplay";
@@ -131,7 +130,7 @@ export default function PatientsView({ session }) {
 
   const formatInviteDate = (isoString) => {
     if (!isoString) return "";
-    return formatDatePtBr(isoString, { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "America/Sao_Paulo" });
+    return formatSupabaseCreatedAt(isoString, { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "America/Sao_Paulo" });
   };
 
   if (loading) {

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import db from "../../services/db";
 import { CLINICAL_MODELS } from "../../utils/clinicalModels";
-import { formatDate } from "../../utils/dates";
+import { formatSupabaseCreatedAt } from "../../utils/dates";
 import "./AdminDashboard.css";
 
 const SUPA_URL    = import.meta.env.VITE_SUPABASE_URL;
@@ -426,7 +426,7 @@ export default function AdminDashboard({ session, logout, setSession }) {
               <tr key={inv.code}>
                 <td className="admin-mono-bold">{inv.code}</td>
                 <td><span className={`admin-badge badge-${inv.status === 'used' ? 'active' : 'pending'}`}>{inv.status}</span></td>
-                <td>{formatDate(inv.created_at, { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "America/Sao_Paulo" })}</td>
+                <td>{formatSupabaseCreatedAt(inv.created_at, { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "America/Sao_Paulo" })}</td>
                 <td className="admin-mono" style={{fontSize:'11px'}}>{inv.used_by || 'Aguardando'}</td>
               </tr>
             ))}

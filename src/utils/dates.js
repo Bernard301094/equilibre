@@ -141,6 +141,29 @@ function parseDateSafe(str) {
 }
 
 /**
+ * Parses a Supabase timestamp/date for display.
+ *
+ * Some tables/columns may return a date-only string (YYYY-MM-DD) even when the
+ * semantic meaning is "server date in UTC" (e.g. current_date with UTC timezone).
+ * For those cases, interpreting YYYY-MM-DD as *local* midnight is wrong and can
+ * show the date one day ahead/behind depending on the user's timezone.
+ *
+ * Strategy:
+ * - If it's YYYY-MM-DD: interpret as UTC midnight (Date.UTC)
+ * - Otherwise: parse as normal ISO datetime
+ *
+ * @param {string} str
+ * @returns {Date}
+ */
+function parseSupabaseCreatedAt(str) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, d] = str.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d));
+  }
+  return new Date(str);
+}
+
+/**
  * Formats a date for display in pt-BR.
  *
  * Accepts a Date object, an ISO datetime string (e.g. Supabase created_at),
@@ -153,6 +176,24 @@ function parseDateSafe(str) {
  */
 export function formatDate(date, opts = { day: "2-digit", month: "2-digit" }) {
   const d = typeof date === "string" ? parseDateSafe(date) : date;
+  return d.toLocaleDateString("pt-BR", opts);
+}
+
+/**
+ * Formats a Supabase-created timestamp/date for display in pt-BR.
+ *
+ * Use this for columns like `created_at` that may come back as either
+ * an ISO timestamp (timestamptz) or a date-only string (date/current_date).
+ *
+ * @param {string|Date} createdAt
+ * @param {Intl.DateTimeFormatOptions} [opts]
+ * @returns {string}
+ */
+export function formatSupabaseCreatedAt(
+  createdAt,
+  opts = { day: "2-digit", month: "2-digit", year: "numeric" }
+) {
+  const d = typeof createdAt === "string" ? parseSupabaseCreatedAt(createdAt) : createdAt;
   return d.toLocaleDateString("pt-BR", opts);
 }
 

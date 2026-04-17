@@ -8,6 +8,7 @@ import {
   isThisWeek,
   formatDate,
   formatDateTime,
+  formatSupabaseCreatedAt,
 } from '../../utils/dates'
 
 describe('toLocalDateStr', () => {
@@ -138,5 +139,19 @@ describe('formatDateTime', () => {
     const result = formatDateTime('2025-07-14T10:30:00.000Z')
     expect(typeof result).toBe('string')
     expect(result.length).toBeGreaterThan(0)
+  })
+})
+
+describe('formatSupabaseCreatedAt', () => {
+  it('treats date-only strings as UTC midnight (prevents +1 day display)', () => {
+    // If Supabase stores/returns a DATE in UTC (e.g. current_date), we must interpret
+    // YYYY-MM-DD as UTC midnight; in Sao Paulo that is the previous day at 21:00.
+    const result = formatSupabaseCreatedAt('2026-04-17', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'America/Sao_Paulo',
+    })
+    expect(result).toBe('16/04/2026')
   })
 })
